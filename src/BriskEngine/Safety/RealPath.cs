@@ -21,23 +21,49 @@ public static class RealPath
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool CloseHandle(IntPtr hObject);
 
-    /// Final filesystem path with every link in the chain resolved.
-    /// A path that cannot be opened (does not exist) falls back to GetFullPath —
-    /// it cannot be deleted anyway, and the validator still gets a canonical string.
-    public static string Resolve(string path)
+    /// Attempts to resolve the final filesystem path with every link in the chain resolved.
+    /// Returns true if the path could be opened and its real path determined via the filesystem.
+    /// Returns false if the path cannot be opened (permission denied, doesn't exist, sharing violation, etc.)
+    /// or if resolution fails. Retries once if the initial buffer is too small.
+    public static bool TryResolve(string path, out string real)
     {
+        real = "";
         var full = Path.GetFullPath(path);
-        var handle = CreateFileW(full, 0 /* query attributes only */, 7 /* rwd share */,
+
+        // For paths longer than 260 chars, use the \\?\ prefix to enable long path support
+        var toOpen = full.Length > 260 && !full.StartsWith(@"\\?\", StringComparison.Ordinal)
+            ? @"\\?\" + full
+            : full;
+
+        var handle = CreateFileW(toOpen, 0 /* query attributes only */, 7 /* rwd share */,
             IntPtr.Zero, 3 /* OPEN_EXISTING */, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
-        if (handle == new IntPtr(-1)) return full;
+        if (handle == new IntPtr(-1)) return false;
         try
         {
             var sb = new StringBuilder(1024);
             var len = GetFinalPathNameByHandleW(handle, sb, (uint)sb.Capacity, 0);
-            if (len == 0 || len > sb.Capacity) return full;
+            if (len == 0) return false;
+
+            // If buffer was too small, retry with the required size (per Win32 contract)
+            if (len > sb.Capacity)
+            {
+                sb = new StringBuilder((int)len);
+                len = GetFinalPathNameByHandleW(handle, sb, (uint)sb.Capacity, 0);
+                if (len == 0) return false;
+            }
+
             var final = sb.ToString();
-            return final.StartsWith(@"\\?\", StringComparison.Ordinal) ? final[4..] : final;
+            real = final.StartsWith(@"\\?\", StringComparison.Ordinal) ? final[4..] : final;
+            return true;
         }
         finally { CloseHandle(handle); }
+    }
+
+    /// Final filesystem path with every link in the chain resolved.
+    /// Falls back to GetFullPath for paths that cannot be opened (does not exist, etc.).
+    /// Used for comparison-only contexts where fallback is acceptable (e.g., ProtectedPaths roots).
+    public static string Resolve(string path)
+    {
+        return TryResolve(path, out var real) ? real : Path.GetFullPath(path);
     }
 }

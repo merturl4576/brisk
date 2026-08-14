@@ -19,7 +19,10 @@ public sealed class SafetyValidator
 {
     public AuthorizationResult Authorize(string path, CleanupTarget target)
     {
-        var pathReal = RealPath.Resolve(path);
+        // Queried path must be verifiable (fail-closed)
+        if (!RealPath.TryResolve(path, out var pathReal))
+            return AuthorizationResult.Deny($"'{path}' could not be verified (unresolvable real path)");
+
         if (ProtectedPaths.IsProtected(pathReal))
             return AuthorizationResult.Deny($"'{pathReal}' is inside a protected folder");
 
@@ -27,7 +30,9 @@ public sealed class SafetyValidator
         {
             var expanded = PathExpander.Expand(template);
             if (expanded is null) continue;
-            var templateReal = RealPath.Resolve(expanded);
+
+            // Templates must also be verifiable; skip if unresolvable
+            if (!RealPath.TryResolve(expanded, out var templateReal)) continue;
 
             var isTemplateItself = string.Equals(pathReal, templateReal,
                 StringComparison.OrdinalIgnoreCase);

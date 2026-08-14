@@ -60,10 +60,18 @@ public sealed class SafetyValidatorTests : IDisposable
     public void ProtectedFolder_DeniedEvenWhenTemplateCoversIt()
     {
         var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        var result = _validator.Authorize(
-            Path.Combine(documents, "novel.docx"), TargetOver(documents));
-        Assert.False(result.Allowed);
-        Assert.Contains("protected", result.Reason, StringComparison.OrdinalIgnoreCase);
+        var testFile = Path.Combine(documents, "brisk-test-novel.docx");
+        try
+        {
+            File.WriteAllText(testFile, "test");
+            var result = _validator.Authorize(testFile, TargetOver(documents));
+            Assert.False(result.Allowed);
+            Assert.Contains("protected", result.Reason, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { File.Delete(testFile); } catch { /* best effort */ }
+        }
     }
 
     [Fact]
@@ -75,6 +83,42 @@ public sealed class SafetyValidatorTests : IDisposable
         var target = TargetOver(template, contentsOnly: true);
         Assert.False(_validator.Authorize(template, target).Allowed);
         Assert.True(_validator.Authorize(Path.Combine(template, "a.tmp"), target).Allowed);
+    }
+
+    [Fact]
+    public void NonexistentPathInsideTemplate_Denied()
+    {
+        var template = Path.Combine(_root, "cache3");
+        Directory.CreateDirectory(template);
+        var nonexistent = Path.Combine(template, "does", "not", "exist.tmp");
+        var result = _validator.Authorize(nonexistent, TargetOver(template));
+        Assert.False(result.Allowed);
+        Assert.Contains("verified", result.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void VeryLongPath_IsStillAuthorized()
+    {
+        var template = Path.Combine(_root, "longpaths");
+        Directory.CreateDirectory(template);
+
+        // Build a chain of nested directories with long names to exceed 1100 characters total
+        var currentPath = template;
+        var pathLength = currentPath.Length;
+        var namePart = new string('a', 80); // Long directory name
+        while (pathLength < 1100)
+        {
+            currentPath = Path.Combine(currentPath, namePart);
+            pathLength = currentPath.Length;
+        }
+
+        // Create the full directory chain
+        Directory.CreateDirectory(currentPath);
+        var filePath = Path.Combine(currentPath, "file.tmp");
+        File.WriteAllText(filePath, "x");
+
+        var result = _validator.Authorize(filePath, TargetOver(template));
+        Assert.True(result.Allowed, result.Reason);
     }
 
     public void Dispose()
