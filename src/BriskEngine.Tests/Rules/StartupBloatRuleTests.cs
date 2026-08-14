@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BriskEngine.Diagnostics.Rules;
 using Xunit;
 
@@ -58,5 +59,39 @@ public class StartupBloatRuleTests
         Assert.Null(reg.GetBytes(ApprovedKey, "MyTool")); // untouched
         rule.Undo(ctx, prior);
         Assert.Null(reg.GetBytes(ApprovedKey, "Steam")); // was absent before
+    }
+
+    [Fact]
+    public void Fix_DeniedWrite_IsNotRecordedInPrior()
+    {
+        // One HKCU heavy item (writable) + one HKLM heavy item (denied)
+        var (ctx, reg) = Ctx("Steam");
+        const string HklmRunKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+        const string HklmApprovedKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+        reg.SetString(HklmRunKey, "Discord", @"C:\apps\Discord.exe");
+        reg.DenyWriteKeys.Add(HklmApprovedKey);
+
+        var rule = new StartupBloatRule();
+        var prior = rule.Fix(ctx);
+
+        // HKCU Steam should be disabled
+        Assert.Equal(0x03, reg.GetBytes(ApprovedKey, "Steam")![0]);
+        // HKLM Discord should NOT be disabled (write was denied)
+        Assert.Null(reg.GetBytes(HklmApprovedKey, "Discord"));
+        // Prior should only contain HKCU entry, not HKLM
+        var priorMap = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string?>>(prior)!;
+        Assert.True(priorMap.ContainsKey($"{ApprovedKey}|Steam"));
+        Assert.False(priorMap.ContainsKey($"{HklmApprovedKey}|Discord"));
+    }
+
+    [Fact]
+    public void Fix_AllWritesDenied_Throws()
+    {
+        var (ctx, reg) = Ctx("Steam");
+        reg.DenyWriteKeys.Add(ApprovedKey);
+
+        var rule = new StartupBloatRule();
+        var ex = Assert.Throws<InvalidOperationException>(() => rule.Fix(ctx));
+        Assert.Contains("administrator", ex.Message);
     }
 }

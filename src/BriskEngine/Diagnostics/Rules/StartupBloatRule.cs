@@ -76,17 +76,20 @@ public sealed class StartupBloatRule : IDiagnosticRule
     {
         var prior = new Dictionary<string, string?>();
         var disabledBytes = new byte[] { 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        foreach (var item in EnabledItems(ctx).Where(i => IsHeavy(i.Name)))
+        var heavyItems = EnabledItems(ctx).Where(i => IsHeavy(i.Name)).ToList();
+        foreach (var item in heavyItems)
         {
             try
             {
                 var existing = ctx.Registry.GetBytes(item.Approved, item.Name);
+                ctx.Registry.SetBytes(item.Approved, item.Name, disabledBytes);
                 prior[$"{item.Approved}|{item.Name}"] =
                     existing is null ? null : Convert.ToBase64String(existing);
-                ctx.Registry.SetBytes(item.Approved, item.Name, disabledBytes);
             }
             catch (UnauthorizedAccessException) { /* HKLM without elevation — skip */ }
         }
+        if (prior.Count == 0 && heavyItems.Count > 0)
+            throw new InvalidOperationException("startup items could not be disabled (administrator required)");
         return JsonSerializer.Serialize(prior);
     }
 
@@ -95,10 +98,14 @@ public sealed class StartupBloatRule : IDiagnosticRule
         var prior = JsonSerializer.Deserialize<Dictionary<string, string?>>(priorStateJson)!;
         foreach (var (key, base64) in prior)
         {
-            var sep = key.LastIndexOf('|');
-            var (approved, name) = (key[..sep], key[(sep + 1)..]);
-            if (base64 is null) ctx.Registry.DeleteValue(approved, name);
-            else ctx.Registry.SetBytes(approved, name, Convert.FromBase64String(base64));
+            try
+            {
+                var sep = key.LastIndexOf('|');
+                var (approved, name) = (key[..sep], key[(sep + 1)..]);
+                if (base64 is null) ctx.Registry.DeleteValue(approved, name);
+                else ctx.Registry.SetBytes(approved, name, Convert.FromBase64String(base64));
+            }
+            catch (UnauthorizedAccessException) { /* HKLM without elevation — skip */ }
         }
     }
 }

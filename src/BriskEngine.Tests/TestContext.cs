@@ -24,12 +24,21 @@ public sealed class FakeRegistry : IRegistryProbe
     // key = $"{keyPath}::{valueName}"
     public Dictionary<string, object> Values = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, List<string>> SubKeys = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> DenyWriteKeys = new(StringComparer.OrdinalIgnoreCase);
     private static string K(string k, string v) => $"{k}::{v}";
     public string? GetString(string k, string v) => Values.TryGetValue(K(k, v), out var o) ? o as string : null;
     public void SetString(string k, string v, string value) => Values[K(k, v)] = value;
-    public void DeleteValue(string k, string v) => Values.Remove(K(k, v));
+    public void DeleteValue(string k, string v)
+    {
+        if (DenyWriteKeys.Contains(k)) throw new UnauthorizedAccessException();
+        Values.Remove(K(k, v));
+    }
     public byte[]? GetBytes(string k, string v) => Values.TryGetValue(K(k, v), out var o) ? o as byte[] : null;
-    public void SetBytes(string k, string v, byte[] value) => Values[K(k, v)] = value;
+    public void SetBytes(string k, string v, byte[] value)
+    {
+        if (DenyWriteKeys.Contains(k)) throw new UnauthorizedAccessException();
+        Values[K(k, v)] = value;
+    }
     public int? GetInt(string k, string v) => Values.TryGetValue(K(k, v), out var o) ? o as int? : null;
     public void SetInt(string k, string v, int value) => Values[K(k, v)] = value;
     public IReadOnlyList<string> GetValueNames(string keyPath)
