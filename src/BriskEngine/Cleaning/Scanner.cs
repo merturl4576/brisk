@@ -44,6 +44,16 @@ public sealed class Scanner
             try
             {
                 ct.ThrowIfCancellationRequested();
+
+                if (target.DeletesContentsNotDirectory && Directory.Exists(path))
+                {
+                    // The template directory itself is never deletable for contents-only
+                    // targets (SafetyValidator correctly denies it) — emit its immediate
+                    // children instead, one item per child.
+                    AddChildren(items, target, path, ct);
+                    continue;
+                }
+
                 DateTime? lastWrite = null;
                 try { lastWrite = File.GetLastWriteTimeUtc(path); } catch { }
 
@@ -58,5 +68,27 @@ public sealed class Scanner
             catch { }  // Skip this path on any other exception
         }
         return new TargetScanResult(target, items, null);
+    }
+
+    private static void AddChildren(List<ResolvedItem> items, CleanupTarget target, string path,
+        CancellationToken ct)
+    {
+        foreach (var child in Directory.EnumerateFileSystemEntries(path))
+        {
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var attrs = File.GetAttributes(child);
+                if ((attrs & FileAttributes.ReparsePoint) != 0) continue;
+
+                DateTime? lastWrite = null;
+                try { lastWrite = File.GetLastWriteTimeUtc(child); } catch { }
+
+                items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct), lastWrite));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { }  // Skip this child on any other exception
+        }
     }
 }

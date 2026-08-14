@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using BriskEngine.Cleaning;
 using BriskEngine.Models;
+using BriskEngine.Safety;
 using Xunit;
 
 namespace BriskEngine.Tests;
@@ -18,6 +19,10 @@ public sealed class ScannerTests : IDisposable
         bool pick = false) => new(
         id, id, CleanupLevel.Safe, new List<string> { template }, "Test",
         RequiresAppClosedProcess: app, RequiresIndividualSelection: pick);
+
+    private static CleanupTarget ContentsOnlyTarget(string id, string template) => new(
+        id, id, CleanupLevel.Safe, new List<string> { template }, "Test",
+        DeletesContentsNotDirectory: true);
 
     [Fact]
     public void ResolvesItemsWithSizes()
@@ -83,6 +88,46 @@ public sealed class ScannerTests : IDisposable
         var t = result.Targets.Single();
         Assert.Null(t.SkippedReason);
         Assert.Equal(42, t.TotalBytes);
+    }
+
+    [Fact]
+    public void ContentsOnlyTarget_EmitsChildrenNotTheDirectory()
+    {
+        var dir = Path.Combine(_root, "usertemp");
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "a.tmp"), new byte[10]);
+        File.WriteAllBytes(Path.Combine(dir, "b.tmp"), new byte[20]);
+        var subdir = Path.Combine(dir, "subdir");
+        Directory.CreateDirectory(subdir);
+        File.WriteAllBytes(Path.Combine(subdir, "c.tmp"), new byte[30]);
+
+        var result = new Scanner(new[] { ContentsOnlyTarget("t-contents", dir) }, _processes).Scan();
+        var t = result.Targets.Single();
+
+        Assert.Null(t.SkippedReason);
+        Assert.Equal(3, t.Items.Count);
+        Assert.All(t.Items, item => Assert.NotEqual(dir, item.Path, StringComparer.OrdinalIgnoreCase));
+        Assert.Equal(60, t.TotalBytes);
+    }
+
+    [Fact]
+    public void ContentsOnlyItems_PassTheValidator()
+    {
+        var dir = Path.Combine(_root, "usertemp2");
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "a.tmp"), new byte[10]);
+
+        var target = ContentsOnlyTarget("t-contents2", dir);
+        var result = new Scanner(new[] { target }, _processes).Scan();
+        var t = result.Targets.Single();
+        Assert.NotEmpty(t.Items);
+
+        var validator = new SafetyValidator();
+        foreach (var item in t.Items)
+        {
+            var authorization = validator.Authorize(item.Path, target);
+            Assert.True(authorization.Allowed, $"'{item.Path}' should be allowed: {authorization.Reason}");
+        }
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
