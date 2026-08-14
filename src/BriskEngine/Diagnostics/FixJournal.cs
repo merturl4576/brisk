@@ -43,6 +43,22 @@ public sealed class FixJournal
     {
         if (!File.Exists(_path)) yield break;
         foreach (var line in File.ReadAllLines(_path))
-            if (JsonSerializer.Deserialize<Entry>(line) is { } e) yield return e;
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            var entry = TryDeserializeEntry(line);
+            if (entry is not null) yield return entry;
+        }
+    }
+
+    private Entry? TryDeserializeEntry(string line)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<Entry>(line);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
     }
 }

@@ -35,5 +35,23 @@ public sealed class FixJournalTests : IDisposable
         Assert.Null(Journal().LastUndoablePriorState("nope"));
     }
 
+    [Fact]
+    public void CorruptLine_IsSkipped()
+    {
+        var path = Path.Combine(_root, "fix-journal.jsonl");
+        var j = new FixJournal(path);
+        j.RecordFix("r", "first");
+
+        // Append corrupt and blank lines directly
+        File.AppendAllText(path, "not-json{{{\n");
+        File.AppendAllText(path, "\n");
+        File.AppendAllText(path, "   \n");
+
+        j.RecordFix("r", "second");
+
+        // Should return the second entry's prior state without throwing
+        Assert.Equal("second", j.LastUndoablePriorState("r"));
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }

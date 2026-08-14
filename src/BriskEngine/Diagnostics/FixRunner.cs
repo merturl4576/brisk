@@ -36,11 +36,11 @@ public sealed class FixRunner
 
     public FixOutcome Undo(IDiagnosticRule rule, DiagnosticContext ctx)
     {
-        var prior = _journal.LastUndoablePriorState(rule.Id);
-        if (prior is null)
-            return new FixOutcome(false, $"{rule.Id}: nothing to undo");
         try
         {
+            var prior = _journal.LastUndoablePriorState(rule.Id);
+            if (prior is null)
+                return new FixOutcome(false, $"{rule.Id}: nothing to undo");
             rule.Undo(ctx, prior);
             _journal.RecordUndo(rule.Id);
             _log.Append(new { ts = DateTime.UtcNow, ruleId = rule.Id, action = "undo" });

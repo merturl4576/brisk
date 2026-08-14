@@ -60,5 +60,25 @@ public sealed class FixRunnerTests : IDisposable
         Assert.False(Runner().Apply(new AdviseRule(), _ctx).Ok);
     }
 
+    [Fact]
+    public void Undo_WithCorruptJournal_ReturnsFailedOutcome_NotThrow()
+    {
+        var journalPath = Path.Combine(_root, "corrupt.jsonl");
+        // Write only garbage lines
+        File.WriteAllText(journalPath, "not-json{{{\n");
+        File.AppendAllText(journalPath, "{invalid json\n");
+        File.AppendAllText(journalPath, "\n");
+
+        var runner = new FixRunner(
+            new FixJournal(journalPath),
+            new ActionLog(Path.Combine(_root, "log.jsonl")));
+
+        var rule = new ToggleRule();
+        // Should not throw, should return failed outcome
+        var outcome = runner.Undo(rule, _ctx);
+        Assert.False(outcome.Ok);
+        Assert.Contains("nothing to undo", outcome.Message);
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }
