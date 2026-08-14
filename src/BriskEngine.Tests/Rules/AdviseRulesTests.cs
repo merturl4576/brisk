@@ -39,6 +39,19 @@ public class AdviseRulesTests
     }
 
     [Fact]
+    public void DiskBreakdown_DistinguishesLocalFromRoaming()
+    {
+        var ctx = TestContext.Empty();
+        var files = (FakeFiles)ctx.Files;
+        files.Sizes[PathExpander.Expand("%LOCALAPPDATA%")!] = 71L << 30;
+        files.Sizes[PathExpander.Expand("%APPDATA%")!] = 25L << 30;
+        var finding = new DiskBreakdownRule().Detect(ctx);
+        Assert.NotNull(finding);
+        Assert.Contains("AppData\\Local", finding!.Evidence);
+        Assert.Contains("AppData\\Roaming", finding!.Evidence);
+    }
+
+    [Fact]
     public void OrphanedData_UninstalledDocker_WithBigData_Finds()
     {
         var ctx = TestContext.Empty();

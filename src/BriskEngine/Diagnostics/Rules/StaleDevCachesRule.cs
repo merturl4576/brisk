@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using BriskEngine.Cleaning;
 using BriskEngine.Models;
 using BriskEngine.Paths;

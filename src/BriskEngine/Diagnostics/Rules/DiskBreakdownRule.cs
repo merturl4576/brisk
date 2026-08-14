@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using BriskEngine.Models;
 using BriskEngine.Paths;
 
@@ -12,13 +11,21 @@ public sealed class DiskBreakdownRule : AdviseRuleBase
 
     public override DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
-        var folders = new List<(string Label, string Path, long ThresholdBytes)>
-        {
-            ("AppData", PathExpander.Expand("%LOCALAPPDATA%")!, 50L << 30),
-            ("AppData", PathExpander.Expand("%APPDATA%")!, 20L << 30),
-            ("Desktop", Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), 10L << 30),
-            ("Downloads", PathExpander.Expand(@"%USERPROFILE%\Downloads")!, 10L << 30),
-        };
+        var folders = new List<(string Label, string Path, long ThresholdBytes)>();
+
+        var localAppData = PathExpander.Expand("%LOCALAPPDATA%");
+        if (localAppData != null)
+            folders.Add(("AppData\\Local", localAppData, 50L << 30));
+
+        var appData = PathExpander.Expand("%APPDATA%");
+        if (appData != null)
+            folders.Add(("AppData\\Roaming", appData, 20L << 30));
+
+        folders.Add(("Desktop", Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), 10L << 30));
+
+        var downloads = PathExpander.Expand(@"%USERPROFILE%\Downloads");
+        if (downloads != null)
+            folders.Add(("Downloads", downloads, 10L << 30));
 
         var evidence = new List<string>();
         var hasOverage = false;

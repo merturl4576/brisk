@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using BriskEngine.Models;
 using BriskEngine.Paths;
 
@@ -12,18 +11,21 @@ public sealed class OrphanedDataRule : AdviseRuleBase
 
     public override DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
-        var tools = new List<(string Name, string DataDir)>
+        var toolDefinitions = new[]
         {
-            ("Docker Desktop", PathExpander.Expand(@"%LOCALAPPDATA%\Docker")!),
-            ("BlueStacks", PathExpander.Expand(@"%ProgramData%\BlueStacks_nxt")!),
-            ("Unity", PathExpander.Expand(@"%LOCALAPPDATA%\Unity")!),
-            ("JetBrains", PathExpander.Expand(@"%LOCALAPPDATA%\JetBrains")!),
+            ("Docker Desktop", @"%LOCALAPPDATA%\Docker"),
+            ("BlueStacks", @"%ProgramData%\BlueStacks_nxt"),
+            ("Unity", @"%LOCALAPPDATA%\Unity"),
+            ("JetBrains", @"%LOCALAPPDATA%\JetBrains"),
         };
 
         var orphans = new List<string>();
 
-        foreach (var (name, dataDir) in tools)
+        foreach (var (name, templatePath) in toolDefinitions)
         {
+            var dataDir = PathExpander.Expand(templatePath);
+            if (dataDir == null) continue;
+
             if (IsInstalled(ctx, name)) continue;
 
             var size = ctx.Files.DirectorySizeBytes(dataDir);
