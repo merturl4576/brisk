@@ -116,7 +116,7 @@ public static class Program
         return 0;
     }
 
-    private static int Fix(CliCommand cmd, DiagnosticContext ctx, FixRunner fixRunner)
+    public static int Fix(CliCommand cmd, DiagnosticContext ctx, FixRunner fixRunner)
     {
         if (cmd.Undo)
         {
@@ -130,6 +130,11 @@ public static class Program
             {
                 Console.Error.WriteLine($"brisk: unknown rule '{cmd.RuleId}'");
                 return 2;
+            }
+            if (!cmd.Yes)
+            {
+                Console.WriteLine($"would undo: {rule.Id} (add --yes to apply)");
+                return 0;
             }
             var outcome = fixRunner.Undo(rule, ctx);
             Console.WriteLine(outcome.Message);
@@ -162,18 +167,16 @@ public static class Program
                 Console.Error.WriteLine($"brisk: unknown rule '{cmd.RuleId}'");
                 return 2;
             }
+            var finding = Safe(() => rule.Detect(ctx));
+            if (finding is null)
+            {
+                Console.WriteLine($"{rule.Id}: no live finding — nothing to fix");
+                return 0;
+            }
             if (!cmd.Yes)
             {
-                var finding = Safe(() => rule.Detect(ctx));
-                if (finding is not null)
-                {
-                    Console.WriteLine($"[{rule.Id}] {finding.Title}");
-                    Console.WriteLine($"    {finding.Evidence}");
-                }
-                else
-                {
-                    Console.WriteLine($"{rule.Id}: no finding");
-                }
+                Console.WriteLine($"[{rule.Id}] {finding.Title}");
+                Console.WriteLine($"    {finding.Evidence}");
                 Console.WriteLine("add --yes to apply");
                 return 0;
             }
