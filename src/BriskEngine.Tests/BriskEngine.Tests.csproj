@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BriskEngine\BriskEngine.csproj" />
+    <ProjectReference Include="..\Brisk.Cli\Brisk.Cli.csproj" />
   </ItemGroup>
 
 </Project>

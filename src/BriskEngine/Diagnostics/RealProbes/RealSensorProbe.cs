@@ -4,7 +4,7 @@ using LibreHardwareMonitor.Hardware;
 
 namespace BriskEngine.Diagnostics.RealProbes;
 
-public sealed class RealSensorProbe : ISensorProbe
+public sealed class RealSensorProbe : ISensorProbe, IDisposable
 {
     private readonly Computer _computer;
 
@@ -18,6 +18,18 @@ public sealed class RealSensorProbe : ISensorProbe
         catch
         {
             // sensors unavailable (no admin / unsupported hardware) — CpuTempC/GpuTempC will return null
+        }
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            _computer.Close();
+        }
+        catch
+        {
+            // best-effort: never let teardown crash the process
         }
     }
 
