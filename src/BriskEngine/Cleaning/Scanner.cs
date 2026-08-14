@@ -41,16 +41,21 @@ public sealed class Scanner
         foreach (var template in target.PathTemplates)
         foreach (var path in TemplateResolver.Resolve(template))
         {
-            ct.ThrowIfCancellationRequested();
-            DateTime? lastWrite = null;
-            try { lastWrite = File.GetLastWriteTimeUtc(path); } catch { }
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+                DateTime? lastWrite = null;
+                try { lastWrite = File.GetLastWriteTimeUtc(path); } catch { }
 
-            if (target.Id == "old-installers" &&
-                (lastWrite is null ||
-                 lastWrite > DateTime.UtcNow.AddDays(-OldInstallerMinAgeDays)))
-                continue;
+                if (target.Id == "old-installers" &&
+                    (lastWrite is null ||
+                     lastWrite > DateTime.UtcNow.AddDays(-OldInstallerMinAgeDays)))
+                    continue;
 
-            items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct), lastWrite));
+                items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct), lastWrite));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { }  // Skip this path on any other exception
         }
         return new TargetScanResult(target, items, null);
     }

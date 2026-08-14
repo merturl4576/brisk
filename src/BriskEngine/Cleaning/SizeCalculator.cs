@@ -11,7 +11,19 @@ public static class SizeCalculator
     /// what it points to).
     public static long SizeOf(string path, CancellationToken ct = default)
     {
-        if (File.Exists(path)) return new FileInfo(path).Length;
+        // Check the path's own attributes first — if it's a reparse point, never traverse it
+        try
+        {
+            var attrs = File.GetAttributes(path);
+            if ((attrs & FileAttributes.ReparsePoint) != 0) return 0;
+        }
+        catch { return 0; }
+
+        if (File.Exists(path))
+        {
+            try { return new FileInfo(path).Length; }
+            catch { return 0; }
+        }
         if (!Directory.Exists(path)) return 0;
         return SizeOfDirectory(new DirectoryInfo(path), ct);
     }

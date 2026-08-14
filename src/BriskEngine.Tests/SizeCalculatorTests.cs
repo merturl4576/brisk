@@ -41,5 +41,19 @@ public sealed class SizeCalculatorTests : IDisposable
         Assert.Equal(10, SizeCalculator.SizeOf(scanned));
     }
 
+    [Fact]
+    public void RootThatIsAJunction_IsNotTraversed()
+    {
+        var big = Path.Combine(_root, "big");
+        Directory.CreateDirectory(big);
+        File.WriteAllBytes(Path.Combine(big, "big.bin"), new byte[1000]);
+        var link = Path.Combine(_root, "link");
+        var p = Process.Start(new ProcessStartInfo("cmd.exe",
+            $"/c mklink /J \"{link}\" \"{big}\"")
+        { CreateNoWindow = true, UseShellExecute = false })!;
+        p.WaitForExit();
+        Assert.Equal(0, SizeCalculator.SizeOf(link));
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }

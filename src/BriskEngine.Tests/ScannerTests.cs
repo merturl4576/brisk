@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using BriskEngine.Cleaning;
@@ -64,6 +65,30 @@ public sealed class ScannerTests : IDisposable
         var result = new Scanner(new[] { target }, _processes).Scan();
         var item = result.Targets.Single().Items.Single();
         Assert.EndsWith("old-setup.exe", item.Path);
+    }
+
+    [Fact]
+    public void VanishedFile_DoesNotKillScan()
+    {
+        var testdir = Path.Combine(_root, "testdir");
+        Directory.CreateDirectory(testdir);
+        File.WriteAllBytes(Path.Combine(testdir, "good.bin"), new byte[42]);
+
+        // Create a dangling junction: point to a directory, then delete it
+        var tempdir = Path.Combine(_root, "tempdir");
+        Directory.CreateDirectory(tempdir);
+        var junction = Path.Combine(testdir, "dangling");
+        var p = Process.Start(new ProcessStartInfo("cmd.exe",
+            $"/c mklink /J \"{junction}\" \"{tempdir}\"")
+        { CreateNoWindow = true, UseShellExecute = false })!;
+        p.WaitForExit();
+        Directory.Delete(tempdir);
+
+        // Scan should complete without throwing, counting only the good file
+        var result = new Scanner(new[] { Target("t1", testdir) }, _processes).Scan();
+        var t = result.Targets.Single();
+        Assert.Null(t.SkippedReason);
+        Assert.Equal(42, t.TotalBytes);
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
