@@ -50,4 +50,26 @@ public class HardwareAccelerationRuleTests
         rule.Undo(ctx, prior);
         Assert.Contains("\"enabled\":false", files.Texts[ChromeLocalState].Replace(" ", ""));
     }
+
+    [Fact]
+    public void Fix_MixedOffenders_OneRunning_WritesNothing()
+    {
+        var edgeLocalState = PathExpander.Expand(@"%LOCALAPPDATA%\Microsoft\Edge\User Data\Local State")!;
+        var ctx = TestContext.Empty();
+        var files = (FakeFiles)ctx.Files;
+        var apps = (FakeRunningApps)ctx.RunningApps;
+
+        // Both Chrome and Edge have disabled acceleration
+        files.Texts[ChromeLocalState] = """{"hardware_acceleration_mode":{"enabled":false}}""";
+        files.Texts[edgeLocalState] = """{"hardware_acceleration_mode":{"enabled":false}}""";
+
+        // Only Edge is running
+        apps.Running.Add("msedge");
+
+        // Fix should throw before writing anything
+        Assert.Throws<System.InvalidOperationException>(() => new HardwareAccelerationRule().Fix(ctx));
+
+        // Verify Chrome file was NOT modified (still contains "enabled":false)
+        Assert.Contains("\"enabled\":false", files.Texts[ChromeLocalState].Replace(" ", ""));
+    }
 }

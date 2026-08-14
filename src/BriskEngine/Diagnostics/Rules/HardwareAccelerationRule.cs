@@ -53,11 +53,20 @@ public sealed class HardwareAccelerationRule : IDiagnosticRule
 
     public string Fix(DiagnosticContext ctx)
     {
+        var offenders = Offenders(ctx);
+
+        // Validate-then-write: check ALL browsers closed before any write
+        var running = offenders
+            .Where(o => ctx.RunningApps.IsRunning(o.Process))
+            .Select(o => o.Process)
+            .ToList();
+        if (running.Count > 0)
+            throw new InvalidOperationException($"Close {string.Join(", ", running)} first, then retry the fix.");
+
+        // All validated; now write
         var prior = new Dictionary<string, bool>();
-        foreach (var (process, path) in Offenders(ctx))
+        foreach (var (process, path) in offenders)
         {
-            if (ctx.RunningApps.IsRunning(process))
-                throw new InvalidOperationException($"Close {process} first, then retry the fix.");
             var node = JsonNode.Parse(ctx.Files.ReadAllText(path)!)!;
             prior[path] = false;
             node["hardware_acceleration_mode"]!["enabled"] = true;
