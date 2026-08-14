@@ -8,7 +8,7 @@ using BriskEngine.Safety;
 
 namespace BriskEngine.Cleaning;
 
-public sealed record CleanEntry(string TargetId, string Path, long Bytes, string Action);
+public sealed record CleanEntry(string TargetId, string Path, long Bytes, string Action, string? Reason = null);
 
 public sealed record CleanReport(IReadOnlyList<CleanEntry> Entries)
 {
@@ -41,25 +41,34 @@ public sealed class CleanRunner
     public CleanReport Clean(TargetScanResult scan, bool dryRun)
     {
         var entries = new List<CleanEntry>();
-        void Record(string path, long bytes, string action)
+        void Record(string path, long bytes, string action, string? reason = null)
         {
-            var entry = new CleanEntry(scan.Target.Id, path, bytes, action);
+            var entry = new CleanEntry(scan.Target.Id, path, bytes, action, reason);
             entries.Add(entry);
-            _log.Append(new { ts = DateTime.UtcNow, targetId = entry.TargetId,
-                path = entry.Path, bytes = entry.Bytes, action = entry.Action });
+            var logObj = new { ts = DateTime.UtcNow, targetId = entry.TargetId,
+                path = entry.Path, bytes = entry.Bytes, action = entry.Action, reason = entry.Reason };
+            _log.Append(logObj);
         }
 
         switch (scan.Target.Id)
         {
             case "docker-prune":
-                if (!dryRun)
+                if (dryRun)
+                {
+                    Record("(docker)", 0, "dry-run");
+                }
+                else
                 {
                     _processRunner.Run("docker", "system prune -af");
                     Record("(docker)", 0, "external");
                 }
                 return new CleanReport(entries);
             case "empty-recycle-bin":
-                if (!dryRun)
+                if (dryRun)
+                {
+                    Record("(recycle bin)", 0, "dry-run");
+                }
+                else
                 {
                     SHEmptyRecycleBinW(IntPtr.Zero, null, SHERB_SILENT);
                     Record("(recycle bin)", 0, "external");
@@ -70,10 +79,10 @@ public sealed class CleanRunner
         var blockedByElevation = scan.Target.RequiresElevation && !_isElevated();
         foreach (var item in scan.Items)
         {
-            if (blockedByElevation) { Record(item.Path, 0, "refused"); continue; }
+            if (blockedByElevation) { Record(item.Path, 0, "refused", "requires administrator"); continue; }
 
             var auth = _validator.Authorize(item.Path, scan.Target);
-            if (!auth.Allowed) { Record(item.Path, 0, "refused"); continue; }
+            if (!auth.Allowed) { Record(item.Path, 0, "refused", auth.Reason); continue; }
             if (dryRun) { Record(item.Path, item.Bytes, "dry-run"); continue; }
 
             try
@@ -81,9 +90,9 @@ public sealed class CleanRunner
                 _recycler.Recycle(item.Path);
                 Record(item.Path, item.Bytes, "recycled");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Record(item.Path, 0, "error"); // one bad file never stops the run
+                Record(item.Path, 0, "error", ex.Message); // one bad file never stops the run
             }
         }
         return new CleanReport(entries);

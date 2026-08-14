@@ -13,7 +13,16 @@ namespace BriskEngine.Tests;
 sealed class FakeRecycler : IRecycler
 {
     public List<string> Recycled { get; } = new();
-    public void Recycle(string path) => Recycled.Add(path);
+    public int CallCount { get; private set; }
+    public int ThrowUntilCall { get; set; } = -1; // -1 = never throw
+
+    public void Recycle(string path)
+    {
+        CallCount++;
+        if (ThrowUntilCall >= 0 && CallCount <= ThrowUntilCall)
+            throw new IOException("Fake recycler error");
+        Recycled.Add(path);
+    }
 }
 
 sealed class FakeRunner : IProcessRunner
@@ -111,6 +120,38 @@ public sealed class CleanRunnerTests : IDisposable
         var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
         Runner().Clean(scan, dryRun: false);
         Assert.Contains("docker system prune -af", _runner.Commands);
+    }
+
+    [Fact]
+    public void RecyclerThrow_RecordsError_AndContinues()
+    {
+        var (_, scan) = ScanOver(Path.Combine(_root, "cache4"), "a.tmp", "b.tmp");
+        _recycler.ThrowUntilCall = 1; // throw on first call only
+        var report = Runner().Clean(scan, dryRun: false);
+
+        Assert.Equal(2, report.Entries.Count);
+        var errorEntry = report.Entries.First(e => e.Action == "error");
+        var recycledEntry = report.Entries.First(e => e.Action == "recycled");
+
+        Assert.NotNull(errorEntry.Reason);
+        Assert.NotEmpty(errorEntry.Reason);
+        Assert.Single(_recycler.Recycled); // only second file was recycled
+
+        var logLines = File.ReadAllLines(_logPath);
+        Assert.Equal(2, logLines.Length);
+    }
+
+    [Fact]
+    public void DryRun_ExternalTarget_IsVisible()
+    {
+        var target = new CleanupTarget("docker-prune", "Docker", CleanupLevel.Developer,
+            new List<string>(), "Container", RequiresExplicitOptIn: true);
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var report = Runner().Clean(scan, dryRun: true);
+
+        Assert.Single(report.Entries);
+        Assert.Equal("dry-run", report.Entries.Single().Action);
+        Assert.Empty(_runner.Commands); // no docker command executed
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
