@@ -1,5 +1,0 @@
-﻿  Geri yüklenecek projeler belirleniyor...
-  Geri yükleme için tüm projeler güncel.
-  BriskEngine -> C:\Users\MERT\Desktop\brisk\src\BriskEngine\bin\Debug\net8.0-windows\BriskEngine.dll
-C:\Users\MERT\Desktop\brisk\src\BriskEngine.Tests\SafetyValidatorTests.cs(6,19): error CS0234: 'Safety' tür veya ad alanı adı 'BriskEngine' ad alanında yok (bir derleme başvurunuz mu eksik?) [C:\Users\MERT\Desktop\brisk\src\BriskEngine.Tests\BriskEngine.Tests.csproj]
-C:\Users\MERT\Desktop\brisk\src\BriskEngine.Tests\SafetyValidatorTests.cs(14,22): error CS0246: 'SafetyValidator' türü veya ad alanı adı bulunamadı (bir using yönergeniz veya derleme başvurunuz mu eksik?) [C:\Users\MERT\Desktop\brisk\src\BriskEngine.Tests\BriskEngine.Tests.csproj]

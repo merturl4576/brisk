@@ -27,12 +27,9 @@ public sealed class SafetyValidator
             return AuthorizationResult.Deny($"'{pathReal}' is inside a protected folder");
 
         foreach (var template in target.PathTemplates)
+        foreach (var concrete in TemplateResolver.Resolve(template))
         {
-            var expanded = PathExpander.Expand(template);
-            if (expanded is null) continue;
-
-            // Templates must also be verifiable; skip if unresolvable
-            if (!RealPath.TryResolve(expanded, out var templateReal)) continue;
+            if (!RealPath.TryResolve(concrete, out var templateReal)) continue;
 
             var isTemplateItself = string.Equals(pathReal, templateReal,
                 StringComparison.OrdinalIgnoreCase);
