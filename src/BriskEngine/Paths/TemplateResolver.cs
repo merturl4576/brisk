@@ -27,6 +27,9 @@ public static class TemplateResolver
         var sepBefore = path.LastIndexOf('\\', star);
         var sepAfter = path.IndexOf('\\', star);
         var parent = path[..sepBefore];
+        // Normalize drive-relative paths (e.g., "C:" -> "C:\") to fix enumeration
+        if (parent.Length == 2 && parent[1] == ':')
+            parent = parent + "\\";
         var pattern = sepAfter < 0 ? path[(sepBefore + 1)..] : path[(sepBefore + 1)..sepAfter];
         var rest = sepAfter < 0 ? null : path[(sepAfter + 1)..];
         if (!Directory.Exists(parent)) return Array.Empty<string>();

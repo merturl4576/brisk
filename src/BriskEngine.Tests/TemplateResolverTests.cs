@@ -44,6 +44,40 @@ public sealed class TemplateResolverTests : IDisposable
         Assert.Equal(2, result.Count);
     }
 
+    [Fact]
+    public void DriveRootAdjacentWildcard_EnumeratesTheActualRoot()
+    {
+        // Regression test for drive-relative path bug: C:\*\foo where parent="C:"
+        // Old code: Directory.Exists("C:") is true (current dir on C:), enumerates wrong dir
+        // New code: normalizes "C:" to "C:\" before enumeration
+        // This test sets up a temp dir that would have matched the buggy code,
+        // but should NOT match the fixed code when querying the actual root.
+
+        var origDir = Directory.GetCurrentDirectory();
+        var tempBase = Directory.CreateTempSubdirectory("brisk-drive-test-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(tempBase, "a", "brisk-definitely-not-a-real-dir-xyz"));
+
+            // Change to temp base; now "current directory on C:" == tempBase (if on C:)
+            Directory.SetCurrentDirectory(tempBase);
+
+            // Query pattern that matches our temp structure, but targets the actual root
+            var driveRoot = Path.GetPathRoot(_root) ?? "C:\\";
+            var pattern = Path.Combine(driveRoot, "*", "brisk-definitely-not-a-real-dir-xyz");
+
+            // Fixed code: returns empty (pattern doesn't match actual root)
+            // Buggy code: would return entries from the current directory
+            var result = TemplateResolver.Resolve(pattern);
+            Assert.Empty(result);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(origDir);
+            try { Directory.Delete(tempBase, recursive: true); } catch { /* best effort */ }
+        }
+    }
+
     public void Dispose()
     {
         try { Directory.Delete(_root, recursive: true); } catch { }
