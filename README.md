@@ -6,6 +6,8 @@ brisk scans a Windows PC, explains why it is slow with evidence, fixes findings 
 
 Pre-release. Engine + CLI working; GUI, packaging and docs are coming. Windows 10 1809+ / Windows 11, x64.
 
+Cleaned items are moved to the Recycle Bin (nothing is permanently deleted); empty the bin yourself to reclaim the space — automatic purge with an undo window arrives with the GUI.
+
 ## Try it
 
 ```

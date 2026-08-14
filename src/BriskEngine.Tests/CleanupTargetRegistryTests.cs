@@ -48,6 +48,22 @@ public class CleanupTargetRegistryTests
     }
 
     [Fact]
+    public void NoTemplate_IsTheUserProfileRootItself()
+    {
+        var profileRoot = Path.GetFullPath(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        foreach (var t in CleanupTargetRegistry.All)
+        foreach (var template in t.PathTemplates)
+        {
+            var expanded = PathExpander.Expand(template);
+            if (expanded is null) continue; // env var absent on this machine
+            var probe = expanded.Split('*')[0].TrimEnd('\\');
+            Assert.NotEqual(profileRoot, Path.GetFullPath(probe),
+                StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public void SafeLevel_NeverRequiresElevation()
     {
         foreach (var t in CleanupTargetRegistry.All.Where(t => t.Level == CleanupLevel.Safe))

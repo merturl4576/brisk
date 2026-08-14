@@ -77,6 +77,20 @@ public class AdviseRulesTests
     }
 
     [Fact]
+    public void OrphanedData_InstalledOnlyUnderHkcuUninstall_Null()
+    {
+        var ctx = TestContext.Empty();
+        var reg = (FakeRegistry)ctx.Registry;
+        var files = (FakeFiles)ctx.Files;
+        files.Sizes[PathExpander.Expand(@"%LOCALAPPDATA%\JetBrains")!] = 3L << 30;
+        // Per-user install (e.g. JetBrains Toolbox) — only the HKCU uninstall hive has it.
+        const string uninstall = @"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
+        reg.SubKeys[uninstall] = new() { "JetBrains" };
+        reg.SetString($@"{uninstall}\JetBrains", "DisplayName", "JetBrains Toolbox");
+        Assert.Null(new OrphanedDataRule().Detect(ctx));
+    }
+
+    [Fact]
     public void StaleDevCaches_OldBigNpmCache_Finds()
     {
         var ctx = TestContext.Empty();

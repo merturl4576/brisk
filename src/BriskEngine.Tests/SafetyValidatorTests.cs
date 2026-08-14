@@ -75,6 +75,15 @@ public sealed class SafetyValidatorTests : IDisposable
     }
 
     [Fact]
+    public void UserProfileRootItself_Denied()
+    {
+        var profileRoot = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var result = _validator.Authorize(profileRoot, TargetOver(profileRoot));
+        Assert.False(result.Allowed);
+        Assert.Contains("protected", result.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ContentsOnlyTarget_TemplateItselfDenied_ChildAllowed()
     {
         var template = Path.Combine(_root, "cache2");

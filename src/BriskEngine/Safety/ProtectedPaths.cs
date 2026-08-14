@@ -29,6 +29,12 @@ public static class ProtectedPaths
 
     public static bool IsProtected(string realPath)
     {
+        // The user profile root itself (e.g. C:\Users\alice) is protected by equality only —
+        // a prefix check here would block every legitimate cleanup target, since almost
+        // everything brisk cleans lives under the profile root.
+        var profileRoot = RealPath.Resolve(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        if (string.Equals(realPath, profileRoot, StringComparison.OrdinalIgnoreCase)) return true;
+
         foreach (var root in Roots())
         {
             var rootReal = RealPath.Resolve(root);

@@ -143,6 +143,7 @@ public static class Program
 
         if (cmd.All)
         {
+            var anyFailed = false;
             foreach (var rule in DiagnosticRuleRegistry.All.Where(r => r.Category == RuleCategory.Auto))
             {
                 var finding = Safe(() => rule.Detect(ctx));
@@ -155,8 +156,9 @@ public static class Program
                 }
                 var outcome = fixRunner.Apply(rule, ctx);
                 Console.WriteLine(outcome.Message);
+                if (!outcome.Ok) anyFailed = true;
             }
-            return 0;
+            return anyFailed ? 1 : 0;
         }
 
         if (cmd.RuleId is not null)
@@ -237,6 +239,7 @@ public static class Program
 
         long recycledBytes = 0;
         int recycledCount = 0;
+        var anyErrors = false;
         foreach (var t in selected)
         {
             if (t.SkippedReason is not null)
@@ -255,11 +258,12 @@ public static class Program
                 else if (entry.Action is "refused" or "error")
                 {
                     Console.WriteLine($"  {entry.Action}: {entry.Path} — {entry.Reason}");
+                    if (entry.Action == "error") anyErrors = true;
                 }
             }
         }
         Console.WriteLine($"recycled: {recycledCount} items, {Fmt.Bytes(recycledBytes)}");
-        return 0;
+        return anyErrors ? 1 : 0;
     }
 
     private static int PrintTargets()

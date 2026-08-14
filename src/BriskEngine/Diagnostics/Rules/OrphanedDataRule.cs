@@ -50,6 +50,7 @@ public sealed class OrphanedDataRule : AdviseRuleBase
         {
             @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
             @"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+            @"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
         };
 
         foreach (var uninstallPath in uninstallPaths)
