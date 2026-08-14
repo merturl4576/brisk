@@ -9,16 +9,10 @@ using Xunit;
 
 namespace BriskEngine.Tests;
 
-sealed class FakeProcesses : IProcessLister
-{
-    public HashSet<string> Running { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public bool IsRunning(string processName) => Running.Contains(processName);
-}
-
 public sealed class ScannerTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-scan-").FullName;
-    private readonly FakeProcesses _processes = new();
+    private readonly FakeRunningApps _processes = new();
 
     private CleanupTarget Target(string id, string template, string? app = null,
         bool pick = false) => new(

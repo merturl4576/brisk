@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 
 namespace BriskEngine.Tests;
@@ -68,10 +69,35 @@ public sealed class FakeDisk : IDiskInfoProbe
     public long TotalBytes(string driveRoot) => Total;
 }
 
+public sealed class FakeFiles : IFileProbe
+{
+    public Dictionary<string, string> Texts = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, List<string>> FileLists = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, long> Sizes = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, DateTime?> NewestWrites = new(StringComparer.OrdinalIgnoreCase);
+
+    public bool FileExists(string path) => Texts.ContainsKey(path);
+    public string? ReadAllText(string path) =>
+        Texts.TryGetValue(path, out var text) ? text : null;
+    public void WriteAllText(string path, string content) => Texts[path] = content;
+    public IReadOnlyList<string> ListFiles(string directory) =>
+        FileLists.TryGetValue(directory, out var files) ? files : new List<string>();
+    public long DirectorySizeBytes(string path) =>
+        Sizes.TryGetValue(path, out var size) ? size : 0;
+    public DateTime? NewestWriteUtc(string path, int limit = 1500) =>
+        NewestWrites.TryGetValue(path, out var dt) ? dt : null;
+}
+
+public sealed class FakeRunningApps : IProcessLister
+{
+    public HashSet<string> Running { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool IsRunning(string processName) => Running.Contains(processName);
+}
+
 public static class TestContext
 {
     public static DiagnosticContext Empty(string? dataDir = null) => new(
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
-        new FakeSensors(), new FakeDisk(),
+        new FakeSensors(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
         dataDir ?? System.IO.Directory.CreateTempSubdirectory("brisk-ctx-").FullName);
 }
