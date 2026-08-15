@@ -163,18 +163,50 @@ name for detection), `requiresIndividualSelection`, `requiresExplicitOptIn`,
 
 ## UI / UX
 
-Main window app (the report needs room; dusty's narrow panel does not fit it)
-plus an optional tray icon showing free space (tooltip + open-window action).
+Decided 2026-08-15 with mockups (supersedes the earlier "main window app"
+sketch): brisk lives in the system tray the way dusty lives in the macOS menu
+bar. Three surfaces, one visual language — "panel is the face, window is the
+kitchen".
 
-- **Health tab:** health score, Scan button, findings as cards — severity,
-  evidence line ("Balanced plan is holding your i7 at 2.6 GHz; Turbo reaches
-  4.5"), impact stars, Fix / Undo buttons; **Fix all (safe)** on top.
-- **Clean tab:** dusty-style level sections with fold-open per-item
-  checkboxes, reclaimable total, Clean per level.
-- Custom WPF design system (own identity, defined at implementation time with
-  the design skills; light + dark).
+- **Tray icon** (present while the app runs): `b` glyph; tooltip shows free
+  space + health score; left-click opens the flyout; right-click menu (Open,
+  Scan, Exit). Implemented with the .NET Windows Desktop `NotifyIcon` (no
+  NuGet package).
+- **Flyout** (~300px wide, anchored above the tray, closes on focus loss like
+  the volume panel): health score, findings summary line ("3 findings · 2
+  one-click fixable"), reclaimable-space line, [Fix all (safe)] and [Clean]
+  buttons, last-scan time, "Open details →".
+- **Detail window** (~900×600): left nav **Health / Clean / Log / Settings**.
+  - Health: expandable finding rows — severity dot, evidence line ("Balanced
+    plan is holding your i7 at 2.6 GHz; Turbo reaches 4.5"), impact, Fix /
+    Undo per row; **Fix all (safe)** on top with a restore-point offer.
+  - Clean: dusty-style level sections with fold-open per-item checkboxes,
+    sizes shown before anything is removed, Clean per level, lifetime total.
+  - Log: action-log (JSONL) viewer + undo of journaled fixes.
+  - Settings: language (system/EN/TR), theme (system/light/dark), "Start with
+    Windows" (**default OFF** — a tool that criticizes startup bloat does not
+    put itself there), dry-run toggle.
+
+**Visual language — native panel material, not a "designed app":** solid
+dark/light surfaces matching the Windows 11 panel look, thin separators,
+compact rows, Segoe UI Variable, the user's real system accent color (read
+from the registry). Win11 DWM rounded corners + shadow; real acrylic blur is
+deferred past v1 (fragile across Windows builds). No cards, badges, gradients
+or marketing copy — the reference is the volume / quick-settings flyout.
+
 - Languages: English default, Turkish built-in (resx), follows OS with manual
-  override.
+  override. Theme: light + dark, follows OS with manual override.
+- No background work: no scheduled scans, no telemetry; closing the app exits
+  it fully. MVVM without a framework (hand-rolled `ViewModelBase`, no new
+  dependencies); view models unit-tested like the engine.
+
+### Engine additions for the GUI (Plan B)
+
+- Health score calculator: 0–100, weighted by finding severity × impact.
+- Scan progress events (per-rule / per-target) + cancellation.
+- Fix-journal query API: list undoable fixes for the Log page.
+- Post-undo-window purge of Safe-level recycled items (the README's promised
+  "automatic purge with an undo window").
 
 ## CLI
 
