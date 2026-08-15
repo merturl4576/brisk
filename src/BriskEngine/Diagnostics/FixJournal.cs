@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace BriskEngine.Diagnostics;
+
+public sealed record UndoableFix(string RuleId, System.DateTime FixedAtUtc);
 
 public sealed class FixJournal
 {
@@ -32,6 +35,20 @@ public sealed class FixJournal
             candidate = entry.Action == "fix" ? entry.PriorState : null;
         }
         return candidate;
+    }
+
+    public IReadOnlyList<UndoableFix> ListUndoable()
+    {
+        var last = new Dictionary<string, System.DateTime>();
+        foreach (var entry in ReadAll())
+        {
+            if (entry.Action == "fix" && entry.PriorState is not null)
+                last[entry.RuleId] = entry.Ts;
+            else if (entry.Action == "undo")
+                last.Remove(entry.RuleId);
+        }
+        return last.Select(kv => new UndoableFix(kv.Key, kv.Value))
+            .OrderByDescending(u => u.FixedAtUtc).ToList();
     }
 
     private void Append(Entry entry)
