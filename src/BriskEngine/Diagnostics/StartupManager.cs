@@ -56,7 +56,7 @@ public sealed class StartupManager
     /// Returns false when the hive denies the write (HKLM without elevation).
     public bool SetEnabled(string hive, string name, bool enabled)
     {
-        var approved = Hives.FirstOrDefault(h => h.Hive == hive).Approved;
+        var approved = Hives.FirstOrDefault(h => string.Equals(h.Hive, hive, StringComparison.OrdinalIgnoreCase)).Approved;
         if (approved is null) return false;
         try
         {
