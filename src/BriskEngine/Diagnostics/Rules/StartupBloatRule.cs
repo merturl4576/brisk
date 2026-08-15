@@ -9,32 +9,17 @@ namespace BriskEngine.Diagnostics.Rules;
 
 public sealed class StartupBloatRule : IDiagnosticRule
 {
-    public static readonly IReadOnlySet<string> KnownHeavy = new HashSet<string>(
-        new[] { "Steam", "Discord", "Spotify", "Docker Desktop", "EpicGamesLauncher",
-                "WhatsApp", "Teams", "BlueStacks", "WallpaperEngine" },
-        StringComparer.OrdinalIgnoreCase);
-
     private const int ManyThreshold = 6;
-    private static readonly (string Hive, string Run, string Approved)[] Hives =
-    {
-        ("HKCU", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
-                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
-        ("HKLM", @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
-                 @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
-    };
 
     public string Id => "startup-bloat";
     public RuleCategory Category => RuleCategory.Confirm;
 
     private sealed record Item(string Hive, string Name, string Approved);
 
-    private static bool IsHeavy(string name) => KnownHeavy.Any(h =>
-        name.Contains(h, StringComparison.OrdinalIgnoreCase));
-
     private static List<Item> EnabledItems(DiagnosticContext ctx)
     {
         var items = new List<Item>();
-        foreach (var (hive, run, approved) in Hives)
+        foreach (var (hive, run, approved) in StartupManager.Hives)
         foreach (var name in ctx.Registry.GetValueNames(run))
         {
             var bytes = ctx.Registry.GetBytes(approved, name);
@@ -57,7 +42,7 @@ public sealed class StartupBloatRule : IDiagnosticRule
     {
         var enabled = EnabledItems(ctx);
         var links = StartupFolderLinks(ctx);
-        var heavy = enabled.Where(i => IsHeavy(i.Name)).Select(i => i.Name).ToList();
+        var heavy = enabled.Where(i => StartupManager.IsHeavy(i.Name)).Select(i => i.Name).ToList();
         var total = enabled.Count + links.Count;
         if (heavy.Count == 0 && total < ManyThreshold) return null;
 
@@ -76,7 +61,7 @@ public sealed class StartupBloatRule : IDiagnosticRule
     {
         var prior = new Dictionary<string, string?>();
         var disabledBytes = new byte[] { 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        var heavyItems = EnabledItems(ctx).Where(i => IsHeavy(i.Name)).ToList();
+        var heavyItems = EnabledItems(ctx).Where(i => StartupManager.IsHeavy(i.Name)).ToList();
         foreach (var item in heavyItems)
         {
             try
