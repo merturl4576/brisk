@@ -15,3 +15,5 @@ public sealed record ScanResult(IReadOnlyList<TargetScanResult> Targets)
 {
     public long TotalBytes => Targets.Sum(t => t.TotalBytes);
 }
+
+public sealed record ScanProgress(int Completed, int Total, string TargetId);

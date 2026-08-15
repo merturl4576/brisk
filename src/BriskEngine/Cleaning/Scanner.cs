@@ -22,12 +22,19 @@ public sealed class Scanner
         _processes = processes;
     }
 
-    public ScanResult Scan(CancellationToken ct = default)
+    public ScanResult Scan(CancellationToken ct = default,
+        IProgress<ScanProgress>? progress = null)
     {
         var results = new TargetScanResult[_targets.Count];
+        var completed = 0;
         Parallel.For(0, _targets.Count,
             new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
-            i => results[i] = ScanTarget(_targets[i], ct));
+            i =>
+            {
+                results[i] = ScanTarget(_targets[i], ct);
+                var done = Interlocked.Increment(ref completed);
+                progress?.Report(new ScanProgress(done, _targets.Count, _targets[i].Id));
+            });
         return new ScanResult(results);
     }
 
