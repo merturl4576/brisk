@@ -37,7 +37,7 @@ public class HealthViewModelTests
         host.Undoable.Add(new UndoableFix("visual-effects", DateTime.UtcNow));
         var state = new AppState(host);
         return (new HealthViewModel(state, host, EnglishLoc(), isDryRun ?? (() => false),
-            new FixAllService(host)), host, state);
+            new FixAllService(host), morphPause: () => Task.CompletedTask), host, state);
     }
 
     [Fact]
@@ -347,7 +347,7 @@ public class HealthViewModelTests
         });
         var state = new AppState(host);
         var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
-            new FixAllService(host));
+            new FixAllService(host), morphPause: () => Task.CompletedTask);
         await state.ScanAsync();
 
         await vm.FixAllAsync();
@@ -411,7 +411,7 @@ public class HealthViewModelTests
         var host = new FailingFixHost(inner, "visual-effects");
         var state = new AppState(host);
         var vm = new HealthViewModel(state, host, loc, () => false,
-            new FixAllService(host));
+            new FixAllService(host), morphPause: () => Task.CompletedTask);
         await state.ScanAsync();
 
         await vm.FixAllAsync();

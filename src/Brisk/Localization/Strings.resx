@@ -48,6 +48,8 @@
   <data name="health.advise.section" xml:space="preserve"><value>Recommendations</value></data>
   <data name="finding.details" xml:space="preserve"><value>Details</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
+  <data name="finding.fixing" xml:space="preserve"><value>Fixing…</value></data>
+  <data name="finding.undoing" xml:space="preserve"><value>Undoing…</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>

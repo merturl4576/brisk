@@ -22,6 +22,9 @@ public sealed class FindingRow : ViewModelBase
 
     private bool _isExpanded;
     private bool _isDetailsShown;
+    private bool _isFixing;
+    private bool _isUndoing;
+    private bool _isFixed;
 
     public FindingRow(DiagnosticFinding finding, Loc loc, bool canUndo,
         Action<FindingRow> onFix, Action<FindingRow> onUndo,
@@ -29,6 +32,8 @@ public sealed class FindingRow : ViewModelBase
     {
         RuleId = finding.RuleId;
         Title = loc.Title(finding.TitleKey, finding.Title);
+        DoneTitle = DoneLabel.For(loc, finding.RuleId, finding.TitleKey,
+            finding.Title);
         Evidence = finding.Evidence;
         ImpactText = new string('●', finding.ImpactStars)
                    + new string('○', 5 - finding.ImpactStars);
@@ -61,6 +66,9 @@ public sealed class FindingRow : ViewModelBase
 
     public string RuleId { get; }
     public string Title { get; }
+    /// Past-tense outcome the title crossfades to when the row reaches its
+    /// Fixed state (same label the reports use).
+    public string DoneTitle { get; }
     public string Evidence { get; }
     public string AdviceText { get; }
     public string ImpactText { get; }
@@ -77,6 +85,31 @@ public sealed class FindingRow : ViewModelBase
         get => _isDetailsShown;
         set => Set(ref _isDetailsShown, value);
     }
+
+    /// Visual fix lifecycle: Normal → Fixing → Fixed, back to Normal on
+    /// failure. Undo keeps its own working flag so each button can wear its
+    /// own in-progress label; both share the row-level working pulse. The
+    /// view disables the action buttons off these flags (via triggers, not
+    /// CanExecute — fix-all publishes progress from a worker thread, and
+    /// scalar property changes are the only thing WPF marshals for free).
+    public bool IsFixing
+    {
+        get => _isFixing;
+        private set { if (Set(ref _isFixing, value)) Raise(nameof(IsWorking)); }
+    }
+    public bool IsUndoing
+    {
+        get => _isUndoing;
+        private set { if (Set(ref _isUndoing, value)) Raise(nameof(IsWorking)); }
+    }
+    public bool IsWorking => _isFixing || _isUndoing;
+    public bool IsFixed { get => _isFixed; private set => Set(ref _isFixed, value); }
+
+    public void BeginFix() => IsFixing = true;
+    public void CompleteFix(bool ok) { IsFixing = false; IsFixed = ok; }
+    public void BeginUndo() => IsUndoing = true;
+    public void CompleteUndo() => IsUndoing = false;
+
     public RelayCommand FixCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand OpenStorageCommand { get; }
@@ -91,15 +124,22 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly FixAllService _fixAll;
     private readonly Func<DiagnosticFinding, bool>? _filter;
     private readonly IReadOnlyList<string>? _optimizedRuleIds;
+    private readonly Func<Task> _morphPause;
     private string _scoreText = "—";
     private string _scoreBrushKey = "";
     private string _message = "";
     private bool _createRestorePointFirst;
     private bool _busy;
 
+    /// How long a row's Fixed morph gets to play before the follow-up rescan
+    /// may rebuild the list. Chosen approach: delay the rescan trigger (not
+    /// preserve rows across the rebuild) — the morph storyboard is 250 ms,
+    /// and the rescan itself takes far longer than this on a real machine.
+    internal const int FixedMorphMs = 400;
+
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
         FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null,
-        IReadOnlyList<string>? optimizedRuleIds = null)
+        IReadOnlyList<string>? optimizedRuleIds = null, Func<Task>? morphPause = null)
     {
         _state = state;
         _host = host;
@@ -108,6 +148,12 @@ public sealed class HealthViewModel : ViewModelBase
         _fixAll = fixAll;
         _filter = filter;
         _optimizedRuleIds = optimizedRuleIds;
+        _morphPause = morphPause ?? (() => Task.Delay(FixedMorphMs));
+        // Fix-all drives the same per-row states no matter which surface
+        // launched it (this page, the overview, or the flyout): the walk
+        // publishes per-rule progress and every page updates its own rows.
+        fixAll.FixingRule += f => RowFor(f.RuleId)?.BeginFix();
+        fixAll.FixedRule += (f, ok) => RowFor(f.RuleId)?.CompleteFix(ok);
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
         // Enabled only while fix-all would actually change something. The
@@ -172,6 +218,7 @@ public sealed class HealthViewModel : ViewModelBase
                 : result.Applied == result.Attempted
                     ? _loc.F("health.fixdone", result.Applied)
                     : _loc.F("health.fixpartial", result.Applied, result.Attempted);
+            if (result.Applied > 0) await _morphPause();
             await _state.ScanAsync();
         }
         finally
@@ -191,7 +238,18 @@ public sealed class HealthViewModel : ViewModelBase
                 Message = _loc["dryrun.blocked"];
                 return;
             }
-            Message = (await Task.Run(() => _host.Fix(row.RuleId))).Message;
+            row.BeginFix();              // instant feedback, before any await
+            var outcome = await Task.Run(() => _host.Fix(row.RuleId));
+            row.CompleteFix(outcome.Ok);
+            if (outcome.Ok)
+            {
+                Message = "";
+                await _morphPause();     // let the Fixed morph play first
+            }
+            else
+            {
+                Message = outcome.Message;
+            }
             await _state.ScanAsync();
         }
         finally
@@ -211,12 +269,32 @@ public sealed class HealthViewModel : ViewModelBase
                 Message = _loc["dryrun.blocked"];
                 return;
             }
-            Message = (await Task.Run(() => _host.Undo(row.RuleId))).Message;
+            row.BeginUndo();             // instant feedback, before any await
+            var outcome = await Task.Run(() => _host.Undo(row.RuleId));
+            row.CompleteUndo();
+            Message = outcome.Ok ? "" : outcome.Message;
             await _state.ScanAsync();
         }
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// Row lookup for fix-all's per-rule progress. Runs on the fix-all worker
+    /// thread; the scalar state writes it leads to are marshaled by WPF's
+    /// binding engine. If a concurrent rescan rebuilds the list mid-walk,
+    /// skip quietly — the rebuild renders fresh state anyway.
+    private FindingRow? RowFor(string ruleId)
+    {
+        try
+        {
+            return Rows.FirstOrDefault(r =>
+                string.Equals(r.RuleId, ruleId, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
         }
     }
 

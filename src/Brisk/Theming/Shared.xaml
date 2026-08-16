@@ -265,29 +265,39 @@
                         </ControlTemplate>
                     </ToggleButton.Template>
                     <DockPanel>
-                        <Ellipse Width="10" Height="10" VerticalAlignment="Center">
-                            <Ellipse.Style>
-                                <Style TargetType="Ellipse">
-                                    <Setter Property="Fill"
-                                            Value="{DynamicResource SeverityInfo}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SeverityKey}"
-                                                     Value="SeverityWarning">
-                                            <Setter Property="Fill"
-                                                    Value="{DynamicResource SeverityWarning}" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SeverityKey}"
-                                                     Value="SeverityCritical">
-                                            <Setter Property="Fill"
-                                                    Value="{DynamicResource SeverityCritical}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Ellipse.Style>
-                        </Ellipse>
+                        <!-- Severity dot plus a Good twin stacked beneath it:
+                             the Fixed morph crossfades one into the other
+                             (brush values are theme resources, so opacity is
+                             the animatable channel). -->
+                        <Grid VerticalAlignment="Center">
+                            <Ellipse x:Name="SeverityDot" Width="10" Height="10">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill"
+                                                Value="{DynamicResource SeverityInfo}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SeverityKey}"
+                                                         Value="SeverityWarning">
+                                                <Setter Property="Fill"
+                                                        Value="{DynamicResource SeverityWarning}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SeverityKey}"
+                                                         Value="SeverityCritical">
+                                                <Setter Property="Fill"
+                                                        Value="{DynamicResource SeverityCritical}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <Ellipse x:Name="FixedDot" Width="10" Height="10"
+                                     Opacity="0" IsHitTestVisible="False"
+                                     Fill="{DynamicResource Good}" />
+                        </Grid>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                                     HorizontalAlignment="Right">
-                            <TextBlock Style="{StaticResource Faint}" FontSize="10"
+                            <TextBlock x:Name="ImpactDots"
+                                       Style="{StaticResource Faint}" FontSize="10"
                                        VerticalAlignment="Center" Margin="0,0,12,0"
                                        Text="{Binding ImpactText}" />
                             <Path Data="M 0 0 L 4.5 4.5 L 9 0" StrokeThickness="1.4"
@@ -316,8 +326,15 @@
                                 </Path.Style>
                             </Path>
                         </StackPanel>
-                        <TextBlock Style="{StaticResource Body}" Margin="10,0"
-                                   VerticalAlignment="Center" Text="{Binding Title}" />
+                        <!-- Title and its past-tense twin share one cell; the
+                             Fixed morph crossfades between them. -->
+                        <Grid Margin="10,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="TitleText" Style="{StaticResource Body}"
+                                       Text="{Binding Title}" />
+                            <TextBlock x:Name="DoneText" Style="{StaticResource Body}"
+                                       Opacity="0" IsHitTestVisible="False"
+                                       Text="{Binding DoneTitle}" />
+                        </Grid>
                     </DockPanel>
                 </ToggleButton>
                 <StackPanel Margin="36,0,16,14"
@@ -361,13 +378,15 @@
                                Visibility="{Binding IsDetailsShown,
                                    Converter={x:Static views:BoolToVis.Instance}}" />
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
+                        <Button x:Name="FixButton"
+                                Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
                                 Command="{Binding FixCommand}"
                                 Visibility="{Binding CanFix,
                                     Converter={x:Static views:BoolToVis.Instance}}"
                                 Content="{Binding [health.fix],
                                     Source={x:Static loc:Loc.Instance}}" />
-                        <Button Style="{StaticResource GhostButton}" Margin="0,0,8,0"
+                        <Button x:Name="UndoButton"
+                                Style="{StaticResource GhostButton}" Margin="0,0,8,0"
                                 Command="{Binding UndoCommand}"
                                 Visibility="{Binding CanUndo,
                                     Converter={x:Static views:BoolToVis.Instance}}"
@@ -383,6 +402,88 @@
                 </StackPanel>
             </StackPanel>
         </Border>
+        <DataTemplate.Triggers>
+            <!-- Working (fixing or undoing): buttons rest, the severity dot
+                 pulses. This is the app's only looping animation and it stops
+                 with the state (StopStoryboard on exit). -->
+            <DataTrigger Binding="{Binding IsWorking}" Value="True">
+                <Setter TargetName="FixButton" Property="IsEnabled" Value="False" />
+                <Setter TargetName="UndoButton" Property="IsEnabled" Value="False" />
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard x:Name="WorkingPulse">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="SeverityDot"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="0.35" Duration="0:0:0.65"
+                                             AutoReverse="True"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <StopStoryboard BeginStoryboardName="WorkingPulse" />
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsFixing}" Value="True">
+                <Setter TargetName="FixButton" Property="Content"
+                        Value="{Binding [finding.fixing],
+                            Source={x:Static loc:Loc.Instance}}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsUndoing}" Value="True">
+                <Setter TargetName="UndoButton" Property="Content"
+                        Value="{Binding [finding.undoing],
+                            Source={x:Static loc:Loc.Instance}}" />
+            </DataTrigger>
+            <!-- Fixed morph: severity dot crossfades to Good, the title to its
+                 past-tense outcome, and the impact dots retire. One-shot; the
+                 row keeps this face until the follow-up rescan rebuilds the
+                 list (the view model delays that rescan past the morph). -->
+            <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                <Setter TargetName="FixButton" Property="IsEnabled" Value="False" />
+                <Setter TargetName="UndoButton" Property="IsEnabled" Value="False" />
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="SeverityDot"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="0" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="FixedDot"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="1" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="TitleText"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="0" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="DoneText"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="1" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="ImpactDots"
+                                             Storyboard.TargetProperty="Opacity"
+                                             To="0" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+            </DataTrigger>
+        </DataTemplate.Triggers>
     </DataTemplate>
 
     <Style x:Key="NavRadio" TargetType="RadioButton">

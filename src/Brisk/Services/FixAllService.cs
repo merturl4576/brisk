@@ -27,6 +27,13 @@ public sealed class FixAllService
 
     public FixAllService(IEngineHost host) { _host = host; }
 
+    /// Per-rule progress for row-level UI states, raised on the worker
+    /// thread right before and right after each fix attempt. Every findings
+    /// page subscribes, so rows animate no matter which surface (page,
+    /// overview, flyout) launched the run.
+    public event Action<DiagnosticFinding>? FixingRule;
+    public event Action<DiagnosticFinding, bool>? FixedRule;
+
     /// True when Run would actually change something on this snapshot: a
     /// fixable non-advise finding exists — counting startup-bloat only while
     /// heavy items are still enabled, because its fix is a no-op once every
@@ -48,9 +55,12 @@ public sealed class FixAllService
                      .Where(f => f.Category != RuleCategory.Advise && f.CanFix))
         {
             attempted++;
+            FixingRule?.Invoke(finding);
             var heavyBefore = string.Equals(finding.RuleId, StartupBloatRuleId,
                 StringComparison.OrdinalIgnoreCase) ? EnabledHeavyNames() : null;
-            if (!_host.Fix(finding.RuleId).Ok) continue;
+            var ok = _host.Fix(finding.RuleId).Ok;
+            FixedRule?.Invoke(finding, ok);
+            if (!ok) continue;
             applied++;
             if (heavyBefore is null)
             {
