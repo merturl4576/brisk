@@ -74,6 +74,9 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
+        <!-- Emphasized completion report after a fix run on this page. -->
+        <ContentControl DockPanel.Dock="Top" Focusable="False" Content="{Binding}"
+                        ContentTemplate="{StaticResource CompletionReport}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Rows}"
@@ -92,6 +95,15 @@
                 </TextBlock>
                 <ItemsControl ItemsSource="{Binding AdviseRows}"
                               ItemTemplate="{StaticResource FindingCard}" />
+                <!-- Where the rest of the findings live (category split):
+                     a quiet link to the Performans page. -->
+                <Button Style="{StaticResource LinkButton}"
+                        HorizontalAlignment="Left" Margin="2,10,0,0"
+                        Foreground="{DynamicResource TextMuted}"
+                        Command="{Binding CrossNavigateCommand}"
+                        Content="{Binding CrossLinkText}"
+                        Visibility="{Binding HasCrossLink,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}" />
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

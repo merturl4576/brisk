@@ -352,8 +352,12 @@ public class HealthViewModelTests
 
         await vm.FixAllAsync();
 
+        var loc = EnglishLoc();
         Assert.Equal(new[] { "power-plan", "startup-bloat" }, host.Fixed);
-        Assert.Equal(EnglishLoc().F("health.fixdone", 2), vm.Message);
+        Assert.Equal("", vm.Message);   // success speaks through the report
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 2)),
+            vm.ReportSummary);
     }
 
     [Fact]
@@ -378,6 +382,114 @@ public class HealthViewModelTests
     }
 
     [Fact]
+    public async Task FixSingleRow_PopulatesTheEmphasizedReport()
+    {
+        var loc = EnglishLoc();
+        var (vm, _, state) = Build();
+        await state.ScanAsync();
+
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "power-plan"));
+
+        Assert.Equal("", vm.Message);
+        var line = Assert.Single(vm.ReportLines);
+        Assert.Equal(loc["rule.power-plan.done"], line.Text);
+        Assert.True(line.IsDone);
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
+            vm.ReportSummary);
+    }
+
+    [Fact]
+    public async Task ManualScan_ClearsThePreviousReport()
+    {
+        var (vm, _, state) = Build();
+        await state.ScanAsync();
+        await vm.FixAllAsync();
+        Assert.NotEmpty(vm.ReportLines);
+        Assert.NotEqual("", vm.ReportSummary);
+
+        vm.ScanCommand.Execute(null);
+        await Task.Yield();
+
+        Assert.Empty(vm.ReportLines);
+        Assert.Equal("", vm.ReportSummary);
+    }
+
+    [Fact]
+    public async Task UndoRow_ClearsTheStaleReport()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+            { TestData.Finding("visual-effects", cat: RuleCategory.Confirm) });
+        await state.ScanAsync();
+        await vm.FixAsync(vm.Rows.Single());
+        Assert.NotEmpty(vm.ReportLines);
+
+        await vm.UndoAsync(vm.Rows.Single());
+
+        // a celebration of the undone fix would be stale news
+        Assert.Empty(vm.ReportLines);
+        Assert.Equal("", vm.ReportSummary);
+    }
+
+    [Fact]
+    public async Task CrossLinks_CountTheSiblingPagesFindings_AndHideAtZero()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("storage-sense", cat: RuleCategory.Confirm, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+        });
+        var state = new AppState(host);
+        var health = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsHealth,
+            crossLinkKey: "health.crosslink");
+        var perf = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsPerformance,
+            FindingSections.PerformanceOptimizable,
+            crossLinkKey: "performance.crosslink");
+        await state.ScanAsync();
+
+        // Sağlık points at the 1 performance finding; Performans at the 2
+        // health findings (advise included — they are findings too).
+        Assert.True(health.HasCrossLink);
+        Assert.Equal(loc.F("health.crosslink", 1), health.CrossLinkText);
+        Assert.Equal("1 more findings in Performance →", health.CrossLinkText);
+        Assert.True(perf.HasCrossLink);
+        Assert.Equal(loc.F("performance.crosslink", 2), perf.CrossLinkText);
+
+        // counts follow the snapshot; the row hides at zero
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("storage-sense", cat: RuleCategory.Confirm, canFix: true),
+        });
+        await state.ScanAsync();
+        Assert.False(health.HasCrossLink);
+        Assert.Equal("", health.CrossLinkText);
+        Assert.True(perf.HasCrossLink);
+        Assert.Equal(loc.F("performance.crosslink", 1), perf.CrossLinkText);
+
+        // the link navigates via the page-switch event
+        var navigations = 0;
+        perf.CrossNavigateRequested += () => navigations++;
+        perf.CrossNavigateCommand.Execute(null);
+        Assert.Equal(1, navigations);
+    }
+
+    [Fact]
+    public async Task CrossLinks_NeverAppearOnPagesBuiltWithoutAKey()
+    {
+        var (vm, _, state) = Build();   // no crossLinkKey, no filter
+        await state.ScanAsync();
+
+        Assert.False(vm.HasCrossLink);
+        Assert.Equal("", vm.CrossLinkText);
+    }
+
+    [Fact]
     public async Task Score_Renders()
     {
         var (vm, _, state) = Build();
@@ -386,7 +498,7 @@ public class HealthViewModelTests
     }
 
     [Fact]
-    public async Task FixAll_AllSucceed_ShowsLocalizedSummary()
+    public async Task FixAll_AllSucceed_ShowsEmphasizedReport()
     {
         var loc = EnglishLoc();
         var (vm, host, state) = Build();
@@ -395,7 +507,13 @@ public class HealthViewModelTests
         await vm.FixAllAsync();
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
-        Assert.Equal(loc.F("health.fixdone", 1), vm.Message);
+        Assert.Equal("", vm.Message);   // success speaks through the report
+        var line = Assert.Single(vm.ReportLines);
+        Assert.Equal(loc["rule.power-plan.done"], line.Text);
+        Assert.True(line.IsDone);
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
+            vm.ReportSummary);
     }
 
     [Fact]
@@ -416,7 +534,15 @@ public class HealthViewModelTests
 
         await vm.FixAllAsync();
 
-        Assert.Equal(loc.F("health.fixpartial", 1, 2), vm.Message);
+        // the partial note is an info line in the report — dotless, honest
+        Assert.Equal("", vm.Message);
+        var partial = vm.ReportLines.Single(l => !l.IsDone);
+        Assert.Equal(loc.F("health.fixpartial", 1, 2), partial.Text);
+        Assert.Contains(vm.ReportLines,
+            l => l.IsDone && l.Text == loc["rule.power-plan.done"]);
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
+            vm.ReportSummary);
     }
 
     [Fact]

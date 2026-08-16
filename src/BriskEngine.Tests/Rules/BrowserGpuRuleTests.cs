@@ -54,4 +54,19 @@ public class BrowserGpuRuleTests
         rule.Undo(ctx, prior);
         Assert.Null(reg.GetString(Prefs, ChromeExe)); // was absent before the fix
     }
+
+    [Fact]
+    public void UndoneFix_IsDetectedAgain()
+    {
+        // The undo round-trip's engine half: after an undo restores the
+        // registry, the very next Detect honestly reports the finding again
+        // (the GUI then routes it back to the Performans list).
+        var (ctx, _, _) = Ctx();
+        var rule = new BrowserGpuRule();
+        Assert.NotNull(rule.Detect(ctx));
+        var prior = rule.Fix(ctx);
+        Assert.Null(rule.Detect(ctx));      // fixed: no finding
+        rule.Undo(ctx, prior);
+        Assert.NotNull(rule.Detect(ctx));   // undone: the finding is back
+    }
 }

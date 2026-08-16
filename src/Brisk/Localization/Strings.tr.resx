@@ -50,6 +50,8 @@
   <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Düzeltiliyor…</value></data>
   <data name="finding.undoing" xml:space="preserve"><value>Geri alınıyor…</value></data>
+  <data name="health.crosslink" xml:space="preserve"><value>Performans'ta {0} bulgu daha var →</value></data>
+  <data name="performance.crosslink" xml:space="preserve"><value>Sağlık'ta {0} bulgu daha var →</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>

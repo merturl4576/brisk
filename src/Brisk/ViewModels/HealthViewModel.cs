@@ -125,9 +125,13 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Func<DiagnosticFinding, bool>? _filter;
     private readonly IReadOnlyList<string>? _optimizedRuleIds;
     private readonly Func<Task> _morphPause;
+    private readonly string? _crossLinkKey;
     private string _scoreText = "—";
     private string _scoreBrushKey = "";
     private string _message = "";
+    private string _reportSummary = "";
+    private string _crossLinkText = "";
+    private bool _hasCrossLink;
     private bool _createRestorePointFirst;
     private bool _busy;
 
@@ -139,7 +143,8 @@ public sealed class HealthViewModel : ViewModelBase
 
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
         FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null,
-        IReadOnlyList<string>? optimizedRuleIds = null, Func<Task>? morphPause = null)
+        IReadOnlyList<string>? optimizedRuleIds = null, string? crossLinkKey = null,
+        Func<Task>? morphPause = null)
     {
         _state = state;
         _host = host;
@@ -148,6 +153,7 @@ public sealed class HealthViewModel : ViewModelBase
         _fixAll = fixAll;
         _filter = filter;
         _optimizedRuleIds = optimizedRuleIds;
+        _crossLinkKey = crossLinkKey;
         _morphPause = morphPause ?? (() => Task.Delay(FixedMorphMs));
         // Fix-all drives the same per-row states no matter which surface
         // launched it (this page, the overview, or the flyout): the walk
@@ -155,13 +161,19 @@ public sealed class HealthViewModel : ViewModelBase
         fixAll.FixingRule += f => RowFor(f.RuleId)?.BeginFix();
         fixAll.FixedRule += (f, ok) => RowFor(f.RuleId)?.CompleteFix(ok);
         _state.Changed += Refresh;
-        ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
+        ScanCommand = new RelayCommand(() =>
+        {
+            ClearReport();   // a new scan starts a new story
+            _ = _state.ScanAsync();
+        });
         // Enabled only while fix-all would actually change something. The
         // predicate lives on FixAllService (single source of truth) and is
         // deliberately unfiltered: fix-all acts on the whole snapshot, not
         // just the rows this page shows.
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
+        CrossNavigateCommand = new RelayCommand(
+            () => CrossNavigateRequested?.Invoke());
     }
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
@@ -172,10 +184,18 @@ public sealed class HealthViewModel : ViewModelBase
     /// with an active finding shows in the findings list instead, never both.
     public ObservableCollection<string> OptimizedRows { get; } = new();
 
+    /// Post-run completion report, same shape the overview shows (the
+    /// shared CompletionReport template binds these by name).
+    public ObservableCollection<ReportLine> ReportLines { get; } = new();
+
     /// Raised by an advise card's "Open Storage" button; MainWindow answers
     /// by switching to the Depolama page (same pattern as the flyout's
     /// OpenDetailsRequested).
     public event Action? OpenStorageRequested;
+
+    /// Raised by the quiet cross-page link under the findings list;
+    /// MainWindow answers by switching to the sibling findings page.
+    public event Action? CrossNavigateRequested;
 
     public AppState State => _state;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
@@ -186,6 +206,24 @@ public sealed class HealthViewModel : ViewModelBase
         private set => Set(ref _scoreBrushKey, value);
     }
     public string Message { get => _message; private set => Set(ref _message, value); }
+    /// The report's ✓ lead line; empty while the last run changed nothing.
+    public string ReportSummary
+    {
+        get => _reportSummary;
+        private set => Set(ref _reportSummary, value);
+    }
+    /// "{n} more findings in <sibling page> →" — shown only on pages built
+    /// with a crossLinkKey, and only while the sibling actually has findings.
+    public string CrossLinkText
+    {
+        get => _crossLinkText;
+        private set => Set(ref _crossLinkText, value);
+    }
+    public bool HasCrossLink
+    {
+        get => _hasCrossLink;
+        private set => Set(ref _hasCrossLink, value);
+    }
     public bool CreateRestorePointFirst
     {
         get => _createRestorePointFirst;
@@ -193,6 +231,7 @@ public sealed class HealthViewModel : ViewModelBase
     }
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
+    public RelayCommand CrossNavigateCommand { get; }
 
     public async Task FixAllAsync()
     {
@@ -202,6 +241,7 @@ public sealed class HealthViewModel : ViewModelBase
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
+            ClearReport();
             if (_isDryRun())
             {
                 Message = _loc["dryrun.blocked"];
@@ -213,12 +253,16 @@ public sealed class HealthViewModel : ViewModelBase
                 return;
             }
             var result = await Task.Run(() => _fixAll.Run(snapshot));
-            Message = result.Attempted == 0
-                ? _loc["health.nofixables"]
-                : result.Applied == result.Attempted
-                    ? _loc.F("health.fixdone", result.Applied)
-                    : _loc.F("health.fixpartial", result.Applied, result.Attempted);
-            if (result.Applied > 0) await _morphPause();
+            if (result.Attempted == 0)
+            {
+                Message = _loc["health.nofixables"];
+            }
+            else
+            {
+                Message = "";
+                ReportSummary = FixReport.Populate(_loc, result, ReportLines);
+                if (result.Applied > 0) await _morphPause();
+            }
             await _state.ScanAsync();
         }
         finally
@@ -244,6 +288,10 @@ public sealed class HealthViewModel : ViewModelBase
             if (outcome.Ok)
             {
                 Message = "";
+                ClearReport();           // the report carries the memory once
+                ReportLines.Add(new ReportLine(row.DoneTitle, IsDone: true));
+                ReportSummary = _loc.F("overview.report.summary",
+                    _loc.F("overview.report.part.fixes", 1));
                 await _morphPause();     // let the Fixed morph play first
             }
             else
@@ -272,13 +320,27 @@ public sealed class HealthViewModel : ViewModelBase
             row.BeginUndo();             // instant feedback, before any await
             var outcome = await Task.Run(() => _host.Undo(row.RuleId));
             row.CompleteUndo();
-            Message = outcome.Ok ? "" : outcome.Message;
+            if (outcome.Ok)
+            {
+                Message = "";
+                ClearReport();           // a celebration of the undone fix is stale
+            }
+            else
+            {
+                Message = outcome.Message;
+            }
             await _state.ScanAsync();
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private void ClearReport()
+    {
+        ReportLines.Clear();
+        ReportSummary = "";
     }
 
     /// Row lookup for fix-all's per-rule progress. Runs on the fix-all worker
@@ -319,6 +381,14 @@ public sealed class HealthViewModel : ViewModelBase
                 if (!snapshot.Findings.Any(f =>
                         string.Equals(f.RuleId, id, StringComparison.OrdinalIgnoreCase)))
                     OptimizedRows.Add(DoneLabel.For(_loc, id, $"rule.{id}.title", id));
+        // The sibling findings page's count: this page's filter complemented.
+        // Answers "where did my finding go?" after the category split.
+        if (_crossLinkKey is not null && _filter is not null)
+        {
+            var elsewhere = snapshot.Findings.Count(f => !_filter(f));
+            HasCrossLink = elsewhere > 0;
+            CrossLinkText = elsewhere > 0 ? _loc.F(_crossLinkKey, elsewhere) : "";
+        }
         ScoreText = snapshot.Health.ToString();
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
         FixAllCommand.RaiseCanExecuteChanged();

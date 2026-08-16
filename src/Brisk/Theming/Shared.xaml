@@ -486,6 +486,92 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
+    <!-- Post-run completion report, shared by the overview, Sağlık and
+         Performans pages (bound to any VM exposing ReportLines/ReportSummary).
+         Hidden until a run produces lines; the ✓ lead line and the closing
+         note appear only when something actually ran. Entrance: one-shot
+         fade+slide when the report (re)populates. -->
+    <DataTemplate x:Key="CompletionReport">
+        <Border x:Name="ReportChrome" CornerRadius="8" Margin="0,14,0,14"
+                Background="{DynamicResource BgElevated}"
+                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
+                Padding="16,12">
+            <Border.RenderTransform>
+                <TranslateTransform />
+            </Border.RenderTransform>
+            <StackPanel>
+                <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,4"
+                           Text="{Binding [overview.report.title],
+                               Source={x:Static loc:Loc.Instance}}" />
+                <!-- The ✓ and the result sentence carry the color and weight;
+                     the paragraph itself stays in the Text brush. -->
+                <DockPanel x:Name="ReportLead" Margin="0,2,0,8">
+                    <TextBlock DockPanel.Dock="Left" Text="✓" Margin="0,0,9,0"
+                               FontFamily="Segoe UI Variable Display, Segoe UI"
+                               FontSize="17" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Good}" />
+                    <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
+                               FontSize="17" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Text}"
+                               TextWrapping="Wrap" Text="{Binding ReportSummary}" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding ReportLines}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,3">
+                                <Ellipse DockPanel.Dock="Left" Width="8" Height="8"
+                                         Margin="1,0,11,0" VerticalAlignment="Center"
+                                         Fill="{DynamicResource Good}"
+                                         Visibility="{Binding IsDone,
+                                             Converter={x:Static views:BoolToVis.Instance}}" />
+                                <TextBlock Style="{StaticResource Body}"
+                                           TextWrapping="Wrap" Text="{Binding Text}" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="ReportEnjoy" Style="{StaticResource Muted}"
+                           Margin="0,8,0,0" TextWrapping="Wrap"
+                           Text="{Binding [overview.report.enjoy],
+                               Source={x:Static loc:Loc.Instance}}" />
+            </StackPanel>
+        </Border>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding ReportLines.Count}" Value="0">
+                <Setter TargetName="ReportChrome" Property="Visibility"
+                        Value="Collapsed" />
+                <!-- Leaving the empty state = the report just populated:
+                     play the entrance. -->
+                <DataTrigger.ExitActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ReportChrome"
+                                             Storyboard.TargetProperty="Opacity"
+                                             From="0" To="1" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="ReportChrome"
+                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                             From="8" To="0" Duration="0:0:0.25">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ReportSummary}" Value="">
+                <Setter TargetName="ReportLead" Property="Visibility"
+                        Value="Collapsed" />
+                <Setter TargetName="ReportEnjoy" Property="Visibility"
+                        Value="Collapsed" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
     <Style x:Key="NavRadio" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />

@@ -176,51 +176,10 @@
                 </Button>
             </StackPanel>
 
-            <Border CornerRadius="8" Background="{DynamicResource BgElevated}"
-                    BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
-                    Padding="16,12" Margin="0,20,0,0">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding ReportLines.Count}" Value="0">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
-                               Text="{Binding [overview.report.title], Source={x:Static loc:Loc.Instance}}" />
-                    <ItemsControl ItemsSource="{Binding ReportLines}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Style="{StaticResource Body}" Margin="0,2"
-                                           TextWrapping="Wrap" Text="{Binding}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <!-- Bottom line: only when the run actually did something. -->
-                    <StackPanel>
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ReportSummary}" Value="">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
-                        <Border Height="1" Background="{DynamicResource Divider}"
-                                Margin="0,8,0,8" />
-                        <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"
-                                   TextWrapping="Wrap" Text="{Binding ReportSummary}" />
-                        <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"
-                                   TextWrapping="Wrap"
-                                   Text="{Binding [overview.report.enjoy],
-                                       Source={x:Static loc:Loc.Instance}}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+            <!-- Emphasized completion report — shared template, entrance
+                 animation and green-dot lines included. -->
+            <ContentControl Focusable="False" Content="{Binding}"
+                            ContentTemplate="{StaticResource CompletionReport}" />
 
             <StackPanel Margin="0,20,0,0">
                 <StackPanel.Style>

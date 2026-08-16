@@ -54,10 +54,12 @@ public partial class App : Application
                 fixAllService, cleanService, composition.LiveMetrics,
                 Loc.Instance, isDryRun);
             var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
-                isDryRun, fixAllService, FindingSections.IsHealth);
+                isDryRun, fixAllService, FindingSections.IsHealth,
+                crossLinkKey: "health.crosslink");
             var perfVm = new HealthViewModel(state, composition.Host, Loc.Instance,
                 isDryRun, fixAllService, FindingSections.IsPerformance,
-                FindingSections.PerformanceOptimizable);
+                FindingSections.PerformanceOptimizable,
+                crossLinkKey: "performance.crosslink");
             var startupVm = new StartupViewModel(state, composition.Host,
                 Loc.Instance, isDryRun);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,

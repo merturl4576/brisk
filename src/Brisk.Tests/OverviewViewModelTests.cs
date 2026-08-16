@@ -140,9 +140,11 @@ public class OverviewViewModelTests
         await vm.FixAllAsync();
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
-        // the line is the rule's past-tense outcome, not its problem title
+        // the line is the rule's past-tense outcome, not its problem title —
+        // and a real outcome wears the report's green dot
         Assert.Equal(new[] { "Power plan switched to high performance" },
-            vm.ReportLines);
+            vm.ReportLines.Select(l => l.Text));
+        Assert.All(vm.ReportLines, l => Assert.True(l.IsDone));
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
             vm.ReportSummary);
@@ -166,7 +168,7 @@ public class OverviewViewModelTests
         // rule.custom-x.done and rule.custom-x.title are both missing:
         // generic "Fixed: <engine English>" keeps the line an outcome.
         Assert.Equal(new[] { loc.F("overview.report.fixed", "Title custom-x") },
-            vm.ReportLines);
+            vm.ReportLines.Select(l => l.Text));
     }
 
     [Fact]
@@ -188,7 +190,7 @@ public class OverviewViewModelTests
         await vm.FixAllAsync();
 
         Assert.Equal(new[] { loc.F("overview.report.disabled", "Discord") },
-            vm.ReportLines);
+            vm.ReportLines.Select(l => l.Text));
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.startup", 1)),
             vm.ReportSummary);
@@ -227,7 +229,9 @@ public class OverviewViewModelTests
         await vm.FixAllAsync();
 
         Assert.Empty(host.Fixed);
-        Assert.Equal(new[] { loc["dryrun.blocked"] }, vm.ReportLines);
+        var line = Assert.Single(vm.ReportLines);
+        Assert.Equal(loc["dryrun.blocked"], line.Text);
+        Assert.False(line.IsDone);   // a caveat never wears the green dot
         Assert.Equal(1, host.ScanCalls);   // only the initial scan, no rescan
     }
 
@@ -245,8 +249,10 @@ public class OverviewViewModelTests
         await vm.FixAllAsync();
 
         Assert.Empty(host.Fixed);
-        Assert.Equal(new[] { loc["health.nofixables"] }, vm.ReportLines);
-        Assert.Equal("", vm.ReportSummary);   // nothing ran — no bottom line
+        var line = Assert.Single(vm.ReportLines);
+        Assert.Equal(loc["health.nofixables"], line.Text);
+        Assert.False(line.IsDone);
+        Assert.Equal("", vm.ReportSummary);   // nothing ran — no lead line
     }
 
     [Fact]
@@ -259,7 +265,9 @@ public class OverviewViewModelTests
         await vm.CleanSafeAsync();
 
         Assert.Equal("user-temp", Assert.Single(host.Cleans).TargetId);
-        Assert.Equal(new[] { loc.F("clean.recycled", 1, "2 KB") }, vm.ReportLines);
+        var line = Assert.Single(vm.ReportLines);
+        Assert.Equal(loc.F("clean.recycled", 1, "2 KB"), line.Text);
+        Assert.True(line.IsDone);
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.freed", "2 KB")),
             vm.ReportSummary);
@@ -282,7 +290,8 @@ public class OverviewViewModelTests
 
         await vm.CleanSafeAsync();
 
-        Assert.Equal(new[] { loc["dryrun.blocked"] }, vm.ReportLines);
+        Assert.Equal(new[] { loc["dryrun.blocked"] },
+            vm.ReportLines.Select(l => l.Text));
         Assert.All(host.Cleans, c => Assert.True(c.DryRun));
     }
 
@@ -317,7 +326,8 @@ public class OverviewViewModelTests
         await vm.UndoAsync(Assert.Single(vm.Recent));
 
         Assert.Empty(host.Undone);
-        Assert.Equal(new[] { loc["dryrun.blocked"] }, vm.ReportLines);
+        Assert.Equal(new[] { loc["dryrun.blocked"] },
+            vm.ReportLines.Select(l => l.Text));
         Assert.Equal(1, host.ScanCalls);   // only the initial scan, no rescan
     }
 

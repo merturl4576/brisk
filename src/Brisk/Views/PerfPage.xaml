@@ -19,6 +19,9 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
+        <!-- Emphasized completion report after a fix run on this page. -->
+        <ContentControl DockPanel.Dock="Top" Focusable="False" Content="{Binding}"
+                        ContentTemplate="{StaticResource CompletionReport}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- What is already in good shape — quiet past-tense rows.
@@ -67,6 +70,15 @@
                 </TextBlock>
                 <ItemsControl ItemsSource="{Binding AdviseRows}"
                               ItemTemplate="{StaticResource FindingCard}" />
+                <!-- Where the rest of the findings live (category split):
+                     a quiet link to the Sağlık page. -->
+                <Button Style="{StaticResource LinkButton}"
+                        HorizontalAlignment="Left" Margin="2,10,0,0"
+                        Foreground="{DynamicResource TextMuted}"
+                        Command="{Binding CrossNavigateCommand}"
+                        Content="{Binding CrossLinkText}"
+                        Visibility="{Binding HasCrossLink,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}" />
 
                 <StackPanel x:Name="StartupSection" Margin="0,16,0,0">
                     <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"

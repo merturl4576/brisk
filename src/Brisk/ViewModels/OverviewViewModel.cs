@@ -110,7 +110,7 @@ public sealed class OverviewViewModel : ViewModelBase
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
     }
 
-    public ObservableCollection<string> ReportLines { get; } = new();
+    public ObservableCollection<ReportLine> ReportLines { get; } = new();
     public ObservableCollection<UndoableRow> Recent { get; } = new();
     public AppState State => _state;
     public bool HasSnapshot => _state.Snapshot is not null;
@@ -126,8 +126,9 @@ public sealed class OverviewViewModel : ViewModelBase
     }
     public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
-    /// The report's bottom line ("Result: 210 MB freed · 3 fixes applied").
-    /// Empty when the last run changed nothing; the page hides the block.
+    /// The report's ✓ lead line ("Result: 210 MB freed · 3 fixes applied").
+    /// Empty when the last run changed nothing; the pages hide the lead
+    /// and the closing note then.
     public string ReportSummary
     {
         get => _reportSummary;
@@ -201,28 +202,11 @@ public sealed class OverviewViewModel : ViewModelBase
             ClearReport();
             if (_isDryRun())
             {
-                ReportLines.Add(_loc["dryrun.blocked"]);
+                ReportLines.Add(new ReportLine(_loc["dryrun.blocked"], IsDone: false));
                 return;
             }
             var result = await Task.Run(() => _fixAll.Run(snapshot));
-            foreach (var finding in result.FixedRules)
-                ReportLines.Add(DoneLabel.For(_loc, finding.RuleId,
-                    finding.TitleKey, finding.Title));
-            foreach (var name in result.DisabledStartup)
-                ReportLines.Add(_loc.F("overview.report.disabled", name));
-            if (result.Attempted == 0)
-                ReportLines.Add(_loc["health.nofixables"]);
-            else if (result.Applied < result.Attempted)
-                ReportLines.Add(_loc.F("health.fixpartial",
-                    result.Applied, result.Attempted));
-            var parts = new List<string>();
-            if (result.DisabledStartup.Count > 0)
-                parts.Add(_loc.F("overview.report.part.startup",
-                    result.DisabledStartup.Count));
-            if (result.FixedRules.Count > 0)
-                parts.Add(_loc.F("overview.report.part.fixes",
-                    result.FixedRules.Count));
-            SetReportSummary(parts);
+            ReportSummary = FixReport.Populate(_loc, result, ReportLines);
             await _state.ScanAsync();
         }
         finally
@@ -243,16 +227,16 @@ public sealed class OverviewViewModel : ViewModelBase
             var outcome = await Task.Run(() => _cleanService.CleanSafe(snapshot.Cleaner));
             if (outcome.WasDryRun)
             {
-                ReportLines.Add(_loc["dryrun.blocked"]);
+                ReportLines.Add(new ReportLine(_loc["dryrun.blocked"], IsDone: false));
                 return;
             }
-            ReportLines.Add(_loc.F("clean.recycled",
-                outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes)));
-            var parts = new List<string>();
-            if (outcome.RecycledPaths.Count > 0)
-                parts.Add(_loc.F("overview.report.part.freed",
+            ReportLines.Add(new ReportLine(_loc.F("clean.recycled",
+                outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes)),
+                IsDone: outcome.RecycledPaths.Count > 0));
+            ReportSummary = outcome.RecycledPaths.Count == 0
+                ? ""
+                : _loc.F("overview.report.summary", _loc.F("overview.report.part.freed",
                     Fmt.Bytes(outcome.RecycledBytes)));
-            SetReportSummary(parts);
             await _state.ScanAsync();
         }
         finally
@@ -270,7 +254,7 @@ public sealed class OverviewViewModel : ViewModelBase
             ClearReport();
             if (_isDryRun())
             {
-                ReportLines.Add(_loc["dryrun.blocked"]);
+                ReportLines.Add(new ReportLine(_loc["dryrun.blocked"], IsDone: false));
                 return;
             }
             await Task.Run(() => _host.Undo(row.RuleId));
@@ -287,14 +271,6 @@ public sealed class OverviewViewModel : ViewModelBase
         ReportLines.Clear();
         ReportSummary = "";
     }
-
-    /// "Result: …" bottom line from the parts a run actually produced. A
-    /// non-empty summary is also what shows the closing "enjoy" sentence,
-    /// so it is set only when at least one action ran.
-    private void SetReportSummary(List<string> parts) =>
-        ReportSummary = parts.Count == 0
-            ? ""
-            : _loc.F("overview.report.summary", string.Join(" · ", parts));
 
     private void Refresh()
     {
