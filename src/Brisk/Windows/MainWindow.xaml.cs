@@ -38,8 +38,14 @@ public partial class MainWindow : Window
         StateChanged += (_, _) => UpdateLiveTicking();
     }
 
-    private void UpdateLiveTicking() =>
-        _overview.SetLiveVisible(IsVisible && WindowState != WindowState.Minimized);
+    private void UpdateLiveTicking()
+    {
+        var visible = IsVisible && WindowState != WindowState.Minimized;
+        _overview.SetLiveVisible(visible);
+        // The hero's ambient motion layer obeys the exact same signal as
+        // the live ticker — one code path, so the two can never drift.
+        OverviewView.SetMotionActive(visible);
+    }
 
     public void ApplyTitleBar() => Dwm.DarkTitleBar(this, _theme.Current == "dark");
 

@@ -448,6 +448,7 @@ public class OverviewViewModelTests
         await vm.LiveTickAsync();
 
         Assert.Equal("37%", vm.LiveCpuText);
+        Assert.Equal(37.4, vm.LiveCpuPercent);   // numeric twin drives the CPU ring
         Assert.Equal("62%", vm.LiveRamText);
         Assert.Equal("71°C", vm.LiveTempText);
         Assert.Equal("Temperature · GPU", vm.LiveTempCaption);
@@ -464,6 +465,7 @@ public class OverviewViewModelTests
         await vm.LiveTickAsync();
 
         Assert.Equal("—", vm.LiveCpuText);
+        Assert.Equal(0.0, vm.LiveCpuPercent);   // CPU ring rests as an empty arc
         Assert.Equal("—", vm.LiveRamText);
         Assert.Equal("—", vm.LiveTempText);
         Assert.Equal("Temperature", vm.LiveTempCaption);   // no source suffix

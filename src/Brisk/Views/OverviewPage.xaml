@@ -19,7 +19,12 @@
         <SolidColorBrush x:Key="HeroUnlit" Color="#1FFFFFFF" />
         <SolidColorBrush x:Key="HeroHairline" Color="#14FFFFFF" />
         <SolidColorBrush x:Key="HeroPodFill" Color="#0AFFFFFF" />
-        <SolidColorBrush x:Key="HeroAccent" Color="#4CC2FF" />
+        <Color x:Key="HeroAccentColor">#4CC2FF</Color>
+        <SolidColorBrush x:Key="HeroAccent" Color="{StaticResource HeroAccentColor}" />
+        <!-- Living-cockpit motion paints: the orbit's hairline dashes (13%
+             white) and the inner CPU ring's 70%-opacity accent. -->
+        <SolidColorBrush x:Key="HeroOrbit" Color="#21FFFFFF" />
+        <SolidColorBrush x:Key="HeroAccentRing" Color="#B34CC2FF" />
 
         <!-- The ONE permitted gradient: a soft radial vignette, a touch
              lighter behind the ring and settling into deep graphite at the
@@ -30,14 +35,10 @@
             <GradientStop Color="#0E1116" Offset="1" />
         </RadialGradientBrush>
 
-        <!-- The ONE permitted glow, on the lit arc only — one effect per
-             score color so the halo always matches the segments under it. -->
-        <DropShadowEffect x:Key="HeroGlowGood" Color="{StaticResource HeroGoodColor}"
-                          BlurRadius="16" ShadowDepth="0" Opacity="0.35" />
-        <DropShadowEffect x:Key="HeroGlowWarn" Color="{StaticResource HeroWarnColor}"
-                          BlurRadius="16" ShadowDepth="0" Opacity="0.35" />
-        <DropShadowEffect x:Key="HeroGlowCrit" Color="{StaticResource HeroCritColor}"
-                          BlurRadius="16" ShadowDepth="0" Opacity="0.35" />
+        <!-- The ONE permitted glow still lives on the lit arc only, but the
+             gauge now builds the DropShadowEffect itself (see GlowColor):
+             a shared XAML effect resource gets frozen and a frozen Freezable
+             cannot be animated — and round 7's breathing animates it. -->
 
         <!-- Digital numerals: the score in mono, colored by the shared
              score → brush-key mapping (hero-bright variants of it). -->
@@ -87,8 +88,13 @@
         <StackPanel Margin="28,26,28,24" MaxWidth="640" HorizontalAlignment="Left">
             <!-- Cockpit hero: segmented ring + instrument pods + status
                  readout on one always-dark panel. The controls stay below,
-                 on the page's normal surface. -->
-            <Border CornerRadius="12" Background="{StaticResource HeroSurface}"
+                 on the page's normal surface. Round 7 adds the living
+                 motion layer (orbit, comet, CPU ring, breathing glow,
+                 sheen) — every perpetual clock is started/stopped by
+                 code-behind through AmbientMotionController, riding the
+                 same visibility signal as LiveMetrics. -->
+            <Border x:Name="HeroPanel" CornerRadius="12"
+                    Background="{StaticResource HeroSurface}"
                     BorderBrush="{StaticResource HeroHairline}" BorderThickness="1"
                     Padding="24,22">
                 <Grid>
@@ -96,39 +102,71 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid Grid.Column="0" Width="240" Height="240">
+                    <Grid Grid.Column="0" Width="260" Height="260">
+                        <!-- Ambient orbit: ~90 faint hairline dashes on a
+                             ring 6 px outside the gauge, revolving once per
+                             30 s. Dash 3.2 + gap 5.56 at 1 px thickness
+                             gives a 8.76 px period over the 2π·125.5 ≈
+                             788.5 px circumference → 90 dashes. -->
+                        <Ellipse Width="252" Height="252" IsHitTestVisible="False"
+                                 Stroke="{StaticResource HeroOrbit}"
+                                 StrokeThickness="1" StrokeDashArray="3.2 5.56"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform x:Name="OrbitSpin" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <!-- The comet on the same orbit, one revolution per
+                             10 s. Hidden while ambient motion is off — a
+                             parked comet would read as a stray arc. -->
+                        <Brisk:CometTail x:Name="CometLayer" Width="252" Height="252"
+                                         Opacity="0" IsHitTestVisible="False"
+                                         TailColor="{StaticResource HeroAccentColor}"
+                                         RenderTransformOrigin="0.5,0.5">
+                            <Brisk:CometTail.RenderTransform>
+                                <RotateTransform x:Name="CometSpin" />
+                            </Brisk:CometTail.RenderTransform>
+                        </Brisk:CometTail>
                         <!-- Two stacked layers of one control: the unlit
                              track, then the lit arc wearing the glow. Both
                              bind Score, so their sweeps stay in step. -->
-                        <Brisk:SegmentedGauge Layer="Unlit"
+                        <Brisk:SegmentedGauge Width="240" Height="240" Layer="Unlit"
                                               UnlitBrush="{StaticResource HeroUnlit}"
                                               Score="{Binding ScoreValue}" />
-                        <Brisk:SegmentedGauge Layer="Lit" Score="{Binding ScoreValue}">
+                        <Brisk:SegmentedGauge x:Name="LitGauge" Width="240" Height="240"
+                                              Layer="Lit" Score="{Binding ScoreValue}">
                             <Brisk:SegmentedGauge.Style>
                                 <Style TargetType="{x:Type Brisk:SegmentedGauge}">
                                     <Setter Property="LitBrush"
                                             Value="{StaticResource HeroGood}" />
-                                    <Setter Property="Effect"
-                                            Value="{StaticResource HeroGlowGood}" />
+                                    <Setter Property="GlowColor"
+                                            Value="{StaticResource HeroGoodColor}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ScoreBrushKey}"
                                                      Value="SeverityWarning">
                                             <Setter Property="LitBrush"
                                                     Value="{StaticResource HeroWarn}" />
-                                            <Setter Property="Effect"
-                                                    Value="{StaticResource HeroGlowWarn}" />
+                                            <Setter Property="GlowColor"
+                                                    Value="{StaticResource HeroWarnColor}" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding ScoreBrushKey}"
                                                      Value="SeverityCritical">
                                             <Setter Property="LitBrush"
                                                     Value="{StaticResource HeroCrit}" />
-                                            <Setter Property="Effect"
-                                                    Value="{StaticResource HeroGlowCrit}" />
+                                            <Setter Property="GlowColor"
+                                                    Value="{StaticResource HeroCritColor}" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Brisk:SegmentedGauge.Style>
                         </Brisk:SegmentedGauge>
+                        <!-- Live CPU ring just inside the ticks: pure
+                             data-driven motion (every ~2 s tick slews it),
+                             so it keeps running under reduce-motion. -->
+                        <Brisk:SweepRing Width="240" Height="240"
+                                         IsHitTestVisible="False"
+                                         RingBrush="{StaticResource HeroAccentRing}"
+                                         Value="{Binding LiveCpuPercent}" />
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Style="{StaticResource HeroScore}"
                                        TextAlignment="Center" Text="{Binding ScoreText}" />
@@ -141,7 +179,7 @@
                             <TextBlock TextAlignment="Center" Margin="0,6,0,0"
                                        FontFamily="Cascadia Mono, Consolas" FontSize="13"
                                        Foreground="{StaticResource HeroMuted}"
-                                       Text="{Binding LiveTempBadgeText}">
+                                       Brisk:NumeralTick.Value="{Binding LiveTempBadgeText}">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
@@ -174,8 +212,12 @@
                                            RadiusX="1" RadiusY="1" Margin="0,2,10,2"
                                            Fill="{StaticResource HeroAccent}" />
                                 <StackPanel>
+                                    <!-- NumeralTick (not Text): each ticker
+                                         update slides the new numeral in —
+                                         the one transition mechanism shared
+                                         by all pods and the temp badge. -->
                                     <TextBlock Style="{StaticResource HeroPodValue}"
-                                               Text="{Binding LiveCpuText}" />
+                                               Brisk:NumeralTick.Value="{Binding LiveCpuText}" />
                                     <TextBlock Style="{StaticResource HeroPodCaption}"
                                                Margin="0,2,0,0"
                                                Text="{Binding [overview.live.cpu], Source={x:Static loc:Loc.Instance}}" />
@@ -190,7 +232,7 @@
                                            Fill="{StaticResource HeroAccent}" />
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource HeroPodValue}"
-                                               Text="{Binding LiveRamText}" />
+                                               Brisk:NumeralTick.Value="{Binding LiveRamText}" />
                                     <TextBlock Style="{StaticResource HeroPodCaption}"
                                                Margin="0,2,0,0"
                                                Text="{Binding [overview.live.ram], Source={x:Static loc:Loc.Instance}}" />
@@ -205,7 +247,7 @@
                                            Fill="{StaticResource HeroAccent}" />
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource HeroPodValue}"
-                                               Text="{Binding LiveTempText}" />
+                                               Brisk:NumeralTick.Value="{Binding LiveTempText}" />
                                     <!-- VM-composed: "Temperature · GPU" names the sensor. -->
                                     <TextBlock Style="{StaticResource HeroPodCaption}"
                                                Margin="0,2,0,0"
@@ -221,7 +263,7 @@
                                            Fill="{StaticResource HeroAccent}" />
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource HeroPodValue}"
-                                               Text="{Binding LiveDiskText}" />
+                                               Brisk:NumeralTick.Value="{Binding LiveDiskText}" />
                                     <TextBlock Style="{StaticResource HeroPodCaption}"
                                                Margin="0,2,0,0"
                                                Text="{Binding [overview.live.disk], Source={x:Static loc:Loc.Instance}}" />
@@ -240,6 +282,31 @@
                                    FontSize="11" Foreground="{StaticResource HeroMuted}"
                                    TextWrapping="Wrap" Text="{Binding SummaryText}" />
                     </Grid>
+                    <!-- Sheen sweep: a barely-there diagonal highlight
+                         (white 0→4%→0, 120 px wide, tilted 20°) that
+                         crosses the panel every ~9 s. Hosted in a Canvas so
+                         the oversize band never stretches the hero's
+                         layout; HeroPanel's code-set rounded clip keeps it
+                         inside the panel. Idle X (−240) parks it fully
+                         off-panel. -->
+                    <Canvas Grid.ColumnSpan="2" IsHitTestVisible="False">
+                        <Rectangle Width="120" Height="520" Canvas.Left="0"
+                                   Canvas.Top="-110" RenderTransformOrigin="0.5,0.5">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#00FFFFFF" Offset="0" />
+                                    <GradientStop Color="#0AFFFFFF" Offset="0.5" />
+                                    <GradientStop Color="#00FFFFFF" Offset="1" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <RotateTransform Angle="20" />
+                                    <TranslateTransform x:Name="SheenSlide" X="-240" />
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Canvas>
                 </Grid>
             </Border>
 

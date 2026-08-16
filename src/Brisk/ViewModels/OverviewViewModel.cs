@@ -75,6 +75,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _summaryText = "";
     private string _reportSummary = "";
     private string _liveCpuText = "—";
+    private double _liveCpuPercent;
     private string _liveRamText = "—";
     private string _liveTempText = "—";
     private string _liveTempBadgeText = "";
@@ -136,6 +137,14 @@ public sealed class OverviewViewModel : ViewModelBase
         private set => Set(ref _reportSummary, value);
     }
     public string LiveCpuText { get => _liveCpuText; private set => Set(ref _liveCpuText, value); }
+    /// Numeric twin of LiveCpuText for the hero's inner CPU ring — real data
+    /// driving visible motion every tick. 0 (an empty arc) until the CPU
+    /// sensor has a delta to report.
+    public double LiveCpuPercent
+    {
+        get => _liveCpuPercent;
+        private set => Set(ref _liveCpuPercent, value);
+    }
     public string LiveRamText { get => _liveRamText; private set => Set(ref _liveRamText, value); }
     public string LiveTempText { get => _liveTempText; private set => Set(ref _liveTempText, value); }
     /// The gauge's compact center readout ("GPU 78°C"). Empty (and hidden)
@@ -175,6 +184,7 @@ public sealed class OverviewViewModel : ViewModelBase
         {
             var reading = await Task.Run(_live.Read);
             LiveCpuText = Percent(reading.CpuPercent);
+            LiveCpuPercent = reading.CpuPercent ?? 0;
             LiveRamText = Percent(reading.RamPercent);
             LiveTempText = reading.TempC is { } t
                 ? Math.Round(t).ToString(CultureInfo.InvariantCulture) + "°C"

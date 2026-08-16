@@ -1,8 +1,14 @@
+using System;
 using System.Linq;
+using System.Runtime.ExceptionServices;
+using System.Threading;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using Brisk.ViewModels;
 using Brisk.Views;
 using Xunit;
-using Point = System.Windows.Point;   // WinForms usings make bare Point ambiguous
+using Color = System.Windows.Media.Color;   // WinForms usings make bare
+using Point = System.Windows.Point;         // Point/Color ambiguous
 
 namespace Brisk.Tests;
 
@@ -95,5 +101,59 @@ public class SegmentedGaugeTests
     public void GaugeColor_FollowsTheSharedHealthMapping(int health, string expected)
     {
         Assert.Equal(expected, HealthBrush.KeyFor(health));
+    }
+
+    /// FrameworkElement construction needs an STA thread (InputManager);
+    /// xunit runs MTA, so the one instance-level test hops threads.
+    private static void RunSta(Action body)
+    {
+        ExceptionDispatchInfo? failure = null;
+        var thread = new Thread(() =>
+        {
+            try { body(); }
+            catch (Exception e) { failure = ExceptionDispatchInfo.Capture(e); }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        failure?.Throw();
+    }
+
+    /// Round 7's animatability guarantee: the glow is built in code, so it
+    /// is never a frozen shared resource — a frozen Freezable cannot be
+    /// animated, and the breathing storyboard writes to this instance.
+    [Fact]
+    public void GlowEffect_IsCodeBuilt_Unfrozen_AndReusedAcrossColorSwaps() => RunSta(() =>
+    {
+        var gauge = new SegmentedGauge();
+        Assert.Null(gauge.Effect);   // no glow until a color arrives
+
+        gauge.GlowColor = Color.FromRgb(0x4A, 0xDE, 0x80);
+        var glow = Assert.IsType<DropShadowEffect>(gauge.Effect);
+        Assert.False(glow.IsFrozen);
+        Assert.Equal(SegmentedGauge.GlowRestOpacity, glow.Opacity);
+        Assert.Equal(16.0, glow.BlurRadius);
+        Assert.Equal(0.0, glow.ShadowDepth);
+        Assert.Equal(Color.FromRgb(0x4A, 0xDE, 0x80), glow.Color);
+
+        // a score-color swap recolors the SAME instance (no frozen-resource
+        // exchange that would detach a running breathing animation)
+        gauge.GlowColor = Color.FromRgb(0xFB, 0xBF, 0x24);
+        Assert.Same(glow, gauge.Effect);
+        Assert.Equal(Color.FromRgb(0xFB, 0xBF, 0x24), glow.Color);
+    });
+
+    [Fact]
+    public void BreathingAnimation_MatchesTheSpecBands()
+    {
+        var breath = SegmentedGauge.BreathingAnimation();
+
+        Assert.Equal(0.25, breath.From);
+        Assert.Equal(0.45, breath.To);
+        Assert.True(breath.AutoReverse);
+        Assert.Equal(RepeatBehavior.Forever, breath.RepeatBehavior);
+        Assert.InRange(breath.Duration.TimeSpan.TotalSeconds, 3.5, 4.0);
+        var ease = Assert.IsType<SineEase>(breath.EasingFunction);
+        Assert.Equal(EasingMode.EaseInOut, ease.EasingMode);
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 
 namespace Brisk.Views;
 
@@ -14,9 +15,16 @@ public enum GaugeLayer { All, Lit, Unlit }
 /// The cockpit hero's segmented ring gauge: SegmentCount radial ticks over
 /// a 270° arc with the opening at the bottom (replaces the round-4 plain
 /// arc). Lit segments are the health-score proportion; colors come in via
-/// LitBrush/UnlitBrush (hero-local brushes). The only motion is a one-shot
-/// ease-out sweep of LitCount whenever Score changes — segments light up
-/// sequentially as the animated count passes them. Never loops.
+/// LitBrush/UnlitBrush (hero-local brushes). Data-driven motion is the
+/// one-shot ease-out sweep of LitCount whenever Score changes — segments
+/// light up sequentially as the animated count passes them.
+///
+/// Round 7: the Lit layer also owns the ONE permitted glow. GlowColor
+/// builds a DropShadowEffect in code — never a shared/frozen XAML resource,
+/// because animating a frozen Freezable throws — so its Opacity stays
+/// animatable and the ambient "breathing" (0.25↔0.45, ease-in-out,
+/// auto-reverse, forever) can run on it. The breathing loop is gated by the
+/// page's AmbientMotionController (window visibility + reduce-motion).
 public sealed class SegmentedGauge : FrameworkElement
 {
     /// One constant rules the ring's density (spec: 48–60 ticks).
@@ -53,6 +61,17 @@ public sealed class SegmentedGauge : FrameworkElement
             new FrameworkPropertyMetadata(GaugeLayer.All,
                 FrameworkPropertyMetadataOptions.AffectsRender));
 
+    public static readonly DependencyProperty GlowColorProperty =
+        DependencyProperty.Register(nameof(GlowColor), typeof(Color), typeof(SegmentedGauge),
+            new PropertyMetadata(default(Color), OnGlowColorChanged));
+
+    /// The glow's resting opacity (round 6's constant); breathing swings
+    /// ±0.10 around it and stopping the breath returns exactly here.
+    public const double GlowRestOpacity = 0.35;
+
+    private DropShadowEffect? _glow;
+    private bool _breathing;
+
     /// What the page binds (the health score, 0–100).
     public double Score
     {
@@ -85,6 +104,73 @@ public sealed class SegmentedGauge : FrameworkElement
         get => (GaugeLayer)GetValue(LayerProperty);
         set => SetValue(LayerProperty, value);
     }
+
+    /// Halo color for this layer (the hero sets it on the Lit layer only,
+    /// via the same score triggers that pick LitBrush). Default (transparent
+    /// black) means no glow at all.
+    public Color GlowColor
+    {
+        get => (Color)GetValue(GlowColorProperty);
+        set => SetValue(GlowColorProperty, value);
+    }
+
+    /// Score-color swaps mutate the ONE code-built effect instance instead
+    /// of exchanging frozen resources — that is what keeps it animatable.
+    private static void OnGlowColorChanged(DependencyObject d,
+        DependencyPropertyChangedEventArgs e)
+    {
+        var gauge = (SegmentedGauge)d;
+        var color = (Color)e.NewValue;
+        if (color == default)
+        {
+            gauge._glow = null;
+            gauge.Effect = null;
+            return;
+        }
+        if (gauge._glow is null)
+        {
+            gauge._glow = new DropShadowEffect
+            {
+                BlurRadius = 16,
+                ShadowDepth = 0,
+                Opacity = GlowRestOpacity,
+            };
+            gauge.Effect = gauge._glow;
+            // Breathing may be requested before styles deliver the first
+            // color (and thus the effect) — honor it now.
+            if (gauge._breathing) gauge.BeginBreathing();
+        }
+        gauge._glow.Color = color;
+    }
+
+    /// The ambient breathing on the glow. On = the perpetual auto-reverse
+    /// loop; off = unload the clock entirely and settle at the rest opacity
+    /// (called when the window leaves the screen or reduce-motion is set).
+    public void SetGlowBreathing(bool on)
+    {
+        _breathing = on;
+        if (_glow is null) return;
+        if (on)
+        {
+            BeginBreathing();
+            return;
+        }
+        _glow.BeginAnimation(DropShadowEffect.OpacityProperty, null);
+        _glow.Opacity = GlowRestOpacity;
+    }
+
+    private void BeginBreathing() =>
+        _glow!.BeginAnimation(DropShadowEffect.OpacityProperty, BreathingAnimation());
+
+    /// 0.25 ↔ 0.45 over 3.8 s per leg, sine ease-in-out, auto-reverse,
+    /// forever — the hero's slow "alive" pulse (spec: 3.5–4 s).
+    public static DoubleAnimation BreathingAnimation() =>
+        new(0.25, 0.45, new Duration(TimeSpan.FromSeconds(3.8)))
+        {
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+        };
 
     /// The one-shot sweep: from wherever the lit count is to the new score's
     /// count, ease-out. Covers first load (0 → score) and rescans alike; a
