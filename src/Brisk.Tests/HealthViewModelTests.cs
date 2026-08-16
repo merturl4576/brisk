@@ -153,6 +153,53 @@ public class HealthViewModelTests
     }
 
     [Fact]
+    public async Task OptimizedRows_ListFindingFreeLevers_NeverDuplicateFindings()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            // power-plan has a live finding → findings list, not "optimized"
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+        });
+        var state = new AppState(host);
+        var perf = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsPerformance,
+            FindingSections.PerformanceOptimizable);
+        var health = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsHealth);
+        await state.ScanAsync();
+
+        // finding-free levers show their past-tense done labels, in order
+        Assert.Equal(new[]
+        {
+            loc["rule.browser-gpu.done"],
+            loc["rule.hw-acceleration.done"],
+            loc["rule.visual-effects.done"],
+        }, perf.OptimizedRows);
+        Assert.Equal(new[] { "power-plan" }, perf.Rows.Select(r => r.RuleId));
+        // pages without an optimized list (Sağlık) never show the section
+        Assert.Empty(health.OptimizedRows);
+    }
+
+    [Fact]
+    public async Task OptimizedRows_AllLeversClean_FillTheWholeSection()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot();
+        var state = new AppState(host);
+        var perf = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsPerformance,
+            FindingSections.PerformanceOptimizable);
+        await state.ScanAsync();
+
+        Assert.Empty(perf.Rows);   // the optimized rows ARE the empty state
+        Assert.Equal(4, perf.OptimizedRows.Count);
+        Assert.Contains(loc["rule.power-plan.done"], perf.OptimizedRows);
+    }
+
+    [Fact]
     public async Task FixAllButton_EnabledOnlyWhenFixAllHasWork()
     {
         var (vm, host, state) = Build();

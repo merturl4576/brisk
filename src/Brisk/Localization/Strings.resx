@@ -51,9 +51,23 @@
   <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>
+  <data name="performance.optimized.title" xml:space="preserve"><value>Optimized</value></data>
   <data name="startup.title" xml:space="preserve"><value>Startup programs</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>couldn't change this item — it may need administrator rights</value></data>
   <data name="startup.heavy" xml:space="preserve"><value>slows startup noticeably</value></data>
+  <data name="startup.system.hint" xml:space="preserve"><value>System component — turning it off is not recommended</value></data>
+  <data name="startup.app.teams" xml:space="preserve"><value>Microsoft Teams — meetings app, slows startup</value></data>
+  <data name="startup.app.onedrive" xml:space="preserve"><value>OneDrive — cloud file sync, safe to start later</value></data>
+  <data name="startup.app.spotify" xml:space="preserve"><value>Spotify — music player, not needed at startup</value></data>
+  <data name="startup.app.discord" xml:space="preserve"><value>Discord — game chat app, heavy at startup</value></data>
+  <data name="startup.app.steam" xml:space="preserve"><value>Steam — game store, heavy at startup</value></data>
+  <data name="startup.app.epicgameslauncher" xml:space="preserve"><value>Epic Games Launcher — game store, not needed at startup</value></data>
+  <data name="startup.app.skype" xml:space="preserve"><value>Skype — calls app, rarely needed at startup</value></data>
+  <data name="startup.app.cortana" xml:space="preserve"><value>Cortana — voice assistant, safe to turn off</value></data>
+  <data name="startup.app.dockerdesktop" xml:space="preserve"><value>Docker Desktop — developer tool, very heavy at startup</value></data>
+  <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — messaging app, opens fine on demand</value></data>
+  <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emulator, very heavy at startup</value></data>
+  <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — animated wallpapers, uses the GPU constantly</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} selected</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Clean</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Safe</value></data>

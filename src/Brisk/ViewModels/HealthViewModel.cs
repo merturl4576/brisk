@@ -90,6 +90,7 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Func<bool> _isDryRun;
     private readonly FixAllService _fixAll;
     private readonly Func<DiagnosticFinding, bool>? _filter;
+    private readonly IReadOnlyList<string>? _optimizedRuleIds;
     private string _scoreText = "—";
     private string _scoreBrushKey = "";
     private string _message = "";
@@ -97,7 +98,8 @@ public sealed class HealthViewModel : ViewModelBase
     private bool _busy;
 
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
-        FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null)
+        FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null,
+        IReadOnlyList<string>? optimizedRuleIds = null)
     {
         _state = state;
         _host = host;
@@ -105,6 +107,7 @@ public sealed class HealthViewModel : ViewModelBase
         _isDryRun = isDryRun;
         _fixAll = fixAll;
         _filter = filter;
+        _optimizedRuleIds = optimizedRuleIds;
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
         // Enabled only while fix-all would actually change something. The
@@ -117,6 +120,11 @@ public sealed class HealthViewModel : ViewModelBase
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
     public ObservableCollection<FindingRow> AdviseRows { get; } = new();
+    /// Past-tense done labels for the configured fixable rules that have no
+    /// finding right now — "this is already in good shape", not a to-do.
+    /// Only pages given optimizedRuleIds (Performans) populate it; a rule
+    /// with an active finding shows in the findings list instead, never both.
+    public ObservableCollection<string> OptimizedRows { get; } = new();
 
     /// Raised by an advise card's "Open Storage" button; MainWindow answers
     /// by switching to the Depolama page (same pattern as the flyout's
@@ -227,6 +235,12 @@ public sealed class HealthViewModel : ViewModelBase
                 .Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
                     row => _ = FixAsync(row), row => _ = UndoAsync(row),
                     _ => OpenStorageRequested?.Invoke()));
+        OptimizedRows.Clear();
+        if (_optimizedRuleIds is not null)
+            foreach (var id in _optimizedRuleIds)
+                if (!snapshot.Findings.Any(f =>
+                        string.Equals(f.RuleId, id, StringComparison.OrdinalIgnoreCase)))
+                    OptimizedRows.Add(DoneLabel.For(_loc, id, $"rule.{id}.title", id));
         ScoreText = snapshot.Health.ToString();
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
         FixAllCommand.RaiseCanExecuteChanged();

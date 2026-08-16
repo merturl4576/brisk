@@ -56,8 +56,10 @@ public partial class App : Application
             var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
                 isDryRun, fixAllService, FindingSections.IsHealth);
             var perfVm = new HealthViewModel(state, composition.Host, Loc.Instance,
-                isDryRun, fixAllService, FindingSections.IsPerformance);
-            var startupVm = new StartupViewModel(state, composition.Host, isDryRun);
+                isDryRun, fixAllService, FindingSections.IsPerformance,
+                FindingSections.PerformanceOptimizable);
+            var startupVm = new StartupViewModel(state, composition.Host,
+                Loc.Instance, isDryRun);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 new ShellRecycleBinSession(), Loc.Instance, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,

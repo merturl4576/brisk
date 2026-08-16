@@ -21,6 +21,36 @@
         </TextBlock>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <!-- What is already in good shape — quiet past-tense rows.
+                     Doubles as the positive empty state: with no findings,
+                     all four levers land here and the page never looks bare. -->
+                <StackPanel Margin="0,0,0,14">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding OptimizedRows.Count}"
+                                             Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
+                               Text="{Binding [performance.optimized.title], Source={x:Static loc:Loc.Instance}}" />
+                    <ItemsControl ItemsSource="{Binding OptimizedRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Style="{StaticResource Muted}" Text="✓"
+                                               Foreground="{DynamicResource Good}"
+                                               Margin="0,0,8,0" />
+                                    <TextBlock Style="{StaticResource Muted}"
+                                               Text="{Binding}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <ItemsControl ItemsSource="{Binding Rows}"
                               ItemTemplate="{StaticResource FindingCard}" />
                 <TextBlock Margin="0,10,0,6"
@@ -49,7 +79,7 @@
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="8" MinHeight="44" Padding="16,0">
+                                <Border CornerRadius="8" MinHeight="44" Padding="16,7">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="Transparent" />
@@ -61,7 +91,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <DockPanel>
+                                    <DockPanel VerticalAlignment="Center">
                                         <CheckBox DockPanel.Dock="Right"
                                                   Style="{StaticResource ToggleSwitch}"
                                                   IsChecked="{Binding IsEnabled}" />
@@ -80,9 +110,29 @@
                                                        VerticalAlignment="Center"
                                                        Text="{Binding Hive}" />
                                         </StackPanel>
-                                        <TextBlock Style="{StaticResource Body}"
-                                                   Margin="0,0,10,0" VerticalAlignment="Center"
-                                                   Text="{Binding Name}" />
+                                        <StackPanel Margin="0,0,10,0"
+                                                    VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource Body}"
+                                                       Text="{Binding Name}" />
+                                            <!-- Friendly line for known apps, or the
+                                                 "system component" hint; unknown user
+                                                 apps get no invented description. -->
+                                            <TextBlock TextWrapping="Wrap"
+                                                       Text="{Binding Description}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock"
+                                                           BasedOn="{StaticResource Faint}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Description}"
+                                                                         Value="">
+                                                                <Setter Property="Visibility"
+                                                                        Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
                                     </DockPanel>
                                 </Border>
                             </DataTemplate>

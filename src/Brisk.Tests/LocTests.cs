@@ -78,6 +78,20 @@ public class LocTests
     [InlineData("rule.disk-forecast.advice")]
     [InlineData("rule.orphaned-data.advice")]
     [InlineData("rule.stale-dev-caches.advice")]
+    [InlineData("performance.optimized.title")]
+    [InlineData("startup.system.hint")]
+    [InlineData("startup.app.teams")]
+    [InlineData("startup.app.onedrive")]
+    [InlineData("startup.app.spotify")]
+    [InlineData("startup.app.discord")]
+    [InlineData("startup.app.steam")]
+    [InlineData("startup.app.epicgameslauncher")]
+    [InlineData("startup.app.skype")]
+    [InlineData("startup.app.cortana")]
+    [InlineData("startup.app.dockerdesktop")]
+    [InlineData("startup.app.whatsapp")]
+    [InlineData("startup.app.bluestacks")]
+    [InlineData("startup.app.wallpaperengine")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

@@ -51,9 +51,23 @@
   <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>
+  <data name="performance.optimized.title" xml:space="preserve"><value>İyi durumda</value></data>
   <data name="startup.title" xml:space="preserve"><value>Açılış programları</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>bu öğe değiştirilemedi — yönetici izni gerekebilir</value></data>
   <data name="startup.heavy" xml:space="preserve"><value>açılışı belirgin yavaşlatır</value></data>
+  <data name="startup.system.hint" xml:space="preserve"><value>Sistem bileşeni — kapatılması önerilmez</value></data>
+  <data name="startup.app.teams" xml:space="preserve"><value>Microsoft Teams — toplantı uygulaması, açılışı yavaşlatır</value></data>
+  <data name="startup.app.onedrive" xml:space="preserve"><value>OneDrive — bulut dosya eşitleme, sonradan başlatmak da güvenli</value></data>
+  <data name="startup.app.spotify" xml:space="preserve"><value>Spotify — müzik çalar, açılışta gerekmez</value></data>
+  <data name="startup.app.discord" xml:space="preserve"><value>Discord — oyun sohbet uygulaması, açılışta ağırdır</value></data>
+  <data name="startup.app.steam" xml:space="preserve"><value>Steam — oyun mağazası, açılışta ağırdır</value></data>
+  <data name="startup.app.epicgameslauncher" xml:space="preserve"><value>Epic Games Launcher — oyun mağazası, açılışta gerekmez</value></data>
+  <data name="startup.app.skype" xml:space="preserve"><value>Skype — görüşme uygulaması, açılışta nadiren gerekir</value></data>
+  <data name="startup.app.cortana" xml:space="preserve"><value>Cortana — sesli asistan, kapatılması güvenli</value></data>
+  <data name="startup.app.dockerdesktop" xml:space="preserve"><value>Docker Desktop — geliştirici aracı, açılışta çok ağırdır</value></data>
+  <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — mesajlaşma uygulaması, gerektiğinde açmak yeterli</value></data>
+  <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emülatörü, açılışta çok ağırdır</value></data>
+  <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — hareketli duvar kağıdı, GPU'yu sürekli kullanır</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} seçili</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Temizle</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Güvenli</value></data>

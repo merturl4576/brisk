@@ -31,6 +31,13 @@ public sealed class SecondaryViewModelTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-vm2-").FullName;
 
+    private static Brisk.Localization.Loc EnglishLoc()
+    {
+        var loc = new Brisk.Localization.Loc();
+        loc.SetLanguage("en");
+        return loc;
+    }
+
     [Fact]
     public async Task Startup_ListsHeavyFirst_TogglesThroughHost()
     {
@@ -38,7 +45,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         host.Startup.Add(new StartupEntry("HKCU", "Discord", true, true));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, () => false);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false);
         await state.ScanAsync();
 
         Assert.Equal(new[] { "Discord", "MyTool" },
@@ -55,7 +62,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var host = new FakeEngineHost { StartupToggleResult = false };
         host.Startup.Add(new StartupEntry("HKLM", "Svc", true, false));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, () => false);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false);
         await state.ScanAsync();
 
         vm.Items[0].IsEnabled = false;
@@ -69,7 +76,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var host = new FakeEngineHost();
         host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, () => true);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => true);
         await state.ScanAsync();
 
         vm.Items[0].IsEnabled = false;
@@ -77,6 +84,31 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.Empty(host.StartupToggles);
         Assert.True(vm.Items[0].IsEnabled);   // reverted
         Assert.True(vm.ToggleFailed);
+    }
+
+    [Fact]
+    public async Task Startup_DescribesKnownApps_AndFlagsSystemEntries()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.Startup.Add(new StartupEntry("HKCU", "com.squirrel.Teams.Teams", true, true));
+        host.Startup.Add(new StartupEntry("HKCU", "OneDrive", true, false));
+        host.Startup.Add(new StartupEntry("HKCU", "SecurityHealth", true, false));
+        host.Startup.Add(new StartupEntry("HKLM", "RandomOemService", true, false));
+        host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
+        var state = new AppState(host);
+        var vm = new StartupViewModel(state, host, loc, () => false);
+        await state.ScanAsync();
+
+        string Desc(string name) => vm.Items.Single(i => i.Name == name).Description;
+        // known apps match by contained name, OrdinalIgnoreCase
+        Assert.Equal(loc["startup.app.teams"], Desc("com.squirrel.Teams.Teams"));
+        Assert.Equal(loc["startup.app.onedrive"], Desc("OneDrive"));
+        // system-ish: known system names, and HKLM outside the heavy table
+        Assert.Equal(loc["startup.system.hint"], Desc("SecurityHealth"));
+        Assert.Equal(loc["startup.system.hint"], Desc("RandomOemService"));
+        // unknown user apps get no invented description
+        Assert.Equal("", Desc("MyTool"));
     }
 
     [Fact]
