@@ -96,8 +96,8 @@ public sealed class EngineHost : IEngineHost
     public bool RunElevated(string cliArgs) => RunAs(_cliExePath, cliArgs);
 
     public bool CreateRestorePoint() => RunAs("powershell.exe",
-        "-NoProfile -Command Checkpoint-Computer -Description brisk " +
-        "-RestorePointType MODIFY_SETTINGS");
+        "-NoProfile -Command \"try { Checkpoint-Computer -Description brisk " +
+        "-RestorePointType MODIFY_SETTINGS -ErrorAction Stop } catch { exit 1 }\"");
 
     private static bool RunAs(string exe, string args)
     {
