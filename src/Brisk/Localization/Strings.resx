@@ -64,6 +64,8 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Stale developer caches</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Visual effects are slowing this PC</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Storage Sense is off</value></data>
+  <data name="app.startupfailed" xml:space="preserve"><value>brisk could not start: {0}</value></data>
+  <data name="app.unexpected" xml:space="preserve"><value>unexpected error: {0}</value></data>
   <data name="dryrun.blocked" xml:space="preserve"><value>dry run is on — nothing was changed</value></data>
   <data name="tray.open" xml:space="preserve"><value>Open brisk</value></data>
   <data name="tray.scan" xml:space="preserve"><value>Scan now</value></data>
