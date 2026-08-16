@@ -81,15 +81,17 @@ public partial class App : Application
                 $"brisk — {Fmt.Bytes(composition.Host.FreeDiskBytes())} free" +
                 $" · {state.Snapshot?.Health}"));
 
+            // The flyout is the product's face; the main window is the
+            // back-office reached via "Open details" or the tray menu.
             var showWaiter = new Thread(() =>
             {
                 while (_showSignal.WaitOne())
-                    Dispatcher.Invoke(ShowMain);
+                    Dispatcher.Invoke(() => _flyout?.ShowAt());
             })
             { IsBackground = true };
             showWaiter.Start();
 
-            if (!e.Args.Contains("--tray")) ShowMain();
+            if (!e.Args.Contains("--tray")) _flyout.ShowAt();   // --tray = silent autostart
             _ = state.ScanAsync();   // launching brisk is a user action — scan once
         }
         catch (Exception ex)
