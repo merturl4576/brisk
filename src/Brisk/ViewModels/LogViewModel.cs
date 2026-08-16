@@ -40,7 +40,7 @@ public sealed class LogViewModel : ViewModelBase
     public async Task UndoAsync(UndoableRow row)
     {
         if (_isDryRun()) return;   // dry run: report only, no message surface here
-        _host.Undo(row.RuleId);
+        await Task.Run(() => _host.Undo(row.RuleId));
         await _state.ScanAsync();   // Changed handler refreshes both lists
     }
 

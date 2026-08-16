@@ -132,7 +132,7 @@ public sealed class CleanViewModel : ViewModelBase
             {
                 if (_isDryRun())
                     problems.Add($"{row.Id} — {_loc["dryrun.blocked"]}");
-                else if (!_host.RunElevated($"clean --target {row.Id} --yes"))
+                else if (!await Task.Run(() => _host.RunElevated($"clean --target {row.Id} --yes")))
                     problems.Add($"{row.Id} — {_loc["clean.elevation"]}");
                 continue;
             }
@@ -145,7 +145,7 @@ public sealed class CleanViewModel : ViewModelBase
                 : row.Scan);
         }
 
-        var outcome = _cleanService.CleanTargets(scans);
+        var outcome = await Task.Run(() => _cleanService.CleanTargets(scans));
         problems.AddRange(outcome.Problems);
         _lastRecycled = outcome.RecycledPaths;
         RestoreFailed = false;

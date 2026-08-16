@@ -65,7 +65,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         if (_isDryRun()) return;   // dry run: report only, nothing to fix here
         foreach (var finding in snapshot.Findings
                      .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
-            _host.Fix(finding.RuleId);
+            await Task.Run(() => _host.Fix(finding.RuleId));
         await _state.ScanAsync();
     }
 
@@ -79,7 +79,7 @@ public sealed class FlyoutViewModel : ViewModelBase
             && !t.Target.RequiresIndividualSelection
             && !t.Target.RequiresExplicitOptIn
             && t.Items.Count > 0);
-        LastCleanOutcome = _cleanService.CleanTargets(eligible);
+        LastCleanOutcome = await Task.Run(() => _cleanService.CleanTargets(eligible));
         await _state.ScanAsync();
     }
 

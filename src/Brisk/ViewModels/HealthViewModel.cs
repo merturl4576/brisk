@@ -90,14 +90,14 @@ public sealed class HealthViewModel : ViewModelBase
             Message = _loc["dryrun.blocked"];
             return;
         }
-        if (CreateRestorePointFirst && !_host.CreateRestorePoint())
+        if (CreateRestorePointFirst && !await Task.Run(() => _host.CreateRestorePoint()))
         {
             Message = _loc["health.restorepointfailed"];
             return;
         }
         foreach (var finding in snapshot.Findings
                      .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
-            Message = _host.Fix(finding.RuleId).Message;
+            Message = (await Task.Run(() => _host.Fix(finding.RuleId))).Message;
         await _state.ScanAsync();
     }
 
@@ -108,7 +108,7 @@ public sealed class HealthViewModel : ViewModelBase
             Message = _loc["dryrun.blocked"];
             return;
         }
-        Message = _host.Fix(row.RuleId).Message;
+        Message = (await Task.Run(() => _host.Fix(row.RuleId))).Message;
         await _state.ScanAsync();
     }
 
@@ -119,7 +119,7 @@ public sealed class HealthViewModel : ViewModelBase
             Message = _loc["dryrun.blocked"];
             return;
         }
-        Message = _host.Undo(row.RuleId).Message;
+        Message = (await Task.Run(() => _host.Undo(row.RuleId))).Message;
         await _state.ScanAsync();
     }
 
