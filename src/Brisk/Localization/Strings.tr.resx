@@ -22,6 +22,7 @@
   <data name="overview.report.part.freed" xml:space="preserve"><value>{0} yer açıldı</value></data>
   <data name="overview.report.part.startup" xml:space="preserve"><value>{0} program açılıştan kaldırıldı</value></data>
   <data name="overview.report.part.fixes" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
+  <data name="overview.gauge.label" xml:space="preserve"><value>sistem sağlığı</value></data>
   <data name="overview.live.cpu" xml:space="preserve"><value>CPU kullanımı</value></data>
   <data name="overview.live.ram" xml:space="preserve"><value>Bellek</value></data>
   <data name="overview.live.temp" xml:space="preserve"><value>Sıcaklık</value></data>

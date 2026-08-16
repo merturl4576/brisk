@@ -22,6 +22,7 @@
   <data name="overview.report.part.freed" xml:space="preserve"><value>{0} freed</value></data>
   <data name="overview.report.part.startup" xml:space="preserve"><value>{0} programs removed from startup</value></data>
   <data name="overview.report.part.fixes" xml:space="preserve"><value>{0} fixes applied</value></data>
+  <data name="overview.gauge.label" xml:space="preserve"><value>system health</value></data>
   <data name="overview.live.cpu" xml:space="preserve"><value>CPU usage</value></data>
   <data name="overview.live.ram" xml:space="preserve"><value>Memory</value></data>
   <data name="overview.live.temp" xml:space="preserve"><value>Temperature</value></data>

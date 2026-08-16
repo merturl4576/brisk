@@ -77,6 +77,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _liveCpuText = "—";
     private string _liveRamText = "—";
     private string _liveTempText = "—";
+    private string _liveTempBadgeText = "";
     private string _liveTempCaption;
     private string _liveDiskText = "—";
     private bool _liveBusy;
@@ -137,6 +138,13 @@ public sealed class OverviewViewModel : ViewModelBase
     public string LiveCpuText { get => _liveCpuText; private set => Set(ref _liveCpuText, value); }
     public string LiveRamText { get => _liveRamText; private set => Set(ref _liveRamText, value); }
     public string LiveTempText { get => _liveTempText; private set => Set(ref _liveTempText, value); }
+    /// The gauge's compact center readout ("GPU 78°C"). Empty (and hidden)
+    /// until a real sensor speaks — the cockpit never renders a dash there.
+    public string LiveTempBadgeText
+    {
+        get => _liveTempBadgeText;
+        private set => Set(ref _liveTempBadgeText, value);
+    }
     /// "Temperature · GPU" — caption plus the sensor the reading came from.
     public string LiveTempCaption
     {
@@ -171,6 +179,9 @@ public sealed class OverviewViewModel : ViewModelBase
             LiveTempText = reading.TempC is { } t
                 ? Math.Round(t).ToString(CultureInfo.InvariantCulture) + "°C"
                 : "—";
+            LiveTempBadgeText = reading.TempC is { } badge && reading.TempSource is { } via
+                ? via + " " + Math.Round(badge).ToString(CultureInfo.InvariantCulture) + "°C"
+                : "";
             LiveTempCaption = reading.TempSource is { } source
                 ? _loc["overview.live.temp"] + " · " + source
                 : _loc["overview.live.temp"];

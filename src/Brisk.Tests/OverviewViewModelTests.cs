@@ -451,6 +451,7 @@ public class OverviewViewModelTests
         Assert.Equal("62%", vm.LiveRamText);
         Assert.Equal("71°C", vm.LiveTempText);
         Assert.Equal("Temperature · GPU", vm.LiveTempCaption);
+        Assert.Equal("GPU 71°C", vm.LiveTempBadgeText);   // the gauge's center readout
         Assert.Equal("122.0 GB", vm.LiveDiskText);
     }
 
@@ -466,6 +467,21 @@ public class OverviewViewModelTests
         Assert.Equal("—", vm.LiveRamText);
         Assert.Equal("—", vm.LiveTempText);
         Assert.Equal("Temperature", vm.LiveTempCaption);   // no source suffix
+        Assert.Equal("", vm.LiveTempBadgeText);   // gauge readout hides entirely
+    }
+
+    [Fact]
+    public async Task LiveTick_TempWithoutSource_HidesTheGaugeReadout()
+    {
+        // Defensive: the tile still shows the degrees, but the gauge's
+        // compact "GPU 78°C" line needs both halves to say anything.
+        var live = new FakeLive { Next = new LiveReading(null, null, 55.0, null, 0) };
+        var (vm, _, _) = Build(live: live);
+
+        await vm.LiveTickAsync();
+
+        Assert.Equal("55°C", vm.LiveTempText);
+        Assert.Equal("", vm.LiveTempBadgeText);
     }
 
     /// Fakes.cs is locked; startup-disable semantics are simulated with a

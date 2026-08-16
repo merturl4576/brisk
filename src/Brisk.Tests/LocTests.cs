@@ -66,6 +66,7 @@ public class LocTests
     [InlineData("rule.startup-bloat.done")]
     [InlineData("rule.visual-effects.done")]
     [InlineData("rule.storage-sense.done")]
+    [InlineData("overview.gauge.label")]
     [InlineData("overview.live.cpu")]
     [InlineData("overview.live.ram")]
     [InlineData("overview.live.temp")]

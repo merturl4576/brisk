@@ -4,115 +4,244 @@
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
     <UserControl.Resources>
-        <!-- Live tile vocabulary: the existing card language (BgElevated,
-             8px radius, 1px border) with a display-face numeral. -->
-        <Style x:Key="LiveTile" TargetType="Border">
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Background" Value="{DynamicResource BgElevated}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="14,10,14,8" />
-        </Style>
-        <Style x:Key="TileNumeral" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <!-- Cockpit hero vocabulary — deliberately hero-LOCAL. The hero is an
+             always-dark instrument panel in BOTH themes (a dashboard is a dark
+             surface by nature), so nothing here touches the global theme
+             dictionaries and the rest of the app keeps following Win11. -->
+        <Color x:Key="HeroGoodColor">#4ADE80</Color>
+        <Color x:Key="HeroWarnColor">#FBBF24</Color>
+        <Color x:Key="HeroCritColor">#F87171</Color>
+        <SolidColorBrush x:Key="HeroGood" Color="{StaticResource HeroGoodColor}" />
+        <SolidColorBrush x:Key="HeroWarn" Color="{StaticResource HeroWarnColor}" />
+        <SolidColorBrush x:Key="HeroCrit" Color="{StaticResource HeroCritColor}" />
+        <SolidColorBrush x:Key="HeroText" Color="#F2F4F8" />
+        <SolidColorBrush x:Key="HeroMuted" Color="#8CFFFFFF" />
+        <SolidColorBrush x:Key="HeroUnlit" Color="#1FFFFFFF" />
+        <SolidColorBrush x:Key="HeroHairline" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="HeroPodFill" Color="#0AFFFFFF" />
+        <SolidColorBrush x:Key="HeroAccent" Color="#4CC2FF" />
+
+        <!-- The ONE permitted gradient: a soft radial vignette, a touch
+             lighter behind the ring and settling into deep graphite at the
+             edges (~3–4% luminance shift, not a spotlight). -->
+        <RadialGradientBrush x:Key="HeroSurface" Center="0.25,0.5"
+                             GradientOrigin="0.25,0.5" RadiusX="0.75" RadiusY="1.2">
+            <GradientStop Color="#151A22" Offset="0" />
+            <GradientStop Color="#0E1116" Offset="1" />
+        </RadialGradientBrush>
+
+        <!-- The ONE permitted glow, on the lit arc only — one effect per
+             score color so the halo always matches the segments under it. -->
+        <DropShadowEffect x:Key="HeroGlowGood" Color="{StaticResource HeroGoodColor}"
+                          BlurRadius="16" ShadowDepth="0" Opacity="0.35" />
+        <DropShadowEffect x:Key="HeroGlowWarn" Color="{StaticResource HeroWarnColor}"
+                          BlurRadius="16" ShadowDepth="0" Opacity="0.35" />
+        <DropShadowEffect x:Key="HeroGlowCrit" Color="{StaticResource HeroCritColor}"
+                          BlurRadius="16" ShadowDepth="0" Opacity="0.35" />
+
+        <!-- Digital numerals: the score in mono, colored by the shared
+             score → brush-key mapping (hero-bright variants of it). -->
+        <Style x:Key="HeroScore" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="22" />
-            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+            <Setter Property="FontSize" Value="56" />
+            <Setter Property="Foreground" Value="{StaticResource HeroText}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="Good">
+                    <Setter Property="Foreground" Value="{StaticResource HeroGood}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="SeverityWarning">
+                    <Setter Property="Foreground" Value="{StaticResource HeroWarn}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="SeverityCritical">
+                    <Setter Property="Foreground" Value="{StaticResource HeroCrit}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Instrument pods: transparent-dark chips with a hairline edge and
+             a 2px accent left-rule. No glow here — the ring owns the glow. -->
+        <Style x:Key="HeroPod" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{StaticResource HeroPodFill}" />
+            <Setter Property="BorderBrush" Value="{StaticResource HeroHairline}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,9,12,8" />
+        </Style>
+        <Style x:Key="HeroPodValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="23" />
+            <Setter Property="Foreground" Value="{StaticResource HeroText}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="HeroPodCaption" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="Foreground" Value="{StaticResource HeroMuted}" />
+            <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,26,28,24" MaxWidth="640" HorizontalAlignment="Left">
-            <!-- Hero: the health gauge with the machine's live vitals beside it. -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid Grid.Column="0" Width="192" Height="192">
-                    <Brisk:GaugeArc StrokeThickness="6"
-                                    TrackBrush="{DynamicResource BorderBrushKey}"
-                                    Score="{Binding ScoreValue}">
-                        <Brisk:GaugeArc.Style>
-                            <Style TargetType="{x:Type Brisk:GaugeArc}">
-                                <Setter Property="ValueBrush"
-                                        Value="{DynamicResource Good}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
-                                                 Value="SeverityWarning">
-                                        <Setter Property="ValueBrush"
-                                                Value="{DynamicResource SeverityWarning}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
-                                                 Value="SeverityCritical">
-                                        <Setter Property="ValueBrush"
-                                                Value="{DynamicResource SeverityCritical}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Brisk:GaugeArc.Style>
-                    </Brisk:GaugeArc>
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Style="{StaticResource ScoreText}" FontSize="48"
-                                   TextAlignment="Center" Text="{Binding ScoreText}" />
-                        <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
-                                   TextAlignment="Center"
-                                   Text="{Binding [flyout.health], Source={x:Static loc:Loc.Instance}}" />
-                    </StackPanel>
-                </Grid>
-                <Grid Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center">
+            <!-- Cockpit hero: segmented ring + instrument pods + status
+                 readout on one always-dark panel. The controls stay below,
+                 on the page's normal surface. -->
+            <Border CornerRadius="12" Background="{StaticResource HeroSurface}"
+                    BorderBrush="{StaticResource HeroHairline}" BorderThickness="1"
+                    Padding="24,22">
+                <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Border Grid.Row="0" Grid.Column="0" Margin="0,0,10,10"
-                            Style="{StaticResource LiveTile}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource TileNumeral}"
-                                       Text="{Binding LiveCpuText}" />
-                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
-                                       Text="{Binding [overview.live.cpu], Source={x:Static loc:Loc.Instance}}" />
+                    <Grid Grid.Column="0" Width="240" Height="240">
+                        <!-- Two stacked layers of one control: the unlit
+                             track, then the lit arc wearing the glow. Both
+                             bind Score, so their sweeps stay in step. -->
+                        <Brisk:SegmentedGauge Layer="Unlit"
+                                              UnlitBrush="{StaticResource HeroUnlit}"
+                                              Score="{Binding ScoreValue}" />
+                        <Brisk:SegmentedGauge Layer="Lit" Score="{Binding ScoreValue}">
+                            <Brisk:SegmentedGauge.Style>
+                                <Style TargetType="{x:Type Brisk:SegmentedGauge}">
+                                    <Setter Property="LitBrush"
+                                            Value="{StaticResource HeroGood}" />
+                                    <Setter Property="Effect"
+                                            Value="{StaticResource HeroGlowGood}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                     Value="SeverityWarning">
+                                            <Setter Property="LitBrush"
+                                                    Value="{StaticResource HeroWarn}" />
+                                            <Setter Property="Effect"
+                                                    Value="{StaticResource HeroGlowWarn}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                     Value="SeverityCritical">
+                                            <Setter Property="LitBrush"
+                                                    Value="{StaticResource HeroCrit}" />
+                                            <Setter Property="Effect"
+                                                    Value="{StaticResource HeroGlowCrit}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Brisk:SegmentedGauge.Style>
+                        </Brisk:SegmentedGauge>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Style="{StaticResource HeroScore}"
+                                       TextAlignment="Center" Text="{Binding ScoreText}" />
+                            <TextBlock TextAlignment="Center" Margin="0,2,0,0"
+                                       FontFamily="Segoe UI Variable Text, Segoe UI"
+                                       FontSize="11" Foreground="{StaticResource HeroMuted}"
+                                       Text="{Binding [overview.gauge.label], Source={x:Static loc:Loc.Instance}}" />
+                            <!-- Compact temperature readout ("GPU 78°C"),
+                                 only when a real sensor spoke. -->
+                            <TextBlock TextAlignment="Center" Margin="0,6,0,0"
+                                       FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                       Foreground="{StaticResource HeroMuted}"
+                                       Text="{Binding LiveTempBadgeText}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding LiveTempBadgeText}"
+                                                         Value="">
+                                                <Setter Property="Visibility"
+                                                        Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
-                    </Border>
-                    <Border Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
-                            Style="{StaticResource LiveTile}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource TileNumeral}"
-                                       Text="{Binding LiveRamText}" />
-                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
-                                       Text="{Binding [overview.live.ram], Source={x:Static loc:Loc.Instance}}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Row="1" Grid.Column="0" Margin="0,0,10,0"
-                            Style="{StaticResource LiveTile}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource TileNumeral}"
-                                       Text="{Binding LiveTempText}" />
-                            <!-- VM-composed: "Temperature · GPU" names the sensor. -->
-                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
-                                       Text="{Binding LiveTempCaption}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Row="1" Grid.Column="1"
-                            Style="{StaticResource LiveTile}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource TileNumeral}"
-                                       Text="{Binding LiveDiskText}" />
-                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
-                                       Text="{Binding [overview.live.disk], Source={x:Static loc:Loc.Instance}}" />
-                        </StackPanel>
-                    </Border>
+                    </Grid>
+                    <Grid Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Grid.Column="0" Margin="0,0,10,10"
+                                Style="{StaticResource HeroPod}">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="2"
+                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                           Fill="{StaticResource HeroAccent}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HeroPodValue}"
+                                               Text="{Binding LiveCpuText}" />
+                                    <TextBlock Style="{StaticResource HeroPodCaption}"
+                                               Margin="0,2,0,0"
+                                               Text="{Binding [overview.live.cpu], Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                                Style="{StaticResource HeroPod}">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="2"
+                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                           Fill="{StaticResource HeroAccent}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HeroPodValue}"
+                                               Text="{Binding LiveRamText}" />
+                                    <TextBlock Style="{StaticResource HeroPodCaption}"
+                                               Margin="0,2,0,0"
+                                               Text="{Binding [overview.live.ram], Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="0" Margin="0,0,10,0"
+                                Style="{StaticResource HeroPod}">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="2"
+                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                           Fill="{StaticResource HeroAccent}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HeroPodValue}"
+                                               Text="{Binding LiveTempText}" />
+                                    <!-- VM-composed: "Temperature · GPU" names the sensor. -->
+                                    <TextBlock Style="{StaticResource HeroPodCaption}"
+                                               Margin="0,2,0,0"
+                                               Text="{Binding LiveTempCaption}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1"
+                                Style="{StaticResource HeroPod}">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="2"
+                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                           Fill="{StaticResource HeroAccent}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HeroPodValue}"
+                                               Text="{Binding LiveDiskText}" />
+                                    <TextBlock Style="{StaticResource HeroPodCaption}"
+                                               Margin="0,2,0,0"
+                                               Text="{Binding [overview.live.disk], Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <!-- Status readout stays part of the instrument
+                             panel; the action buttons live below the hero
+                             on the page's normal surface. -->
+                        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Margin="2,12,0,0"
+                                   FontFamily="Segoe UI Variable Text, Segoe UI"
+                                   FontSize="13" Foreground="{StaticResource HeroText}"
+                                   TextWrapping="Wrap" Text="{Binding StatusText}" />
+                        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="2,4,0,0"
+                                   FontFamily="Segoe UI Variable Text, Segoe UI"
+                                   FontSize="11" Foreground="{StaticResource HeroMuted}"
+                                   TextWrapping="Wrap" Text="{Binding SummaryText}" />
+                    </Grid>
                 </Grid>
-            </Grid>
-            <TextBlock Style="{StaticResource Body}" FontSize="13.5"
-                       Foreground="{DynamicResource TextMuted}" Margin="0,16,0,0"
-                       Text="{Binding StatusText}" TextWrapping="Wrap" />
-            <TextBlock Style="{StaticResource Faint}" Margin="0,8,0,0"
-                       Text="{Binding SummaryText}" TextWrapping="Wrap" />
+            </Border>
 
             <StackPanel Margin="0,16,0,0"
                         Visibility="{Binding State.IsScanning,
@@ -128,7 +257,7 @@
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                 <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
                         Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
                     <Button.Style>
