@@ -19,7 +19,8 @@ public class HealthViewModelTests
         return loc;
     }
 
-    private static (HealthViewModel Vm, FakeEngineHost Host, AppState State) Build()
+    private static (HealthViewModel Vm, FakeEngineHost Host, AppState State) Build(
+        Func<bool>? isDryRun = null)
     {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(new[]
@@ -31,7 +32,8 @@ public class HealthViewModelTests
         });
         host.Undoable.Add(new UndoableFix("visual-effects", DateTime.UtcNow));
         var state = new AppState(host);
-        return (new HealthViewModel(state, host, EnglishLoc()), host, state);
+        return (new HealthViewModel(state, host, EnglishLoc(), isDryRun ?? (() => false)),
+            host, state);
     }
 
     [Fact]
@@ -77,6 +79,48 @@ public class HealthViewModelTests
     }
 
     [Fact]
+    public async Task FixAll_DryRun_NeverCallsHost_ShowsMessage()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build(() => true);
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.Empty(host.Fixed);
+        Assert.Equal(0, host.RestorePointCalls);
+        Assert.Equal(loc["dryrun.blocked"], vm.Message);
+    }
+
+    [Fact]
+    public async Task FixRow_DryRun_NeverCallsHost_ShowsMessage()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build(() => true);
+        await state.ScanAsync();
+
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "power-plan"));
+
+        Assert.Empty(host.Fixed);
+        Assert.Equal(loc["dryrun.blocked"], vm.Message);
+    }
+
+    [Fact]
+    public async Task UndoRow_DryRun_NeverCallsHost_ShowsMessage()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build(() => true);
+        host.NextSnapshot = TestData.Snapshot(new[]
+            { TestData.Finding("visual-effects", cat: RuleCategory.Confirm) });
+        await state.ScanAsync();
+
+        await vm.UndoAsync(vm.Rows.Single());
+
+        Assert.Empty(host.Undone);
+        Assert.Equal(loc["dryrun.blocked"], vm.Message);
+    }
+
+    [Fact]
     public async Task FixAll_WithRestorePointRefused_AbortsWithMessage()
     {
         var loc = EnglishLoc();
@@ -87,7 +131,7 @@ public class HealthViewModelTests
                 stars: 4, canFix: true),
         });
         var state = new AppState(host);
-        var vm = new HealthViewModel(state, host, loc);
+        var vm = new HealthViewModel(state, host, loc, () => false);
 
         await state.ScanAsync();
         vm.CreateRestorePointFirst = true;

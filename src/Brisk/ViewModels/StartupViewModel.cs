@@ -39,11 +39,13 @@ public sealed class StartupItemRow : ViewModelBase
 public sealed class StartupViewModel : ViewModelBase
 {
     private readonly IEngineHost _host;
+    private readonly Func<bool> _isDryRun;
     private bool _toggleFailed;
 
-    public StartupViewModel(AppState state, IEngineHost host)
+    public StartupViewModel(AppState state, IEngineHost host, Func<bool> isDryRun)
     {
         _host = host;
+        _isDryRun = isDryRun;
         state.Changed += Refresh;
     }
 
@@ -58,6 +60,11 @@ public sealed class StartupViewModel : ViewModelBase
                          StringComparer.OrdinalIgnoreCase))
             Items.Add(new StartupItemRow(entry, (row, enabled) =>
             {
+                if (_isDryRun())
+                {
+                    ToggleFailed = true;   // treated like a failed toggle: revert + flag
+                    return false;
+                }
                 var ok = _host.SetStartupEnabled(row.Hive, row.Name, enabled);
                 ToggleFailed = !ok;
                 return ok;

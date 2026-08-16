@@ -84,6 +84,7 @@ public sealed class CleanViewModel : ViewModelBase
     private readonly CleanService _cleanService;
     private readonly IRecycleBinSession _bin;
     private readonly Loc _loc;
+    private readonly System.Func<bool> _isDryRun;
 
     private IReadOnlyList<string> _lastRecycled = new List<string>();
     private bool _hasBanner;
@@ -93,13 +94,14 @@ public sealed class CleanViewModel : ViewModelBase
     private bool _restoreFailed;
 
     public CleanViewModel(AppState state, IEngineHost host, CleanService cleanService,
-        IRecycleBinSession bin, Loc loc)
+        IRecycleBinSession bin, Loc loc, System.Func<bool> isDryRun)
     {
         _state = state;
         _host = host;
         _cleanService = cleanService;
         _bin = bin;
         _loc = loc;
+        _isDryRun = isDryRun;
         _state.Changed += Refresh;
         UndoCommand = new RelayCommand(Undo, () => HasBanner);
         ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner);
@@ -128,7 +130,9 @@ public sealed class CleanViewModel : ViewModelBase
         {
             if (row.NeedsElevation && !_host.IsElevated())
             {
-                if (!_host.RunElevated($"clean --target {row.Id} --yes"))
+                if (_isDryRun())
+                    problems.Add($"{row.Id} — {_loc["dryrun.blocked"]}");
+                else if (!_host.RunElevated($"clean --target {row.Id} --yes"))
                     problems.Add($"{row.Id} — {_loc["clean.elevation"]}");
                 continue;
             }

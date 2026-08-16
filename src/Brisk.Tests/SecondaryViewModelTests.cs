@@ -39,7 +39,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         host.Startup.Add(new StartupEntry("HKCU", "Discord", true, true));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host);
+        var vm = new StartupViewModel(state, host, () => false);
         await state.ScanAsync();
 
         Assert.Equal(new[] { "Discord", "MyTool" },
@@ -56,10 +56,26 @@ public sealed class SecondaryViewModelTests : IDisposable
         var host = new FakeEngineHost { StartupToggleResult = false };
         host.Startup.Add(new StartupEntry("HKLM", "Svc", true, false));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host);
+        var vm = new StartupViewModel(state, host, () => false);
         await state.ScanAsync();
 
         vm.Items[0].IsEnabled = false;
+        Assert.True(vm.Items[0].IsEnabled);   // reverted
+        Assert.True(vm.ToggleFailed);
+    }
+
+    [Fact]
+    public async Task Startup_DryRun_TogglesLikeFailedToggle_NeverCallsHost()
+    {
+        var host = new FakeEngineHost();
+        host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
+        var state = new AppState(host);
+        var vm = new StartupViewModel(state, host, () => true);
+        await state.ScanAsync();
+
+        vm.Items[0].IsEnabled = false;
+
+        Assert.Empty(host.StartupToggles);
         Assert.True(vm.Items[0].IsEnabled);   // reverted
         Assert.True(vm.ToggleFailed);
     }
@@ -72,7 +88,7 @@ public sealed class SecondaryViewModelTests : IDisposable
             new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
         host.LogEntries.Add(new ActionLogEntry(DateTime.UtcNow, "fix", "fix: power-plan", "{}"));
         var state = new AppState(host);
-        var vm = new LogViewModel(state, host);
+        var vm = new LogViewModel(state, host, () => false);
         await state.ScanAsync();
 
         Assert.Single(vm.Entries);
@@ -82,6 +98,23 @@ public sealed class SecondaryViewModelTests : IDisposable
         await vm.UndoAsync(row);
         Assert.Equal(new[] { "power-plan" }, host.Undone);
         Assert.Equal(2, host.ScanCalls);
+    }
+
+    [Fact]
+    public async Task Log_DryRun_NeverCallsHostUndo()
+    {
+        var host = new FakeEngineHost();
+        host.Undoable.Add(new UndoableFix("power-plan",
+            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
+        var state = new AppState(host);
+        var vm = new LogViewModel(state, host, () => true);
+        await state.ScanAsync();
+
+        var row = Assert.Single(vm.Undoables);
+        await vm.UndoAsync(row);
+
+        Assert.Empty(host.Undone);
+        Assert.Equal(1, host.ScanCalls);   // only the initial scan, no rescan
     }
 
     [Fact]

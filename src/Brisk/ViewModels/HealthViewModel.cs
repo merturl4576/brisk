@@ -53,15 +53,17 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly AppState _state;
     private readonly IEngineHost _host;
     private readonly Loc _loc;
+    private readonly Func<bool> _isDryRun;
     private string _scoreText = "—";
     private string _message = "";
     private bool _createRestorePointFirst;
 
-    public HealthViewModel(AppState state, IEngineHost host, Loc loc)
+    public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun)
     {
         _state = state;
         _host = host;
         _loc = loc;
+        _isDryRun = isDryRun;
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
@@ -83,6 +85,11 @@ public sealed class HealthViewModel : ViewModelBase
     {
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
+        if (_isDryRun())
+        {
+            Message = _loc["dryrun.blocked"];
+            return;
+        }
         if (CreateRestorePointFirst && !_host.CreateRestorePoint())
         {
             Message = _loc["health.restorepointfailed"];
@@ -96,12 +103,22 @@ public sealed class HealthViewModel : ViewModelBase
 
     public async Task FixAsync(FindingRow row)
     {
+        if (_isDryRun())
+        {
+            Message = _loc["dryrun.blocked"];
+            return;
+        }
         Message = _host.Fix(row.RuleId).Message;
         await _state.ScanAsync();
     }
 
     public async Task UndoAsync(FindingRow row)
     {
+        if (_isDryRun())
+        {
+            Message = _loc["dryrun.blocked"];
+            return;
+        }
         Message = _host.Undo(row.RuleId).Message;
         await _state.ScanAsync();
     }

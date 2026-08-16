@@ -14,6 +14,7 @@ public sealed class FlyoutViewModel : ViewModelBase
     private readonly IEngineHost _host;
     private readonly CleanService _cleanService;
     private readonly Loc _loc;
+    private readonly Func<bool> _isDryRun;
 
     private string _healthText = "—";
     private string _findingsLine = "";
@@ -22,12 +23,13 @@ public sealed class FlyoutViewModel : ViewModelBase
     private CleanOutcome? _lastCleanOutcome;
 
     public FlyoutViewModel(AppState state, IEngineHost host,
-        CleanService cleanService, Loc loc)
+        CleanService cleanService, Loc loc, Func<bool> isDryRun)
     {
         _state = state;
         _host = host;
         _cleanService = cleanService;
         _loc = loc;
+        _isDryRun = isDryRun;
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = ScanNowAsync());
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(), () => HasSnapshot);
@@ -60,6 +62,7 @@ public sealed class FlyoutViewModel : ViewModelBase
     {
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
+        if (_isDryRun()) return;   // dry run: report only, nothing to fix here
         foreach (var finding in snapshot.Findings
                      .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
             _host.Fix(finding.RuleId);

@@ -44,12 +44,13 @@ public class CleanViewModelTests
     }
 
     private static (CleanViewModel, FakeEngineHost, FakeBin, AppState)
-        Build(FakeEngineHost host)
+        Build(FakeEngineHost host, Func<bool>? isDryRun = null)
     {
         var state = new AppState(host);
         var bin = new FakeBin();
         var vm = new CleanViewModel(state, host,
-            new CleanService(host, new Settings()), bin, EnglishLoc());
+            new CleanService(host, new Settings()), bin, EnglishLoc(),
+            isDryRun ?? (() => false));
         return (vm, host, bin, state);
     }
 
@@ -133,6 +134,21 @@ public class CleanViewModelTests
 
         Assert.Equal("clean --target windows-temp --yes", Assert.Single(host.ElevatedRuns));
         Assert.DoesNotContain(host.Cleans, c => c.TargetId == "windows-temp");
+    }
+
+    [Fact]
+    public async Task CleanLevel_ElevationTarget_DryRun_NeverElevates()
+    {
+        var (vm, host, _, state) = Build(Host(), isDryRun: () => true);
+        await state.ScanAsync();
+        var deep = vm.Levels.Single(l => l.Level == CleanupLevel.Deep);
+        deep.Targets.Single(t => t.Id == "windows-temp").IsSelected = true;
+
+        await vm.CleanLevelAsync(deep);
+
+        Assert.Empty(host.ElevatedRuns);
+        Assert.DoesNotContain(host.Cleans, c => c.TargetId == "windows-temp");
+        Assert.Contains(EnglishLoc()["dryrun.blocked"], vm.ProblemsText);
     }
 
     [Fact]

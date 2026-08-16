@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Brisk.Localization;
@@ -33,11 +34,12 @@ public class FlyoutViewModelTests
         return host;
     }
 
-    private static FlyoutViewModel Vm(FakeEngineHost host)
+    private static FlyoutViewModel Vm(FakeEngineHost host, Func<bool>? isDryRun = null)
     {
         var state = new AppState(host);
         return new FlyoutViewModel(state, host,
-            new CleanService(host, new Settings()), EnglishLoc());
+            new CleanService(host, new Settings()), EnglishLoc(),
+            isDryRun ?? (() => false));
     }
 
     [Fact]
@@ -64,6 +66,18 @@ public class FlyoutViewModelTests
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
         Assert.Equal(2, host.ScanCalls);
+    }
+
+    [Fact]
+    public async Task FixAll_DryRun_NeverCallsHostFix()
+    {
+        var host = HostWithSnapshot();
+        var vm = Vm(host, isDryRun: () => true);
+        await vm.ScanNowAsync();
+        await vm.FixAllAsync();
+
+        Assert.Empty(host.Fixed);
+        Assert.Equal(1, host.ScanCalls);   // only the initial scan, no rescan
     }
 
     [Fact]

@@ -42,13 +42,14 @@ public partial class App : Application
 
         var state = new AppState(composition.Host);
         var cleanService = new CleanService(composition.Host, composition.Settings);
+        Func<bool> isDryRun = () => composition.Settings.DryRun;
         var flyoutVm = new FlyoutViewModel(state, composition.Host, cleanService,
-            Loc.Instance);
-        var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance);
-        var startupVm = new StartupViewModel(state, composition.Host);
+            Loc.Instance, isDryRun);
+        var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance, isDryRun);
+        var startupVm = new StartupViewModel(state, composition.Host, isDryRun);
         var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
-            new ShellRecycleBinSession(), Loc.Instance);
-        var logVm = new LogViewModel(state, composition.Host);
+            new ShellRecycleBinSession(), Loc.Instance, isDryRun);
+        var logVm = new LogViewModel(state, composition.Host, isDryRun);
         var settingsVm = new SettingsViewModel(composition.Settings,
             composition.SettingsPath, composition.Launcher,
             themeSetting => { theme.Apply(themeSetting); _main?.ApplyTitleBar(); },

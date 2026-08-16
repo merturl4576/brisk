@@ -64,6 +64,7 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Bayat geliştirici önbellekleri</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Görsel efektler bilgisayarı yavaşlatıyor</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Depolama Alanı Algılayıcısı kapalı</value></data>
+  <data name="dryrun.blocked" xml:space="preserve"><value>kuru çalışma açık — hiçbir şey değiştirilmedi</value></data>
   <data name="tray.open" xml:space="preserve"><value>brisk'i aç</value></data>
   <data name="tray.scan" xml:space="preserve"><value>Şimdi tara</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Çıkış</value></data>
