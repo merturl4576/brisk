@@ -1,0 +1,58 @@
+<Window x:Class="Brisk.Windows.FlyoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Brisk.Localization"
+        Width="300" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False"
+        ShowActivated="True" Topmost="True"
+        Background="{DynamicResource Bg}">
+    <Border BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1">
+        <StackPanel Margin="0,4">
+            <DockPanel Margin="14,6,14,8">
+                <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"
+                           Text="{Binding [app.name], Source={x:Static loc:Loc.Instance}}" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <TextBlock Style="{StaticResource Muted}"
+                               Text="{Binding [flyout.health], Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"
+                               Margin="8,0,0,0"
+                               Foreground="{DynamicResource SeverityWarning}"
+                               Text="{Binding HealthText}" />
+                </StackPanel>
+            </DockPanel>
+            <Separator Background="{DynamicResource Divider}" Margin="0" />
+
+            <StackPanel Orientation="Horizontal" Margin="16,8,16,0">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource SeverityWarning}"
+                         VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
+                           Text="{Binding FindingsLine}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="16,7,16,0">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource Good}"
+                         VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
+                           Text="{Binding ReclaimLine}" />
+            </StackPanel>
+
+            <UniformGrid Columns="2" Margin="14,10,14,4">
+                <Button Style="{StaticResource PrimaryButton}" Margin="0,0,3,0"
+                        Command="{Binding FixAllCommand}"
+                        Content="{Binding [flyout.fixall], Source={x:Static loc:Loc.Instance}}" />
+                <Button Style="{StaticResource GhostButton}" Margin="3,0,0,0"
+                        Command="{Binding CleanSafeCommand}"
+                        Content="{Binding [flyout.clean], Source={x:Static loc:Loc.Instance}}" />
+            </UniformGrid>
+
+            <Separator Background="{DynamicResource Divider}" Margin="0,6,0,0" />
+            <DockPanel Margin="14,8,14,6">
+                <TextBlock Style="{StaticResource Faint}" Text="{Binding LastScanLine}" />
+                <Button DockPanel.Dock="Right" HorizontalAlignment="Right"
+                        Style="{StaticResource LinkButton}"
+                        Command="{Binding OpenDetailsCommand}"
+                        Content="{Binding [flyout.details], Source={x:Static loc:Loc.Instance}}" />
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>

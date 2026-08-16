@@ -27,6 +27,10 @@ public sealed class ThemeManager
         {
             Source = new Uri($"pack://application:,,,/Theming/{(Current == "dark" ? "Dark" : "Light")}.xaml"),
         });
+        dictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri("pack://application:,,,/Theming/Shared.xaml"),
+        });
         // Real system accent wins over the dictionary's fallback value. In dark
         // mode a light accent needs dark text on it and vice versa.
         Application.Current.Resources["AccentBrush"] = new SolidColorBrush(accent);
