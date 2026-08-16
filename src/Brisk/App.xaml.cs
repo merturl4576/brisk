@@ -50,20 +50,29 @@ public partial class App : Application
             Func<bool> isDryRun = () => composition.Settings.DryRun;
             var flyoutVm = new FlyoutViewModel(state, cleanService, fixAllService,
                 Loc.Instance, isDryRun);
+            var overviewVm = new OverviewViewModel(state, composition.Host,
+                fixAllService, cleanService, Loc.Instance, isDryRun);
             var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
-                isDryRun, fixAllService);
+                isDryRun, fixAllService, FindingSections.IsHealth);
+            var perfVm = new HealthViewModel(state, composition.Host, Loc.Instance,
+                isDryRun, fixAllService, FindingSections.IsPerformance);
             var startupVm = new StartupViewModel(state, composition.Host, isDryRun);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 new ShellRecycleBinSession(), Loc.Instance, isDryRun);
-            var logVm = new LogViewModel(state, composition.Host, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,
                 composition.SettingsPath, composition.Launcher,
                 themeSetting => { theme.Apply(themeSetting); _main?.ApplyTitleBar(); },
                 Loc.Instance.SetLanguage);
 
             _flyout = new FlyoutWindow(flyoutVm);
-            _main = new MainWindow(healthVm, startupVm, cleanVm, logVm, settingsVm, theme);
-            flyoutVm.OpenDetailsRequested += () => { _flyout.Hide(); ShowMain(); };
+            _main = new MainWindow(overviewVm, healthVm, perfVm, startupVm,
+                cleanVm, settingsVm, theme);
+            flyoutVm.OpenDetailsRequested += () =>
+            {
+                _flyout.Hide();
+                _main?.ShowOverview();
+                ShowMain();
+            };
 
             var accent = ThemeResolver.AccentFrom(
                 Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM")

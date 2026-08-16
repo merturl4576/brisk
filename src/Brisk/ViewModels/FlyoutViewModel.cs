@@ -92,13 +92,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
-            var eligible = snapshot.Cleaner.Targets.Where(t =>
-                t.Target.Level == CleanupLevel.Safe
-                && t.SkippedReason is null
-                && !t.Target.RequiresIndividualSelection
-                && !t.Target.RequiresExplicitOptIn
-                && t.Items.Count > 0);
-            LastCleanOutcome = await Task.Run(() => _cleanService.CleanTargets(eligible));
+            LastCleanOutcome = await Task.Run(() => _cleanService.CleanSafe(snapshot.Cleaner));
             await _state.ScanAsync();
         }
         finally

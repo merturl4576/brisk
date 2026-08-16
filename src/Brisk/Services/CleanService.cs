@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using BriskEngine.Models;
 
 namespace Brisk.Services;
@@ -18,6 +19,17 @@ public sealed class CleanService
         _host = host;
         _settings = settings;
     }
+
+    /// The one definition of "safe to clean in one click" — shared by the
+    /// flyout and the overview page. Deletion stays behind its own consented
+    /// button; fix-all must never call this.
+    public CleanOutcome CleanSafe(ScanResult scan) => CleanTargets(
+        scan.Targets.Where(t =>
+            t.Target.Level == CleanupLevel.Safe
+            && t.SkippedReason is null
+            && !t.Target.RequiresIndividualSelection
+            && !t.Target.RequiresExplicitOptIn
+            && t.Items.Count > 0));
 
     public CleanOutcome CleanTargets(IEnumerable<TargetScanResult> scans)
     {

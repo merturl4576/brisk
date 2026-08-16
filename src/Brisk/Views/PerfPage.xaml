@@ -1,0 +1,93 @@
+<UserControl x:Class="Brisk.Views.PerfPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Brisk.Localization"
+             xmlns:Brisk="clr-namespace:Brisk.Views">
+    <DockPanel Margin="18,16">
+        <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionLabel}"
+                   Margin="0,0,0,10"
+                   Text="{Binding [perf.title], Source={x:Static loc:Loc.Instance}}" />
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
+                   Text="{Binding Message}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Message}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <ItemsControl ItemsSource="{Binding Rows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
+                <TextBlock Margin="0,10,0,6"
+                           Text="{Binding [health.advise.section], Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource SectionLabel}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding AdviseRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding AdviseRows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
+
+                <StackPanel x:Name="StartupSection" Margin="0,16,0,0">
+                    <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
+                               Text="{Binding [startup.title], Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,0,0,6"
+                               Foreground="{DynamicResource SeverityWarning}"
+                               Text="{Binding [startup.togglefailed], Source={x:Static loc:Loc.Instance}}"
+                               Visibility="{Binding ToggleFailed,
+                                   Converter={x:Static Brisk:BoolToVis.Instance}}" />
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="6" MinHeight="44" Padding="14,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background"
+                                                            Value="{DynamicResource BgHover}" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <DockPanel>
+                                        <CheckBox IsChecked="{Binding IsEnabled}"
+                                                  VerticalAlignment="Center" />
+                                        <StackPanel DockPanel.Dock="Right"
+                                                    Orientation="Horizontal"
+                                                    HorizontalAlignment="Right">
+                                            <Ellipse Width="8" Height="8"
+                                                     VerticalAlignment="Center" Margin="0,0,10,0"
+                                                     Fill="{DynamicResource SeverityWarning}"
+                                                     ToolTip="{Binding [startup.heavy],
+                                                         Source={x:Static loc:Loc.Instance}}"
+                                                     Visibility="{Binding IsHeavy,
+                                                         Converter={x:Static Brisk:BoolToVis.Instance}}" />
+                                            <TextBlock Style="{StaticResource Faint}"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding Hive}" />
+                                        </StackPanel>
+                                        <TextBlock Style="{StaticResource Body}"
+                                                   Margin="10,0" VerticalAlignment="Center"
+                                                   Text="{Binding Name}" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

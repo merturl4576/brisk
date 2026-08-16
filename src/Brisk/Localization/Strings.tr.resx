@@ -6,9 +6,18 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="app.name" xml:space="preserve"><value>brisk</value></data>
   <data name="nav.health" xml:space="preserve"><value>Sağlık</value></data>
-  <data name="nav.clean" xml:space="preserve"><value>Temizlik</value></data>
-  <data name="nav.log" xml:space="preserve"><value>Günlük</value></data>
+  <data name="nav.performance" xml:space="preserve"><value>Performans</value></data>
+  <data name="nav.clean" xml:space="preserve"><value>Depolama</value></data>
   <data name="nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="perf.title" xml:space="preserve"><value>Performans</value></data>
+  <data name="overview.status.good" xml:space="preserve"><value>Bilgisayarın iyi durumda</value></data>
+  <data name="overview.status.attention" xml:space="preserve"><value>İlgilenilmesi gereken bulgular var</value></data>
+  <data name="overview.cleansafe" xml:space="preserve"><value>Güvenli temizlik</value></data>
+  <data name="overview.report.title" xml:space="preserve"><value>Yapılanlar</value></data>
+  <data name="overview.report.fixed" xml:space="preserve"><value>Düzeltildi: {0}</value></data>
+  <data name="overview.report.disabled" xml:space="preserve"><value>Açılışta kapatıldı: {0}</value></data>
+  <data name="overview.report.enjoy" xml:space="preserve"><value>Bitti — bilgisayarın artık daha akıcı olmalı.</value></data>
+  <data name="overview.recent" xml:space="preserve"><value>Son işlemler</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
@@ -26,6 +35,7 @@
   <data name="health.noscan" xml:space="preserve"><value>Bulguları görmek için tarama çalıştır</value></data>
   <data name="health.restorepointfailed" xml:space="preserve"><value>geri yükleme noktası oluşturulamadı — hiçbir şey değiştirilmedi</value></data>
   <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
+  <data name="health.advise.section" xml:space="preserve"><value>Öneriler</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>
@@ -44,9 +54,6 @@
   <data name="clean.elevation" xml:space="preserve"><value>Yönetici gerekiyor</value></data>
   <data name="clean.skipped" xml:space="preserve"><value>atlandı</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
-  <data name="log.actions" xml:space="preserve"><value>İşlemler</value></data>
-  <data name="log.undoable" xml:space="preserve"><value>Geri alınabilir düzeltmeler</value></data>
-  <data name="log.empty" xml:space="preserve"><value>Henüz bir şey yok</value></data>
   <data name="settings.language" xml:space="preserve"><value>Dil</value></data>
   <data name="settings.theme" xml:space="preserve"><value>Tema</value></data>
   <data name="settings.dryrun" xml:space="preserve"><value>Kuru çalıştırma (yalnızca raporla, hiçbir şeyi değiştirme)</value></data>

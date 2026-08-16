@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine.Diagnostics;
-using BriskEngine.Logging;
 using Xunit;
 
 namespace Brisk.Tests;
@@ -78,43 +77,6 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.Empty(host.StartupToggles);
         Assert.True(vm.Items[0].IsEnabled);   // reverted
         Assert.True(vm.ToggleFailed);
-    }
-
-    [Fact]
-    public async Task Log_PopulatesAndUndoes()
-    {
-        var host = new FakeEngineHost();
-        host.Undoable.Add(new UndoableFix("power-plan",
-            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
-        host.LogEntries.Add(new ActionLogEntry(DateTime.UtcNow, "fix", "fix: power-plan", "{}"));
-        var state = new AppState(host);
-        var vm = new LogViewModel(state, host, () => false);
-        await state.ScanAsync();
-
-        Assert.Single(vm.Entries);
-        var row = Assert.Single(vm.Undoables);
-        Assert.Equal("power-plan", row.RuleId);
-
-        await vm.UndoAsync(row);
-        Assert.Equal(new[] { "power-plan" }, host.Undone);
-        Assert.Equal(2, host.ScanCalls);
-    }
-
-    [Fact]
-    public async Task Log_DryRun_NeverCallsHostUndo()
-    {
-        var host = new FakeEngineHost();
-        host.Undoable.Add(new UndoableFix("power-plan",
-            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
-        var state = new AppState(host);
-        var vm = new LogViewModel(state, host, () => true);
-        await state.ScanAsync();
-
-        var row = Assert.Single(vm.Undoables);
-        await vm.UndoAsync(row);
-
-        Assert.Empty(host.Undone);
-        Assert.Equal(1, host.ScanCalls);   // only the initial scan, no rescan
     }
 
     [Fact]

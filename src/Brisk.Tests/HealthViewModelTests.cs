@@ -46,19 +46,49 @@ public class HealthViewModelTests
         var (vm, _, state) = Build();
         await state.ScanAsync();
 
-        Assert.Equal(2, vm.Rows.Count);
-        var power = vm.Rows.Single(r => r.RuleId == "power-plan");
+        var power = Assert.Single(vm.Rows);
+        Assert.Equal("power-plan", power.RuleId);
         // resx has rule.power-plan.title -> localized, not the engine string
         Assert.Equal("Power plan is limiting speed", power.Title);
         Assert.Equal("SeverityWarning", power.SeverityKey);
         Assert.Equal("●●●●○", power.ImpactText);
         Assert.True(power.CanFix);
 
-        var custom = vm.Rows.Single(r => r.RuleId == "custom-x");
+        // Advise findings live in their own "Recommendations" section
+        var custom = Assert.Single(vm.AdviseRows);
+        Assert.Equal("custom-x", custom.RuleId);
         // rule.custom-x.title is not in the resx -> engine English fallback
         Assert.Equal("Title custom-x", custom.Title);
         Assert.True(custom.IsAdvise);
         Assert.False(custom.CanFix);
+    }
+
+    [Fact]
+    public async Task SectionFilter_SplitsFindingsAcrossPages()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("ram-pressure", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("storage-sense", cat: RuleCategory.Confirm, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("some-future-rule", cat: RuleCategory.Confirm, canFix: true),
+        });
+        var state = new AppState(host);
+        var health = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), FindingSections.IsHealth);
+        var perf = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), FindingSections.IsPerformance);
+        await state.ScanAsync();
+
+        // Performans: speed levers incl. the advise-level RAM finding
+        Assert.Equal(new[] { "power-plan" }, perf.Rows.Select(r => r.RuleId));
+        Assert.Equal(new[] { "ram-pressure" }, perf.AdviseRows.Select(r => r.RuleId));
+        // Sağlık: machine/disk condition; unknown rules default here
+        Assert.Equal(new[] { "storage-sense", "some-future-rule" },
+            health.Rows.Select(r => r.RuleId));
+        Assert.Equal(new[] { "thermals" }, health.AdviseRows.Select(r => r.RuleId));
     }
 
     [Fact]

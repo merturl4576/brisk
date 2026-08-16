@@ -9,27 +9,32 @@ public partial class MainWindow : Window
 {
     private readonly ThemeManager _theme;
 
-    public MainWindow(HealthViewModel health, StartupViewModel startup,
-        CleanViewModel clean, LogViewModel log, SettingsViewModel settings,
-        ThemeManager theme)
+    public MainWindow(OverviewViewModel overview, HealthViewModel health,
+        HealthViewModel performance, StartupViewModel startup,
+        CleanViewModel clean, SettingsViewModel settings, ThemeManager theme)
     {
         _theme = theme;
         InitializeComponent();
-        HealthView.Bind(health, startup);
+        OverviewView.DataContext = overview;
+        HealthView.Bind(health);
+        PerfView.Bind(performance, startup);
         CleanView.DataContext = clean;
-        LogView.DataContext = log;
         SettingsView.DataContext = settings;
         SourceInitialized += (_, _) => ApplyTitleBar();
     }
 
     public void ApplyTitleBar() => Dwm.DarkTitleBar(this, _theme.Current == "dark");
 
+    /// The flyout's "Open details" always lands on the whole-PC overview.
+    public void ShowOverview() => NavOverview.IsChecked = true;
+
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {
-        if (HealthView is null) return;   // fires during InitializeComponent
+        if (OverviewView is null) return;   // fires during InitializeComponent
+        OverviewView.Visibility = sender == NavOverview ? Visibility.Visible : Visibility.Collapsed;
         HealthView.Visibility = sender == NavHealth ? Visibility.Visible : Visibility.Collapsed;
+        PerfView.Visibility = sender == NavPerf ? Visibility.Visible : Visibility.Collapsed;
         CleanView.Visibility = sender == NavClean ? Visibility.Visible : Visibility.Collapsed;
-        LogView.Visibility = sender == NavLog ? Visibility.Visible : Visibility.Collapsed;
         SettingsView.Visibility = sender == NavSettings ? Visibility.Visible : Visibility.Collapsed;
     }
 

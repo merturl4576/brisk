@@ -7,9 +7,5 @@ public partial class HealthPage : UserControl
 {
     public HealthPage() { InitializeComponent(); }
 
-    public void Bind(HealthViewModel health, StartupViewModel startup)
-    {
-        DataContext = health;
-        StartupSection.DataContext = startup;
-    }
+    public void Bind(HealthViewModel health) => DataContext = health;
 }

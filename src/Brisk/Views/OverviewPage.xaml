@@ -1,0 +1,139 @@
+<UserControl x:Class="Brisk.Views.OverviewPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Brisk.Localization"
+             xmlns:Brisk="clr-namespace:Brisk.Views">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,26,28,24" MaxWidth="640" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource ScoreText}" FontSize="42"
+                       Text="{Binding ScoreText}" />
+            <TextBlock Style="{StaticResource Body}" FontSize="13.5"
+                       Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0"
+                       Text="{Binding StatusText}" TextWrapping="Wrap" />
+            <TextBlock Style="{StaticResource Faint}" Margin="0,10,0,0"
+                       Text="{Binding SummaryText}" TextWrapping="Wrap" />
+
+            <StackPanel Margin="0,16,0,0"
+                        Visibility="{Binding State.IsScanning,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}">
+                <ProgressBar IsIndeterminate="True" Height="3" BorderThickness="0"
+                             Background="{DynamicResource Divider}"
+                             Foreground="{DynamicResource AccentBrush}" />
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Style="{StaticResource Muted}"
+                               Text="{Binding [flyout.scanning], Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Style="{StaticResource Faint}" Margin="6,0,0,0"
+                               Text="{Binding State.ProgressText}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
+                        Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Margin="0,0,8,0" Command="{Binding FixAllCommand}"
+                        Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Command="{Binding CleanSafeCommand}"
+                        Content="{Binding [overview.cleansafe], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+
+            <Border CornerRadius="6" Background="{DynamicResource BgElevated}"
+                    Padding="14,10" Margin="0,20,0,0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ReportLines.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
+                               Text="{Binding [overview.report.title], Source={x:Static loc:Loc.Instance}}" />
+                    <ItemsControl ItemsSource="{Binding ReportLines}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{StaticResource Body}" Margin="0,2"
+                                           TextWrapping="Wrap" Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Margin="0,20,0,0">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Recent.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
+                           Text="{Binding [overview.recent], Source={x:Static loc:Loc.Instance}}" />
+                <ItemsControl ItemsSource="{Binding Recent}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Style="{StaticResource Body}"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding Title}" />
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                            HorizontalAlignment="Right">
+                                    <TextBlock Style="{StaticResource Faint}"
+                                               VerticalAlignment="Center" Margin="0,0,10,0"
+                                               Text="{Binding WhenText}" />
+                                    <Button Style="{StaticResource GhostButton}"
+                                            Command="{Binding UndoCommand}"
+                                            Content="{Binding [health.undo],
+                                                Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

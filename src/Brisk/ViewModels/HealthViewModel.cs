@@ -55,6 +55,7 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
     private readonly FixAllService _fixAll;
+    private readonly Func<DiagnosticFinding, bool>? _filter;
     private string _scoreText = "—";
     private string _scoreBrushKey = "";
     private string _message = "";
@@ -62,13 +63,14 @@ public sealed class HealthViewModel : ViewModelBase
     private bool _busy;
 
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
-        FixAllService fixAll)
+        FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null)
     {
         _state = state;
         _host = host;
         _loc = loc;
         _isDryRun = isDryRun;
         _fixAll = fixAll;
+        _filter = filter;
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
@@ -76,6 +78,7 @@ public sealed class HealthViewModel : ViewModelBase
     }
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
+    public ObservableCollection<FindingRow> AdviseRows { get; } = new();
     public AppState State => _state;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
     public string ScoreText { get => _scoreText; private set => Set(ref _scoreText, value); }
@@ -171,11 +174,14 @@ public sealed class HealthViewModel : ViewModelBase
         if (snapshot is null) return;
         var undoable = _host.ListUndoable().Select(u => u.RuleId).ToHashSet();
         Rows.Clear();
+        AdviseRows.Clear();
         foreach (var finding in snapshot.Findings
+                     .Where(f => _filter?.Invoke(f) ?? true)
                      .OrderByDescending(f => f.Severity)
                      .ThenByDescending(f => f.ImpactStars))
-            Rows.Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
-                row => _ = FixAsync(row), row => _ = UndoAsync(row)));
+            (finding.Category == RuleCategory.Advise ? AdviseRows : Rows)
+                .Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
+                    row => _ = FixAsync(row), row => _ = UndoAsync(row)));
         ScoreText = snapshot.Health.ToString();
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
         FixAllCommand.RaiseCanExecuteChanged();

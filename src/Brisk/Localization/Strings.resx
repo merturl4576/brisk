@@ -6,9 +6,18 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="app.name" xml:space="preserve"><value>brisk</value></data>
   <data name="nav.health" xml:space="preserve"><value>Health</value></data>
-  <data name="nav.clean" xml:space="preserve"><value>Clean</value></data>
-  <data name="nav.log" xml:space="preserve"><value>Log</value></data>
+  <data name="nav.performance" xml:space="preserve"><value>Performance</value></data>
+  <data name="nav.clean" xml:space="preserve"><value>Storage</value></data>
   <data name="nav.settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="perf.title" xml:space="preserve"><value>Performance</value></data>
+  <data name="overview.status.good" xml:space="preserve"><value>Your PC is in good shape</value></data>
+  <data name="overview.status.attention" xml:space="preserve"><value>Some findings need attention</value></data>
+  <data name="overview.cleansafe" xml:space="preserve"><value>Safe clean</value></data>
+  <data name="overview.report.title" xml:space="preserve"><value>What was done</value></data>
+  <data name="overview.report.fixed" xml:space="preserve"><value>Fixed: {0}</value></data>
+  <data name="overview.report.disabled" xml:space="preserve"><value>Startup disabled: {0}</value></data>
+  <data name="overview.report.enjoy" xml:space="preserve"><value>Done — your PC should feel snappier.</value></data>
+  <data name="overview.recent" xml:space="preserve"><value>Recent actions</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
@@ -26,6 +35,7 @@
   <data name="health.noscan" xml:space="preserve"><value>Run a scan to see findings</value></data>
   <data name="health.restorepointfailed" xml:space="preserve"><value>restore point was not created — nothing was changed</value></data>
   <data name="health.advise" xml:space="preserve"><value>advice</value></data>
+  <data name="health.advise.section" xml:space="preserve"><value>Recommendations</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>
@@ -44,9 +54,6 @@
   <data name="clean.elevation" xml:space="preserve"><value>Administrator required</value></data>
   <data name="clean.skipped" xml:space="preserve"><value>skipped</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
-  <data name="log.actions" xml:space="preserve"><value>Actions</value></data>
-  <data name="log.undoable" xml:space="preserve"><value>Undoable fixes</value></data>
-  <data name="log.empty" xml:space="preserve"><value>Nothing here yet</value></data>
   <data name="settings.language" xml:space="preserve"><value>Language</value></data>
   <data name="settings.theme" xml:space="preserve"><value>Theme</value></data>
   <data name="settings.dryrun" xml:space="preserve"><value>Dry run (report only, never change anything)</value></data>
