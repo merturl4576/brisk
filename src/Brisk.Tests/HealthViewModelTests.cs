@@ -79,7 +79,16 @@ public class HealthViewModelTests
     [Fact]
     public async Task FixAll_WithRestorePointRefused_AbortsWithMessage()
     {
-        var (vm, host, state) = Build();
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", Severity.Warning, RuleCategory.Auto,
+                stars: 4, canFix: true),
+        });
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, loc);
+
         await state.ScanAsync();
         vm.CreateRestorePointFirst = true;
         host.RestorePointResult = false;
@@ -88,7 +97,7 @@ public class HealthViewModelTests
 
         Assert.Equal(1, host.RestorePointCalls);
         Assert.Empty(host.Fixed);
-        Assert.NotEqual("", vm.Message);
+        Assert.Equal(loc["health.restorepointfailed"], vm.Message);
     }
 
     [Fact]

@@ -85,7 +85,7 @@ public sealed class HealthViewModel : ViewModelBase
         if (snapshot is null) return;
         if (CreateRestorePointFirst && !_host.CreateRestorePoint())
         {
-            Message = "restore point was not created — nothing was changed";
+            Message = _loc["health.restorepointfailed"];
             return;
         }
         foreach (var finding in snapshot.Findings
