@@ -66,6 +66,10 @@ public class LocTests
     [InlineData("rule.startup-bloat.done")]
     [InlineData("rule.visual-effects.done")]
     [InlineData("rule.storage-sense.done")]
+    [InlineData("overview.live.cpu")]
+    [InlineData("overview.live.ram")]
+    [InlineData("overview.live.temp")]
+    [InlineData("overview.live.disk")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

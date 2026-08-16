@@ -20,8 +20,28 @@ public class OverviewViewModelTests
         return loc;
     }
 
+    /// Trivial ILiveMetrics fake (Fakes.cs is locked): canned reading, and
+    /// Start/Stop bookkeeping that mirrors the real timer's idempotent Start.
+    private sealed class FakeLive : ILiveMetrics
+    {
+        public LiveReading Next { get; set; } = new(null, null, null, null, 0);
+        public bool IsTicking { get; private set; }
+        public int StartCalls { get; private set; }
+        public LiveReading Read() => Next;
+
+        public void Start(Action onTick)
+        {
+            if (IsTicking) return;
+            IsTicking = true;
+            StartCalls++;
+            onTick();
+        }
+
+        public void Stop() => IsTicking = false;
+    }
+
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State) Build(
-        Func<bool>? isDryRun = null)
+        Func<bool>? isDryRun = null, FakeLive? live = null)
     {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(
@@ -33,8 +53,8 @@ public class OverviewViewModelTests
             TestData.Target("user-temp", CleanupLevel.Safe, 2048));
         var state = new AppState(host);
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, new Settings()), EnglishLoc(),
-            isDryRun ?? (() => false));
+            new CleanService(host, new Settings()), live ?? new FakeLive(),
+            EnglishLoc(), isDryRun ?? (() => false));
         return (vm, host, state);
     }
 
@@ -161,7 +181,7 @@ public class OverviewViewModelTests
         host.Inner.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         var state = new AppState(host);
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, new Settings()), loc, () => false);
+            new CleanService(host, new Settings()), new FakeLive(), loc, () => false);
         await state.ScanAsync();
 
         await vm.FixAllAsync();
@@ -187,7 +207,7 @@ public class OverviewViewModelTests
         host.Inner.Startup.Add(new StartupEntry("HKCU", "Steam", true, true));
         var state = new AppState(host);
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, new Settings()), loc, () => false);
+            new CleanService(host, new Settings()), new FakeLive(), loc, () => false);
         await state.ScanAsync();
 
         await vm.FixAllAsync();
@@ -255,7 +275,8 @@ public class OverviewViewModelTests
         var state = new AppState(host);
         var settings = new Settings { DryRun = true };
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, settings), loc, () => settings.DryRun);
+            new CleanService(host, settings), new FakeLive(), loc,
+            () => settings.DryRun);
         await state.ScanAsync();
 
         await vm.CleanSafeAsync();
@@ -359,6 +380,58 @@ public class OverviewViewModelTests
         await clean;
 
         Assert.Single(host.Cleans);
+    }
+
+    [Fact]
+    public void LiveTiles_VisibilityStartsAndStopsTheTicking()
+    {
+        var live = new FakeLive
+        {
+            Next = new LiveReading(37.4, 61.8, 71.2, "GPU", 122L << 30),
+        };
+        var (vm, _, _) = Build(live: live);
+
+        vm.SetLiveVisible(true);
+        Assert.True(live.IsTicking);
+        Assert.Equal(1, live.StartCalls);   // Start fires one immediate tick
+
+        vm.SetLiveVisible(true);            // idempotent while visible
+        Assert.Equal(1, live.StartCalls);
+
+        vm.SetLiveVisible(false);           // hidden/minimized: nothing ticks
+        Assert.False(live.IsTicking);
+    }
+
+    [Fact]
+    public async Task LiveTick_FormatsValues_InvariantWithUnits()
+    {
+        var live = new FakeLive
+        {
+            Next = new LiveReading(37.4, 61.8, 71.2, "GPU", 122L << 30),
+        };
+        var (vm, _, _) = Build(live: live);
+
+        await vm.LiveTickAsync();
+
+        Assert.Equal("37%", vm.LiveCpuText);
+        Assert.Equal("62%", vm.LiveRamText);
+        Assert.Equal("71°C", vm.LiveTempText);
+        Assert.Equal("Temperature · GPU", vm.LiveTempCaption);
+        Assert.Equal("122.0 GB", vm.LiveDiskText);
+    }
+
+    [Fact]
+    public async Task LiveTick_MissingSensors_ShowDashPlaceholders()
+    {
+        var live = new FakeLive { Next = new LiveReading(null, null, null, null, 0) };
+        var (vm, _, _) = Build(live: live);
+
+        await vm.LiveTickAsync();
+
+        Assert.Equal("—", vm.LiveCpuText);
+        Assert.Equal("—", vm.LiveRamText);
+        Assert.Equal("—", vm.LiveTempText);
+        Assert.Equal("Temperature", vm.LiveTempCaption);   // no source suffix
     }
 
     /// Fakes.cs is locked; startup-disable semantics are simulated with a

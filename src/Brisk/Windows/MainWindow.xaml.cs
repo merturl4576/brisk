@@ -8,12 +8,14 @@ namespace Brisk.Windows;
 public partial class MainWindow : Window
 {
     private readonly ThemeManager _theme;
+    private readonly OverviewViewModel _overview;
 
     public MainWindow(OverviewViewModel overview, HealthViewModel health,
         HealthViewModel performance, StartupViewModel startup,
         CleanViewModel clean, SettingsViewModel settings, ThemeManager theme)
     {
         _theme = theme;
+        _overview = overview;
         InitializeComponent();
         OverviewView.DataContext = overview;
         HealthView.Bind(health);
@@ -21,7 +23,15 @@ public partial class MainWindow : Window
         CleanView.DataContext = clean;
         SettingsView.DataContext = settings;
         SourceInitialized += (_, _) => ApplyTitleBar();
+        // Live tiles pulse only while this window is truly on screen: shown
+        // starts it; hide/close-to-tray/minimize stops it. The flyout never
+        // hosts live tiles, so no other window can start the timer.
+        IsVisibleChanged += (_, _) => UpdateLiveTicking();
+        StateChanged += (_, _) => UpdateLiveTicking();
     }
+
+    private void UpdateLiveTicking() =>
+        _overview.SetLiveVisible(IsVisible && WindowState != WindowState.Minimized);
 
     public void ApplyTitleBar() => Dwm.DarkTitleBar(this, _theme.Current == "dark");
 

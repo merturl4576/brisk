@@ -12,6 +12,7 @@ namespace Brisk.Services;
 public sealed class AppComposition
 {
     public required IEngineHost Host { get; init; }
+    public required ILiveMetrics LiveMetrics { get; init; }
     public required Settings Settings { get; init; }
     public required string SettingsPath { get; init; }
     public required StartupLauncher Launcher { get; init; }
@@ -26,10 +27,14 @@ public static class AppServices
             "brisk");
         var runner = new RealProcessRunner();
         var registry = new RealRegistryProbe();
+        // Shared with LiveMetrics below — one LibreHardwareMonitor session and
+        // one memory-status reader for both diagnostics and the live tiles.
+        var processInfo = new RealProcessInfoProbe();
         // RealSensorProbe is IDisposable but lives for the whole app lifetime.
+        var sensors = new RealSensorProbe();
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), registry,
-            new RealProcessInfoProbe(), new RealSensorProbe(),
+            processInfo, sensors,
             new RealDiskInfoProbe(), new RealFileProbe(),
             new RealProcessLister(), dataDir);
         var logPath = Path.Combine(dataDir, "action-log.jsonl");
@@ -49,6 +54,7 @@ public static class AppServices
         return new AppComposition
         {
             Host = host,
+            LiveMetrics = new LiveMetrics(sensors, processInfo, host.FreeDiskBytes),
             Settings = Settings.Load(settingsPath),
             SettingsPath = settingsPath,
             Launcher = new StartupLauncher(registry,

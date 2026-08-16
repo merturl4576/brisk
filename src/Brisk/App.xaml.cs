@@ -51,7 +51,8 @@ public partial class App : Application
             var flyoutVm = new FlyoutViewModel(state, cleanService, fixAllService,
                 Loc.Instance, isDryRun);
             var overviewVm = new OverviewViewModel(state, composition.Host,
-                fixAllService, cleanService, Loc.Instance, isDryRun);
+                fixAllService, cleanService, composition.LiveMetrics,
+                Loc.Instance, isDryRun);
             var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
                 isDryRun, fixAllService, FindingSections.IsHealth);
             var perfVm = new HealthViewModel(state, composition.Host, Loc.Instance,

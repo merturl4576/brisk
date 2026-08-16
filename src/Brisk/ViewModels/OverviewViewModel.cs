@@ -59,6 +59,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private readonly IEngineHost _host;
     private readonly FixAllService _fixAll;
     private readonly CleanService _cleanService;
+    private readonly ILiveMetrics _live;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
     private string _scoreText = "—";
@@ -66,17 +67,25 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _statusText = "";
     private string _summaryText = "";
     private string _reportSummary = "";
+    private string _liveCpuText = "—";
+    private string _liveRamText = "—";
+    private string _liveTempText = "—";
+    private string _liveTempCaption;
+    private string _liveDiskText = "—";
+    private bool _liveBusy;
     private bool _busy;
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
-        CleanService cleanService, Loc loc, Func<bool> isDryRun)
+        CleanService cleanService, ILiveMetrics live, Loc loc, Func<bool> isDryRun)
     {
         _state = state;
         _host = host;
         _fixAll = fixAll;
         _cleanService = cleanService;
+        _live = live;
         _loc = loc;
         _isDryRun = isDryRun;
+        _liveTempCaption = loc["overview.live.temp"];
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() =>
         {
@@ -111,9 +120,62 @@ public sealed class OverviewViewModel : ViewModelBase
         get => _reportSummary;
         private set => Set(ref _reportSummary, value);
     }
+    public string LiveCpuText { get => _liveCpuText; private set => Set(ref _liveCpuText, value); }
+    public string LiveRamText { get => _liveRamText; private set => Set(ref _liveRamText, value); }
+    public string LiveTempText { get => _liveTempText; private set => Set(ref _liveTempText, value); }
+    /// "Temperature · GPU" — caption plus the sensor the reading came from.
+    public string LiveTempCaption
+    {
+        get => _liveTempCaption;
+        private set => Set(ref _liveTempCaption, value);
+    }
+    public string LiveDiskText { get => _liveDiskText; private set => Set(ref _liveDiskText, value); }
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CleanSafeCommand { get; }
+
+    /// MainWindow calls this from IsVisibleChanged/StateChanged. The live
+    /// pulse exists only while the window is actually on screen — hidden,
+    /// closed-to-tray or minimized means no timer at all (spec promise).
+    public void SetLiveVisible(bool visible)
+    {
+        if (visible) _live.Start(() => _ = LiveTickAsync());
+        else _live.Stop();
+    }
+
+    /// One tile refresh. The read runs off the UI thread; a tick that finds
+    /// the previous one still in flight simply skips (no queue, no overlap).
+    public async Task LiveTickAsync()
+    {
+        if (_liveBusy) return;
+        _liveBusy = true;
+        try
+        {
+            var reading = await Task.Run(_live.Read);
+            LiveCpuText = Percent(reading.CpuPercent);
+            LiveRamText = Percent(reading.RamPercent);
+            LiveTempText = reading.TempC is { } t
+                ? Math.Round(t).ToString(CultureInfo.InvariantCulture) + "°C"
+                : "—";
+            LiveTempCaption = reading.TempSource is { } source
+                ? _loc["overview.live.temp"] + " · " + source
+                : _loc["overview.live.temp"];
+            LiveDiskText = Fmt.Bytes(reading.FreeDiskBytes);
+        }
+        catch
+        {
+            // A failing sensor read never breaks the page — tiles keep the
+            // last good values and the next tick tries again.
+        }
+        finally
+        {
+            _liveBusy = false;
+        }
+    }
+
+    private static string Percent(double? value) => value is { } v
+        ? Math.Round(v).ToString(CultureInfo.InvariantCulture) + "%"
+        : "—";
 
     public async Task FixAllAsync()
     {
