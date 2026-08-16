@@ -1,0 +1,36 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using BriskEngine.Cleaning;
+using BriskEngine.Diagnostics;
+using BriskEngine.Logging;
+using BriskEngine.Models;
+
+namespace Brisk.Services;
+
+public sealed record ScanSnapshot(
+    IReadOnlyList<DiagnosticFinding> Findings,
+    ScanResult Cleaner,
+    int Health,
+    DateTime CompletedUtc);
+
+/// The only door between view models and the engine. Everything here is
+/// fakeable; nothing in ViewModels/ touches probes, registry or files.
+public interface IEngineHost
+{
+    Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
+        CancellationToken ct = default);
+    FixOutcome Fix(string ruleId);
+    FixOutcome Undo(string ruleId);
+    CleanReport Clean(TargetScanResult scan, bool dryRun);
+    IReadOnlyList<UndoableFix> ListUndoable();
+    IReadOnlyList<ActionLogEntry> ReadLog(int max = 200);
+    IReadOnlyList<StartupEntry> ListStartup();
+    bool SetStartupEnabled(string hive, string name, bool enabled);
+    bool RunElevated(string cliArgs);
+    bool CreateRestorePoint();
+    long FreeDiskBytes();
+    long LifetimeReclaimedBytes();
+    bool IsElevated();
+}
