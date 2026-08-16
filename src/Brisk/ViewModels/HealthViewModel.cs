@@ -55,6 +55,7 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
     private string _scoreText = "—";
+    private string _scoreBrushKey = "";
     private string _message = "";
     private bool _createRestorePointFirst;
     private bool _busy;
@@ -72,7 +73,14 @@ public sealed class HealthViewModel : ViewModelBase
     }
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
+    public AppState State => _state;
+    public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
     public string ScoreText { get => _scoreText; private set => Set(ref _scoreText, value); }
+    public string ScoreBrushKey
+    {
+        get => _scoreBrushKey;
+        private set => Set(ref _scoreBrushKey, value);
+    }
     public string Message { get => _message; private set => Set(ref _message, value); }
     public bool CreateRestorePointFirst
     {
@@ -85,7 +93,7 @@ public sealed class HealthViewModel : ViewModelBase
     public async Task FixAllAsync()
     {
         if (_busy) return;
-        _busy = true;                    // set before the first await — re-entry guard
+        IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
             var snapshot = _state.Snapshot;
@@ -100,21 +108,27 @@ public sealed class HealthViewModel : ViewModelBase
                 Message = _loc["health.restorepointfailed"];
                 return;
             }
-            foreach (var finding in snapshot.Findings
-                         .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
-                Message = (await Task.Run(() => _host.Fix(finding.RuleId))).Message;
+            var fixables = snapshot.Findings
+                .Where(f => f.Category == RuleCategory.Auto && f.CanFix)
+                .ToList();
+            var applied = 0;
+            foreach (var finding in fixables)
+                if ((await Task.Run(() => _host.Fix(finding.RuleId))).Ok) applied++;
+            Message = applied == fixables.Count
+                ? _loc.F("health.fixdone", applied)
+                : _loc.F("health.fixpartial", applied, fixables.Count);
             await _state.ScanAsync();
         }
         finally
         {
-            _busy = false;
+            IsBusy = false;
         }
     }
 
     public async Task FixAsync(FindingRow row)
     {
         if (_busy) return;
-        _busy = true;                    // set before the first await — re-entry guard
+        IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
             if (_isDryRun())
@@ -127,14 +141,14 @@ public sealed class HealthViewModel : ViewModelBase
         }
         finally
         {
-            _busy = false;
+            IsBusy = false;
         }
     }
 
     public async Task UndoAsync(FindingRow row)
     {
         if (_busy) return;
-        _busy = true;                    // set before the first await — re-entry guard
+        IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
             if (_isDryRun())
@@ -147,7 +161,7 @@ public sealed class HealthViewModel : ViewModelBase
         }
         finally
         {
-            _busy = false;
+            IsBusy = false;
         }
     }
 
@@ -163,6 +177,7 @@ public sealed class HealthViewModel : ViewModelBase
             Rows.Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
                 row => _ = FixAsync(row), row => _ = UndoAsync(row)));
         ScoreText = snapshot.Health.ToString();
+        ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
         FixAllCommand.RaiseCanExecuteChanged();
     }
 }

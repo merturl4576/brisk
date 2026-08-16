@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
+using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Logging;
 using BriskEngine.Models;
 using Xunit;
 
@@ -163,5 +167,105 @@ public class HealthViewModelTests
         var (vm, _, state) = Build();
         await state.ScanAsync();
         Assert.Equal("72", vm.ScoreText);
+    }
+
+    [Fact]
+    public async Task FixAll_AllSucceed_ShowsLocalizedSummary()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.Equal(new[] { "power-plan" }, host.Fixed);
+        Assert.Equal(loc.F("health.fixdone", 1), vm.Message);
+    }
+
+    [Fact]
+    public async Task FixAll_SomeFixesFail_ShowsPartialSummary()
+    {
+        var loc = EnglishLoc();
+        var inner = new FakeEngineHost();
+        inner.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", canFix: true),
+            TestData.Finding("visual-effects", canFix: true),
+        });
+        var host = new FailingFixHost(inner, "visual-effects");
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, loc, () => false);
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.Equal(loc.F("health.fixpartial", 1, 2), vm.Message);
+    }
+
+    [Fact]
+    public async Task FixAll_TogglesIsBusy_AndRaisesChange()
+    {
+        var (vm, _, state) = Build();
+        await state.ScanAsync();
+        var raised = new List<string>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        await vm.FixAllAsync();
+
+        Assert.False(vm.IsBusy);
+        Assert.Contains("IsBusy", raised);
+    }
+
+    [Theory]
+    [InlineData(95, "Good")]
+    [InlineData(72, "SeverityWarning")]
+    [InlineData(50, "SeverityCritical")]
+    public async Task ScoreBrushKey_FollowsScore(int health, string expected)
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
+            new ScanResult(Array.Empty<TargetScanResult>()), health,
+            new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false);
+
+        await state.ScanAsync();
+
+        Assert.Equal(expected, vm.ScoreBrushKey);
+    }
+
+    /// Fakes.cs is a locked contract, so partial FixAll failure is simulated
+    /// with a thin decorator that only overrides Fix.
+    private sealed class FailingFixHost : IEngineHost
+    {
+        private readonly FakeEngineHost _inner;
+        private readonly string _failingRuleId;
+
+        public FailingFixHost(FakeEngineHost inner, string failingRuleId)
+        {
+            _inner = inner;
+            _failingRuleId = failingRuleId;
+        }
+
+        public FixOutcome Fix(string ruleId) =>
+            string.Equals(ruleId, _failingRuleId, StringComparison.OrdinalIgnoreCase)
+                ? new FixOutcome(false, ruleId)
+                : _inner.Fix(ruleId);
+
+        public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
+            CancellationToken ct = default) => _inner.ScanAsync(progress, ct);
+        public FixOutcome Undo(string ruleId) => _inner.Undo(ruleId);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun) =>
+            _inner.Clean(scan, dryRun);
+        public IReadOnlyList<UndoableFix> ListUndoable() => _inner.ListUndoable();
+        public IReadOnlyList<ActionLogEntry> ReadLog(int max = 200) => _inner.ReadLog(max);
+        public IReadOnlyList<StartupEntry> ListStartup() => _inner.ListStartup();
+        public bool SetStartupEnabled(string hive, string name, bool enabled) =>
+            _inner.SetStartupEnabled(hive, name, enabled);
+        public bool RunElevated(string cliArgs) => _inner.RunElevated(cliArgs);
+        public bool CreateRestorePoint() => _inner.CreateRestorePoint();
+        public long FreeDiskBytes() => _inner.FreeDiskBytes();
+        public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
+        public bool IsElevated() => _inner.IsElevated();
     }
 }

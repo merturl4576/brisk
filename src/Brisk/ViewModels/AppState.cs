@@ -13,6 +13,15 @@ public sealed class DelegateProgress : IProgress<string>
     public void Report(string value) => _handler(value);
 }
 
+/// Health score → theme brush key, shared by the health page and the flyout.
+public static class HealthBrush
+{
+    public static string KeyFor(int health) =>
+        health >= 90 ? "Good"
+        : health >= 70 ? "SeverityWarning"
+        : "SeverityCritical";
+}
+
 /// The one shared scan state. Every page and the flyout render from here.
 public sealed class AppState : ViewModelBase
 {

@@ -19,16 +19,60 @@
                           Foreground="{DynamicResource TextMuted}"
                           IsChecked="{Binding CreateRestorePointFirst}"
                           Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
-                <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0"
-                        Command="{Binding ScanCommand}"
-                        Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}" />
-                <Button Style="{StaticResource PrimaryButton}"
-                        Command="{Binding FixAllCommand}"
-                        Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}" />
+                <Button Margin="0,0,6,0" Command="{Binding ScanCommand}"
+                        Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Command="{Binding FixAllCommand}"
+                        Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </StackPanel>
         </DockPanel>
-        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="2,0,2,6"
-                   Text="{Binding Message}" />
+        <StackPanel DockPanel.Dock="Top" Margin="2,0,2,8"
+                    Visibility="{Binding State.IsScanning,
+                        Converter={x:Static Brisk:BoolToVis.Instance}}">
+            <ProgressBar IsIndeterminate="True" Height="3" BorderThickness="0"
+                         Background="{DynamicResource Divider}"
+                         Foreground="{DynamicResource AccentBrush}" />
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Style="{StaticResource Muted}"
+                           Text="{Binding [flyout.scanning], Source={x:Static loc:Loc.Instance}}" />
+                <TextBlock Style="{StaticResource Faint}" Margin="6,0,0,0"
+                           Text="{Binding State.ProgressText}" />
+            </StackPanel>
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Margin="2,0,2,8" TextWrapping="Wrap"
+                   Text="{Binding Message}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Message}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding Rows}">
