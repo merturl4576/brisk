@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
@@ -62,6 +63,25 @@ public static class Program
     {
         try { return detect(); }
         catch { return null; }
+    }
+
+    public static (List<TargetScanResult> Selected, string? Error) SelectTargets(
+        ScanResult scan, string? targetId, CleanupLevel level)
+    {
+        if (targetId is null)
+            return (scan.Targets
+                .Where(t => t.Target.Level == level)
+                .Where(t => !t.Target.RequiresIndividualSelection
+                         && !t.Target.RequiresExplicitOptIn)
+                .ToList(), null);
+
+        var match = scan.Targets.FirstOrDefault(t => t.Target.Id == targetId);
+        if (match is null)
+            return (new List<TargetScanResult>(), $"unknown target '{targetId}'");
+        if (match.Target.RequiresIndividualSelection)
+            return (new List<TargetScanResult>(),
+                $"target '{targetId}' needs per-item selection — use the app");
+        return (new List<TargetScanResult> { match }, null);
     }
 
     private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner)
@@ -203,10 +223,12 @@ public static class Program
         };
 
         var scan = scanner.Scan();
-        var targets = scan.Targets.Where(t => t.Target.Level == level).ToList();
-        var selected = targets
-            .Where(t => !t.Target.RequiresIndividualSelection && !t.Target.RequiresExplicitOptIn)
-            .ToList();
+        var (selected, selectError) = SelectTargets(scan, cmd.Target, level);
+        if (selectError is not null)
+        {
+            Console.Error.WriteLine($"brisk: {selectError}");
+            return 2;
+        }
 
         if (!cmd.Yes)
         {
@@ -299,6 +321,7 @@ public static class Program
         Console.WriteLine("    --yes                    actually mutate (otherwise dry-run)");
         Console.WriteLine("  clean                      reclaim disk space");
         Console.WriteLine("    --level <safe|developer|deep>  which cleanup level to run");
+        Console.WriteLine("    --target <id>            clean a single target by id (see 'brisk targets')");
         Console.WriteLine("    --yes                    actually delete (otherwise print plan)");
         Console.WriteLine("  targets                    list cleanup targets");
         Console.WriteLine("  rules                      list diagnostic rules");

@@ -55,4 +55,19 @@ public class CliParserTests
     {
         Assert.Equal("error", CliParser.Parse(new[] { "explode" }).Verb);
     }
+
+    [Fact]
+    public void Clean_ParsesTarget()
+    {
+        var cmd = CliParser.Parse(new[] { "clean", "--target", "windows-temp", "--yes" });
+        Assert.Equal("clean", cmd.Verb);
+        Assert.Equal("windows-temp", cmd.Target);
+        Assert.True(cmd.Yes);
+    }
+
+    [Fact]
+    public void Clean_TargetWithoutValue_IsError()
+    {
+        Assert.Equal("error", CliParser.Parse(new[] { "clean", "--target" }).Verb);
+    }
 }

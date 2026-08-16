@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Brisk.Cli;
 
 public sealed record CliCommand(string Verb, string? RuleId = null, string? Level = null,
-    bool Json = false, bool Yes = false, bool All = false, bool Undo = false, string? Error = null);
+    bool Json = false, bool Yes = false, bool All = false, bool Undo = false, string? Target = null, string? Error = null);
 
 public static class CliParser
 {
@@ -32,6 +32,8 @@ public static class CliParser
                     cmd = cmd with { RuleId = args[++i] }; break;
                 case "--level" when i + 1 < args.Length && Levels.Contains(args[i + 1]):
                     cmd = cmd with { Level = args[++i] }; break;
+                case "--target" when i + 1 < args.Length:
+                    cmd = cmd with { Target = args[++i] }; break;
                 default:
                     return new CliCommand("error", Error: $"bad argument '{args[i]}'");
             }
