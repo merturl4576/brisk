@@ -63,6 +63,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
     private string _scoreText = "—";
+    private double _scoreValue;
     private string _scoreBrushKey = "";
     private string _statusText = "";
     private string _summaryText = "";
@@ -106,6 +107,9 @@ public sealed class OverviewViewModel : ViewModelBase
     public bool HasSnapshot => _state.Snapshot is not null;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
     public string ScoreText { get => _scoreText; private set => Set(ref _scoreText, value); }
+    /// Numeric twin of ScoreText for the gauge sweep (0 until the first scan,
+    /// which reads as an empty track under the "—" digits).
+    public double ScoreValue { get => _scoreValue; private set => Set(ref _scoreValue, value); }
     public string ScoreBrushKey
     {
         get => _scoreBrushKey;
@@ -291,6 +295,7 @@ public sealed class OverviewViewModel : ViewModelBase
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
         ScoreText = snapshot.Health.ToString(CultureInfo.InvariantCulture);
+        ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
         // Three-state headline driven by the same predicate as the fix-all
         // button: work to do → attention; only recommendations left →

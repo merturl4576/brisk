@@ -3,14 +3,115 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
+    <UserControl.Resources>
+        <!-- Live tile vocabulary: the existing card language (BgElevated,
+             8px radius, 1px border) with a display-face numeral. -->
+        <Style x:Key="LiveTile" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,10,14,8" />
+        </Style>
+        <Style x:Key="TileNumeral" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,26,28,24" MaxWidth="640" HorizontalAlignment="Left">
-            <TextBlock Style="{StaticResource ScoreText}" FontSize="42"
-                       Text="{Binding ScoreText}" />
+            <!-- Hero: the health gauge with the machine's live vitals beside it. -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" Width="192" Height="192">
+                    <Brisk:GaugeArc StrokeThickness="6"
+                                    TrackBrush="{DynamicResource BorderBrushKey}"
+                                    Score="{Binding ScoreValue}">
+                        <Brisk:GaugeArc.Style>
+                            <Style TargetType="{x:Type Brisk:GaugeArc}">
+                                <Setter Property="ValueBrush"
+                                        Value="{DynamicResource Good}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                 Value="SeverityWarning">
+                                        <Setter Property="ValueBrush"
+                                                Value="{DynamicResource SeverityWarning}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                 Value="SeverityCritical">
+                                        <Setter Property="ValueBrush"
+                                                Value="{DynamicResource SeverityCritical}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Brisk:GaugeArc.Style>
+                    </Brisk:GaugeArc>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Style="{StaticResource ScoreText}" FontSize="48"
+                                   TextAlignment="Center" Text="{Binding ScoreText}" />
+                        <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
+                                   TextAlignment="Center"
+                                   Text="{Binding [flyout.health], Source={x:Static loc:Loc.Instance}}" />
+                    </StackPanel>
+                </Grid>
+                <Grid Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Grid.Column="0" Margin="0,0,10,10"
+                            Style="{StaticResource LiveTile}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource TileNumeral}"
+                                       Text="{Binding LiveCpuText}" />
+                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
+                                       Text="{Binding [overview.live.cpu], Source={x:Static loc:Loc.Instance}}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                            Style="{StaticResource LiveTile}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource TileNumeral}"
+                                       Text="{Binding LiveRamText}" />
+                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
+                                       Text="{Binding [overview.live.ram], Source={x:Static loc:Loc.Instance}}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="0" Margin="0,0,10,0"
+                            Style="{StaticResource LiveTile}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource TileNumeral}"
+                                       Text="{Binding LiveTempText}" />
+                            <!-- VM-composed: "Temperature · GPU" names the sensor. -->
+                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
+                                       Text="{Binding LiveTempCaption}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="1"
+                            Style="{StaticResource LiveTile}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource TileNumeral}"
+                                       Text="{Binding LiveDiskText}" />
+                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,2,0,0"
+                                       Text="{Binding [overview.live.disk], Source={x:Static loc:Loc.Instance}}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
             <TextBlock Style="{StaticResource Body}" FontSize="13.5"
-                       Foreground="{DynamicResource TextMuted}" Margin="0,4,0,0"
+                       Foreground="{DynamicResource TextMuted}" Margin="0,16,0,0"
                        Text="{Binding StatusText}" TextWrapping="Wrap" />
-            <TextBlock Style="{StaticResource Faint}" Margin="0,10,0,0"
+            <TextBlock Style="{StaticResource Faint}" Margin="0,8,0,0"
                        Text="{Binding SummaryText}" TextWrapping="Wrap" />
 
             <StackPanel Margin="0,16,0,0"
