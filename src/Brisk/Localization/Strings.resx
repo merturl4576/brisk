@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="app.name" xml:space="preserve"><value>brisk</value></data>
+  <data name="nav.health" xml:space="preserve"><value>Health</value></data>
+  <data name="nav.clean" xml:space="preserve"><value>Clean</value></data>
+  <data name="nav.log" xml:space="preserve"><value>Log</value></data>
+  <data name="nav.settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="flyout.health" xml:space="preserve"><value>health</value></data>
+  <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
+  <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
+  <data name="flyout.lastscan" xml:space="preserve"><value>Last scan: {0}</value></data>
+  <data name="flyout.scanning" xml:space="preserve"><value>Scanning…</value></data>
+  <data name="flyout.scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="flyout.fixall" xml:space="preserve"><value>Fix all (safe)</value></data>
+  <data name="flyout.clean" xml:space="preserve"><value>Clean</value></data>
+  <data name="flyout.details" xml:space="preserve"><value>Open details →</value></data>
+  <data name="health.title" xml:space="preserve"><value>System health</value></data>
+  <data name="health.fixall" xml:space="preserve"><value>Fix all (safe)</value></data>
+  <data name="health.fix" xml:space="preserve"><value>Fix</value></data>
+  <data name="health.undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="health.restorepoint" xml:space="preserve"><value>Create a restore point first</value></data>
+  <data name="health.noscan" xml:space="preserve"><value>Run a scan to see findings</value></data>
+  <data name="health.advise" xml:space="preserve"><value>advice</value></data>
+  <data name="startup.title" xml:space="preserve"><value>Startup programs</value></data>
+  <data name="clean.selected" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="clean.clean" xml:space="preserve"><value>Clean</value></data>
+  <data name="clean.level.safe" xml:space="preserve"><value>Safe</value></data>
+  <data name="clean.level.developer" xml:space="preserve"><value>Developer</value></data>
+  <data name="clean.level.deep" xml:space="preserve"><value>Deep</value></data>
+  <data name="clean.recycled" xml:space="preserve"><value>{0} items moved to Recycle Bin ({1})</value></data>
+  <data name="clean.undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="clean.reclaim" xml:space="preserve"><value>Reclaim space now</value></data>
+  <data name="clean.dismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="clean.elevation" xml:space="preserve"><value>Administrator required</value></data>
+  <data name="clean.skipped" xml:space="preserve"><value>skipped</value></data>
+  <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
+  <data name="log.actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="log.undoable" xml:space="preserve"><value>Undoable fixes</value></data>
+  <data name="log.empty" xml:space="preserve"><value>Nothing here yet</value></data>
+  <data name="settings.language" xml:space="preserve"><value>Language</value></data>
+  <data name="settings.theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="settings.dryrun" xml:space="preserve"><value>Dry run (report only, never change anything)</value></data>
+  <data name="settings.startwithwindows" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Off by default — brisk practices what it preaches about startup bloat.</value></data>
+  <data name="settings.value.system" xml:space="preserve"><value>System</value></data>
+  <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
+  <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
+  <data name="settings.value.light" xml:space="preserve"><value>Light</value></data>
+  <data name="settings.value.dark" xml:space="preserve"><value>Dark</value></data>
+  <data name="rule.power-plan.title" xml:space="preserve"><value>Power plan is limiting speed</value></data>
+  <data name="rule.browser-gpu.title" xml:space="preserve"><value>Browsers are not using the fast GPU</value></data>
+  <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Browser hardware acceleration is off</value></data>
+  <data name="rule.startup-bloat.title" xml:space="preserve"><value>Too many programs start with Windows</value></data>
+  <data name="rule.ram-pressure.title" xml:space="preserve"><value>Memory pressure is high</value></data>
+  <data name="rule.thermals.title" xml:space="preserve"><value>Running hot at idle</value></data>
+  <data name="rule.disk-breakdown.title" xml:space="preserve"><value>Where your disk space goes</value></data>
+  <data name="rule.disk-forecast.title" xml:space="preserve"><value>Disk is filling up</value></data>
+  <data name="rule.orphaned-data.title" xml:space="preserve"><value>Data left behind by uninstalled apps</value></data>
+  <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Stale developer caches</value></data>
+  <data name="rule.visual-effects.title" xml:space="preserve"><value>Visual effects are slowing this PC</value></data>
+  <data name="rule.storage-sense.title" xml:space="preserve"><value>Storage Sense is off</value></data>
+</root>

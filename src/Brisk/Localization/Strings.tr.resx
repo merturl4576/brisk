@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="app.name" xml:space="preserve"><value>brisk</value></data>
+  <data name="nav.health" xml:space="preserve"><value>Sağlık</value></data>
+  <data name="nav.clean" xml:space="preserve"><value>Temizlik</value></data>
+  <data name="nav.log" xml:space="preserve"><value>Günlük</value></data>
+  <data name="nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
+  <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
+  <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
+  <data name="flyout.lastscan" xml:space="preserve"><value>Son tarama: {0}</value></data>
+  <data name="flyout.scanning" xml:space="preserve"><value>Taranıyor…</value></data>
+  <data name="flyout.scan" xml:space="preserve"><value>Tara</value></data>
+  <data name="flyout.fixall" xml:space="preserve"><value>Tümünü düzelt (güvenli)</value></data>
+  <data name="flyout.clean" xml:space="preserve"><value>Temizle</value></data>
+  <data name="flyout.details" xml:space="preserve"><value>Ayrıntıları aç →</value></data>
+  <data name="health.title" xml:space="preserve"><value>Sistem sağlığı</value></data>
+  <data name="health.fixall" xml:space="preserve"><value>Tümünü düzelt (güvenli)</value></data>
+  <data name="health.fix" xml:space="preserve"><value>Düzelt</value></data>
+  <data name="health.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="health.restorepoint" xml:space="preserve"><value>Önce geri yükleme noktası oluştur</value></data>
+  <data name="health.noscan" xml:space="preserve"><value>Bulguları görmek için tarama çalıştır</value></data>
+  <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
+  <data name="startup.title" xml:space="preserve"><value>Açılış programları</value></data>
+  <data name="clean.selected" xml:space="preserve"><value>{0} seçili</value></data>
+  <data name="clean.clean" xml:space="preserve"><value>Temizle</value></data>
+  <data name="clean.level.safe" xml:space="preserve"><value>Güvenli</value></data>
+  <data name="clean.level.developer" xml:space="preserve"><value>Geliştirici</value></data>
+  <data name="clean.level.deep" xml:space="preserve"><value>Derin</value></data>
+  <data name="clean.recycled" xml:space="preserve"><value>{0} öğe Geri Dönüşüm Kutusu'na taşındı ({1})</value></data>
+  <data name="clean.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="clean.reclaim" xml:space="preserve"><value>Alanı şimdi boşalt</value></data>
+  <data name="clean.dismiss" xml:space="preserve"><value>Kapat</value></data>
+  <data name="clean.elevation" xml:space="preserve"><value>Yönetici gerekiyor</value></data>
+  <data name="clean.skipped" xml:space="preserve"><value>atlandı</value></data>
+  <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
+  <data name="log.actions" xml:space="preserve"><value>İşlemler</value></data>
+  <data name="log.undoable" xml:space="preserve"><value>Geri alınabilir düzeltmeler</value></data>
+  <data name="log.empty" xml:space="preserve"><value>Henüz bir şey yok</value></data>
+  <data name="settings.language" xml:space="preserve"><value>Dil</value></data>
+  <data name="settings.theme" xml:space="preserve"><value>Tema</value></data>
+  <data name="settings.dryrun" xml:space="preserve"><value>Kuru çalıştırma (yalnızca raporla, hiçbir şeyi değiştirme)</value></data>
+  <data name="settings.startwithwindows" xml:space="preserve"><value>Windows ile başlat</value></data>
+  <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Varsayılan olarak kapalı — brisk, açılış şişkinliği öğüdünü kendine de uygular.</value></data>
+  <data name="settings.value.system" xml:space="preserve"><value>Sistem</value></data>
+  <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
+  <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
+  <data name="settings.value.light" xml:space="preserve"><value>Açık</value></data>
+  <data name="settings.value.dark" xml:space="preserve"><value>Koyu</value></data>
+  <data name="rule.power-plan.title" xml:space="preserve"><value>Güç planı hızı kısıtlıyor</value></data>
+  <data name="rule.browser-gpu.title" xml:space="preserve"><value>Tarayıcılar hızlı GPU'yu kullanmıyor</value></data>
+  <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Tarayıcı donanım hızlandırması kapalı</value></data>
+  <data name="rule.startup-bloat.title" xml:space="preserve"><value>Windows ile çok fazla program başlıyor</value></data>
+  <data name="rule.ram-pressure.title" xml:space="preserve"><value>Bellek baskısı yüksek</value></data>
+  <data name="rule.thermals.title" xml:space="preserve"><value>Boştayken yüksek sıcaklık</value></data>
+  <data name="rule.disk-breakdown.title" xml:space="preserve"><value>Disk alanı nereye gidiyor</value></data>
+  <data name="rule.disk-forecast.title" xml:space="preserve"><value>Disk doluyor</value></data>
+  <data name="rule.orphaned-data.title" xml:space="preserve"><value>Kaldırılmış uygulamalardan kalan veriler</value></data>
+  <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Bayat geliştirici önbellekleri</value></data>
+  <data name="rule.visual-effects.title" xml:space="preserve"><value>Görsel efektler bilgisayarı yavaşlatıyor</value></data>
+  <data name="rule.storage-sense.title" xml:space="preserve"><value>Depolama Alanı Algılayıcısı kapalı</value></data>
+</root>
