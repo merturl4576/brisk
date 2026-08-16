@@ -105,6 +105,11 @@
                 <StackPanel x:Name="StartupSection" Margin="0,10,0,0">
                     <TextBlock Style="{StaticResource SectionLabel}" Margin="2,0,2,4"
                                Text="{Binding [startup.title], Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Style="{StaticResource Muted}" Margin="2,0,2,4"
+                               Foreground="{DynamicResource SeverityWarning}"
+                               Text="{Binding [startup.togglefailed], Source={x:Static loc:Loc.Instance}}"
+                               Visibility="{Binding ToggleFailed,
+                                   Converter={x:Static Brisk:BoolToVis.Instance}}" />
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
