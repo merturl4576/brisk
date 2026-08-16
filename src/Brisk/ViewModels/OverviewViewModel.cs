@@ -30,22 +30,28 @@ internal static class DoneLabel
     }
 }
 
-/// One undoable fix in the overview's "recent actions" area (the undo
-/// capability formerly living on the Log page).
+/// One line of the "What brisk did" report (the undo capability formerly
+/// living on the Log page — still there, just demoted to a hover-revealed
+/// link so the list reads as a proud report, not an undo console).
 public sealed class UndoableRow
 {
-    public UndoableRow(UndoableFix fix, Loc loc, Func<UndoableRow, Task> undo)
+    public UndoableRow(UndoableFix fix, Loc loc, Func<UndoableRow, Task> undo,
+        bool isNew = false)
     {
         RuleId = fix.RuleId;
         Title = DoneLabel.For(loc, fix.RuleId, $"rule.{fix.RuleId}.title", fix.RuleId);
         WhenText = fix.FixedAtUtc.ToLocalTime()
             .ToString("dd.MM HH:mm", CultureInfo.InvariantCulture);
+        IsNew = isNew;
         UndoCommand = new RelayCommand(() => _ = undo(this));
     }
 
     public string RuleId { get; }
     public string Title { get; }
     public string WhenText { get; }
+    /// True only for a row added after a fix run in this session — it gets
+    /// the one-shot entry animation. The startup population stays calm.
+    public bool IsNew { get; }
     public RelayCommand UndoCommand { get; }
 }
 
@@ -75,6 +81,9 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _liveDiskText = "—";
     private bool _liveBusy;
     private bool _busy;
+    /// Rule ids seen in the undoable list on the previous refresh; null until
+    /// the first population so nothing animates at startup.
+    private HashSet<string>? _seenUndoable;
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
         CleanService cleanService, ILiveMetrics live, Loc loc, Func<bool> isDryRun)
@@ -290,8 +299,12 @@ public sealed class OverviewViewModel : ViewModelBase
     private void Refresh()
     {
         Recent.Clear();
-        foreach (var fix in _host.ListUndoable().OrderByDescending(f => f.FixedAtUtc))
-            Recent.Add(new UndoableRow(fix, _loc, UndoAsync));
+        var undoable = _host.ListUndoable();
+        foreach (var fix in undoable.OrderByDescending(f => f.FixedAtUtc))
+            Recent.Add(new UndoableRow(fix, _loc, UndoAsync,
+                isNew: _seenUndoable is { } seen && !seen.Contains(fix.RuleId)));
+        _seenUndoable = undoable.Select(f => f.RuleId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
         ScoreText = snapshot.Health.ToString(CultureInfo.InvariantCulture);

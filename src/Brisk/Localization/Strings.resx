@@ -26,8 +26,8 @@
   <data name="overview.live.ram" xml:space="preserve"><value>Memory</value></data>
   <data name="overview.live.temp" xml:space="preserve"><value>Temperature</value></data>
   <data name="overview.live.disk" xml:space="preserve"><value>Free space</value></data>
-  <data name="overview.recent" xml:space="preserve"><value>Recent actions</value></data>
-  <data name="overview.recent.hint" xml:space="preserve"><value>Fixes brisk applied — you can undo any of them</value></data>
+  <data name="overview.recent" xml:space="preserve"><value>What brisk did</value></data>
+  <data name="overview.recent.hint" xml:space="preserve"><value>Every change can be undone — hover an item</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>

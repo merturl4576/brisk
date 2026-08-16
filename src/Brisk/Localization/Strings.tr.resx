@@ -26,8 +26,8 @@
   <data name="overview.live.ram" xml:space="preserve"><value>Bellek</value></data>
   <data name="overview.live.temp" xml:space="preserve"><value>Sıcaklık</value></data>
   <data name="overview.live.disk" xml:space="preserve"><value>Boş alan</value></data>
-  <data name="overview.recent" xml:space="preserve"><value>Son işlemler</value></data>
-  <data name="overview.recent.hint" xml:space="preserve"><value>brisk'in yaptığı düzeltmeler — istersen tek tıkla geri alabilirsin</value></data>
+  <data name="overview.recent" xml:space="preserve"><value>Yapılanlar raporu</value></data>
+  <data name="overview.recent.hint" xml:space="preserve"><value>Her değişiklik geri alınabilir — bir maddenin üstüne gel</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>

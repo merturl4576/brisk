@@ -338,6 +338,29 @@ public class OverviewViewModelTests
     }
 
     [Fact]
+    public async Task Recent_FlagsOnlyRowsAddedAfterTheFirstRefresh_AsNew()
+    {
+        var (vm, host, state) = Build();
+        host.Undoable.Add(new UndoableFix("power-plan",
+            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
+        await state.ScanAsync();
+
+        // startup population: nothing animates, however old the journal is
+        Assert.False(Assert.Single(vm.Recent).IsNew);
+
+        // a fix run adds an undoable → its row (and only its row) is new
+        host.Undoable.Add(new UndoableFix("visual-effects",
+            new DateTime(2026, 8, 15, 11, 0, 0, DateTimeKind.Utc)));
+        await state.ScanAsync();
+        Assert.True(vm.Recent.Single(r => r.RuleId == "visual-effects").IsNew);
+        Assert.False(vm.Recent.Single(r => r.RuleId == "power-plan").IsNew);
+
+        // the next refresh renders it as an ordinary row — one-shot entry
+        await state.ScanAsync();
+        Assert.False(vm.Recent.Single(r => r.RuleId == "visual-effects").IsNew);
+    }
+
+    [Fact]
     public async Task Recent_RuleWithoutDoneKey_FallsBackToFixedComposition()
     {
         var loc = EnglishLoc();
