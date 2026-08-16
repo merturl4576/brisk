@@ -87,6 +87,7 @@ public sealed class CleanViewModel : ViewModelBase
     private readonly System.Func<bool> _isDryRun;
 
     private IReadOnlyList<string> _lastRecycled = new List<string>();
+    private bool _busy;
     private bool _hasBanner;
     private string _bannerText = "";
     private string _problemsText = "";
@@ -122,41 +123,50 @@ public sealed class CleanViewModel : ViewModelBase
 
     public async Task CleanLevelAsync(LevelSection section)
     {
-        var selected = section.Targets.Where(t => t.IsSelected).ToList();
-        var problems = new List<string>();
-
-        var scans = new List<TargetScanResult>();
-        foreach (var row in selected)
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
         {
-            if (row.NeedsElevation && !_host.IsElevated())
+            var selected = section.Targets.Where(t => t.IsSelected).ToList();
+            var problems = new List<string>();
+
+            var scans = new List<TargetScanResult>();
+            foreach (var row in selected)
             {
-                if (_isDryRun())
-                    problems.Add($"{row.Id} — {_loc["dryrun.blocked"]}");
-                else if (!await Task.Run(() => _host.RunElevated($"clean --target {row.Id} --yes")))
-                    problems.Add($"{row.Id} — {_loc["clean.elevation"]}");
-                continue;
-            }
-            scans.Add(row.IsPerItem
-                ? row.Scan with
+                if (row.NeedsElevation && !_host.IsElevated())
                 {
-                    Items = row.Items.Where(i => i.IsSelected)
-                        .Select(i => i.Item).ToList(),
+                    if (_isDryRun())
+                        problems.Add($"{row.Id} — {_loc["dryrun.blocked"]}");
+                    else if (!await Task.Run(() => _host.RunElevated($"clean --target {row.Id} --yes")))
+                        problems.Add($"{row.Id} — {_loc["clean.elevation"]}");
+                    continue;
                 }
-                : row.Scan);
-        }
+                scans.Add(row.IsPerItem
+                    ? row.Scan with
+                    {
+                        Items = row.Items.Where(i => i.IsSelected)
+                            .Select(i => i.Item).ToList(),
+                    }
+                    : row.Scan);
+            }
 
-        var outcome = await Task.Run(() => _cleanService.CleanTargets(scans));
-        problems.AddRange(outcome.Problems);
-        _lastRecycled = outcome.RecycledPaths;
-        RestoreFailed = false;
-        ProblemsText = string.Join("\n", problems);
-        if (!outcome.WasDryRun && outcome.RecycledPaths.Count > 0)
-        {
-            BannerText = _loc.F("clean.recycled",
-                outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes));
-            HasBanner = true;
+            var outcome = await Task.Run(() => _cleanService.CleanTargets(scans));
+            problems.AddRange(outcome.Problems);
+            _lastRecycled = outcome.RecycledPaths;
+            RestoreFailed = false;
+            ProblemsText = string.Join("\n", problems);
+            if (!outcome.WasDryRun && outcome.RecycledPaths.Count > 0)
+            {
+                BannerText = _loc.F("clean.recycled",
+                    outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes));
+                HasBanner = true;
+            }
+            await _state.ScanAsync();
         }
-        await _state.ScanAsync();
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void Undo()

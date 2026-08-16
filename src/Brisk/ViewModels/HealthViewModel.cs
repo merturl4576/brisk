@@ -57,6 +57,7 @@ public sealed class HealthViewModel : ViewModelBase
     private string _scoreText = "—";
     private string _message = "";
     private bool _createRestorePointFirst;
+    private bool _busy;
 
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun)
     {
@@ -83,44 +84,71 @@ public sealed class HealthViewModel : ViewModelBase
 
     public async Task FixAllAsync()
     {
-        var snapshot = _state.Snapshot;
-        if (snapshot is null) return;
-        if (_isDryRun())
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
         {
-            Message = _loc["dryrun.blocked"];
-            return;
+            var snapshot = _state.Snapshot;
+            if (snapshot is null) return;
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            if (CreateRestorePointFirst && !await Task.Run(() => _host.CreateRestorePoint()))
+            {
+                Message = _loc["health.restorepointfailed"];
+                return;
+            }
+            foreach (var finding in snapshot.Findings
+                         .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
+                Message = (await Task.Run(() => _host.Fix(finding.RuleId))).Message;
+            await _state.ScanAsync();
         }
-        if (CreateRestorePointFirst && !await Task.Run(() => _host.CreateRestorePoint()))
+        finally
         {
-            Message = _loc["health.restorepointfailed"];
-            return;
+            _busy = false;
         }
-        foreach (var finding in snapshot.Findings
-                     .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
-            Message = (await Task.Run(() => _host.Fix(finding.RuleId))).Message;
-        await _state.ScanAsync();
     }
 
     public async Task FixAsync(FindingRow row)
     {
-        if (_isDryRun())
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
         {
-            Message = _loc["dryrun.blocked"];
-            return;
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            Message = (await Task.Run(() => _host.Fix(row.RuleId))).Message;
+            await _state.ScanAsync();
         }
-        Message = (await Task.Run(() => _host.Fix(row.RuleId))).Message;
-        await _state.ScanAsync();
+        finally
+        {
+            _busy = false;
+        }
     }
 
     public async Task UndoAsync(FindingRow row)
     {
-        if (_isDryRun())
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
         {
-            Message = _loc["dryrun.blocked"];
-            return;
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            Message = (await Task.Run(() => _host.Undo(row.RuleId))).Message;
+            await _state.ScanAsync();
         }
-        Message = (await Task.Run(() => _host.Undo(row.RuleId))).Message;
-        await _state.ScanAsync();
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void Refresh()

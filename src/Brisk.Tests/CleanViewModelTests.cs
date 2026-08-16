@@ -180,4 +180,38 @@ public class CleanViewModelTests
         Assert.Single(bin.Purged);
         Assert.False(vm.HasBanner);
     }
+
+    [Fact]
+    public async Task CleanLevel_ReentrantCallWhileBusy_IsNoOp()
+    {
+        var (vm, host, _, state) = Build(Host());
+        await state.ScanAsync();
+        var safe = vm.Levels.Single(l => l.Level == CleanupLevel.Safe);
+
+        // OnClean blocks on the background thread until the test releases it,
+        // so CleanLevelAsync's first call is provably still in flight (not a
+        // timing assumption) when the second call is made.
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, dryRun) =>
+        {
+            gate.Wait();
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+
+        var first = vm.CleanLevelAsync(safe);
+        var second = vm.CleanLevelAsync(safe);
+
+        // The busy flag was set synchronously before the first await, so the
+        // re-entrant call returns a synchronously-completed task without ever
+        // reaching the engine.
+        Assert.True(second.IsCompleted);
+        Assert.False(first.IsCompleted);
+
+        gate.Set();
+        await first;
+
+        Assert.Single(host.Cleans);
+    }
 }

@@ -25,6 +25,7 @@ public sealed class LogViewModel : ViewModelBase
     private readonly AppState _state;
     private readonly IEngineHost _host;
     private readonly System.Func<bool> _isDryRun;
+    private bool _busy;
 
     public LogViewModel(AppState state, IEngineHost host, System.Func<bool> isDryRun)
     {
@@ -39,9 +40,18 @@ public sealed class LogViewModel : ViewModelBase
 
     public async Task UndoAsync(UndoableRow row)
     {
-        if (_isDryRun()) return;   // dry run: report only, no message surface here
-        await Task.Run(() => _host.Undo(row.RuleId));
-        await _state.ScanAsync();   // Changed handler refreshes both lists
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
+        {
+            if (_isDryRun()) return;   // dry run: report only, no message surface here
+            await Task.Run(() => _host.Undo(row.RuleId));
+            await _state.ScanAsync();   // Changed handler refreshes both lists
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void Refresh()

@@ -101,4 +101,38 @@ public class FlyoutViewModelTests
         await Task.WhenAll(state.ScanAsync(), state.ScanAsync());
         Assert.Equal(1, host.ScanCalls);
     }
+
+    [Fact]
+    public async Task CleanSafe_ReentrantCallWhileBusy_IsNoOp()
+    {
+        var host = HostWithSnapshot();
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+
+        // OnClean blocks on the background thread until the test releases it,
+        // so CleanSafeAsync's first call is provably still in flight (not a
+        // timing assumption) when the second call is made.
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, dryRun) =>
+        {
+            gate.Wait();
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+
+        var first = vm.CleanSafeAsync();
+        var second = vm.CleanSafeAsync();
+
+        // The busy flag was set synchronously before the first await, so the
+        // re-entrant call returns a synchronously-completed task without ever
+        // reaching the engine.
+        Assert.True(second.IsCompleted);
+        Assert.False(first.IsCompleted);
+
+        gate.Set();
+        await first;
+
+        Assert.Single(host.Cleans);
+    }
 }

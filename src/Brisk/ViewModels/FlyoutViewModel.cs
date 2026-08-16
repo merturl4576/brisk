@@ -21,6 +21,7 @@ public sealed class FlyoutViewModel : ViewModelBase
     private string _reclaimLine = "";
     private string _lastScanLine = "";
     private CleanOutcome? _lastCleanOutcome;
+    private bool _busy;
 
     public FlyoutViewModel(AppState state, IEngineHost host,
         CleanService cleanService, Loc loc, Func<bool> isDryRun)
@@ -60,27 +61,45 @@ public sealed class FlyoutViewModel : ViewModelBase
 
     public async Task FixAllAsync()
     {
-        var snapshot = _state.Snapshot;
-        if (snapshot is null) return;
-        if (_isDryRun()) return;   // dry run: report only, nothing to fix here
-        foreach (var finding in snapshot.Findings
-                     .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
-            await Task.Run(() => _host.Fix(finding.RuleId));
-        await _state.ScanAsync();
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
+        {
+            var snapshot = _state.Snapshot;
+            if (snapshot is null) return;
+            if (_isDryRun()) return;   // dry run: report only, nothing to fix here
+            foreach (var finding in snapshot.Findings
+                         .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
+                await Task.Run(() => _host.Fix(finding.RuleId));
+            await _state.ScanAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     public async Task CleanSafeAsync()
     {
-        var snapshot = _state.Snapshot;
-        if (snapshot is null) return;
-        var eligible = snapshot.Cleaner.Targets.Where(t =>
-            t.Target.Level == CleanupLevel.Safe
-            && t.SkippedReason is null
-            && !t.Target.RequiresIndividualSelection
-            && !t.Target.RequiresExplicitOptIn
-            && t.Items.Count > 0);
-        LastCleanOutcome = await Task.Run(() => _cleanService.CleanTargets(eligible));
-        await _state.ScanAsync();
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
+        {
+            var snapshot = _state.Snapshot;
+            if (snapshot is null) return;
+            var eligible = snapshot.Cleaner.Targets.Where(t =>
+                t.Target.Level == CleanupLevel.Safe
+                && t.SkippedReason is null
+                && !t.Target.RequiresIndividualSelection
+                && !t.Target.RequiresExplicitOptIn
+                && t.Items.Count > 0);
+            LastCleanOutcome = await Task.Run(() => _cleanService.CleanTargets(eligible));
+            await _state.ScanAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void Refresh()
