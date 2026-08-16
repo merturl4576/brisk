@@ -23,6 +23,7 @@
   <data name="overview.report.part.startup" xml:space="preserve"><value>{0} program açılıştan kaldırıldı</value></data>
   <data name="overview.report.part.fixes" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="overview.recent" xml:space="preserve"><value>Son işlemler</value></data>
+  <data name="overview.recent.hint" xml:space="preserve"><value>brisk'in yaptığı düzeltmeler — istersen tek tıkla geri alabilirsin</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>

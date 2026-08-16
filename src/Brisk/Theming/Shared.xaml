@@ -45,8 +45,14 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Chrome" Property="Opacity" Value="0.88" />
                         </Trigger>
+                        <!-- Disabled means "nothing left to do", so the accent
+                             fill goes away entirely: a quiet neutral chip reads
+                             as intentional rest, not as a broken button. -->
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Chrome" Property="Opacity" Value="0.45" />
+                            <Setter TargetName="Chrome" Property="Background"
+                                    Value="{DynamicResource BgHover}" />
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource TextFaint}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

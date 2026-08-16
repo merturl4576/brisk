@@ -131,8 +131,13 @@
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
-                <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
+                <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,2"
                            Text="{Binding [overview.recent], Source={x:Static loc:Loc.Instance}}" />
+                <!-- Why there is an undo button: these rows are completed
+                     fixes, and every one of them is reversible. -->
+                <TextBlock Style="{StaticResource Faint}" Margin="0,0,0,8"
+                           TextWrapping="Wrap"
+                           Text="{Binding [overview.recent.hint], Source={x:Static loc:Loc.Instance}}" />
                 <ItemsControl ItemsSource="{Binding Recent}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>

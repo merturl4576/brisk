@@ -55,6 +55,7 @@ public class LocTests
     /// either resx falls behind.
     [Theory]
     [InlineData("overview.status.advise")]
+    [InlineData("overview.recent.hint")]
     [InlineData("overview.report.summary")]
     [InlineData("overview.report.part.freed")]
     [InlineData("overview.report.part.startup")]
