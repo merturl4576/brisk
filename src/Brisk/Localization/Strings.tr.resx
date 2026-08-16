@@ -46,6 +46,8 @@
   <data name="health.restorepointfailed" xml:space="preserve"><value>geri yükleme noktası oluşturulamadı — hiçbir şey değiştirilmedi</value></data>
   <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
   <data name="health.advise.section" xml:space="preserve"><value>Öneriler</value></data>
+  <data name="finding.details" xml:space="preserve"><value>Ayrıntılar</value></data>
+  <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>
@@ -86,6 +88,12 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Bayat geliştirici önbellekleri</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Görsel efektler bilgisayarı yavaşlatıyor</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Depolama Alanı Algılayıcısı kapalı</value></data>
+  <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
+  <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
+  <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
+  <data name="rule.disk-forecast.advice" xml:space="preserve"><value>Disk doluyor — şimdi yapacağın güvenli bir temizlik alan bitmeden vakit kazandırır</value></data>
+  <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Kaldırılmış uygulamalar geride veri bırakmış — gözden geçirip güvenle temizleyebilirsin</value></data>
+  <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Güç planı yüksek performansa alındı</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Tarayıcılar artık hızlı GPU'yu kullanıyor</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Tarayıcı donanım hızlandırması açıldı</value></data>

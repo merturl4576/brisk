@@ -46,6 +46,8 @@
   <data name="health.restorepointfailed" xml:space="preserve"><value>restore point was not created — nothing was changed</value></data>
   <data name="health.advise" xml:space="preserve"><value>advice</value></data>
   <data name="health.advise.section" xml:space="preserve"><value>Recommendations</value></data>
+  <data name="finding.details" xml:space="preserve"><value>Details</value></data>
+  <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>
@@ -86,6 +88,12 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Stale developer caches</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Visual effects are slowing this PC</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Storage Sense is off</value></data>
+  <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
+  <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
+  <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
+  <data name="rule.disk-forecast.advice" xml:space="preserve"><value>The disk is filling up — a safe clean now buys time before space runs out</value></data>
+  <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Uninstalled apps left data behind — you can review and clean it safely</value></data>
+  <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Power plan switched to high performance</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Browsers now use the fast GPU</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Browser hardware acceleration enabled</value></data>

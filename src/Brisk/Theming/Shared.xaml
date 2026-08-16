@@ -323,20 +323,61 @@
                 <StackPanel Margin="36,0,16,14"
                             Visibility="{Binding IsExpanded,
                                 Converter={x:Static views:BoolToVis.Instance}}">
+                    <!-- Fixable rows keep the raw evidence as their body;
+                         advise rows speak the localized advice instead and
+                         park the English evidence behind the details fold. -->
+                    <TextBlock TextWrapping="Wrap" Text="{Binding Evidence}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource Muted}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAdvise}"
+                                                 Value="True">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
-                               Text="{Binding Evidence}" />
+                               Text="{Binding AdviceText}"
+                               Visibility="{Binding IsAdvise,
+                                   Converter={x:Static views:BoolToVis.Instance}}" />
+                    <ToggleButton IsChecked="{Binding IsDetailsShown}" Cursor="Hand"
+                                  HorizontalAlignment="Left" Margin="0,6,0,0"
+                                  Visibility="{Binding HasDetails,
+                                      Converter={x:Static views:BoolToVis.Instance}}">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <TextBlock Style="{StaticResource Faint}"
+                                           Text="{Binding [finding.details],
+                                               Source={x:Static loc:Loc.Instance}}" />
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                    <TextBlock Style="{StaticResource Faint}" TextWrapping="Wrap"
+                               Margin="0,4,0,0" Text="{Binding Evidence}"
+                               Visibility="{Binding IsDetailsShown,
+                                   Converter={x:Static views:BoolToVis.Instance}}" />
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Style="{StaticResource PrimaryButton}"
+                        <Button Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
                                 Command="{Binding FixCommand}"
                                 Visibility="{Binding CanFix,
                                     Converter={x:Static views:BoolToVis.Instance}}"
                                 Content="{Binding [health.fix],
                                     Source={x:Static loc:Loc.Instance}}" />
-                        <Button Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                        <Button Style="{StaticResource GhostButton}" Margin="0,0,8,0"
                                 Command="{Binding UndoCommand}"
                                 Visibility="{Binding CanUndo,
                                     Converter={x:Static views:BoolToVis.Instance}}"
                                 Content="{Binding [health.undo],
+                                    Source={x:Static loc:Loc.Instance}}" />
+                        <Button Style="{StaticResource GhostButton}"
+                                Command="{Binding OpenStorageCommand}"
+                                Visibility="{Binding HasStorageAction,
+                                    Converter={x:Static views:BoolToVis.Instance}}"
+                                Content="{Binding [finding.action.storage],
                                     Source={x:Static loc:Loc.Instance}}" />
                     </StackPanel>
                 </StackPanel>

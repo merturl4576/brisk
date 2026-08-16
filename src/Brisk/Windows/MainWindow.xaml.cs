@@ -23,6 +23,10 @@ public partial class MainWindow : Window
         CleanView.DataContext = clean;
         SettingsView.DataContext = settings;
         SourceInitialized += (_, _) => ApplyTitleBar();
+        // An advise card's "Open Storage" lands on the Depolama page, from
+        // whichever page hosted the card.
+        health.OpenStorageRequested += ShowStorage;
+        performance.OpenStorageRequested += ShowStorage;
         // Live tiles pulse only while this window is truly on screen: shown
         // starts it; hide/close-to-tray/minimize stops it. The flyout never
         // hosts live tiles, so no other window can start the timer.
@@ -37,6 +41,8 @@ public partial class MainWindow : Window
 
     /// The flyout's "Open details" always lands on the whole-PC overview.
     public void ShowOverview() => NavOverview.IsChecked = true;
+
+    private void ShowStorage() => NavClean.IsChecked = true;
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {

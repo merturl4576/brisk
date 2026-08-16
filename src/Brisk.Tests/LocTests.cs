@@ -70,6 +70,14 @@ public class LocTests
     [InlineData("overview.live.ram")]
     [InlineData("overview.live.temp")]
     [InlineData("overview.live.disk")]
+    [InlineData("finding.details")]
+    [InlineData("finding.action.storage")]
+    [InlineData("rule.thermals.advice")]
+    [InlineData("rule.ram-pressure.advice")]
+    [InlineData("rule.disk-breakdown.advice")]
+    [InlineData("rule.disk-forecast.advice")]
+    [InlineData("rule.orphaned-data.advice")]
+    [InlineData("rule.stale-dev-caches.advice")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

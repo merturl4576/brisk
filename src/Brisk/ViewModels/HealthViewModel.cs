@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,10 +11,21 @@ namespace Brisk.ViewModels;
 
 public sealed class FindingRow : ViewModelBase
 {
+    /// Advise rules whose advice has a real in-app follow-up: they point at
+    /// space that the Depolama page can actually show and clean. Thermals
+    /// and RAM pressure deliberately get no button — brisk has no in-app
+    /// action for them and a fake one would be worse than none.
+    private static readonly HashSet<string> StorageAdviceRules = new(
+        new[] { "disk-breakdown", "disk-forecast", "orphaned-data",
+                "stale-dev-caches" },
+        StringComparer.OrdinalIgnoreCase);
+
     private bool _isExpanded;
+    private bool _isDetailsShown;
 
     public FindingRow(DiagnosticFinding finding, Loc loc, bool canUndo,
-        Action<FindingRow> onFix, Action<FindingRow> onUndo)
+        Action<FindingRow> onFix, Action<FindingRow> onUndo,
+        Action<FindingRow>? onOpenStorage = null)
     {
         RuleId = finding.RuleId;
         Title = loc.Title(finding.TitleKey, finding.Title);
@@ -30,22 +42,44 @@ public sealed class FindingRow : ViewModelBase
         CategoryText = IsAdvise ? loc["health.advise"] : "";
         CanFix = finding.CanFix && !IsAdvise;
         CanUndo = canUndo;
+        // Advise rows speak in the user's language: the localized advice is
+        // the body and the engine's English evidence retreats behind the
+        // "Details" fold. A rule without an advice key keeps its evidence as
+        // the body (still informative) and gets no redundant fold.
+        var adviceKey = $"rule.{finding.RuleId}.advice";
+        var advice = loc[adviceKey];   // the indexer returns the key when missing
+        var hasAdviceKey = !string.Equals(advice, adviceKey, StringComparison.Ordinal);
+        AdviceText = IsAdvise && hasAdviceKey ? advice : Evidence;
+        HasDetails = IsAdvise && hasAdviceKey;
+        HasStorageAction = IsAdvise && onOpenStorage is not null
+            && StorageAdviceRules.Contains(finding.RuleId);
         FixCommand = new RelayCommand(() => onFix(this), () => CanFix);
         UndoCommand = new RelayCommand(() => onUndo(this), () => CanUndo);
+        OpenStorageCommand = new RelayCommand(
+            () => onOpenStorage?.Invoke(this), () => HasStorageAction);
     }
 
     public string RuleId { get; }
     public string Title { get; }
     public string Evidence { get; }
+    public string AdviceText { get; }
     public string ImpactText { get; }
     public string SeverityKey { get; }
     public string CategoryText { get; }
     public bool IsAdvise { get; }
     public bool CanFix { get; }
     public bool CanUndo { get; }
+    public bool HasDetails { get; }
+    public bool HasStorageAction { get; }
     public bool IsExpanded { get => _isExpanded; set => Set(ref _isExpanded, value); }
+    public bool IsDetailsShown
+    {
+        get => _isDetailsShown;
+        set => Set(ref _isDetailsShown, value);
+    }
     public RelayCommand FixCommand { get; }
     public RelayCommand UndoCommand { get; }
+    public RelayCommand OpenStorageCommand { get; }
 }
 
 public sealed class HealthViewModel : ViewModelBase
@@ -83,6 +117,12 @@ public sealed class HealthViewModel : ViewModelBase
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
     public ObservableCollection<FindingRow> AdviseRows { get; } = new();
+
+    /// Raised by an advise card's "Open Storage" button; MainWindow answers
+    /// by switching to the Depolama page (same pattern as the flyout's
+    /// OpenDetailsRequested).
+    public event Action? OpenStorageRequested;
+
     public AppState State => _state;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
     public string ScoreText { get => _scoreText; private set => Set(ref _scoreText, value); }
@@ -185,7 +225,8 @@ public sealed class HealthViewModel : ViewModelBase
                      .ThenByDescending(f => f.ImpactStars))
             (finding.Category == RuleCategory.Advise ? AdviseRows : Rows)
                 .Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
-                    row => _ = FixAsync(row), row => _ = UndoAsync(row)));
+                    row => _ = FixAsync(row), row => _ = UndoAsync(row),
+                    _ => OpenStorageRequested?.Invoke()));
         ScoreText = snapshot.Health.ToString();
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
         FixAllCommand.RaiseCanExecuteChanged();

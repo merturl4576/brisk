@@ -64,6 +64,67 @@ public class HealthViewModelTests
     }
 
     [Fact]
+    public async Task AdviseRow_SpeaksLocalizedAdvice_EvidenceBehindDetailsFold()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+        });
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host));
+        await state.ScanAsync();
+
+        var row = Assert.Single(vm.AdviseRows);
+        Assert.Equal(loc["rule.thermals.advice"], row.AdviceText);
+        Assert.NotEqual(row.Evidence, row.AdviceText);   // no English body
+        Assert.True(row.HasDetails);                     // evidence still reachable
+        Assert.False(row.IsDetailsShown);                // …but folded by default
+    }
+
+    [Fact]
+    public async Task AdviseRow_WithoutAdviceKey_FallsBackToEvidence_NoRedundantFold()
+    {
+        var (vm, _, state) = Build();   // custom-x has no rule.custom-x.advice
+        await state.ScanAsync();
+
+        var row = Assert.Single(vm.AdviseRows);
+        Assert.Equal(row.Evidence, row.AdviceText);
+        Assert.False(row.HasDetails);   // the fold would just repeat the body
+    }
+
+    [Fact]
+    public async Task AdviseRow_StorageRules_GetTheOpenStorageAction()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+        });
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host));
+        var navigations = 0;
+        vm.OpenStorageRequested += () => navigations++;
+        await state.ScanAsync();
+
+        var disk = vm.AdviseRows.Single(r => r.RuleId == "disk-breakdown");
+        Assert.True(disk.HasStorageAction);
+        Assert.True(disk.OpenStorageCommand.CanExecute(null));
+        disk.OpenStorageCommand.Execute(null);
+        Assert.Equal(1, navigations);
+
+        // no in-app action exists for thermals — no fake button
+        Assert.False(vm.AdviseRows.Single(r => r.RuleId == "thermals").HasStorageAction);
+        // fixable rows keep their Fix/Undo rendering, never the storage action
+        Assert.False(vm.Rows.Single(r => r.RuleId == "power-plan").HasStorageAction);
+    }
+
+    [Fact]
     public async Task SectionFilter_SplitsFindingsAcrossPages()
     {
         var host = new FakeEngineHost();
