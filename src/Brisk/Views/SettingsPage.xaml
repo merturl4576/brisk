@@ -1,0 +1,32 @@
+<UserControl x:Class="Brisk.Views.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Brisk.Localization"
+             xmlns:Brisk="clr-namespace:Brisk.Views">
+    <UserControl.Resources>
+        <Brisk:LocKeyConverter x:Key="LocKey" />
+        <DataTemplate x:Key="ChoiceTemplate">
+            <TextBlock Text="{Binding LabelKey, Converter={StaticResource LocKey}}" />
+        </DataTemplate>
+    </UserControl.Resources>
+    <StackPanel Margin="16,14" MaxWidth="420" HorizontalAlignment="Left">
+        <TextBlock Style="{StaticResource Muted}"
+                   Text="{Binding [settings.language], Source={x:Static loc:Loc.Instance}}" />
+        <ComboBox Margin="0,4,0,12" ItemsSource="{Binding LanguageOptions}"
+                  SelectedValue="{Binding Language}" SelectedValuePath="Value"
+                  ItemTemplate="{StaticResource ChoiceTemplate}" />
+        <TextBlock Style="{StaticResource Muted}"
+                   Text="{Binding [settings.theme], Source={x:Static loc:Loc.Instance}}" />
+        <ComboBox Margin="0,4,0,12" ItemsSource="{Binding ThemeOptions}"
+                  SelectedValue="{Binding Theme}" SelectedValuePath="Value"
+                  ItemTemplate="{StaticResource ChoiceTemplate}" />
+        <CheckBox Margin="0,4,0,10" Foreground="{DynamicResource Text}"
+                  IsChecked="{Binding DryRun}"
+                  Content="{Binding [settings.dryrun], Source={x:Static loc:Loc.Instance}}" />
+        <CheckBox Margin="0,0,0,2" Foreground="{DynamicResource Text}"
+                  IsChecked="{Binding StartWithWindows}"
+                  Content="{Binding [settings.startwithwindows], Source={x:Static loc:Loc.Instance}}" />
+        <TextBlock Style="{StaticResource Faint}" TextWrapping="Wrap" Margin="22,0,0,0"
+                   Text="{Binding [settings.startwithwindows.hint], Source={x:Static loc:Loc.Instance}}" />
+    </StackPanel>
+</UserControl>
