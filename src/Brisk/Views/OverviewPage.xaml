@@ -75,8 +75,9 @@
                 </Button>
             </StackPanel>
 
-            <Border CornerRadius="6" Background="{DynamicResource BgElevated}"
-                    Padding="14,10" Margin="0,20,0,0">
+            <Border CornerRadius="8" Background="{DynamicResource BgElevated}"
+                    BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
+                    Padding="16,12" Margin="0,20,0,0">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Style.Triggers>

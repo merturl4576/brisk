@@ -13,9 +13,10 @@
         <Border Grid.Column="0" BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,0,1,0">
             <StackPanel Margin="0,10">
-                <RadioButton x:Name="NavOverview" Style="{StaticResource NavRadio}"
+                <RadioButton x:Name="NavOverview" Style="{StaticResource NavBrand}"
                              GroupName="nav" IsChecked="True" Checked="Nav_Checked"
                              Content="{Binding [app.name], Source={x:Static loc:Loc.Instance}}" />
+                <Border Height="6" />
                 <RadioButton x:Name="NavHealth" Style="{StaticResource NavRadio}"
                              GroupName="nav" Checked="Nav_Checked"
                              Content="{Binding [nav.health], Source={x:Static loc:Loc.Instance}}" />

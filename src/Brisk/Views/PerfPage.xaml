@@ -49,7 +49,7 @@
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="6" MinHeight="44" Padding="14,0">
+                                <Border CornerRadius="8" MinHeight="44" Padding="16,0">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Background" Value="Transparent" />
@@ -62,11 +62,13 @@
                                         </Style>
                                     </Border.Style>
                                     <DockPanel>
-                                        <CheckBox IsChecked="{Binding IsEnabled}"
-                                                  VerticalAlignment="Center" />
+                                        <CheckBox DockPanel.Dock="Right"
+                                                  Style="{StaticResource ToggleSwitch}"
+                                                  IsChecked="{Binding IsEnabled}" />
                                         <StackPanel DockPanel.Dock="Right"
                                                     Orientation="Horizontal"
-                                                    HorizontalAlignment="Right">
+                                                    HorizontalAlignment="Right"
+                                                    Margin="0,0,14,0">
                                             <Ellipse Width="8" Height="8"
                                                      VerticalAlignment="Center" Margin="0,0,10,0"
                                                      Fill="{DynamicResource SeverityWarning}"
@@ -79,7 +81,7 @@
                                                        Text="{Binding Hive}" />
                                         </StackPanel>
                                         <TextBlock Style="{StaticResource Body}"
-                                                   Margin="10,0" VerticalAlignment="Center"
+                                                   Margin="0,0,10,0" VerticalAlignment="Center"
                                                    Text="{Binding Name}" />
                                     </DockPanel>
                                 </Border>

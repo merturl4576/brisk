@@ -20,10 +20,12 @@
         <ComboBox Margin="0,4,0,14" ItemsSource="{Binding ThemeOptions}"
                   SelectedValue="{Binding Theme}" SelectedValuePath="Value"
                   ItemTemplate="{StaticResource ChoiceTemplate}" />
-        <CheckBox Margin="0,6,0,10" Foreground="{DynamicResource Text}"
+        <CheckBox Style="{StaticResource QuietCheck}" Margin="0,6,0,10"
+                  Foreground="{DynamicResource Text}"
                   IsChecked="{Binding DryRun}"
                   Content="{Binding [settings.dryrun], Source={x:Static loc:Loc.Instance}}" />
-        <CheckBox Margin="0,0,0,2" Foreground="{DynamicResource Text}"
+        <CheckBox Style="{StaticResource QuietCheck}" Margin="0,0,0,2"
+                  Foreground="{DynamicResource Text}"
                   IsChecked="{Binding StartWithWindows}"
                   Content="{Binding [settings.startwithwindows], Source={x:Static loc:Loc.Instance}}" />
         <TextBlock Style="{StaticResource Faint}" TextWrapping="Wrap" Margin="22,0,0,0"

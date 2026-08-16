@@ -98,6 +98,123 @@
         </Setter>
     </Style>
 
+    <!-- Toggle switch skin for on/off CheckBoxes (startup programs). Pure
+         template work: the two-way IsChecked binding is untouched. -->
+    <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Border x:Name="Track" Width="38" Height="20" CornerRadius="10"
+                            Background="{DynamicResource BgHover}"
+                            BorderBrush="{DynamicResource BorderBrushKey}"
+                            BorderThickness="1" SnapsToDevicePixels="True">
+                        <Ellipse x:Name="Knob" Width="14" Height="14"
+                                 HorizontalAlignment="Left" VerticalAlignment="Center"
+                                 Margin="2,0,0,0" Fill="{DynamicResource TextMuted}">
+                            <Ellipse.RenderTransform>
+                                <TranslateTransform x:Name="KnobShift" X="0" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background"
+                                    Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Track" Property="BorderBrush"
+                                    Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Knob" Property="Fill"
+                                    Value="{DynamicResource AccentTextBrush}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="KnobShift"
+                                                         Storyboard.TargetProperty="X"
+                                                         To="18" Duration="0:0:0.13">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="KnobShift"
+                                                         Storyboard.TargetProperty="X"
+                                                         To="0" Duration="0:0:0.13">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Quiet selection checkbox: smaller box, subtle border, accent fill. -->
+    <Style x:Key="QuietCheck" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="Box" Width="15" Height="15" CornerRadius="3.5"
+                                BorderBrush="{DynamicResource BorderBrushKey}"
+                                BorderThickness="1" Background="Transparent"
+                                VerticalAlignment="Center" SnapsToDevicePixels="True">
+                            <Path x:Name="Glyph" Data="M 2 5.5 L 4.8 8 L 9.4 2.6"
+                                  Stroke="{DynamicResource AccentTextBrush}"
+                                  StrokeThickness="1.6" StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" Stretch="None"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Visibility="Collapsed" />
+                        </Border>
+                        <ContentPresenter x:Name="Text" Margin="7,0,0,0"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasContent" Value="False">
+                            <Setter TargetName="Text" Property="Visibility"
+                                    Value="Collapsed" />
+                            <Setter TargetName="Text" Property="Margin" Value="0" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush"
+                                    Value="{DynamicResource TextFaint}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Box" Property="Background"
+                                    Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Box" Property="BorderBrush"
+                                    Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Glyph" Property="Visibility"
+                                    Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Score number colored by the shared score converter key; pages set
          their own FontSize (30 on Sağlık, 42 on the overview hero). -->
     <Style x:Key="ScoreText" TargetType="TextBlock">
@@ -119,7 +236,8 @@
 
     <!-- One finding card, shared by the Sağlık and Performans lists. -->
     <DataTemplate x:Key="FindingCard">
-        <Border CornerRadius="6" Margin="0,0,0,6">
+        <Border CornerRadius="8" Margin="0,0,0,8"
+                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Background" Value="{DynamicResource BgElevated}" />
@@ -134,7 +252,7 @@
                 <ToggleButton IsChecked="{Binding IsExpanded}" Cursor="Hand" MinHeight="44">
                     <ToggleButton.Template>
                         <ControlTemplate TargetType="ToggleButton">
-                            <Border Background="Transparent" Padding="14,0">
+                            <Border Background="Transparent" Padding="16,0">
                                 <ContentPresenter HorizontalAlignment="Stretch"
                                                   VerticalAlignment="Center" />
                             </Border>
@@ -196,7 +314,7 @@
                                    VerticalAlignment="Center" Text="{Binding Title}" />
                     </DockPanel>
                 </ToggleButton>
-                <StackPanel Margin="34,0,14,12"
+                <StackPanel Margin="36,0,16,14"
                             Visibility="{Binding IsExpanded,
                                 Converter={x:Static views:BoolToVis.Instance}}">
                     <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
@@ -257,5 +375,13 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- The "brisk" nav item: the app identity, still clearly a nav entry. -->
+    <Style x:Key="NavBrand" TargetType="RadioButton" BasedOn="{StaticResource NavRadio}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
     </Style>
 </ResourceDictionary>

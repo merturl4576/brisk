@@ -17,8 +17,7 @@
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal"
                         VerticalAlignment="Bottom">
-                <CheckBox VerticalAlignment="Center" Margin="0,0,16,0"
-                          Foreground="{DynamicResource TextMuted}"
+                <CheckBox Style="{StaticResource QuietCheck}" Margin="0,0,16,0"
                           IsChecked="{Binding CreateRestorePointFirst}"
                           Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
                 <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"

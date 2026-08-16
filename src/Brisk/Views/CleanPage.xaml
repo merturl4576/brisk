@@ -8,7 +8,8 @@
     </UserControl.Resources>
     <DockPanel Margin="18,16">
         <Border DockPanel.Dock="Top" Background="{DynamicResource BgElevated}"
-                CornerRadius="6" Padding="12,10" Margin="0,0,0,10"
+                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
+                CornerRadius="8" Padding="16,12" Margin="0,0,0,10"
                 Visibility="{Binding HasBanner,
                     Converter={x:Static Brisk:BoolToVis.Instance}}">
             <DockPanel>
@@ -41,8 +42,10 @@
             <ItemsControl ItemsSource="{Binding Levels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{DynamicResource BgElevated}" CornerRadius="6"
-                                Margin="0,0,0,8" Padding="12,10">
+                        <Border Background="{DynamicResource BgElevated}"
+                                BorderBrush="{DynamicResource BorderBrushKey}"
+                                BorderThickness="1" CornerRadius="8"
+                                Margin="0,0,0,8" Padding="16,14">
                             <StackPanel>
                                 <DockPanel>
                                     <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"
@@ -64,7 +67,8 @@
                                         <DataTemplate>
                                             <StackPanel Margin="2,2">
                                                 <DockPanel>
-                                                    <CheckBox IsChecked="{Binding IsSelected}"
+                                                    <CheckBox Style="{StaticResource QuietCheck}"
+                                                              IsChecked="{Binding IsSelected}"
                                                               IsEnabled="{Binding IsSelectable}"
                                                               VerticalAlignment="Center" />
                                                     <TextBlock Style="{StaticResource Body}"
@@ -94,7 +98,8 @@
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <DockPanel Margin="0,1">
-                                                                <CheckBox IsChecked="{Binding IsSelected}"
+                                                                <CheckBox Style="{StaticResource QuietCheck}"
+                                                                          IsChecked="{Binding IsSelected}"
                                                                           VerticalAlignment="Center" />
                                                                 <TextBlock Style="{StaticResource Faint}"
                                                                            Margin="8,0,0,0"
