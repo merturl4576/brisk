@@ -12,6 +12,24 @@ using BriskEngine.Models;
 
 namespace Brisk.ViewModels;
 
+/// Past-tense outcome label for a completed fix ("Power plan switched to
+/// high performance"). A finished action must read as an outcome, never as
+/// the problem it solved — a problem title next to an Undo button looks
+/// like something fix-all forgot. Prefers the per-rule "rule.&lt;id&gt;.done"
+/// key; a rule without one still reads as an outcome via the generic
+/// "Fixed: &lt;title&gt;" composition.
+internal static class DoneLabel
+{
+    public static string For(Loc loc, string ruleId, string titleKey, string english)
+    {
+        var key = $"rule.{ruleId}.done";
+        var text = loc[key];   // the indexer returns the key itself when missing
+        return string.Equals(text, key, StringComparison.Ordinal)
+            ? loc.F("overview.report.fixed", loc.Title(titleKey, english))
+            : text;
+    }
+}
+
 /// One undoable fix in the overview's "recent actions" area (the undo
 /// capability formerly living on the Log page).
 public sealed class UndoableRow
@@ -19,7 +37,7 @@ public sealed class UndoableRow
     public UndoableRow(UndoableFix fix, Loc loc, Func<UndoableRow, Task> undo)
     {
         RuleId = fix.RuleId;
-        Title = loc.Title($"rule.{fix.RuleId}.title", fix.RuleId);
+        Title = DoneLabel.For(loc, fix.RuleId, $"rule.{fix.RuleId}.title", fix.RuleId);
         WhenText = fix.FixedAtUtc.ToLocalTime()
             .ToString("dd.MM HH:mm", CultureInfo.InvariantCulture);
         UndoCommand = new RelayCommand(() => _ = undo(this));
@@ -47,6 +65,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _scoreBrushKey = "";
     private string _statusText = "";
     private string _summaryText = "";
+    private string _reportSummary = "";
     private bool _busy;
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
@@ -61,7 +80,7 @@ public sealed class OverviewViewModel : ViewModelBase
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() =>
         {
-            ReportLines.Clear();   // a new scan starts a new story
+            ClearReport();   // a new scan starts a new story
             _ = _state.ScanAsync();
         });
         // Enabled only while fix-all would actually change something —
@@ -85,6 +104,13 @@ public sealed class OverviewViewModel : ViewModelBase
     }
     public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
+    /// The report's bottom line ("Result: 210 MB freed · 3 fixes applied").
+    /// Empty when the last run changed nothing; the page hides the block.
+    public string ReportSummary
+    {
+        get => _reportSummary;
+        private set => Set(ref _reportSummary, value);
+    }
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CleanSafeCommand { get; }
@@ -97,7 +123,7 @@ public sealed class OverviewViewModel : ViewModelBase
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
-            ReportLines.Clear();
+            ClearReport();
             if (_isDryRun())
             {
                 ReportLines.Add(_loc["dryrun.blocked"]);
@@ -105,8 +131,8 @@ public sealed class OverviewViewModel : ViewModelBase
             }
             var result = await Task.Run(() => _fixAll.Run(snapshot));
             foreach (var finding in result.FixedRules)
-                ReportLines.Add(_loc.F("overview.report.fixed",
-                    _loc.Title(finding.TitleKey, finding.Title)));
+                ReportLines.Add(DoneLabel.For(_loc, finding.RuleId,
+                    finding.TitleKey, finding.Title));
             foreach (var name in result.DisabledStartup)
                 ReportLines.Add(_loc.F("overview.report.disabled", name));
             if (result.Attempted == 0)
@@ -114,8 +140,14 @@ public sealed class OverviewViewModel : ViewModelBase
             else if (result.Applied < result.Attempted)
                 ReportLines.Add(_loc.F("health.fixpartial",
                     result.Applied, result.Attempted));
-            if (result.Applied > 0)
-                ReportLines.Add(_loc["overview.report.enjoy"]);
+            var parts = new List<string>();
+            if (result.DisabledStartup.Count > 0)
+                parts.Add(_loc.F("overview.report.part.startup",
+                    result.DisabledStartup.Count));
+            if (result.FixedRules.Count > 0)
+                parts.Add(_loc.F("overview.report.part.fixes",
+                    result.FixedRules.Count));
+            SetReportSummary(parts);
             await _state.ScanAsync();
         }
         finally
@@ -132,7 +164,7 @@ public sealed class OverviewViewModel : ViewModelBase
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
-            ReportLines.Clear();
+            ClearReport();
             var outcome = await Task.Run(() => _cleanService.CleanSafe(snapshot.Cleaner));
             if (outcome.WasDryRun)
             {
@@ -141,8 +173,11 @@ public sealed class OverviewViewModel : ViewModelBase
             }
             ReportLines.Add(_loc.F("clean.recycled",
                 outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes)));
+            var parts = new List<string>();
             if (outcome.RecycledPaths.Count > 0)
-                ReportLines.Add(_loc["overview.report.enjoy"]);
+                parts.Add(_loc.F("overview.report.part.freed",
+                    Fmt.Bytes(outcome.RecycledBytes)));
+            SetReportSummary(parts);
             await _state.ScanAsync();
         }
         finally
@@ -157,7 +192,7 @@ public sealed class OverviewViewModel : ViewModelBase
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
-            ReportLines.Clear();
+            ClearReport();
             if (_isDryRun())
             {
                 ReportLines.Add(_loc["dryrun.blocked"]);
@@ -171,6 +206,20 @@ public sealed class OverviewViewModel : ViewModelBase
             IsBusy = false;
         }
     }
+
+    private void ClearReport()
+    {
+        ReportLines.Clear();
+        ReportSummary = "";
+    }
+
+    /// "Result: …" bottom line from the parts a run actually produced. A
+    /// non-empty summary is also what shows the closing "enjoy" sentence,
+    /// so it is set only when at least one action ran.
+    private void SetReportSummary(List<string> parts) =>
+        ReportSummary = parts.Count == 0
+            ? ""
+            : _loc.F("overview.report.summary", string.Join(" · ", parts));
 
     private void Refresh()
     {

@@ -110,7 +110,7 @@ public class OverviewViewModelTests
     }
 
     [Fact]
-    public async Task FixAll_ReportsFixedRules_AndEnjoyLine_ThenRescans()
+    public async Task FixAll_ReportsPastTenseOutcomes_AndBottomLine_ThenRescans()
     {
         var loc = EnglishLoc();
         var (vm, host, state) = Build();
@@ -119,13 +119,33 @@ public class OverviewViewModelTests
         await vm.FixAllAsync();
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
-        Assert.Equal(new[]
-        {
-            loc.F("overview.report.fixed", "Power plan is limiting speed"),
-            loc["overview.report.enjoy"],
-        }, vm.ReportLines);
+        // the line is the rule's past-tense outcome, not its problem title
+        Assert.Equal(new[] { "Power plan switched to high performance" },
+            vm.ReportLines);
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
+            vm.ReportSummary);
         Assert.Equal(2, host.ScanCalls);
         Assert.False(vm.IsBusy);
+    }
+
+    [Fact]
+    public async Task FixAll_RuleWithoutDoneKey_FallsBackToFixedTitleComposition()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("custom-x", cat: RuleCategory.Auto, canFix: true),
+        });
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        // rule.custom-x.done and rule.custom-x.title are both missing:
+        // generic "Fixed: <engine English>" keeps the line an outcome.
+        Assert.Equal(new[] { loc.F("overview.report.fixed", "Title custom-x") },
+            vm.ReportLines);
     }
 
     [Fact]
@@ -146,11 +166,34 @@ public class OverviewViewModelTests
 
         await vm.FixAllAsync();
 
-        Assert.Equal(new[]
+        Assert.Equal(new[] { loc.F("overview.report.disabled", "Discord") },
+            vm.ReportLines);
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.startup", 1)),
+            vm.ReportSummary);
+    }
+
+    [Fact]
+    public async Task FixAll_BottomLine_JoinsStartupAndFixParts()
+    {
+        var loc = EnglishLoc();
+        var host = new StartupDisablingHost();
+        host.Inner.NextSnapshot = TestData.Snapshot(new[]
         {
-            loc.F("overview.report.disabled", "Discord"),
-            loc["overview.report.enjoy"],
-        }, vm.ReportLines);
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("startup-bloat", cat: RuleCategory.Confirm, canFix: true),
+        });
+        host.Inner.Startup.Add(new StartupEntry("HKCU", "Discord", true, true));
+        host.Inner.Startup.Add(new StartupEntry("HKCU", "Steam", true, true));
+        var state = new AppState(host);
+        var vm = new OverviewViewModel(state, host, new FixAllService(host),
+            new CleanService(host, new Settings()), loc, () => false);
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.Equal("Result: 2 programs removed from startup · 1 fixes applied",
+            vm.ReportSummary);
     }
 
     [Fact]
@@ -182,10 +225,11 @@ public class OverviewViewModelTests
 
         Assert.Empty(host.Fixed);
         Assert.Equal(new[] { loc["health.nofixables"] }, vm.ReportLines);
+        Assert.Equal("", vm.ReportSummary);   // nothing ran — no bottom line
     }
 
     [Fact]
-    public async Task CleanSafe_ReportsRecycledLine_ThenRescans()
+    public async Task CleanSafe_ReportsRecycledLine_AndFreedBottomLine_ThenRescans()
     {
         var loc = EnglishLoc();
         var (vm, host, state) = Build();
@@ -194,11 +238,10 @@ public class OverviewViewModelTests
         await vm.CleanSafeAsync();
 
         Assert.Equal("user-temp", Assert.Single(host.Cleans).TargetId);
-        Assert.Equal(new[]
-        {
-            loc.F("clean.recycled", 1, "2 KB"),
-            loc["overview.report.enjoy"],
-        }, vm.ReportLines);
+        Assert.Equal(new[] { loc.F("clean.recycled", 1, "2 KB") }, vm.ReportLines);
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.freed", "2 KB")),
+            vm.ReportSummary);
         Assert.Equal(2, host.ScanCalls);
     }
 
@@ -231,8 +274,8 @@ public class OverviewViewModelTests
 
         var row = Assert.Single(vm.Recent);
         Assert.Equal("power-plan", row.RuleId);
-        // rule title comes localized via Loc.Title, not as a raw rule id
-        Assert.Equal("Power plan is limiting speed", row.Title);
+        // a completed fix reads as its outcome, never as the problem title
+        Assert.Equal("Power plan switched to high performance", row.Title);
 
         await vm.UndoAsync(row);
 
@@ -263,11 +306,28 @@ public class OverviewViewModelTests
         await state.ScanAsync();
         await vm.FixAllAsync();
         Assert.NotEmpty(vm.ReportLines);
+        Assert.NotEqual("", vm.ReportSummary);
 
         vm.ScanCommand.Execute(null);
         await Task.Yield();
 
         Assert.Empty(vm.ReportLines);
+        Assert.Equal("", vm.ReportSummary);
+    }
+
+    [Fact]
+    public async Task Recent_RuleWithoutDoneKey_FallsBackToFixedComposition()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.Undoable.Add(new UndoableFix("custom-x",
+            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
+        await state.ScanAsync();
+
+        var row = vm.Recent.Single(r => r.RuleId == "custom-x");
+        // no rule.custom-x.done and no rule.custom-x.title in the resx —
+        // still an outcome via the generic composition, ruleId as last resort
+        Assert.Equal(loc.F("overview.report.fixed", "custom-x"), row.Title);
     }
 
     [Fact]

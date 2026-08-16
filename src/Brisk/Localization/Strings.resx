@@ -18,6 +18,10 @@
   <data name="overview.report.fixed" xml:space="preserve"><value>Fixed: {0}</value></data>
   <data name="overview.report.disabled" xml:space="preserve"><value>Startup disabled: {0}</value></data>
   <data name="overview.report.enjoy" xml:space="preserve"><value>Done — your PC should feel snappier.</value></data>
+  <data name="overview.report.summary" xml:space="preserve"><value>Result: {0}</value></data>
+  <data name="overview.report.part.freed" xml:space="preserve"><value>{0} freed</value></data>
+  <data name="overview.report.part.startup" xml:space="preserve"><value>{0} programs removed from startup</value></data>
+  <data name="overview.report.part.fixes" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="overview.recent" xml:space="preserve"><value>Recent actions</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
@@ -77,6 +81,12 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Stale developer caches</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Visual effects are slowing this PC</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Storage Sense is off</value></data>
+  <data name="rule.power-plan.done" xml:space="preserve"><value>Power plan switched to high performance</value></data>
+  <data name="rule.browser-gpu.done" xml:space="preserve"><value>Browsers now use the fast GPU</value></data>
+  <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Browser hardware acceleration enabled</value></data>
+  <data name="rule.startup-bloat.done" xml:space="preserve"><value>Heavy startup programs disabled</value></data>
+  <data name="rule.visual-effects.done" xml:space="preserve"><value>Visual effects tuned for performance</value></data>
+  <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
   <data name="app.startupfailed" xml:space="preserve"><value>brisk could not start: {0}</value></data>
   <data name="app.unexpected" xml:space="preserve"><value>unexpected error: {0}</value></data>
   <data name="dryrun.blocked" xml:space="preserve"><value>dry run is on — nothing was changed</value></data>

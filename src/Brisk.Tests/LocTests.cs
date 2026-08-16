@@ -50,6 +50,30 @@ public class LocTests
             loc.Title("rule.not-a-rule.title", "Engine English"));
     }
 
+    /// EN+TR parity for the reassurance-round keys: the indexer returns the
+    /// key itself when a culture is missing a value, so this fails loudly if
+    /// either resx falls behind.
+    [Theory]
+    [InlineData("overview.status.advise")]
+    [InlineData("overview.report.summary")]
+    [InlineData("overview.report.part.freed")]
+    [InlineData("overview.report.part.startup")]
+    [InlineData("overview.report.part.fixes")]
+    [InlineData("rule.power-plan.done")]
+    [InlineData("rule.browser-gpu.done")]
+    [InlineData("rule.hw-acceleration.done")]
+    [InlineData("rule.startup-bloat.done")]
+    [InlineData("rule.visual-effects.done")]
+    [InlineData("rule.storage-sense.done")]
+    public void ReassuranceKeys_ExistInBothLanguages(string key)
+    {
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        Assert.NotEqual(key, loc[key]);
+        loc.SetLanguage("tr");
+        Assert.NotEqual(key, loc[key]);
+    }
+
     [Fact]
     public void SetLanguage_RaisesIndexerChange()
     {
