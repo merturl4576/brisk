@@ -12,6 +12,7 @@
   <data name="perf.title" xml:space="preserve"><value>Performance</value></data>
   <data name="overview.status.good" xml:space="preserve"><value>Your PC is in good shape</value></data>
   <data name="overview.status.attention" xml:space="preserve"><value>Some findings need attention</value></data>
+  <data name="overview.status.advise" xml:space="preserve"><value>Your PC is in good shape — {0} recommendations to review</value></data>
   <data name="overview.cleansafe" xml:space="preserve"><value>Safe clean</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>What was done</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Fixed: {0}</value></data>

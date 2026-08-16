@@ -73,8 +73,12 @@ public sealed class HealthViewModel : ViewModelBase
         _filter = filter;
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
+        // Enabled only while fix-all would actually change something. The
+        // predicate lives on FixAllService (single source of truth) and is
+        // deliberately unfiltered: fix-all acts on the whole snapshot, not
+        // just the rows this page shows.
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
-            () => Rows.Any(r => r.CanFix));
+            () => _state.Snapshot is { } s && _fixAll.HasWork(s));
     }
 
     public ObservableCollection<FindingRow> Rows { get; } = new();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
@@ -63,7 +64,11 @@ public sealed class OverviewViewModel : ViewModelBase
             ReportLines.Clear();   // a new scan starts a new story
             _ = _state.ScanAsync();
         });
-        FixAllCommand = new RelayCommand(() => _ = FixAllAsync(), () => HasSnapshot);
+        // Enabled only while fix-all would actually change something —
+        // FixAllService.HasWork is the single source of truth. A disabled
+        // button after a run is the reassurance, not a defect.
+        FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
+            () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
     }
 
@@ -176,15 +181,25 @@ public sealed class OverviewViewModel : ViewModelBase
         if (snapshot is null) return;
         ScoreText = snapshot.Health.ToString(CultureInfo.InvariantCulture);
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
-        StatusText = _loc[snapshot.Health >= 90
-            ? "overview.status.good" : "overview.status.attention"];
+        // Three-state headline driven by the same predicate as the fix-all
+        // button: work to do → attention; only recommendations left →
+        // positive with a count; nothing at all → plain good news.
+        var hasWork = _fixAll.HasWork(snapshot);
+        var advise = snapshot.Findings.Count(f => f.Category == RuleCategory.Advise);
+        StatusText = hasWork ? _loc["overview.status.attention"]
+            : advise > 0 ? _loc.F("overview.status.advise", advise)
+            : _loc["overview.status.good"];
+        // The "{m} one-click fixable" phrase only appears while it is a
+        // promise (m > 0); "0 tanesi düzelir" would read as failure.
         var fixable = snapshot.Findings.Count(f =>
             f.Category != RuleCategory.Advise && f.CanFix);
-        SummaryText = string.Join("   ·   ",
-            _loc.F("flyout.findings", snapshot.Findings.Count, fixable),
-            _loc.F("flyout.reclaimable", Fmt.Bytes(snapshot.Cleaner.TotalBytes)),
-            _loc.F("flyout.lastscan",
-                snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm")));
+        var parts = new List<string>();
+        if (hasWork)
+            parts.Add(_loc.F("flyout.findings", snapshot.Findings.Count, fixable));
+        parts.Add(_loc.F("flyout.reclaimable", Fmt.Bytes(snapshot.Cleaner.TotalBytes)));
+        parts.Add(_loc.F("flyout.lastscan",
+            snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm")));
+        SummaryText = string.Join("   ·   ", parts);
         Raise(nameof(HasSnapshot));
         FixAllCommand.RaiseCanExecuteChanged();
         CleanSafeCommand.RaiseCanExecuteChanged();

@@ -12,6 +12,7 @@
   <data name="perf.title" xml:space="preserve"><value>Performans</value></data>
   <data name="overview.status.good" xml:space="preserve"><value>Bilgisayarın iyi durumda</value></data>
   <data name="overview.status.attention" xml:space="preserve"><value>İlgilenilmesi gereken bulgular var</value></data>
+  <data name="overview.status.advise" xml:space="preserve"><value>Bilgisayarın iyi durumda — incelemen için {0} öneri var</value></data>
   <data name="overview.cleansafe" xml:space="preserve"><value>Güvenli temizlik</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>Yapılanlar</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Düzeltildi: {0}</value></data>

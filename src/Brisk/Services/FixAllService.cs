@@ -27,6 +27,16 @@ public sealed class FixAllService
 
     public FixAllService(IEngineHost host) { _host = host; }
 
+    /// True when Run would actually change something on this snapshot: a
+    /// fixable non-advise finding exists — counting startup-bloat only while
+    /// heavy items are still enabled, because its fix is a no-op once every
+    /// heavy item is already off. The fix-all buttons (overview and health)
+    /// query this instead of duplicating the predicate.
+    public bool HasWork(ScanSnapshot snapshot) => snapshot.Findings.Any(f =>
+        f.Category != RuleCategory.Advise && f.CanFix
+        && (!string.Equals(f.RuleId, StartupBloatRuleId, StringComparison.OrdinalIgnoreCase)
+            || EnabledHeavyNames().Count > 0));
+
     /// Callers guard dry-run and busy-state before calling; this always acts.
     public FixAllResult Run(ScanSnapshot snapshot)
     {

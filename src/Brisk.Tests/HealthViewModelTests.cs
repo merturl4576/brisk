@@ -92,6 +92,41 @@ public class HealthViewModelTests
     }
 
     [Fact]
+    public async Task FixAllButton_EnabledOnlyWhenFixAllHasWork()
+    {
+        var (vm, host, state) = Build();
+        Assert.False(vm.FixAllCommand.CanExecute(null));   // no snapshot yet
+
+        await state.ScanAsync();                           // fixable power-plan
+        Assert.True(vm.FixAllCommand.CanExecute(null));
+
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("custom-x", cat: RuleCategory.Advise, canFix: false),
+        });
+        await state.ScanAsync();                           // only advice remains
+        Assert.False(vm.FixAllCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task FixAllButton_IgnoresPageFilter_FixAllActsOnWholeSnapshot()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            // performance-section finding: hidden on the Sağlık page …
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+        });
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), FindingSections.IsHealth);
+        await state.ScanAsync();
+
+        Assert.Empty(vm.Rows);                          // … page shows nothing
+        Assert.True(vm.FixAllCommand.CanExecute(null)); // but fix-all would act
+    }
+
+    [Fact]
     public async Task CanUndo_ComesFromJournal()
     {
         var (vm, host, state) = Build();

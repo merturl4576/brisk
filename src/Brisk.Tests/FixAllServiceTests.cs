@@ -76,6 +76,43 @@ public class FixAllServiceTests
     }
 
     [Fact]
+    public void HasWork_TrueWithFixableNonAdvise_FalseWithAdviseOnlyOrEmpty()
+    {
+        var svc = new FixAllService(new FakeEngineHost());
+
+        Assert.True(svc.HasWork(TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+        })));
+        Assert.False(svc.HasWork(TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("no-fix", cat: RuleCategory.Confirm, canFix: false),
+        })));
+        Assert.False(svc.HasWork(TestData.Snapshot()));
+    }
+
+    [Fact]
+    public void HasWork_StartupBloat_CountsOnlyWhileHeavyItemsAreStillEnabled()
+    {
+        var host = new FakeEngineHost();
+        var svc = new FixAllService(host);
+        var snapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("startup-bloat", cat: RuleCategory.Confirm, canFix: true),
+        });
+
+        // Every heavy item already off — the rule fix would be a no-op.
+        host.Startup.Add(new StartupEntry("HKCU", "Discord", Enabled: false, KnownHeavy: true));
+        host.Startup.Add(new StartupEntry("HKCU", "MyTool", Enabled: true, KnownHeavy: false));
+        Assert.False(svc.HasWork(snapshot));
+
+        host.Startup.Add(new StartupEntry("HKCU", "Steam", Enabled: true, KnownHeavy: true));
+        Assert.True(svc.HasWork(snapshot));
+    }
+
+    [Fact]
     public void Run_CountsFailedFixes_AsAttemptedNotApplied()
     {
         var inner = new FakeEngineHost();

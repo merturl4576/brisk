@@ -70,6 +70,46 @@ public class OverviewViewModelTests
     }
 
     [Fact]
+    public async Task Refresh_OnlyRecommendationsLeft_PositiveStatus_NoFixablePhrase()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[]
+            {
+                TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+                TestData.Finding("ram-pressure", cat: RuleCategory.Advise, canFix: false),
+            },
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        await state.ScanAsync();
+
+        Assert.Equal(loc.F("overview.status.advise", 2), vm.StatusText);
+        Assert.Equal("Your PC is in good shape — 2 recommendations to review",
+            vm.StatusText);
+        // no "0 one-click fixable" — that phrase only appears as a promise
+        Assert.DoesNotContain("one-click", vm.SummaryText);
+        Assert.Contains("2 KB", vm.SummaryText);
+        Assert.Contains("Last scan:", vm.SummaryText);
+    }
+
+    [Fact]
+    public async Task FixAllButton_EnabledOnlyWhenFixAllHasWork()
+    {
+        var (vm, host, state) = Build();
+        Assert.False(vm.FixAllCommand.CanExecute(null));   // no snapshot yet
+
+        await state.ScanAsync();                           // fixable power-plan
+        Assert.True(vm.FixAllCommand.CanExecute(null));
+
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+        });
+        await state.ScanAsync();                           // only advice remains
+        Assert.False(vm.FixAllCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task FixAll_ReportsFixedRules_AndEnjoyLine_ThenRescans()
     {
         var loc = EnglishLoc();
