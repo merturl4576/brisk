@@ -46,10 +46,12 @@ public partial class App : Application
 
             var state = new AppState(composition.Host);
             var cleanService = new CleanService(composition.Host, composition.Settings);
+            var fixAllService = new FixAllService(composition.Host);
             Func<bool> isDryRun = () => composition.Settings.DryRun;
-            var flyoutVm = new FlyoutViewModel(state, composition.Host, cleanService,
+            var flyoutVm = new FlyoutViewModel(state, cleanService, fixAllService,
                 Loc.Instance, isDryRun);
-            var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance, isDryRun);
+            var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
+                isDryRun, fixAllService);
             var startupVm = new StartupViewModel(state, composition.Host, isDryRun);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 new ShellRecycleBinSession(), Loc.Instance, isDryRun);

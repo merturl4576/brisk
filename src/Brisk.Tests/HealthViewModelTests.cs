@@ -36,8 +36,8 @@ public class HealthViewModelTests
         });
         host.Undoable.Add(new UndoableFix("visual-effects", DateTime.UtcNow));
         var state = new AppState(host);
-        return (new HealthViewModel(state, host, EnglishLoc(), isDryRun ?? (() => false)),
-            host, state);
+        return (new HealthViewModel(state, host, EnglishLoc(), isDryRun ?? (() => false),
+            new FixAllService(host)), host, state);
     }
 
     [Fact]
@@ -135,7 +135,8 @@ public class HealthViewModelTests
                 stars: 4, canFix: true),
         });
         var state = new AppState(host);
-        var vm = new HealthViewModel(state, host, loc, () => false);
+        var vm = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host));
 
         await state.ScanAsync();
         vm.CreateRestorePointFirst = true;
@@ -149,7 +150,7 @@ public class HealthViewModelTests
     }
 
     [Fact]
-    public async Task FixAll_WithRestorePointOk_FixesAutoRules()
+    public async Task FixAll_WithRestorePointOk_RunsFixes()
     {
         var (vm, host, state) = Build();
         await state.ScanAsync();
@@ -159,6 +160,48 @@ public class HealthViewModelTests
 
         Assert.Equal(1, host.RestorePointCalls);
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
+    }
+
+    [Fact]
+    public async Task FixAll_IncludesConfirmFixables_LikeStartupBloat()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("startup-bloat", cat: RuleCategory.Confirm, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+        });
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host));
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.Equal(new[] { "power-plan", "startup-bloat" }, host.Fixed);
+        Assert.Equal(EnglishLoc().F("health.fixdone", 2), vm.Message);
+    }
+
+    [Fact]
+    public async Task FixAll_NothingFixable_SaysSoPlainly()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("ram-pressure", cat: RuleCategory.Advise, canFix: false),
+        });
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host));
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.Empty(host.Fixed);
+        Assert.Equal(loc["health.nofixables"], vm.Message);
     }
 
     [Fact]
@@ -194,7 +237,8 @@ public class HealthViewModelTests
         });
         var host = new FailingFixHost(inner, "visual-effects");
         var state = new AppState(host);
-        var vm = new HealthViewModel(state, host, loc, () => false);
+        var vm = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host));
         await state.ScanAsync();
 
         await vm.FixAllAsync();
@@ -227,7 +271,8 @@ public class HealthViewModelTests
             new ScanResult(Array.Empty<TargetScanResult>()), health,
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
         var state = new AppState(host);
-        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false);
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host));
 
         await state.ScanAsync();
 

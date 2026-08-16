@@ -28,6 +28,7 @@
   <data name="health.advise" xml:space="preserve"><value>advice</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
+  <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>
   <data name="startup.title" xml:space="preserve"><value>Startup programs</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>couldn't change this item — it may need administrator rights</value></data>
   <data name="startup.heavy" xml:space="preserve"><value>slows startup noticeably</value></data>

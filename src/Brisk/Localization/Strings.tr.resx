@@ -28,6 +28,7 @@
   <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
   <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
+  <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>
   <data name="startup.title" xml:space="preserve"><value>Açılış programları</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>bu öğe değiştirilemedi — yönetici izni gerekebilir</value></data>
   <data name="startup.heavy" xml:space="preserve"><value>açılışı belirgin yavaşlatır</value></data>

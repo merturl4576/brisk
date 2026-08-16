@@ -37,9 +37,9 @@ public class FlyoutViewModelTests
     private static FlyoutViewModel Vm(FakeEngineHost host, Func<bool>? isDryRun = null)
     {
         var state = new AppState(host);
-        return new FlyoutViewModel(state, host,
-            new CleanService(host, new Settings()), EnglishLoc(),
-            isDryRun ?? (() => false));
+        return new FlyoutViewModel(state,
+            new CleanService(host, new Settings()), new FixAllService(host),
+            EnglishLoc(), isDryRun ?? (() => false));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class FlyoutViewModelTests
     }
 
     [Fact]
-    public async Task FixAll_FixesOnlyAutoFixables_ThenRescans()
+    public async Task FixAll_FixesFixables_SkipsAdvise_ThenRescans()
     {
         var host = HostWithSnapshot();
         var vm = Vm(host);
@@ -67,6 +67,21 @@ public class FlyoutViewModelTests
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
         Assert.Equal(2, host.ScanCalls);
+    }
+
+    [Fact]
+    public async Task FixAll_IncludesConfirmFixables()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("startup-bloat", cat: RuleCategory.Confirm, canFix: true),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+        await vm.FixAllAsync();
+
+        Assert.Equal(new[] { "startup-bloat" }, host.Fixed);
     }
 
     [Fact]

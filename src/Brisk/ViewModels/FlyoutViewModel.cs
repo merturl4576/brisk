@@ -11,8 +11,8 @@ namespace Brisk.ViewModels;
 public sealed class FlyoutViewModel : ViewModelBase
 {
     private readonly AppState _state;
-    private readonly IEngineHost _host;
     private readonly CleanService _cleanService;
+    private readonly FixAllService _fixAll;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
 
@@ -24,12 +24,12 @@ public sealed class FlyoutViewModel : ViewModelBase
     private CleanOutcome? _lastCleanOutcome;
     private bool _busy;
 
-    public FlyoutViewModel(AppState state, IEngineHost host,
-        CleanService cleanService, Loc loc, Func<bool> isDryRun)
+    public FlyoutViewModel(AppState state,
+        CleanService cleanService, FixAllService fixAll, Loc loc, Func<bool> isDryRun)
     {
         _state = state;
-        _host = host;
         _cleanService = cleanService;
+        _fixAll = fixAll;
         _loc = loc;
         _isDryRun = isDryRun;
         _state.Changed += Refresh;
@@ -75,9 +75,7 @@ public sealed class FlyoutViewModel : ViewModelBase
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
             if (_isDryRun()) return;   // dry run: report only, nothing to fix here
-            foreach (var finding in snapshot.Findings
-                         .Where(f => f.Category == RuleCategory.Auto && f.CanFix))
-                await Task.Run(() => _host.Fix(finding.RuleId));
+            await Task.Run(() => _fixAll.Run(snapshot));
             await _state.ScanAsync();
         }
         finally
@@ -116,7 +114,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         HealthText = snapshot.Health.ToString();
         HealthBrushKey = HealthBrush.KeyFor(snapshot.Health);
         var fixable = snapshot.Findings.Count(f =>
-            f.Category == RuleCategory.Auto && f.CanFix);
+            f.Category != RuleCategory.Advise && f.CanFix);
         FindingsLine = _loc.F("flyout.findings", snapshot.Findings.Count, fixable);
         ReclaimLine = _loc.F("flyout.reclaimable", Fmt.Bytes(snapshot.Cleaner.TotalBytes));
         LastScanLine = _loc.F("flyout.lastscan",

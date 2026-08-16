@@ -54,18 +54,21 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly IEngineHost _host;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
+    private readonly FixAllService _fixAll;
     private string _scoreText = "—";
     private string _scoreBrushKey = "";
     private string _message = "";
     private bool _createRestorePointFirst;
     private bool _busy;
 
-    public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun)
+    public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
+        FixAllService fixAll)
     {
         _state = state;
         _host = host;
         _loc = loc;
         _isDryRun = isDryRun;
+        _fixAll = fixAll;
         _state.Changed += Refresh;
         ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
@@ -108,15 +111,12 @@ public sealed class HealthViewModel : ViewModelBase
                 Message = _loc["health.restorepointfailed"];
                 return;
             }
-            var fixables = snapshot.Findings
-                .Where(f => f.Category == RuleCategory.Auto && f.CanFix)
-                .ToList();
-            var applied = 0;
-            foreach (var finding in fixables)
-                if ((await Task.Run(() => _host.Fix(finding.RuleId))).Ok) applied++;
-            Message = applied == fixables.Count
-                ? _loc.F("health.fixdone", applied)
-                : _loc.F("health.fixpartial", applied, fixables.Count);
+            var result = await Task.Run(() => _fixAll.Run(snapshot));
+            Message = result.Attempted == 0
+                ? _loc["health.nofixables"]
+                : result.Applied == result.Attempted
+                    ? _loc.F("health.fixdone", result.Applied)
+                    : _loc.F("health.fixpartial", result.Applied, result.Attempted);
             await _state.ScanAsync();
         }
         finally
