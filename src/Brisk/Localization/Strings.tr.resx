@@ -30,6 +30,7 @@
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
   <data name="startup.title" xml:space="preserve"><value>Açılış programları</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>bu öğe değiştirilemedi — yönetici izni gerekebilir</value></data>
+  <data name="startup.heavy" xml:space="preserve"><value>açılışı belirgin yavaşlatır</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} seçili</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Temizle</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Güvenli</value></data>

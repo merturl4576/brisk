@@ -17,6 +17,7 @@ public sealed class FlyoutViewModel : ViewModelBase
     private readonly Func<bool> _isDryRun;
 
     private string _healthText = "—";
+    private string _healthBrushKey = "";
     private string _findingsLine = "";
     private string _reclaimLine = "";
     private string _lastScanLine = "";
@@ -39,6 +40,11 @@ public sealed class FlyoutViewModel : ViewModelBase
     }
 
     public string HealthText { get => _healthText; private set => Set(ref _healthText, value); }
+    public string HealthBrushKey
+    {
+        get => _healthBrushKey;
+        private set => Set(ref _healthBrushKey, value);
+    }
     public string FindingsLine { get => _findingsLine; private set => Set(ref _findingsLine, value); }
     public string ReclaimLine { get => _reclaimLine; private set => Set(ref _reclaimLine, value); }
     public string LastScanLine { get => _lastScanLine; private set => Set(ref _lastScanLine, value); }
@@ -49,6 +55,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         private set => Set(ref _lastCleanOutcome, value);
     }
     public AppState State => _state;
+    public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
 
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
@@ -62,7 +69,7 @@ public sealed class FlyoutViewModel : ViewModelBase
     public async Task FixAllAsync()
     {
         if (_busy) return;
-        _busy = true;                    // set before the first await — re-entry guard
+        IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
             var snapshot = _state.Snapshot;
@@ -75,14 +82,14 @@ public sealed class FlyoutViewModel : ViewModelBase
         }
         finally
         {
-            _busy = false;
+            IsBusy = false;
         }
     }
 
     public async Task CleanSafeAsync()
     {
         if (_busy) return;
-        _busy = true;                    // set before the first await — re-entry guard
+        IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
             var snapshot = _state.Snapshot;
@@ -98,7 +105,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         }
         finally
         {
-            _busy = false;
+            IsBusy = false;
         }
     }
 
@@ -107,6 +114,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
         HealthText = snapshot.Health.ToString();
+        HealthBrushKey = HealthBrush.KeyFor(snapshot.Health);
         var fixable = snapshot.Findings.Count(f =>
             f.Category == RuleCategory.Auto && f.CanFix);
         FindingsLine = _loc.F("flyout.findings", snapshot.Findings.Count, fixable);

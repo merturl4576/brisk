@@ -3,13 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Brisk.Localization">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="12,10">
-            <TextBlock Style="{StaticResource SectionLabel}" Margin="2,0,2,4"
+        <StackPanel Margin="18,16">
+            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
                        Text="{Binding [log.undoable], Source={x:Static loc:Loc.Instance}}" />
             <ItemsControl ItemsSource="{Binding Undoables}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <DockPanel Margin="4,3">
+                        <DockPanel Margin="0,3">
                             <TextBlock Style="{StaticResource Body}" Text="{Binding RuleId}" />
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                                         HorizontalAlignment="Right">
@@ -26,9 +26,9 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <TextBlock Style="{StaticResource SectionLabel}" Margin="2,12,2,4"
+            <TextBlock Style="{StaticResource SectionLabel}" Margin="0,16,0,6"
                        Text="{Binding [log.actions], Source={x:Static loc:Loc.Instance}}" />
-            <TextBlock Margin="4,0"
+            <TextBlock Margin="0"
                        Text="{Binding [log.empty], Source={x:Static loc:Loc.Instance}}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource Faint}">
@@ -44,7 +44,7 @@
             <ItemsControl ItemsSource="{Binding Entries}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <DockPanel Margin="4,2">
+                        <DockPanel Margin="0,2">
                             <TextBlock Style="{StaticResource Faint}" Margin="0,0,10,0"
                                        Text="{Binding TsUtc, StringFormat=dd.MM HH:mm}" />
                             <TextBlock Style="{StaticResource Muted}"

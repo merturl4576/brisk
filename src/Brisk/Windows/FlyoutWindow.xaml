@@ -16,21 +16,45 @@
                             HorizontalAlignment="Right">
                     <TextBlock Style="{StaticResource Muted}"
                                Text="{Binding [flyout.health], Source={x:Static loc:Loc.Instance}}" />
-                    <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"
-                               Margin="8,0,0,0"
-                               Foreground="{DynamicResource SeverityWarning}"
-                               Text="{Binding HealthText}" />
+                    <TextBlock FontWeight="SemiBold" Margin="8,0,0,0"
+                               Text="{Binding HealthText}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                                 Value="Good">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource Good}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                                 Value="SeverityWarning">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource SeverityWarning}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                                 Value="SeverityCritical">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource SeverityCritical}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </DockPanel>
             <Separator Background="{DynamicResource Divider}" Margin="0" />
 
-            <StackPanel Orientation="Horizontal" Margin="16,8,16,0">
+            <StackPanel Orientation="Horizontal" Margin="16,8,16,0"
+                        Visibility="{Binding HasSnapshot,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}">
                 <Ellipse Width="7" Height="7" Fill="{DynamicResource SeverityWarning}"
                          VerticalAlignment="Center" />
                 <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
                            Text="{Binding FindingsLine}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="16,7,16,0">
+            <StackPanel Orientation="Horizontal" Margin="16,7,16,0"
+                        Visibility="{Binding HasSnapshot,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}">
                 <Ellipse Width="7" Height="7" Fill="{DynamicResource Good}"
                          VerticalAlignment="Center" />
                 <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
@@ -46,12 +70,36 @@
             </StackPanel>
 
             <UniformGrid Columns="2" Margin="14,10,14,4">
-                <Button Style="{StaticResource PrimaryButton}" Margin="0,0,3,0"
-                        Command="{Binding FixAllCommand}"
-                        Content="{Binding [flyout.fixall], Source={x:Static loc:Loc.Instance}}" />
-                <Button Style="{StaticResource GhostButton}" Margin="3,0,0,0"
-                        Command="{Binding CleanSafeCommand}"
-                        Content="{Binding [flyout.clean], Source={x:Static loc:Loc.Instance}}" />
+                <Button Margin="0,0,3,0" Command="{Binding FixAllCommand}"
+                        Content="{Binding [flyout.fixall], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Margin="3,0,0,0" Command="{Binding CleanSafeCommand}"
+                        Content="{Binding [flyout.clean], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </UniformGrid>
 
             <Separator Background="{DynamicResource Divider}" Margin="0,6,0,0" />

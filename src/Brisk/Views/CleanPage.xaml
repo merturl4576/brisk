@@ -6,9 +6,9 @@
     <UserControl.Resources>
         <Brisk:LocKeyConverter x:Key="LocKey" />
     </UserControl.Resources>
-    <DockPanel Margin="12,10">
+    <DockPanel Margin="18,16">
         <Border DockPanel.Dock="Top" Background="{DynamicResource BgElevated}"
-                CornerRadius="6" Padding="10,8" Margin="2,0,2,8"
+                CornerRadius="6" Padding="12,10" Margin="0,0,0,10"
                 Visibility="{Binding HasBanner,
                     Converter={x:Static Brisk:BoolToVis.Instance}}">
             <DockPanel>
@@ -33,16 +33,16 @@
                 </StackPanel>
             </DockPanel>
         </Border>
-        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="4,0,4,6"
+        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,8"
                    TextWrapping="Wrap" Text="{Binding ProblemsText}" />
-        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Faint}" Margin="4,6,4,0"
+        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Faint}" Margin="0,8,0,0"
                    Text="{Binding LifetimeText}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Levels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Background="{DynamicResource BgElevated}" CornerRadius="6"
-                                Margin="2,3" Padding="10,8">
+                                Margin="0,0,0,8" Padding="12,10">
                             <StackPanel>
                                 <DockPanel>
                                     <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"

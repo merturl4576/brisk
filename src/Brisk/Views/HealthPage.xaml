@@ -3,23 +3,48 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
-    <DockPanel Margin="12,10">
-        <DockPanel DockPanel.Dock="Top" Margin="2,0,2,8">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Style="{StaticResource Muted}" VerticalAlignment="Center"
+    <DockPanel Margin="18,16">
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
                            Text="{Binding [health.title], Source={x:Static loc:Loc.Instance}}" />
-                <TextBlock Style="{StaticResource Body}" FontSize="16" FontWeight="SemiBold"
-                           Margin="8,0,0,0" VerticalAlignment="Center"
-                           Foreground="{DynamicResource SeverityWarning}"
-                           Text="{Binding ScoreText}" />
+                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
+                           FontSize="30" FontWeight="SemiBold" Margin="0,2,0,0"
+                           Text="{Binding ScoreText}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="Good">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource Good}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                             Value="SeverityWarning">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource SeverityWarning}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                             Value="SeverityCritical">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource SeverityCritical}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StackPanel>
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-                <CheckBox VerticalAlignment="Center" Margin="0,0,10,0"
+            <StackPanel Grid.Column="1" Orientation="Horizontal"
+                        VerticalAlignment="Bottom">
+                <CheckBox VerticalAlignment="Center" Margin="0,0,16,0"
                           Foreground="{DynamicResource TextMuted}"
                           IsChecked="{Binding CreateRestorePointFirst}"
                           Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
-                <Button Margin="0,0,6,0" Command="{Binding ScanCommand}"
+                <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
                         Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
@@ -47,8 +72,8 @@
                     </Button.Style>
                 </Button>
             </StackPanel>
-        </DockPanel>
-        <StackPanel DockPanel.Dock="Top" Margin="2,0,2,8"
+        </Grid>
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10"
                     Visibility="{Binding State.IsScanning,
                         Converter={x:Static Brisk:BoolToVis.Instance}}">
             <ProgressBar IsIndeterminate="True" Height="3" BorderThickness="0"
@@ -61,7 +86,7 @@
                            Text="{Binding State.ProgressText}" />
             </StackPanel>
         </StackPanel>
-        <TextBlock DockPanel.Dock="Top" Margin="2,0,2,8" TextWrapping="Wrap"
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
                    Text="{Binding Message}">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
@@ -78,61 +103,112 @@
                 <ItemsControl ItemsSource="{Binding Rows}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{DynamicResource BgElevated}" CornerRadius="6"
-                                    Margin="2,3" Padding="10,8">
+                            <Border CornerRadius="6" Margin="0,0,0,6">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background"
+                                                Value="{DynamicResource BgElevated}" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background"
+                                                        Value="{DynamicResource BgHover}" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <StackPanel>
-                                    <DockPanel>
-                                        <Ellipse Width="7" Height="7" VerticalAlignment="Center">
-                                            <Ellipse.Style>
-                                                <Style TargetType="Ellipse">
-                                                    <Setter Property="Fill"
-                                                            Value="{DynamicResource SeverityInfo}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding SeverityKey}"
-                                                                     Value="SeverityWarning">
-                                                            <Setter Property="Fill"
-                                                                    Value="{DynamicResource SeverityWarning}" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding SeverityKey}"
-                                                                     Value="SeverityCritical">
-                                                            <Setter Property="Fill"
-                                                                    Value="{DynamicResource SeverityCritical}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Ellipse.Style>
-                                        </Ellipse>
-                                        <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
-                                                   Text="{Binding Title}" />
-                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
-                                                    HorizontalAlignment="Right">
-                                            <TextBlock Style="{StaticResource Faint}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"
-                                                       Text="{Binding CategoryText}" />
-                                            <TextBlock Foreground="{DynamicResource SeverityWarning}"
-                                                       FontSize="10" VerticalAlignment="Center"
-                                                       Margin="0,0,10,0"
-                                                       Text="{Binding ImpactText}" />
-                                            <ToggleButton IsChecked="{Binding IsExpanded}"
-                                                          Background="Transparent"
-                                                          BorderThickness="0" Cursor="Hand"
-                                                          Foreground="{DynamicResource TextFaint}"
-                                                          Content="⌄" />
-                                        </StackPanel>
-                                    </DockPanel>
-                                    <StackPanel Margin="15,6,0,0"
+                                    <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                  Cursor="Hand" MinHeight="44">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent" Padding="14,0">
+                                                    <ContentPresenter HorizontalAlignment="Stretch"
+                                                                      VerticalAlignment="Center" />
+                                                </Border>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                        <DockPanel>
+                                            <Ellipse Width="10" Height="10"
+                                                     VerticalAlignment="Center">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill"
+                                                                Value="{DynamicResource SeverityInfo}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SeverityKey}"
+                                                                         Value="SeverityWarning">
+                                                                <Setter Property="Fill"
+                                                                        Value="{DynamicResource SeverityWarning}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding SeverityKey}"
+                                                                         Value="SeverityCritical">
+                                                                <Setter Property="Fill"
+                                                                        Value="{DynamicResource SeverityCritical}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <StackPanel DockPanel.Dock="Right"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Right">
+                                                <TextBlock Style="{StaticResource Faint}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,12,0"
+                                                           Text="{Binding CategoryText}" />
+                                                <TextBlock Style="{StaticResource Faint}"
+                                                           FontSize="10"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,12,0"
+                                                           Text="{Binding ImpactText}" />
+                                                <Path Data="M 0 0 L 4.5 4.5 L 9 0"
+                                                      StrokeThickness="1.4"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Stroke="{DynamicResource TextFaint}"
+                                                      VerticalAlignment="Center"
+                                                      RenderTransformOrigin="0.5,0.5">
+                                                    <Path.Style>
+                                                        <Style TargetType="Path">
+                                                            <Setter Property="RenderTransform">
+                                                                <Setter.Value>
+                                                                    <RotateTransform Angle="0" />
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsExpanded}"
+                                                                             Value="True">
+                                                                    <Setter Property="RenderTransform">
+                                                                        <Setter.Value>
+                                                                            <RotateTransform Angle="180" />
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Path.Style>
+                                                </Path>
+                                            </StackPanel>
+                                            <TextBlock Style="{StaticResource Body}"
+                                                       Margin="10,0" VerticalAlignment="Center"
+                                                       Text="{Binding Title}" />
+                                        </DockPanel>
+                                    </ToggleButton>
+                                    <StackPanel Margin="34,0,14,12"
                                                 Visibility="{Binding IsExpanded,
                                                     Converter={x:Static Brisk:BoolToVis.Instance}}">
-                                        <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
+                                        <TextBlock Style="{StaticResource Muted}"
+                                                   TextWrapping="Wrap"
                                                    Text="{Binding Evidence}" />
-                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                                             <Button Style="{StaticResource PrimaryButton}"
                                                     Command="{Binding FixCommand}"
                                                     Visibility="{Binding CanFix,
                                                         Converter={x:Static Brisk:BoolToVis.Instance}}"
                                                     Content="{Binding [health.fix],
                                                         Source={x:Static loc:Loc.Instance}}" />
-                                            <Button Style="{StaticResource GhostButton}" Margin="6,0,0,0"
+                                            <Button Style="{StaticResource GhostButton}"
+                                                    Margin="8,0,0,0"
                                                     Command="{Binding UndoCommand}"
                                                     Visibility="{Binding CanUndo,
                                                         Converter={x:Static Brisk:BoolToVis.Instance}}"
@@ -146,10 +222,10 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <StackPanel x:Name="StartupSection" Margin="0,10,0,0">
-                    <TextBlock Style="{StaticResource SectionLabel}" Margin="2,0,2,4"
+                <StackPanel x:Name="StartupSection" Margin="0,16,0,0">
+                    <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
                                Text="{Binding [startup.title], Source={x:Static loc:Loc.Instance}}" />
-                    <TextBlock Style="{StaticResource Muted}" Margin="2,0,2,4"
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,0,0,6"
                                Foreground="{DynamicResource SeverityWarning}"
                                Text="{Binding [startup.togglefailed], Source={x:Static loc:Loc.Instance}}"
                                Visibility="{Binding ToggleFailed,
@@ -157,23 +233,40 @@
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel Margin="4,3">
-                                    <CheckBox IsChecked="{Binding IsEnabled}"
-                                              VerticalAlignment="Center" />
-                                    <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
-                                               Text="{Binding Name}" />
-                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
-                                                HorizontalAlignment="Right">
-                                        <Ellipse Width="6" Height="6" VerticalAlignment="Center"
-                                                 Margin="0,0,8,0"
-                                                 Fill="{DynamicResource SeverityWarning}"
-                                                 Visibility="{Binding IsHeavy,
-                                                     Converter={x:Static Brisk:BoolToVis.Instance}}" />
-                                        <TextBlock Style="{StaticResource Faint}"
-                                                   VerticalAlignment="Center"
-                                                   Text="{Binding Hive}" />
-                                    </StackPanel>
-                                </DockPanel>
+                                <Border CornerRadius="6" MinHeight="44" Padding="14,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background"
+                                                            Value="{DynamicResource BgHover}" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <DockPanel>
+                                        <CheckBox IsChecked="{Binding IsEnabled}"
+                                                  VerticalAlignment="Center" />
+                                        <StackPanel DockPanel.Dock="Right"
+                                                    Orientation="Horizontal"
+                                                    HorizontalAlignment="Right">
+                                            <Ellipse Width="8" Height="8"
+                                                     VerticalAlignment="Center" Margin="0,0,10,0"
+                                                     Fill="{DynamicResource SeverityWarning}"
+                                                     ToolTip="{Binding [startup.heavy],
+                                                         Source={x:Static loc:Loc.Instance}}"
+                                                     Visibility="{Binding IsHeavy,
+                                                         Converter={x:Static Brisk:BoolToVis.Instance}}" />
+                                            <TextBlock Style="{StaticResource Faint}"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding Hive}" />
+                                        </StackPanel>
+                                        <TextBlock Style="{StaticResource Body}"
+                                                   Margin="10,0" VerticalAlignment="Center"
+                                                   Text="{Binding Name}" />
+                                    </DockPanel>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

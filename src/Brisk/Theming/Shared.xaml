@@ -104,18 +104,28 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Chrome" CornerRadius="5" Padding="10,6" Margin="6,1"
-                            Background="Transparent">
-                        <ContentPresenter VerticalAlignment="Center" />
-                    </Border>
+                    <Grid Margin="8,4">
+                        <Border x:Name="Chrome" CornerRadius="5" MinHeight="34"
+                                Background="Transparent">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Left" Margin="12,0" />
+                        </Border>
+                        <Rectangle x:Name="Indicator" Width="3" Height="14"
+                                   RadiusX="1.5" RadiusY="1.5"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center"
+                                   Fill="{DynamicResource AccentBrush}"
+                                   Visibility="Collapsed" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource BgHover}" />
+                                    Value="{DynamicResource BgElevated}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Chrome" Property="Background"
                                     Value="{DynamicResource BgHover}" />
+                            <Setter TargetName="Indicator" Property="Visibility"
+                                    Value="Visible" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>

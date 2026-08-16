@@ -51,6 +51,7 @@ public class FlyoutViewModelTests
 
         Assert.True(vm.HasSnapshot);
         Assert.Equal("72", vm.HealthText);
+        Assert.Equal("SeverityWarning", vm.HealthBrushKey);
         Assert.Equal("2 findings · 1 one-click fixable", vm.FindingsLine);
         Assert.Contains("7 KB", vm.ReclaimLine);   // 2048+4096+1024 = 7168
         Assert.Contains("Last scan:", vm.LastScanLine);
