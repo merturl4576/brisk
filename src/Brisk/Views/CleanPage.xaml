@@ -264,7 +264,11 @@
 
                 <!-- Power users: the full technical list, exactly as before,
                      behind one quiet fold. -->
+                <!-- Round 11: the Win11 focus ring instead of the classic
+                     dotted marching-ants rectangle the owner saw after
+                     clicking; keyboard focus keeps its visual. -->
                 <ToggleButton IsChecked="{Binding IsAdvancedShown}" Cursor="Hand"
+                              FocusVisualStyle="{StaticResource Win11FocusVisual}"
                               HorizontalAlignment="Left" Margin="2,14,0,8">
                     <ToggleButton.Template>
                         <ControlTemplate TargetType="ToggleButton">

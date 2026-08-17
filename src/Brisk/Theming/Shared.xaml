@@ -33,7 +33,25 @@
         <Setter Property="Margin" Value="14,8,14,2" />
     </Style>
 
+    <!-- Round 11: Windows 11-style focus ring in place of WPF's dotted
+         marching ants — a rounded hairline in the theme's text color,
+         drawn just outside the control. Keyboard-focus only, exactly like
+         the default FocusVisualStyle it replaces: the framework applies it
+         under keyboard cues, so keyboard accessibility is untouched. -->
+    <Style x:Key="Win11FocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Margin="-3" RadiusX="6" RadiusY="6"
+                               StrokeThickness="1.6" SnapsToDevicePixels="True"
+                               Stroke="{DynamicResource Text}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -98,6 +116,7 @@
     </Style>
 
     <Style x:Key="LinkButton" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="11.5" />
@@ -116,6 +135,7 @@
     <!-- Toggle switch skin for on/off CheckBoxes (startup programs). Pure
          template work: the two-way IsChecked binding is untouched. -->
     <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Template">
@@ -179,6 +199,7 @@
 
     <!-- Quiet selection checkbox: smaller box, subtle border, accent fill. -->
     <Style x:Key="QuietCheck" TargetType="CheckBox">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -1114,6 +1135,7 @@
          themes; selection is carried by the accent bar and the text weight,
          the Win11 nav-view way. -->
     <Style x:Key="NavRadio" TargetType="RadioButton">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="12.5" />
