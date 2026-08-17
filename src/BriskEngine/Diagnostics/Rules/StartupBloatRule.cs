@@ -46,15 +46,22 @@ public sealed class StartupBloatRule : IDiagnosticRule
         var total = enabled.Count + links.Count;
         if (heavy.Count == 0 && total < ManyThreshold) return null;
 
+        var heavyNames = string.Join(", ", heavy);
         var evidence = $"{total} programs start with Windows.";
         if (heavy.Count > 0)
-            evidence += $" Heavy ones that can be started manually instead: {string.Join(", ", heavy)}.";
+            evidence += $" Heavy ones that can be started manually instead: {heavyNames}.";
+        var totalText = total.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return new DiagnosticFinding(Id, "rule.startup-bloat.title",
             "Too many programs start with Windows", evidence,
             Severity.Warning, Category, ImpactStars: 3, CanFix: heavy.Count > 0,
             FixDescription: heavy.Count > 0
-                ? $"Disable at startup: {string.Join(", ", heavy)} (undoable; the apps still work when opened manually)"
-                : null);
+                ? $"Disable at startup: {heavyNames} (undoable; the apps still work when opened manually)"
+                : null,
+            // Two templates: with and without the heavy-programs tail.
+            EvidenceKey: heavy.Count > 0
+                ? $"rule.{Id}.evidence.heavy" : $"rule.{Id}.evidence",
+            EvidenceArgs: heavy.Count > 0
+                ? new[] { totalText, heavyNames } : new[] { totalText });
     }
 
     public string Fix(DiagnosticContext ctx)

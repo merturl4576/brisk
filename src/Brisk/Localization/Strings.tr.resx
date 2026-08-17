@@ -119,6 +119,47 @@
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Ağır açılış programları kapatıldı</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Görsel efektler performansa göre ayarlandı</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Depolama Alanı Algılayıcısı açıldı</value></data>
+  <data name="rule.power-plan.evidence" xml:space="preserve"><value>Etkin plan: {0}. Bu plan CPU hızlarını bilerek sınırlar; performans planı işlemcinin tam turbo hızına çıkmasına izin verir.</value></data>
+  <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>Bu bilgisayarda iki GPU var; {0} için yüksek performanslı GPU tercihi tanımlı değil, bu yüzden Windows onu yavaş tümleşik GPU'da çalıştırabilir.</value></data>
+  <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
+  <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor.</value></data>
+  <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}.</value></data>
+  <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows "En iyi görünüm" ayarında; animasyonlar ve saydamlık efektleri her pencere çiziminde CPU/GPU gücü harcıyor.</value></data>
+  <data name="rule.storage-sense.evidence" xml:space="preserve"><value>{1} sürücüsünde yalnızca %{0} boş alan kaldı ve Depolama Alanı Algılayıcısı'nın otomatik temizliği kapalı.</value></data>
+  <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>Bellek %{0} dolu. En çok kullananlar: {1}. Bunlardan bazılarını kapatmak ya da açılıştan kaldırmak belleği rahatlatır.</value></data>
+  <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
+  <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Boş alan azalıyor; bu hızla disk yaklaşık {0} gün içinde dolacak.</value></data>
+  <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} açık — dahil etmek için önce kapat</value></data>
+  <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} boş · {1}</value></data>
+  <data name="clean.target.user-temp" xml:space="preserve"><value>Kullanıcı geçici dosyaları</value></data>
+  <data name="clean.target.chrome-cache" xml:space="preserve"><value>Chrome önbelleği</value></data>
+  <data name="clean.target.edge-cache" xml:space="preserve"><value>Edge önbelleği</value></data>
+  <data name="clean.target.firefox-cache" xml:space="preserve"><value>Firefox önbelleği</value></data>
+  <data name="clean.target.brave-cache" xml:space="preserve"><value>Brave önbelleği</value></data>
+  <data name="clean.target.opera-cache" xml:space="preserve"><value>Opera önbelleği</value></data>
+  <data name="clean.target.thumbnail-cache" xml:space="preserve"><value>Dosya Gezgini küçük resim önbelleği</value></data>
+  <data name="clean.target.discord-cache" xml:space="preserve"><value>Discord önbelleği</value></data>
+  <data name="clean.target.spotify-storage" xml:space="preserve"><value>Spotify önbelleği</value></data>
+  <data name="clean.target.teams-cache" xml:space="preserve"><value>Microsoft Teams önbelleği</value></data>
+  <data name="clean.target.slack-cache" xml:space="preserve"><value>Slack önbelleği</value></data>
+  <data name="clean.target.vscode-cache" xml:space="preserve"><value>VS Code önbelleği</value></data>
+  <data name="clean.target.whatsapp-cache" xml:space="preserve"><value>WhatsApp önbelleği</value></data>
+  <data name="clean.target.telegram-media-cache" xml:space="preserve"><value>Telegram medya önbelleği</value></data>
+  <data name="clean.target.crash-dumps" xml:space="preserve"><value>Çökme dökümleri</value></data>
+  <data name="clean.target.wer-reports" xml:space="preserve"><value>Windows Hata Raporlama kuyrukları</value></data>
+  <data name="clean.target.npm-cache" xml:space="preserve"><value>npm önbelleği</value></data>
+  <data name="clean.target.pip-cache" xml:space="preserve"><value>pip önbelleği</value></data>
+  <data name="clean.target.yarn-cache" xml:space="preserve"><value>Yarn önbelleği</value></data>
+  <data name="clean.target.pnpm-store" xml:space="preserve"><value>pnpm deposu</value></data>
+  <data name="clean.target.nuget-http-cache" xml:space="preserve"><value>NuGet HTTP önbelleği</value></data>
+  <data name="clean.target.cargo-registry-cache" xml:space="preserve"><value>Cargo kayıt önbelleği</value></data>
+  <data name="clean.target.gradle-caches" xml:space="preserve"><value>Gradle önbellekleri</value></data>
+  <data name="clean.target.docker-prune" xml:space="preserve"><value>Docker kullanılmayan veriler (docker system prune)</value></data>
+  <data name="clean.target.windows-temp" xml:space="preserve"><value>Windows geçici dosyaları</value></data>
+  <data name="clean.target.windows-update-cache" xml:space="preserve"><value>Windows Update indirme önbelleği</value></data>
+  <data name="clean.target.delivery-optimization" xml:space="preserve"><value>Teslim İyileştirme önbelleği</value></data>
+  <data name="clean.target.old-installers" xml:space="preserve"><value>İndirilenler'deki eski kurulum dosyaları</value></data>
+  <data name="clean.target.empty-recycle-bin" xml:space="preserve"><value>Geri Dönüşüm Kutusu'nu boşalt</value></data>
   <data name="app.startupfailed" xml:space="preserve"><value>brisk başlatılamadı: {0}</value></data>
   <data name="app.unexpected" xml:space="preserve"><value>beklenmeyen hata: {0}</value></data>
   <data name="dryrun.blocked" xml:space="preserve"><value>kuru çalışma açık — hiçbir şey değiştirilmedi</value></data>

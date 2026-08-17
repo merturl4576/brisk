@@ -86,7 +86,7 @@
                                                         <TextBlock Style="{StaticResource Faint}"
                                                                    VerticalAlignment="Center"
                                                                    Margin="0,0,8,0"
-                                                                   Text="{Binding SkippedReason}" />
+                                                                   Text="{Binding SkippedText}" />
                                                         <TextBlock Style="{StaticResource Faint}"
                                                                    VerticalAlignment="Center"
                                                                    Margin="0,0,8,0"

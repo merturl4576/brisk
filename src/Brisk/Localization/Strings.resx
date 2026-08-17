@@ -119,6 +119,47 @@
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Heavy startup programs disabled</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Visual effects tuned for performance</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
+  <data name="rule.power-plan.evidence" xml:space="preserve"><value>Active plan: {0}. This plan deliberately limits CPU boost clocks; a performance plan lets the CPU reach its full turbo frequency.</value></data>
+  <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>This machine has two GPUs, but {0} has no high-performance GPU preference, so Windows may run it on the slow integrated GPU.</value></data>
+  <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
+  <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>{0} programs start with Windows.</value></data>
+  <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>{0} programs start with Windows. Heavy ones that can be started manually instead: {1}.</value></data>
+  <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows is configured for "Best appearance", which enables animations and transparency effects that cost CPU/GPU cycles on every window redraw.</value></data>
+  <data name="rule.storage-sense.evidence" xml:space="preserve"><value>Only {0}% free on {1}, and Storage Sense automatic cleanup is disabled.</value></data>
+  <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>RAM is {0}% full. Biggest consumers: {1}. Closing or un-starting some of these frees memory.</value></data>
+  <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
+  <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Free space has been shrinking; disk full in ~{0} days at the current rate.</value></data>
+  <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} is running — close it to include this</value></data>
+  <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} free · {1}</value></data>
+  <data name="clean.target.user-temp" xml:space="preserve"><value>User temp files</value></data>
+  <data name="clean.target.chrome-cache" xml:space="preserve"><value>Chrome cache</value></data>
+  <data name="clean.target.edge-cache" xml:space="preserve"><value>Edge cache</value></data>
+  <data name="clean.target.firefox-cache" xml:space="preserve"><value>Firefox cache</value></data>
+  <data name="clean.target.brave-cache" xml:space="preserve"><value>Brave cache</value></data>
+  <data name="clean.target.opera-cache" xml:space="preserve"><value>Opera cache</value></data>
+  <data name="clean.target.thumbnail-cache" xml:space="preserve"><value>Explorer thumbnail cache</value></data>
+  <data name="clean.target.discord-cache" xml:space="preserve"><value>Discord cache</value></data>
+  <data name="clean.target.spotify-storage" xml:space="preserve"><value>Spotify cache</value></data>
+  <data name="clean.target.teams-cache" xml:space="preserve"><value>Microsoft Teams cache</value></data>
+  <data name="clean.target.slack-cache" xml:space="preserve"><value>Slack cache</value></data>
+  <data name="clean.target.vscode-cache" xml:space="preserve"><value>VS Code cache</value></data>
+  <data name="clean.target.whatsapp-cache" xml:space="preserve"><value>WhatsApp cache</value></data>
+  <data name="clean.target.telegram-media-cache" xml:space="preserve"><value>Telegram media cache</value></data>
+  <data name="clean.target.crash-dumps" xml:space="preserve"><value>Crash dumps</value></data>
+  <data name="clean.target.wer-reports" xml:space="preserve"><value>Windows Error Reporting queues</value></data>
+  <data name="clean.target.npm-cache" xml:space="preserve"><value>npm cache</value></data>
+  <data name="clean.target.pip-cache" xml:space="preserve"><value>pip cache</value></data>
+  <data name="clean.target.yarn-cache" xml:space="preserve"><value>Yarn cache</value></data>
+  <data name="clean.target.pnpm-store" xml:space="preserve"><value>pnpm store</value></data>
+  <data name="clean.target.nuget-http-cache" xml:space="preserve"><value>NuGet HTTP cache</value></data>
+  <data name="clean.target.cargo-registry-cache" xml:space="preserve"><value>Cargo registry cache</value></data>
+  <data name="clean.target.gradle-caches" xml:space="preserve"><value>Gradle caches</value></data>
+  <data name="clean.target.docker-prune" xml:space="preserve"><value>Docker unused data (docker system prune)</value></data>
+  <data name="clean.target.windows-temp" xml:space="preserve"><value>Windows temp</value></data>
+  <data name="clean.target.windows-update-cache" xml:space="preserve"><value>Windows Update download cache</value></data>
+  <data name="clean.target.delivery-optimization" xml:space="preserve"><value>Delivery Optimization cache</value></data>
+  <data name="clean.target.old-installers" xml:space="preserve"><value>Old installers in Downloads</value></data>
+  <data name="clean.target.empty-recycle-bin" xml:space="preserve"><value>Empty Recycle Bin</value></data>
   <data name="app.startupfailed" xml:space="preserve"><value>brisk could not start: {0}</value></data>
   <data name="app.unexpected" xml:space="preserve"><value>unexpected error: {0}</value></data>
   <data name="dryrun.blocked" xml:space="preserve"><value>dry run is on — nothing was changed</value></data>

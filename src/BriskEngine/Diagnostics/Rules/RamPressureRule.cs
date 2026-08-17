@@ -17,6 +17,7 @@ public sealed class RamPressureRule : AdviseRuleBase
             "Memory is under pressure",
             $"RAM is {load:F0}% full. Biggest consumers: {top}. " +
             "Closing or un-starting some of these frees memory.",
-            Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null);
+            Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null,
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { $"{load:F0}", top });
     }
 }

@@ -43,12 +43,14 @@ public sealed class HardwareAccelerationRule : IDiagnosticRule
     {
         var offenders = Offenders(ctx);
         if (offenders.Count == 0) return null;
+        var names = string.Join(", ", offenders.Select(o => o.Process));
         return new DiagnosticFinding(Id, "rule.hw-acceleration.title",
             "Browser hardware acceleration is turned off",
-            $"Hardware acceleration is disabled in: {string.Join(", ", offenders.Select(o => o.Process))}. " +
+            $"Hardware acceleration is disabled in: {names}. " +
             "Video decoding falls back to the CPU, which stutters on YouTube.",
             Severity.Warning, Category, ImpactStars: 4, CanFix: true,
-            FixDescription: "Re-enable hardware acceleration (browser must be closed)");
+            FixDescription: "Re-enable hardware acceleration (browser must be closed)",
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { names });
     }
 
     public string Fix(DiagnosticContext ctx)

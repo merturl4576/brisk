@@ -17,11 +17,13 @@ public sealed class ThermalsRule : AdviseRuleBase
         if (cpu is not null) parts.Add($"CPU {cpu:F0}°C");
         if (gpu is not null) parts.Add($"GPU {gpu:F0}°C");
 
+        var readings = string.Join(", ", parts);
         return new DiagnosticFinding(
             Id, "rule.thermals.title",
             "System is running hot",
-            $"{string.Join(", ", parts)}. Sustained high temperatures throttle performance; " +
+            $"{readings}. Sustained high temperatures throttle performance; " +
             "clean fans / renew thermal paste.",
-            Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null);
+            Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null,
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings });
     }
 }

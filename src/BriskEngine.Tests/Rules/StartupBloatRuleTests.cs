@@ -25,6 +25,10 @@ public class StartupBloatRuleTests
         var finding = new StartupBloatRule().Detect(ctx);
         Assert.NotNull(finding);
         Assert.Contains("Steam", finding!.Evidence);
+        // Localizable twin of the prose: stable key + the data a GUI needs
+        // to rebuild the sentence in the user's language.
+        Assert.Equal("rule.startup-bloat.evidence.heavy", finding.EvidenceKey);
+        Assert.Equal(new[] { "1", "Steam" }, finding.EvidenceArgs);
     }
 
     [Fact]
@@ -46,7 +50,11 @@ public class StartupBloatRuleTests
     public void ManyItems_IsAFinding_EvenWithoutHeavyOnes()
     {
         var (ctx, _) = Ctx("A", "B", "C", "D", "E", "F");
-        Assert.NotNull(new StartupBloatRule().Detect(ctx));
+        var finding = new StartupBloatRule().Detect(ctx);
+        Assert.NotNull(finding);
+        // No heavy tail → the shorter evidence template, count only.
+        Assert.Equal("rule.startup-bloat.evidence", finding!.EvidenceKey);
+        Assert.Equal(new[] { "6" }, finding.EvidenceArgs);
     }
 
     [Fact]

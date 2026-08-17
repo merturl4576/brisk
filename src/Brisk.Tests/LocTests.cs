@@ -1,3 +1,7 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
 using Brisk.Localization;
 using Xunit;
 
@@ -5,6 +9,36 @@ namespace Brisk.Tests;
 
 public class LocTests
 {
+    /// EN and TR resx expose the SAME key set, checked from source — a key
+    /// added to one file only would surface as raw English (or a raw key)
+    /// in the other language's GUI. This is the structural guard; the
+    /// per-key theory below additionally proves the values actually load.
+    [Fact]
+    public void ResxFiles_ExposeTheSameKeySet()
+    {
+        static string[] Keys(string file) =>
+            XDocument.Load(file).Root!
+                .Elements("data")
+                .Select(e => (string)e.Attribute("name")!)
+                .ToArray();
+
+        var dir = LocalizationDir();
+        var en = Keys(Path.Combine(dir, "Strings.resx"));
+        var tr = Keys(Path.Combine(dir, "Strings.tr.resx"));
+        Assert.Equal(en.OrderBy(k => k, StringComparer.Ordinal),
+            tr.OrderBy(k => k, StringComparer.Ordinal));
+        Assert.Equal(en.Length, en.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    private static string LocalizationDir()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
+             dir = dir.Parent)
+            if (File.Exists(Path.Combine(dir.FullName, "brisk.sln")))
+                return Path.Combine(dir.FullName, "src", "Brisk", "Localization");
+        throw new InvalidOperationException("brisk.sln not found above test bin");
+    }
+
     [Fact]
     public void English_ByDefault()
     {
@@ -93,6 +127,20 @@ public class LocTests
     [InlineData("startup.app.whatsapp")]
     [InlineData("startup.app.bluestacks")]
     [InlineData("startup.app.wallpaperengine")]
+    [InlineData("rule.power-plan.evidence")]
+    [InlineData("rule.browser-gpu.evidence")]
+    [InlineData("rule.hw-acceleration.evidence")]
+    [InlineData("rule.startup-bloat.evidence")]
+    [InlineData("rule.startup-bloat.evidence.heavy")]
+    [InlineData("rule.visual-effects.evidence")]
+    [InlineData("rule.storage-sense.evidence")]
+    [InlineData("rule.ram-pressure.evidence")]
+    [InlineData("rule.thermals.evidence")]
+    [InlineData("rule.disk-forecast.evidence")]
+    [InlineData("clean.skipped.apprunning")]
+    [InlineData("clean.target.user-temp")]
+    [InlineData("clean.target.windows-temp")]
+    [InlineData("tray.tooltip")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

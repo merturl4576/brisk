@@ -14,16 +14,19 @@ namespace Brisk.Tests;
 public static class TestData
 {
     public static DiagnosticFinding Finding(string ruleId, Severity sev = Severity.Warning,
-        RuleCategory cat = RuleCategory.Auto, int stars = 3, bool canFix = true) => new(
+        RuleCategory cat = RuleCategory.Auto, int stars = 3, bool canFix = true,
+        string? evidenceKey = null, IReadOnlyList<string>? evidenceArgs = null) => new(
         ruleId, $"rule.{ruleId}.title", $"Title {ruleId}", $"Evidence {ruleId}",
-        sev, cat, stars, canFix, canFix ? $"Fix {ruleId}" : null);
+        sev, cat, stars, canFix, canFix ? $"Fix {ruleId}" : null,
+        evidenceKey, evidenceArgs);
 
     public static TargetScanResult Target(string id, CleanupLevel level, long bytes,
-        string? skipped = null, bool pick = false, bool optIn = false, bool admin = false)
+        string? skipped = null, bool pick = false, bool optIn = false, bool admin = false,
+        string? app = null, string category = "Test")
     {
         var target = new CleanupTarget(id, id, level, new List<string> { @"C:\x\" + id },
-            "Test", RequiresIndividualSelection: pick, RequiresExplicitOptIn: optIn,
-            RequiresElevation: admin);
+            category, RequiresAppClosedProcess: app, RequiresIndividualSelection: pick,
+            RequiresExplicitOptIn: optIn, RequiresElevation: admin);
         var items = bytes == 0
             ? (IReadOnlyList<ResolvedItem>)Array.Empty<ResolvedItem>()
             : new[] { new ResolvedItem(id, @"C:\x\" + id + @"\item", bytes, null) };

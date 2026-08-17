@@ -23,7 +23,8 @@ public sealed class VisualEffectsRule : IDiagnosticRule
             "Windows is configured for \"Best appearance\", which enables animations and " +
             "transparency effects that cost CPU/GPU cycles on every window redraw.",
             Severity.Warning, Category, ImpactStars: 2, CanFix: true,
-            FixDescription: "Switch visual effects to best performance (undoable)");
+            FixDescription: "Switch visual effects to best performance (undoable)",
+            EvidenceKey: $"rule.{Id}.evidence");
     }
 
     public string Fix(DiagnosticContext ctx)

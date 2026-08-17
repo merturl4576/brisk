@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace BriskEngine.Models;
 
 public sealed record DiagnosticFinding(
@@ -9,4 +11,11 @@ public sealed record DiagnosticFinding(
     RuleCategory Category,
     int ImpactStars,        // 1..5 expected impact
     bool CanFix,
-    string? FixDescription);
+    string? FixDescription,
+    // Stable localization key + data for the evidence sentence, so GUIs can
+    // render it in the user's language ("rule.power-plan.evidence" + the
+    // plan name). Evidence stays the engine's English prose — the CLI and
+    // any consumer without a resource table keep working unchanged; a rule
+    // whose evidence is a raw data dump may leave these null.
+    string? EvidenceKey = null,
+    IReadOnlyList<string>? EvidenceArgs = null);

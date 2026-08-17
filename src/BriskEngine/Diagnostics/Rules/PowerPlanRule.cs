@@ -27,7 +27,8 @@ public sealed class PowerPlanRule : IDiagnosticRule
             $"Active plan: {name}. This plan deliberately limits CPU boost clocks; " +
             "a performance plan lets the CPU reach its full turbo frequency.",
             Severity.Critical, Category, ImpactStars: 5, CanFix: true,
-            FixDescription: "Switch to the High performance power plan (undoable)");
+            FixDescription: "Switch to the High performance power plan (undoable)",
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { name });
     }
 
     public string Fix(DiagnosticContext ctx)

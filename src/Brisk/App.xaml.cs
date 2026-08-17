@@ -94,8 +94,9 @@ public partial class App : Application
                 Shutdown();
             };
             state.Changed += () => Dispatcher.Invoke(() => _tray?.UpdateTooltip(
-                $"brisk — {Fmt.Bytes(composition.Host.FreeDiskBytes())} free" +
-                $" · {state.Snapshot?.Health}"));
+                Loc.Instance.F("tray.tooltip",
+                    Fmt.Bytes(composition.Host.FreeDiskBytes()),
+                    state.Snapshot?.Health ?? 0)));
 
             // The flyout is the product's face; the main window is the
             // back-office reached via "Open details" or the tray menu.

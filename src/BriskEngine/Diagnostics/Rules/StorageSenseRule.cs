@@ -35,7 +35,9 @@ public sealed class StorageSenseRule : IDiagnosticRule
             "Disk is nearly full and Storage Sense is off",
             $"Only {pct:F0}% free on {DriveRoot}, and Storage Sense automatic cleanup is disabled.",
             Severity.Warning, Category, ImpactStars: 2, CanFix: true,
-            FixDescription: "Turn on Storage Sense automatic cleanup (undoable)");
+            FixDescription: "Turn on Storage Sense automatic cleanup (undoable)",
+            EvidenceKey: $"rule.{Id}.evidence",
+            EvidenceArgs: new[] { $"{pct:F0}", DriveRoot });
     }
 
     public string Fix(DiagnosticContext ctx)

@@ -40,7 +40,8 @@ public sealed class BrowserGpuRule : IDiagnosticRule
             $"This machine has two GPUs, but {names} has no high-performance GPU " +
             "preference, so Windows may run it on the slow integrated GPU.",
             Severity.Warning, Category, ImpactStars: 4, CanFix: true,
-            FixDescription: "Set the high-performance GPU preference for each browser (undoable)");
+            FixDescription: "Set the high-performance GPU preference for each browser (undoable)",
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { names });
     }
 
     public string Fix(DiagnosticContext ctx)

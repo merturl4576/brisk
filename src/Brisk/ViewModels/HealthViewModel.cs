@@ -34,7 +34,7 @@ public sealed class FindingRow : ViewModelBase
         Title = loc.Title(finding.TitleKey, finding.Title);
         DoneTitle = DoneLabel.For(loc, finding.RuleId, finding.TitleKey,
             finding.Title);
-        Evidence = finding.Evidence;
+        Evidence = LocalizedEvidence(finding, loc);
         ImpactText = new string('●', finding.ImpactStars)
                    + new string('○', 5 - finding.ImpactStars);
         SeverityKey = finding.Severity switch
@@ -62,6 +62,20 @@ public sealed class FindingRow : ViewModelBase
         UndoCommand = new RelayCommand(() => onUndo(this), () => CanUndo);
         OpenStorageCommand = new RelayCommand(
             () => onOpenStorage?.Invoke(this), () => HasStorageAction);
+    }
+
+    /// The evidence sentence in the user's language: the engine ships a
+    /// stable EvidenceKey plus its data, the resx supplies the template.
+    /// A rule without a key (or a key the resx doesn't know) falls back to
+    /// the engine's English prose — informative beats blank.
+    private static string LocalizedEvidence(DiagnosticFinding finding, Loc loc)
+    {
+        if (finding.EvidenceKey is not { } key) return finding.Evidence;
+        var template = loc[key];   // the indexer returns the key itself when missing
+        if (string.Equals(template, key, StringComparison.Ordinal))
+            return finding.Evidence;
+        var args = finding.EvidenceArgs ?? Array.Empty<string>();
+        return loc.F(key, args.Cast<object>().ToArray());
     }
 
     public string RuleId { get; }

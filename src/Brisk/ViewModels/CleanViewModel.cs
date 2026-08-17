@@ -30,13 +30,24 @@ public sealed class TargetRow : ViewModelBase
 {
     private bool _isSelected;
 
-    public TargetRow(TargetScanResult scan)
+    public TargetRow(TargetScanResult scan, Loc loc)
     {
         Scan = scan;
+        // The engine names targets in English; the GUI looks the stable id
+        // up in the resx ("clean.target.user-temp") and only falls back to
+        // the engine's DisplayName for a target the resx doesn't know.
+        DisplayName = loc.Title($"clean.target.{scan.Target.Id}",
+            scan.Target.DisplayName);
         SizeText = Fmt.Bytes(scan.TotalBytes);
         IsPerItem = scan.Target.RequiresIndividualSelection;
         NeedsElevation = scan.Target.RequiresElevation;
         SkippedReason = scan.SkippedReason;
+        // The engine's skip reason is English prose; the GUI recomposes it
+        // from data it already has (the only skip cause is "app running").
+        SkippedText = scan.SkippedReason is null ? ""
+            : scan.Target.RequiresAppClosedProcess is { } app
+                ? loc.F("clean.skipped.apprunning", app)
+                : loc["clean.skipped"];
         IsSelectable = scan.SkippedReason is null
             && (scan.Items.Count > 0 || scan.Target.PathTemplates.Count == 0);
         _isSelected = IsSelectable && !IsPerItem
@@ -48,9 +59,10 @@ public sealed class TargetRow : ViewModelBase
 
     public TargetScanResult Scan { get; }
     public string Id => Scan.Target.Id;
-    public string DisplayName => Scan.Target.DisplayName;
+    public string DisplayName { get; }
     public string SizeText { get; }
     public string? SkippedReason { get; }
+    public string SkippedText { get; }
     public bool NeedsElevation { get; }
     public bool IsPerItem { get; }
     public bool IsSelectable { get; }
@@ -136,9 +148,9 @@ public sealed class CleanViewModel : ViewModelBase
                 if (row.NeedsElevation && !_host.IsElevated())
                 {
                     if (_isDryRun())
-                        problems.Add($"{row.Id} — {_loc["dryrun.blocked"]}");
+                        problems.Add($"{row.DisplayName} — {_loc["dryrun.blocked"]}");
                     else if (!await Task.Run(() => _host.RunElevated($"clean --target {row.Id} --yes")))
-                        problems.Add($"{row.Id} — {_loc["clean.elevation"]}");
+                        problems.Add($"{row.DisplayName} — {_loc["clean.elevation"]}");
                     continue;
                 }
                 scans.Add(row.IsPerItem
@@ -209,6 +221,6 @@ public sealed class CleanViewModel : ViewModelBase
         Levels.Add(new LevelSection(level, titleKey,
             snapshot.Cleaner.Targets
                 .Where(t => t.Target.Level == level)
-                .Select(t => new TargetRow(t)),
+                .Select(t => new TargetRow(t, _loc)),
             CleanLevelAsync));
 }

@@ -42,11 +42,17 @@ public sealed class DiskForecastRule : AdviseRuleBase
         var daysToZero = currentFree / -slope;
         if (daysToZero > MaxDaysToWarn) return null;
 
+        var days = (int)Math.Round(daysToZero);
         return new DiagnosticFinding(
             Id, "rule.disk-forecast.title",
             "Disk is on track to fill up",
-            $"Free space has been shrinking; disk full in ~{(int)Math.Round(daysToZero)} days at the current rate.",
-            Severity.Warning, Category, ImpactStars: 3, CanFix: false, FixDescription: null);
+            $"Free space has been shrinking; disk full in ~{days} days at the current rate.",
+            Severity.Warning, Category, ImpactStars: 3, CanFix: false, FixDescription: null,
+            EvidenceKey: $"rule.{Id}.evidence",
+            EvidenceArgs: new[]
+            {
+                days.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            });
     }
 
     private static List<Sample> ReadSamples(string path)
