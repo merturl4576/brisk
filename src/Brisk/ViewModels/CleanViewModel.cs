@@ -138,7 +138,6 @@ public sealed class CleanViewModel : ViewModelBase
     private double _progressFraction;
     private string _progressText = "";
     private bool _hasReport;
-    private bool _hasReportActions;
     private bool _hasLockedNotes;
     private string _reportSummary = "";
     private string _reportDiskText = "";
@@ -149,9 +148,6 @@ public sealed class CleanViewModel : ViewModelBase
     private long _countdownStartBytes;
     private long _lastProgressPush;
     private long _lastTotalPush;
-    private long _reportFreeBefore;
-    private long _reportRecycledBytes;
-    private bool _reportPurged;
 
     public CleanViewModel(AppState state, IEngineHost host, CleanService cleanService,
         IRecycleBinSession bin, Loc loc, System.Func<bool> isDryRun)
@@ -163,11 +159,11 @@ public sealed class CleanViewModel : ViewModelBase
         _loc = loc;
         _isDryRun = isDryRun;
         _state.Changed += Refresh;
-        // Undo/Reclaim serve BOTH result surfaces: the banner (advanced
-        // level cleans) and the in-card report's action row (simple clean,
-        // round 11 — the duplicated banner+report pair collapsed into one).
-        UndoCommand = new RelayCommand(Undo, () => HasBanner || HasReportActions);
-        ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner || HasReportActions);
+        // Undo/Reclaim/Dismiss belong to the BANNER (advanced level cleans)
+        // alone since round 12 — the simple clean purges its own recycled
+        // items automatically and offers no bin choreography at all.
+        UndoCommand = new RelayCommand(Undo, () => HasBanner);
+        ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner);
         DismissCommand = new RelayCommand(Dismiss, () => HasBanner);
         OpenBinCommand = new RelayCommand(_bin.OpenRecycleBinUi);
         SimpleCleanCommand = new RelayCommand(() => _ = CleanSimpleAsync(),
@@ -243,15 +239,6 @@ public sealed class CleanViewModel : ViewModelBase
     /// disk says, and — calmly — why anything was left alone. Stays up
     /// until the next press starts a new story.
     public bool HasReport { get => _hasReport; private set => Set(ref _hasReport, value); }
-    /// True while the report still offers its actions ("Reclaim space now",
-    /// the quiet "Undo") — recycled work exists and was neither purged nor
-    /// put back. Round 11: the report IS the one result surface of a simple
-    /// clean; the top banner belongs to the advanced level cleans alone.
-    public bool HasReportActions
-    {
-        get => _hasReportActions;
-        private set { if (Set(ref _hasReportActions, value)) RaiseBannerCommands(); }
-    }
     public string ReportSummary
     {
         get => _reportSummary;
@@ -317,7 +304,6 @@ public sealed class CleanViewModel : ViewModelBase
             ProgressFraction = 0;
             ProgressText = _loc.F("clean.progress", 0, _plannedItems);
             HasReport = false;
-            HasReportActions = false;
             // Captured BEFORE the clean: the app-held survivors' story
             // ("WhatsApp is open, its 310 MB cache was skipped") belongs to
             // this run's report even after the closing rescan moves on.
@@ -332,14 +318,19 @@ public sealed class CleanViewModel : ViewModelBase
             }
             // The report tells the problems' story in human language below;
             // the raw path-by-path English dump stays off the simple face.
-            // No top banner here (round 11): the owner saw banner + report
-            // repeat each other — the report is the one result surface of a
-            // simple clean, and it carries Undo and "Reclaim space now".
             ProblemsText = "";
-            _lastRecycled = outcome.RecycledPaths;
-            RestoreFailed = false;
+            // ONE-STEP (round 12, owner directive): immediately purge from
+            // the bin exactly what THIS run just recycled — the session
+            // purge matches by original-path identity, so the user's own
+            // deleted files are structurally out of reach. No banner, no
+            // "reclaim" button, no undo: the space is simply free. The
+            // rescan AFTER the purge re-measures free space, so the hero's
+            // disk pod and the report's delta show the real gain.
+            var purged = outcome.RecycledPaths.Count == 0
+                ? (IReadOnlyList<string>)System.Array.Empty<string>()
+                : await Task.Run(() => _bin.Purge(outcome.RecycledPaths));
             await _state.ScanAsync();
-            ShowReport(outcome, freeBefore, _host.FreeDiskBytes(), appHeld);
+            ShowReport(outcome, purged, freeBefore, _host.FreeDiskBytes(), appHeld);
         }
         finally
         {
@@ -389,46 +380,47 @@ public sealed class CleanViewModel : ViewModelBase
             g.Key, Fmt.Bytes(g.Sum(t => t.TotalBytes))))
         .ToList();
 
-    private void ShowReport(CleanOutcome outcome, long freeBefore, long freeAfter,
-        IReadOnlyList<string> appHeld)
+    /// Round 12: freed = the bytes of exactly the entries whose paths the
+    /// auto-purge actually took out of the bin; anything recycled but not
+    /// purged is reported as still in the bin — honestly, with no manual
+    /// purge button (the next clean or Windows handles it).
+    private void ShowReport(CleanOutcome outcome, IReadOnlyList<string> purgedPaths,
+        long freeBefore, long freeAfter, IReadOnlyList<string> appHeld)
     {
-        _reportFreeBefore = freeBefore;
-        _reportRecycledBytes = outcome.RecycledBytes;
-        _reportPurged = false;
+        var purgedSet = new HashSet<string>(purgedPaths,
+            System.StringComparer.OrdinalIgnoreCase);
+        var freedBytes = outcome.Recycled
+            .Where(e => purgedSet.Contains(e.Path)).Sum(e => e.Bytes);
+        var leftInBinBytes = outcome.RecycledBytes - freedBytes;
         ReportSummary = outcome.RecycledPaths.Count > 0
-            ? _loc.F("clean.report.summary",
-                outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes))
+            ? _loc.F("clean.report.summary.freed",
+                outcome.RecycledPaths.Count, Fmt.Bytes(freedBytes))
             : _loc["clean.report.none"];
         ReportDiskText = DiskLine(freeBefore, freeAfter);
         var (inUse, admin, other) = ClassifySkips(outcome.Skipped);
-        var reasons = new List<string>(3 + appHeld.Count);
-        // The app-held lines lead: they explain the LARGEST absent bytes and
-        // carry the action (close the app, clean again).
+        var reasons = new List<string>(4 + appHeld.Count);
+        // This run's own leftover leads (bytes still in the bin), then the
+        // app-held lines — they explain the LARGEST absent bytes and carry
+        // the action (close the app, clean again).
+        if (leftInBinBytes > 0)
+            reasons.Add(_loc.F("clean.report.binleft", Fmt.Bytes(leftInBinBytes)));
         reasons.AddRange(appHeld);
         if (inUse > 0) reasons.Add(_loc.F("clean.report.skipped.inuse", inUse));
         if (admin > 0) reasons.Add(_loc.F("clean.report.skipped.admin", admin));
         if (other > 0) reasons.Add(_loc.F("clean.report.skipped.other", other));
         ReportReasonsText = string.Join("\n", reasons);
         HasReport = true;
-        HasReportActions = outcome.RecycledPaths.Count > 0;
     }
 
-    /// Honest disk arithmetic (round 11 — no more "571.3 GB → 571.3 GB"):
-    /// a measured, story-sized gain gets the before→after line; otherwise
-    /// the line says where the bytes actually ARE — in the Recycle Bin
-    /// until "reclaim" purges, freed for good after it. Nothing recycled,
-    /// nothing gained → no disk line at all.
-    private string DiskLine(long before, long after)
-    {
-        if (after - before >= DiskGainVisibleBytes)
-            return _loc.F("clean.report.disk.gained",
-                Fmt.Bytes(before), Fmt.Bytes(after), Fmt.Bytes(after - before));
-        if (_reportPurged)
-            return _loc.F("clean.report.disk.purged", Fmt.Bytes(_reportRecycledBytes));
-        if (_reportRecycledBytes > 0)
-            return _loc.F("clean.report.disk.binned", Fmt.Bytes(_reportRecycledBytes));
-        return "";
-    }
+    /// Honest disk arithmetic (round 12): the clean purges its own recycled
+    /// items immediately, so the only disk line left is the REAL measured
+    /// before→after — shown when the delta is a story, silent when it is
+    /// measurement noise (the summary already carries the freed figure).
+    private string DiskLine(long before, long after) =>
+        after - before >= DiskGainVisibleBytes
+            ? _loc.F("clean.report.disk.gained",
+                Fmt.Bytes(before), Fmt.Bytes(after), Fmt.Bytes(after - before))
+            : "";
 
     /// GUI-edge reason mapping (the round-9 rule): the engine's English
     /// prose is recomposed from the patterns the GUI knows — Win32 error 32
@@ -501,33 +493,21 @@ public sealed class CleanViewModel : ViewModelBase
         }
     }
 
+    /// Banner-only since round 12 (the simple clean auto-purges and offers
+    /// neither): restore what a LEVEL clean recycled, then rescan so the
+    /// shelf and the promise return to the truth.
     private void Undo()
     {
         if (!_bin.Restore(_lastRecycled)) { RestoreFailed = true; return; }
         Dismiss();
-        if (HasReportActions)
-        {
-            // The report's story flips honestly: nothing is cleaned anymore.
-            HasReportActions = false;
-            ReportSummary = _loc["clean.report.undone"];
-            ReportDiskText = "";
-            ReportReasonsText = "";
-        }
-        // The shelf refilled — rescan so the promise returns to the truth.
         _ = _state.ScanAsync();
     }
 
+    /// Banner-only since round 12: purge what a LEVEL clean recycled.
     private void Reclaim()
     {
         _bin.Purge(_lastRecycled);
         Dismiss();
-        // Purging is the moment free space actually rises — the report's
-        // disk line re-measures so the promise and the disk agree, and the
-        // actions retire (nothing left to purge or put back).
-        _reportPurged = true;
-        HasReportActions = false;
-        if (HasReport)
-            ReportDiskText = DiskLine(_reportFreeBefore, _host.FreeDiskBytes());
     }
 
     private void Dismiss()

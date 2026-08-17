@@ -150,9 +150,8 @@ public class LocTests
     [InlineData("clean.simple.locked.app")]
     [InlineData("clean.simple.locked.inuse")]
     [InlineData("clean.report.skipped.appheld")]
-    [InlineData("clean.report.disk.binned")]
-    [InlineData("clean.report.disk.purged")]
-    [InlineData("clean.report.undone")]
+    [InlineData("clean.report.summary.freed")]
+    [InlineData("clean.report.binleft")]
     [InlineData("overview.cleanspace")]
     [InlineData("overview.cleanspace.none")]
     [InlineData("overview.actions.hint")]
@@ -165,6 +164,19 @@ public class LocTests
         Assert.NotEqual(key, loc[key]);
         loc.SetLanguage("tr");
         Assert.NotEqual(key, loc[key]);
+    }
+
+    /// ROUND 12: the simple clean purges its own recycled items immediately,
+    /// so the footer's old "everything goes to the Recycle Bin first" would
+    /// be a lie — pin the truthful wording in both languages.
+    [Fact]
+    public void SimpleHint_NoLongerPromisesTheRecycleBin()
+    {
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        Assert.DoesNotContain("Recycle Bin", loc["clean.simple.hint"]);
+        loc.SetLanguage("tr");
+        Assert.DoesNotContain("Geri Dönüşüm", loc["clean.simple.hint"]);
     }
 
     [Fact]

@@ -86,7 +86,7 @@
   <data name="clean.elevation" xml:space="preserve"><value>Administrator required</value></data>
   <data name="clean.skipped" xml:space="preserve"><value>skipped</value></data>
   <data name="clean.simple.title" xml:space="preserve"><value>Space you can reclaim</value></data>
-  <data name="clean.simple.hint" xml:space="preserve"><value>Only safe, self-restoring files are cleaned — everything goes to the Recycle Bin first.</value></data>
+  <data name="clean.simple.hint" xml:space="preserve"><value>Only safe files that Windows and your apps rebuild on their own are cleaned — the space is freed immediately.</value></data>
   <data name="clean.advanced" xml:space="preserve"><value>Advanced</value></data>
   <data name="clean.group.system" xml:space="preserve"><value>Temporary files</value></data>
   <data name="clean.group.browser" xml:space="preserve"><value>Browser caches</value></data>
@@ -95,7 +95,7 @@
   <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
   <data name="clean.cleaning" xml:space="preserve"><value>Cleaning…</value></data>
   <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
-  <data name="clean.report.summary" xml:space="preserve"><value>{0} items cleaned — {1} moved to the Recycle Bin</value></data>
+  <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} items cleaned — {1} of disk space freed</value></data>
   <data name="clean.report.none" xml:space="preserve"><value>Nothing needed cleaning — this area is already tidy.</value></data>
   <data name="clean.report.disk" xml:space="preserve"><value>Free disk space: {0} → {1}</value></data>
   <data name="clean.report.disk.gained" xml:space="preserve"><value>Free disk space: {0} → {1} — {2} regained</value></data>
@@ -107,9 +107,7 @@
   <data name="clean.simple.locked.app" xml:space="preserve"><value>+{1} more if you close {0}</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} more in files that running apps are holding — frees up when they close</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} is open, so its cache ({1}) was skipped — close {0} and clean again</value></data>
-  <data name="clean.report.disk.binned" xml:space="preserve"><value>{0} is waiting in the Recycle Bin — "Reclaim space now" turns it into free space</value></data>
-  <data name="clean.report.disk.purged" xml:space="preserve"><value>Recycle Bin emptied — {0} freed for good</value></data>
-  <data name="clean.report.undone" xml:space="preserve"><value>Everything was put back — nothing changed</value></data>
+  <data name="clean.report.binleft" xml:space="preserve"><value>{0} stayed in the Recycle Bin — the next clean or Windows will take care of it</value></data>
   <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} files are in use by a running app and were left untouched</value></data>
   <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} items need administrator approval and were skipped</value></data>
   <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} items could not be moved and were skipped</value></data>

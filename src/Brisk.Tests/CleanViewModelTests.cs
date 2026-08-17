@@ -15,10 +15,15 @@ sealed class FakeBin : IRecycleBinSession
     public List<IReadOnlyList<string>> Restored { get; } = new();
     public List<IReadOnlyList<string>> Purged { get; } = new();
     public bool RestoreResult { get; set; } = true;
+    /// Paths the fake refuses to purge — the partial-failure seam.
+    public HashSet<string> PurgeFails { get; } = new(StringComparer.OrdinalIgnoreCase);
     public bool Restore(IReadOnlyList<string> originalPaths)
     { Restored.Add(originalPaths); return RestoreResult; }
-    public bool Purge(IReadOnlyList<string> originalPaths)
-    { Purged.Add(originalPaths); return true; }
+    public IReadOnlyList<string> Purge(IReadOnlyList<string> originalPaths)
+    {
+        Purged.Add(originalPaths);
+        return originalPaths.Where(p => !PurgeFails.Contains(p)).ToList();
+    }
     public void OpenRecycleBinUi() { }
 }
 
@@ -138,13 +143,13 @@ public class CleanViewModelTests
         Assert.False(vm.IsAdvancedShown);
     }
 
-    /// ROUND 11: the owner saw the top banner AND the in-card report repeat
-    /// each other after a simple clean. One result surface now — the report
-    /// carries the actions; the banner belongs to advanced level cleans.
+    /// ROUND 12 (owner directive): the simple clean is ONE-STEP — recycle,
+    /// then immediately purge exactly what it just recycled. No banner, no
+    /// "reclaim" button, no undo: the space is simply free.
     [Fact]
-    public async Task SimpleClean_RunsExactlyTodaysSafeDefaults_OneResultSurface_Rescans()
+    public async Task SimpleClean_RunsSafeDefaults_AutoPurges_OneStep_Rescans()
     {
-        var (vm, host, _, state) = Build(SimpleHost());
+        var (vm, host, bin, state) = Build(SimpleHost());
         await state.ScanAsync();
 
         await vm.CleanSimpleAsync();
@@ -153,11 +158,16 @@ public class CleanViewModelTests
         Assert.Equal(new[] { "user-temp", "discord-cache" },
             host.Cleans.Select(c => c.TargetId));
         Assert.Empty(host.ElevatedRuns);
-        Assert.False(vm.HasBanner);           // no duplicated banner
+        // the auto-purge was handed EXACTLY this run's recycled paths —
+        // structurally nothing else in the user's bin is reachable
+        var purgeCall = Assert.Single(bin.Purged);
+        Assert.Equal(new[] { @"C:\x\user-temp\item", @"C:\x\discord-cache\item" },
+            purgeCall);
+        // one-step: no result choreography anywhere
+        Assert.False(vm.HasBanner);
         Assert.True(vm.HasReport);
-        Assert.True(vm.HasReportActions);     // Undo + Reclaim live in the report
-        Assert.True(vm.UndoCommand.CanExecute(null));
-        Assert.True(vm.ReclaimCommand.CanExecute(null));
+        Assert.False(vm.UndoCommand.CanExecute(null));
+        Assert.False(vm.ReclaimCommand.CanExecute(null));
         Assert.Equal(2, host.ScanCalls);
     }
 
@@ -453,13 +463,35 @@ public class CleanViewModelTests
         await vm.CleanSimpleAsync();
 
         Assert.True(vm.HasReport);
-        Assert.Equal(loc.F("clean.report.summary", 2, "3 KB"), vm.ReportSummary);
-        // ROUND 11: recycling moved bytes to the bin on the same volume, so
-        // free space did not move — the line says where the bytes ARE
-        // instead of the meaningless "100.0 GB → 100.0 GB"
-        Assert.Equal(loc.F("clean.report.disk.binned", "3 KB"), vm.ReportDiskText);
+        // ROUND 12: the auto-purge freed the bytes for real — the summary
+        // says "freed", and with a sub-noise measured delta there is NO
+        // disk line (never a fake "100.0 GB → 100.0 GB")
+        Assert.Equal(loc.F("clean.report.summary.freed", 2, "3 KB"), vm.ReportSummary);
+        Assert.Equal("", vm.ReportDiskText);
         Assert.False(vm.HasReportReasons);
         Assert.Equal("", vm.ProblemsText);
+    }
+
+    /// ROUND 12 partial-purge honesty: freed = only the bytes that actually
+    /// left the bin; the remainder is reported as still in the bin — with
+    /// no manual purge button (the next clean or Windows handles it).
+    [Fact]
+    public async Task SimpleClean_PartialPurge_ReportsFreedAndLeftoverHonestly()
+    {
+        var loc = EnglishLoc();
+        var (vm, _, bin, state) = Build(SimpleHost());
+        bin.PurgeFails.Add(@"C:\x\discord-cache\item");   // 1 KB stays behind
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        // freed = the 2 KB that actually left the bin, not the 3 KB recycled
+        Assert.Equal(loc.F("clean.report.summary.freed", 2, "2 KB"), vm.ReportSummary);
+        Assert.True(vm.HasReportReasons);
+        Assert.Equal(loc.F("clean.report.binleft", "1 KB"), vm.ReportReasonsText);
+        // still no manual purge or undo offered
+        Assert.False(vm.UndoCommand.CanExecute(null));
+        Assert.False(vm.ReclaimCommand.CanExecute(null));
     }
 
     [Fact]
@@ -491,7 +523,7 @@ public class CleanViewModelTests
     public async Task SimpleClean_NothingRecycled_ReportsCalmly_WithHumanReasons()
     {
         var loc = EnglishLoc();
-        var (vm, host, _, state) = Build(SimpleHost());
+        var (vm, host, bin, state) = Build(SimpleHost());
         await state.ScanAsync();
         host.OnClean = (scan, _) => new BriskEngine.Cleaning.CleanReport(
             scan.Items.Select(i => new BriskEngine.Cleaning.CleanEntry(
@@ -504,9 +536,9 @@ public class CleanViewModelTests
 
         Assert.False(vm.HasBanner);
         Assert.True(vm.HasReport);
-        Assert.False(vm.HasReportActions);    // nothing to purge or put back
+        Assert.Empty(bin.Purged);             // nothing recycled → no purge call
         Assert.Equal(loc["clean.report.none"], vm.ReportSummary);
-        // nothing recycled, nothing measured — no disk line at all (round 11)
+        // nothing recycled, nothing measured — no disk line at all
         Assert.Equal("", vm.ReportDiskText);
         Assert.True(vm.HasReportReasons);
         Assert.Equal(
@@ -516,77 +548,15 @@ public class CleanViewModelTests
         Assert.Equal("", vm.ProblemsText);    // the report replaced the dump
     }
 
-    /// "Reclaim space now" purges the bin — the report's disk line
-    /// re-measures at that moment, when free space actually rises, and the
-    /// actions retire (nothing left to purge or put back).
-    [Fact]
-    public async Task Reclaim_RemeasuresTheReportDiskLine()
-    {
-        var loc = EnglishLoc();
-        var (vm, host, bin, state) = Build(SimpleHost());
-        host.FreeDisk = 100L << 30;
-        await state.ScanAsync();
-        await vm.CleanSimpleAsync();
-        Assert.True(vm.HasReportActions);
-
-        host.FreeDisk = 103L << 30;           // the purge freed real bytes
-        vm.ReclaimCommand.Execute(null);
-
-        Assert.Single(bin.Purged);
-        Assert.True(vm.HasReport);            // the story stays up
-        Assert.False(vm.HasReportActions);
-        Assert.Equal(
-            loc.F("clean.report.disk.gained", "100.0 GB", "103.0 GB", "3.0 GB"),
-            vm.ReportDiskText);
-    }
-
-    /// A purge whose measured delta is below the noise floor still gets a
-    /// truthful line: the bin was emptied, the recycled bytes are gone for
-    /// good — never a "100.0 GB → 100.0 GB".
-    [Fact]
-    public async Task Reclaim_SmallDelta_SaysTheBinWasEmptied()
-    {
-        var loc = EnglishLoc();
-        var (vm, host, _, state) = Build(SimpleHost());
-        host.FreeDisk = 100L << 30;
-        await state.ScanAsync();
-        await vm.CleanSimpleAsync();
-
-        vm.ReclaimCommand.Execute(null);      // free space barely moved
-
-        Assert.Equal(loc.F("clean.report.disk.purged", "3 KB"), vm.ReportDiskText);
-        Assert.False(vm.HasReportActions);
-    }
-
-    /// Undo from the report puts everything back: the story flips to the
-    /// undone line, the actions retire, and a rescan refills the promise.
-    [Fact]
-    public async Task Undo_AfterSimpleClean_TellsTheUndoneStory_AndRescans()
-    {
-        var loc = EnglishLoc();
-        var (vm, host, bin, state) = Build(SimpleHost());
-        await state.ScanAsync();
-        await vm.CleanSimpleAsync();
-        var scansBefore = host.ScanCalls;
-
-        vm.UndoCommand.Execute(null);
-
-        Assert.Single(bin.Restored);
-        Assert.True(vm.HasReport);
-        Assert.False(vm.HasReportActions);
-        Assert.Equal(loc["clean.report.undone"], vm.ReportSummary);
-        Assert.Equal("", vm.ReportDiskText);
-        Assert.Equal(scansBefore + 1, host.ScanCalls);   // the shelf refills
-    }
-
     [Fact]
     public async Task SimpleClean_DryRun_ShowsNoReport_AndNeverMovesTheTotal()
     {
         var host = SimpleHost();
         var state = new AppState(host);
         var settings = new Settings { DryRun = true };
+        var bin = new FakeBin();
         var vm = new CleanViewModel(state, host,
-            new CleanService(host, settings), new FakeBin(), EnglishLoc(),
+            new CleanService(host, settings), bin, EnglishLoc(),
             () => settings.DryRun);
         await state.ScanAsync();
 
@@ -594,6 +564,7 @@ public class CleanViewModelTests
 
         Assert.False(vm.HasReport);
         Assert.False(vm.IsBusy);
+        Assert.Empty(bin.Purged);   // a dry run must never touch the bin
         Assert.Equal(EnglishLoc()["dryrun.blocked"], vm.ProblemsText);
         // round-10 review: a dry run reclaims NOTHING — the big number must
         // still promise the full amount, not a counted-down "0 B"

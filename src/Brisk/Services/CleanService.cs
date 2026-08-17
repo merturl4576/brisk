@@ -8,10 +8,13 @@ namespace Brisk.Services;
 
 /// Skipped carries the refused/error entries verbatim (engine English) so
 /// the GUI edge can recompose human-language reasons — the round-9 rule.
+/// Recycled (round 12) carries the per-path recycled entries WITH their
+/// bytes, so the auto-purge can account freed vs left-in-bin precisely.
 public sealed record CleanOutcome(
     IReadOnlyList<string> RecycledPaths, long RecycledBytes,
     IReadOnlyList<string> Problems, bool WasDryRun,
-    IReadOnlyList<CleanEntry> Skipped);
+    IReadOnlyList<CleanEntry> Skipped,
+    IReadOnlyList<CleanEntry> Recycled);
 
 /// One clean pass over a set of scanned targets, shared by flyout and window.
 public sealed class CleanService
@@ -70,12 +73,18 @@ public sealed class CleanService
         long bytes = 0;
         var problems = new List<string>();
         var skipped = new List<CleanEntry>();
+        var recycled = new List<CleanEntry>();
         foreach (var scan in scans)
         {
             var report = _host.Clean(scan, _settings.DryRun, onEntry);
             foreach (var entry in report.Entries)
             {
-                if (entry.Action == "recycled") { paths.Add(entry.Path); bytes += entry.Bytes; }
+                if (entry.Action == "recycled")
+                {
+                    paths.Add(entry.Path);
+                    bytes += entry.Bytes;
+                    recycled.Add(entry);
+                }
                 else if (entry.Action is "refused" or "error")
                 {
                     problems.Add($"{entry.Path} — {entry.Reason}");
@@ -83,6 +92,6 @@ public sealed class CleanService
                 }
             }
         }
-        return new CleanOutcome(paths, bytes, problems, _settings.DryRun, skipped);
+        return new CleanOutcome(paths, bytes, problems, _settings.DryRun, skipped, recycled);
     }
 }

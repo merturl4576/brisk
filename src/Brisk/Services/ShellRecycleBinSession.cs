@@ -31,14 +31,45 @@ public sealed class ShellRecycleBinSession : IRecycleBinSession
             return false;
         });
 
-    public bool Purge(IReadOnlyList<string> originalPaths) =>
-        ForEachMatch(originalPaths, item =>
+    /// Identity-matched purge (round 12: the simple clean's auto-purge rides
+    /// this): only bin items whose DeducedOriginalPath is in the given set
+    /// are touched — the user's own deleted files are structurally out of
+    /// reach. Per-item failures are skipped, a COM surprise stops early;
+    /// either way the returned list is exactly what actually left the bin,
+    /// so the caller's freed-bytes story stays honest.
+    public IReadOnlyList<string> Purge(IReadOnlyList<string> originalPaths)
+    {
+        var purged = new List<string>();
+        try
         {
-            string physical = (string)item.Path;
-            if (Directory.Exists(physical)) Directory.Delete(physical, recursive: true);
-            else if (File.Exists(physical)) File.Delete(physical);
-            return true;
-        });
+            var wanted = new HashSet<string>(originalPaths, StringComparer.OrdinalIgnoreCase);
+            if (wanted.Count == 0) return purged;
+            var shellType = Type.GetTypeFromProgID("Shell.Application");
+            if (shellType is null) return purged;
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic bin = shell.Namespace(RecycleBinFolder);
+            foreach (var itemObj in bin.Items())
+            {
+                dynamic item = itemObj;
+                string? original =
+                    item.ExtendedProperty("System.Recycle.DeducedOriginalPath") as string;
+                if (original is null || !wanted.Contains(original)) continue;
+                try
+                {
+                    string physical = (string)item.Path;
+                    if (Directory.Exists(physical)) Directory.Delete(physical, recursive: true);
+                    else if (File.Exists(physical)) File.Delete(physical);
+                    purged.Add(original);
+                }
+                catch (Exception) { /* one stubborn item never stops the rest */ }
+            }
+        }
+        catch (Exception)
+        {
+            // COM surprises: report exactly what got purged before the stop.
+        }
+        return purged;
+    }
 
     public void OpenRecycleBinUi()
     {

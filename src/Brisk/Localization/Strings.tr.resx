@@ -86,7 +86,7 @@
   <data name="clean.elevation" xml:space="preserve"><value>Yönetici gerekiyor</value></data>
   <data name="clean.skipped" xml:space="preserve"><value>atlandı</value></data>
   <data name="clean.simple.title" xml:space="preserve"><value>Temizlenebilir alan</value></data>
-  <data name="clean.simple.hint" xml:space="preserve"><value>Yalnızca güvenli, kendini yeniden oluşturan dosyalar temizlenir — her şey önce Geri Dönüşüm Kutusu'na taşınır.</value></data>
+  <data name="clean.simple.hint" xml:space="preserve"><value>Yalnızca Windows'un ve uygulamaların kendi kendine yeniden oluşturduğu güvenli dosyalar temizlenir — alan anında boşalır.</value></data>
   <data name="clean.advanced" xml:space="preserve"><value>Gelişmiş</value></data>
   <data name="clean.group.system" xml:space="preserve"><value>Geçici dosyalar</value></data>
   <data name="clean.group.browser" xml:space="preserve"><value>Tarayıcı önbellekleri</value></data>
@@ -95,7 +95,7 @@
   <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
   <data name="clean.cleaning" xml:space="preserve"><value>Temizleniyor…</value></data>
   <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
-  <data name="clean.report.summary" xml:space="preserve"><value>{0} öğe temizlendi — {1} Geri Dönüşüm Kutusu'na taşındı</value></data>
+  <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} öğe temizlendi — {1} yer açıldı</value></data>
   <data name="clean.report.none" xml:space="preserve"><value>Temizlenecek bir şey yoktu — burası zaten temiz.</value></data>
   <data name="clean.report.disk" xml:space="preserve"><value>Boş disk alanı: {0} → {1}</value></data>
   <data name="clean.report.disk.gained" xml:space="preserve"><value>Boş disk alanı: {0} → {1} — {2} geri kazanıldı</value></data>
@@ -107,9 +107,7 @@
   <data name="clean.simple.locked.app" xml:space="preserve"><value>{0} kapatılırsa +{1} daha</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} da şu an açık uygulamaların tuttuğu dosyalarda — kapanınca boşalır</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} açık olduğu için önbelleği ({1}) atlandı — kapatıp yeniden temizleyebilirsin</value></data>
-  <data name="clean.report.disk.binned" xml:space="preserve"><value>{0} Geri Dönüşüm Kutusu'nda bekliyor — "Alanı şimdi boşalt" ile boş alana dönüşür</value></data>
-  <data name="clean.report.disk.purged" xml:space="preserve"><value>Geri Dönüşüm Kutusu boşaltıldı — {0} kalıcı olarak boşaldı</value></data>
-  <data name="clean.report.undone" xml:space="preserve"><value>Her şey geri alındı — hiçbir şey değişmedi</value></data>
+  <data name="clean.report.binleft" xml:space="preserve"><value>{0} Geri Dönüşüm Kutusu'nda kaldı — bir sonraki temizlik ya da Windows halleder</value></data>
   <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} dosya çalışan bir uygulama tarafından kullanıldığı için olduğu gibi bırakıldı</value></data>
   <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} öğe yönetici onayı gerektirdiği için atlandı</value></data>
   <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} öğe taşınamadığı için atlandı</value></data>

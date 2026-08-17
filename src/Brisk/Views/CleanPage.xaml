@@ -224,35 +224,18 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
+                                <!-- No action row (round 12, owner
+                                     directive): the simple clean purges
+                                     its own recycled items automatically —
+                                     the space is simply free; nothing to
+                                     press, nothing to undo. The banner
+                                     above keeps Undo/Reclaim for the
+                                     Gelişmiş level cleans. -->
                                 <TextBlock Style="{StaticResource Faint}"
                                            Margin="0,3,0,0" TextWrapping="Wrap"
                                            Text="{Binding ReportReasonsText}"
                                            Visibility="{Binding HasReportReasons,
                                                Converter={x:Static Brisk:BoolToVis.Instance}}" />
-                                <!-- ONE result surface (round 11): the
-                                     banner's actions moved in here. Reclaim
-                                     stays a visible chip; Undo keeps its
-                                     round-9 posture — quiet but present. -->
-                                <StackPanel Orientation="Horizontal" Margin="0,9,0,0"
-                                            Visibility="{Binding HasReportActions,
-                                                Converter={x:Static Brisk:BoolToVis.Instance}}">
-                                    <Button Style="{StaticResource GhostButton}"
-                                            Command="{Binding ReclaimCommand}"
-                                            Content="{Binding [clean.reclaim],
-                                                Source={x:Static loc:Loc.Instance}}" />
-                                    <Button Style="{StaticResource LinkButton}"
-                                            Margin="14,0,0,0" VerticalAlignment="Center"
-                                            Foreground="{DynamicResource TextMuted}"
-                                            Command="{Binding UndoCommand}"
-                                            Content="{Binding [clean.undo],
-                                                Source={x:Static loc:Loc.Instance}}" />
-                                    <Button Style="{StaticResource LinkButton}"
-                                            Margin="8,0,0,0" VerticalAlignment="Center"
-                                            Command="{Binding OpenBinCommand}"
-                                            Visibility="{Binding RestoreFailed,
-                                                Converter={x:Static Brisk:BoolToVis.Instance}}"
-                                            Content="↗" />
-                                </StackPanel>
                             </StackPanel>
                         </DockPanel>
                         <TextBlock Style="{StaticResource Faint}" Margin="0,10,0,0"
