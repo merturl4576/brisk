@@ -107,6 +107,7 @@ public sealed class CleanViewModel : ViewModelBase
     private readonly AppState _state;
     private readonly IEngineHost _host;
     private readonly CleanService _cleanService;
+    private readonly SafeCleanRunner _safeClean;
     private readonly IRecycleBinSession _bin;
     private readonly Loc _loc;
     private readonly System.Func<bool> _isDryRun;
@@ -157,11 +158,13 @@ public sealed class CleanViewModel : ViewModelBase
     private long _lastTotalPush;
 
     public CleanViewModel(AppState state, IEngineHost host, CleanService cleanService,
-        IRecycleBinSession bin, Loc loc, System.Func<bool> isDryRun)
+        SafeCleanRunner safeClean, IRecycleBinSession bin, Loc loc,
+        System.Func<bool> isDryRun)
     {
         _state = state;
         _host = host;
         _cleanService = cleanService;
+        _safeClean = safeClean;
         _bin = bin;
         _loc = loc;
         _isDryRun = isDryRun;
@@ -324,18 +327,19 @@ public sealed class CleanViewModel : ViewModelBase
             // this run's report even after the closing rescan moves on.
             var appHeld = AppHeldReasons(snapshot.Cleaner);
             var freeBefore = _host.FreeDiskBytes();
-            // Snapshot BEFORE recycling (review round 1): bin entries that
-            // already match the planned paths belong to the USER (an
-            // earlier deletion at the same path) — their payload identities
-            // are excluded from the auto-purge below.
-            var plannedPaths = safeDefaults
-                .SelectMany(t => t.Items).Select(i => i.Path).ToList();
-            var preExisting = plannedPaths.Count == 0
-                ? (IReadOnlyList<string>)System.Array.Empty<string>()
-                : await Task.Run(() => _bin.MatchingItemIds(plannedPaths));
-            var outcome = await Task.Run(() =>
-                _cleanService.CleanSafe(snapshot.Cleaner, OnCleanEntry));
-            if (outcome.WasDryRun)
+            // ONE-STEP (round 12, owner directive; shared by all three clean
+            // surfaces since round 13): snapshot the bin's matching payload
+            // identities, recycle, then immediately purge exactly what THIS
+            // run recycled minus that snapshot — the user's own earlier
+            // deletions are structurally out of reach. No banner, no
+            // "reclaim" button, no undo: the space is simply free.
+            // SafeCleanRunner owns the sequence; this page owns the story.
+            // The purge wears its own visible state, and the rescan AFTER it
+            // re-measures free space so the hero's disk pod and the report's
+            // delta show the real gain.
+            var result = await _safeClean.RunAsync(snapshot.Cleaner, OnCleanEntry,
+                () => ProgressText = _loc["clean.purging"]);
+            if (result.Outcome.WasDryRun)
             {
                 ProblemsText = _loc["dryrun.blocked"];
                 return;
@@ -343,23 +347,8 @@ public sealed class CleanViewModel : ViewModelBase
             // The report tells the problems' story in human language below;
             // the raw path-by-path English dump stays off the simple face.
             ProblemsText = "";
-            // ONE-STEP (round 12, owner directive): immediately purge from
-            // the bin exactly what THIS run just recycled — matched by
-            // original path MINUS the pre-existing payload identities, so
-            // the user's own deleted files are structurally out of reach.
-            // No banner, no "reclaim" button, no undo: the space is simply
-            // free. The purge wears its own visible state, and the rescan
-            // AFTER it re-measures free space so the hero's disk pod and
-            // the report's delta show the real gain.
-            IReadOnlyList<string> purged = System.Array.Empty<string>();
-            if (outcome.RecycledPaths.Count > 0)
-            {
-                ProgressText = _loc["clean.purging"];
-                purged = await Task.Run(() =>
-                    _bin.Purge(outcome.RecycledPaths, preExisting));
-            }
             await _state.ScanAsync();
-            ShowReport(outcome, purged, freeBefore, _host.FreeDiskBytes(), appHeld);
+            ShowReport(result, freeBefore, _host.FreeDiskBytes(), appHeld);
         }
         finally
         {
@@ -412,18 +401,15 @@ public sealed class CleanViewModel : ViewModelBase
     /// Round 12: freed = the bytes of exactly the entries whose paths the
     /// auto-purge actually took out of the bin; anything recycled but not
     /// purged is reported as still in the bin — honestly, with no manual
-    /// purge button (the next clean or Windows handles it).
-    private void ShowReport(CleanOutcome outcome, IReadOnlyList<string> purgedPaths,
+    /// purge button and (round 13) no false promise that a later clean will
+    /// come back for it.
+    private void ShowReport(SafeCleanResult result,
         long freeBefore, long freeAfter, IReadOnlyList<string> appHeld)
     {
-        var purgedSet = new HashSet<string>(purgedPaths,
-            System.StringComparer.OrdinalIgnoreCase);
-        var freedBytes = outcome.Recycled
-            .Where(e => purgedSet.Contains(e.Path)).Sum(e => e.Bytes);
-        var leftInBinBytes = outcome.RecycledBytes - freedBytes;
+        var outcome = result.Outcome;
         ReportSummary = outcome.RecycledPaths.Count > 0
             ? _loc.F("clean.report.summary.freed",
-                outcome.RecycledPaths.Count, Fmt.Bytes(freedBytes))
+                outcome.RecycledPaths.Count, Fmt.Bytes(result.FreedBytes))
             : _loc["clean.report.none"];
         ReportDiskText = DiskLine(freeBefore, freeAfter);
         var (inUse, admin, other) = ClassifySkips(outcome.Skipped);
@@ -431,8 +417,9 @@ public sealed class CleanViewModel : ViewModelBase
         // This run's own leftover leads (bytes still in the bin), then the
         // app-held lines — they explain the LARGEST absent bytes and carry
         // the action (close the app, clean again).
-        if (leftInBinBytes > 0)
-            reasons.Add(_loc.F("clean.report.binleft", Fmt.Bytes(leftInBinBytes)));
+        if (result.LeftInBinBytes > 0)
+            reasons.Add(_loc.F("clean.report.binleft",
+                Fmt.Bytes(result.LeftInBinBytes)));
         reasons.AddRange(appHeld);
         if (inUse > 0) reasons.Add(_loc.F("clean.report.skipped.inuse", inUse));
         if (admin > 0) reasons.Add(_loc.F("clean.report.skipped.admin", admin));

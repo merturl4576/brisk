@@ -11,7 +11,7 @@ namespace Brisk.ViewModels;
 public sealed class FlyoutViewModel : ViewModelBase
 {
     private readonly AppState _state;
-    private readonly CleanService _cleanService;
+    private readonly SafeCleanRunner _safeClean;
     private readonly FixAllService _fixAll;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
@@ -21,14 +21,14 @@ public sealed class FlyoutViewModel : ViewModelBase
     private string _findingsLine = "";
     private string _reclaimLine = "";
     private string _lastScanLine = "";
-    private CleanOutcome? _lastCleanOutcome;
+    private string _lastCleanLine = "";
     private bool _busy;
 
     public FlyoutViewModel(AppState state,
-        CleanService cleanService, FixAllService fixAll, Loc loc, Func<bool> isDryRun)
+        SafeCleanRunner safeClean, FixAllService fixAll, Loc loc, Func<bool> isDryRun)
     {
         _state = state;
-        _cleanService = cleanService;
+        _safeClean = safeClean;
         _fixAll = fixAll;
         _loc = loc;
         _isDryRun = isDryRun;
@@ -49,11 +49,20 @@ public sealed class FlyoutViewModel : ViewModelBase
     public string ReclaimLine { get => _reclaimLine; private set => Set(ref _reclaimLine, value); }
     public string LastScanLine { get => _lastScanLine; private set => Set(ref _lastScanLine, value); }
     public bool HasSnapshot => _state.Snapshot is not null;
-    public CleanOutcome? LastCleanOutcome
+    /// What the last flyout clean actually did (round 13) — the full result,
+    /// purge included, so nothing here can quote bytes-moved-to-bin.
+    public SafeCleanResult? LastCleanResult { get; private set; }
+    /// One brief line, proportionate to a 300 px popup: how much space the
+    /// clean really freed. Empty until a clean has run in this session.
+    public string LastCleanLine
     {
-        get => _lastCleanOutcome;
-        private set => Set(ref _lastCleanOutcome, value);
+        get => _lastCleanLine;
+        private set
+        {
+            if (Set(ref _lastCleanLine, value)) Raise(nameof(HasLastClean));
+        }
     }
+    public bool HasLastClean => _lastCleanLine.Length > 0;
     public AppState State => _state;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
 
@@ -92,7 +101,19 @@ public sealed class FlyoutViewModel : ViewModelBase
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
-            LastCleanOutcome = await Task.Run(() => _cleanService.CleanSafe(snapshot.Cleaner));
+            LastCleanLine = "";              // a new press starts a new story
+            // ROUND 13: the tray Clean runs the same ONE-STEP flow as the
+            // Depolama page and the overview button — recycle, then purge
+            // exactly this run's own items. The line below therefore reports
+            // space that is actually free, not bytes parked in the bin.
+            var result = await _safeClean.RunAsync(snapshot.Cleaner);
+            LastCleanResult = result;
+            LastCleanLine = result.Outcome.WasDryRun
+                ? _loc["dryrun.blocked"]
+                : result.CleanedCount == 0
+                    ? _loc["clean.report.none"]
+                    : _loc.F("clean.report.summary.freed",
+                        result.CleanedCount, Fmt.Bytes(result.FreedBytes));
             await _state.ScanAsync();
         }
         finally

@@ -43,6 +43,16 @@ public class OverviewViewModelTests
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State) Build(
         Func<bool>? isDryRun = null, FakeLive? live = null)
     {
+        var (vm, host, state, _) = BuildWithBin(isDryRun, live);
+        return (vm, host, state);
+    }
+
+    /// Round 13: the overview's clean is the same ONE-STEP recycle→purge
+    /// flow the Depolama page runs, so its seam needs the bin in view.
+    private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State, FakeBin Bin)
+        BuildWithBin(Func<bool>? isDryRun = null, FakeLive? live = null,
+            Settings? settings = null)
+    {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(
             new[]
@@ -52,10 +62,11 @@ public class OverviewViewModelTests
             },
             TestData.Target("user-temp", CleanupLevel.Safe, 2048));
         var state = new AppState(host);
+        var bin = new FakeBin();
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, new Settings()), live ?? new FakeLive(),
-            EnglishLoc(), isDryRun ?? (() => false));
-        return (vm, host, state);
+            new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
+            live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false));
+        return (vm, host, state, bin);
     }
 
     /// ROUND 11 (workstream B): the clean button wears its benefit with the
@@ -197,7 +208,8 @@ public class OverviewViewModelTests
         host.Inner.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         var state = new AppState(host);
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, new Settings()), new FakeLive(), loc, () => false);
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new FakeLive(), loc, () => false);
         await state.ScanAsync();
 
         await vm.FixAllAsync();
@@ -223,7 +235,8 @@ public class OverviewViewModelTests
         host.Inner.Startup.Add(new StartupEntry("HKCU", "Steam", true, true));
         var state = new AppState(host);
         var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, new Settings()), new FakeLive(), loc, () => false);
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new FakeLive(), loc, () => false);
         await state.ScanAsync();
 
         await vm.FixAllAsync();
@@ -268,18 +281,34 @@ public class OverviewViewModelTests
         Assert.Equal("", vm.ReportSummary);   // nothing ran — no lead line
     }
 
+    /// ROUND 13: this button says "Free up 2 KB", so it must actually free
+    /// them — the same one-step recycle→purge the Depolama page runs. The
+    /// report line is the freed figure, never "moved to Recycle Bin".
     [Fact]
-    public async Task CleanSafe_ReportsRecycledLine_AndFreedBottomLine_ThenRescans()
+    public async Task CleanSafe_AutoPurgesItsOwnItems_ReportsFreedTruth_ThenRescans()
     {
         var loc = EnglishLoc();
-        var (vm, host, state) = Build();
+        var (vm, host, state, bin) = BuildWithBin();
         await state.ScanAsync();
+        // Pins the ORDER structurally: the pre-clean snapshot must already
+        // have happened by the time the engine is asked to recycle.
+        var queriesWhenCleanRan = -1;
+        host.OnClean = (scan, _) =>
+        {
+            queriesWhenCleanRan = bin.IdQueries.Count;
+            return new CleanReport(scan.Items
+                .Select(i => new CleanEntry(scan.Target.Id, i.Path, i.Bytes, "recycled"))
+                .ToList());
+        };
 
         await vm.CleanSafeAsync();
 
         Assert.Equal("user-temp", Assert.Single(host.Cleans).TargetId);
+        Assert.Equal(1, queriesWhenCleanRan);
+        // the purge touched EXACTLY this run's own recycled items
+        Assert.Equal(new[] { @"C:\x\user-temp\item" }, Assert.Single(bin.Purged));
         var line = Assert.Single(vm.ReportLines);
-        Assert.Equal(loc.F("clean.recycled", 1, "2 KB"), line.Text);
+        Assert.Equal(loc.F("clean.report.summary.freed", 1, "2 KB"), line.Text);
         Assert.True(line.IsDone);
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.freed", "2 KB")),
@@ -287,18 +316,57 @@ public class OverviewViewModelTests
         Assert.Equal(2, host.ScanCalls);
     }
 
+    /// ROUND 13 safety, carried over from round 12: a file the USER deleted
+    /// earlier at the same original path is snapshotted before the clean and
+    /// excluded from the purge — the overview can no more destroy it than
+    /// the Depolama page can.
     [Fact]
-    public async Task CleanSafe_DryRun_BlocksWithFeedback()
+    public async Task CleanSafe_ExcludesBinItemsThatPredateTheClean()
+    {
+        var (vm, _, state, bin) = BuildWithBin();
+        bin.PreExistingIds.Add(@"C:\$Recycle.Bin\S-1-5-21\$RUSER01.tmp");
+        await state.ScanAsync();
+
+        await vm.CleanSafeAsync();
+
+        // the snapshot asked about exactly the planned safe-default items…
+        Assert.Equal(new[] { @"C:\x\user-temp\item" }, Assert.Single(bin.IdQueries));
+        // …and the purge was handed those identities to skip
+        var purge = Assert.Single(bin.PurgeCalls);
+        Assert.Equal(new[] { @"C:\$Recycle.Bin\S-1-5-21\$RUSER01.tmp" }, purge.Exclude);
+    }
+
+    /// ROUND 13: when the purge falls short, the overview quotes what really
+    /// left the disk (0 B here) — never the bytes-moved-to-bin figure — and
+    /// says so, without the done dot.
+    [Fact]
+    public async Task CleanSafe_PartialPurge_ReportsFreedNotRecycled()
     {
         var loc = EnglishLoc();
-        var host = new FakeEngineHost();
-        host.NextSnapshot = TestData.Snapshot(null,
-            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
-        var state = new AppState(host);
+        var (vm, _, state, bin) = BuildWithBin();
+        bin.PurgeFails.Add(@"C:\x\user-temp\item");
+        await state.ScanAsync();
+
+        await vm.CleanSafeAsync();
+
+        Assert.Equal(new[]
+        {
+            loc.F("clean.report.summary.freed", 1, "0 B"),
+            loc.F("clean.report.binleft", "2 KB"),
+        }, vm.ReportLines.Select(l => l.Text));
+        Assert.Equal(new[] { true, false }, vm.ReportLines.Select(l => l.IsDone));
+        Assert.Equal(
+            loc.F("overview.report.summary", loc.F("overview.report.part.freed", "0 B")),
+            vm.ReportSummary);
+    }
+
+    [Fact]
+    public async Task CleanSafe_DryRun_BlocksWithFeedback_AndNeverTouchesTheBin()
+    {
+        var loc = EnglishLoc();
         var settings = new Settings { DryRun = true };
-        var vm = new OverviewViewModel(state, host, new FixAllService(host),
-            new CleanService(host, settings), new FakeLive(), loc,
-            () => settings.DryRun);
+        var (vm, host, state, bin) = BuildWithBin(() => settings.DryRun,
+            settings: settings);
         await state.ScanAsync();
 
         await vm.CleanSafeAsync();
@@ -306,6 +374,7 @@ public class OverviewViewModelTests
         Assert.Equal(new[] { loc["dryrun.blocked"] },
             vm.ReportLines.Select(l => l.Text));
         Assert.All(host.Cleans, c => Assert.True(c.DryRun));
+        Assert.Empty(bin.Purged);
     }
 
     [Fact]

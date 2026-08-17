@@ -63,8 +63,9 @@ public class CleanViewModelTests
     {
         var state = new AppState(host);
         var bin = new FakeBin();
-        var vm = new CleanViewModel(state, host,
-            new CleanService(host, new Settings()), bin, EnglishLoc(),
+        var cleanService = new CleanService(host, new Settings());
+        var vm = new CleanViewModel(state, host, cleanService,
+            new SafeCleanRunner(cleanService, bin), bin, EnglishLoc(),
             isDryRun ?? (() => false));
         return (vm, host, bin, state);
     }
@@ -247,8 +248,10 @@ public class CleanViewModelTests
         var host = SimpleHost();
         var state = new AppState(host);
         var settings = new Settings { DryRun = true };
-        var vm = new CleanViewModel(state, host,
-            new CleanService(host, settings), new FakeBin(), EnglishLoc(),
+        var dryBin = new FakeBin();
+        var dryClean = new CleanService(host, settings);
+        var vm = new CleanViewModel(state, host, dryClean,
+            new SafeCleanRunner(dryClean, dryBin), dryBin, EnglishLoc(),
             () => settings.DryRun);
         await state.ScanAsync();
 
@@ -635,8 +638,9 @@ public class CleanViewModelTests
         var state = new AppState(host);
         var settings = new Settings { DryRun = true };
         var bin = new FakeBin();
-        var vm = new CleanViewModel(state, host,
-            new CleanService(host, settings), bin, EnglishLoc(),
+        var cleanService = new CleanService(host, settings);
+        var vm = new CleanViewModel(state, host, cleanService,
+            new SafeCleanRunner(cleanService, bin), bin, EnglishLoc(),
             () => settings.DryRun);
         await state.ScanAsync();
 

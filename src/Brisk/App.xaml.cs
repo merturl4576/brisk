@@ -47,11 +47,17 @@ public partial class App : Application
             var state = new AppState(composition.Host);
             var cleanService = new CleanService(composition.Host, composition.Settings);
             var fixAllService = new FixAllService(composition.Host);
+            // ONE bin session and ONE safe-clean runner behind all three
+            // clean surfaces (round 13) — the flyout, the overview button
+            // and the Depolama card now run the identical recycle→purge
+            // sequence, so the same promise cannot mean two things.
+            var bin = new ShellRecycleBinSession();
+            var safeClean = new SafeCleanRunner(cleanService, bin);
             Func<bool> isDryRun = () => composition.Settings.DryRun;
-            var flyoutVm = new FlyoutViewModel(state, cleanService, fixAllService,
+            var flyoutVm = new FlyoutViewModel(state, safeClean, fixAllService,
                 Loc.Instance, isDryRun);
             var overviewVm = new OverviewViewModel(state, composition.Host,
-                fixAllService, cleanService, composition.LiveMetrics,
+                fixAllService, safeClean, composition.LiveMetrics,
                 Loc.Instance, isDryRun);
             var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
                 isDryRun, fixAllService, FindingSections.IsHealth,
@@ -64,7 +70,7 @@ public partial class App : Application
             var startupVm = new StartupViewModel(state, composition.Host,
                 Loc.Instance, isDryRun);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
-                new ShellRecycleBinSession(), Loc.Instance, isDryRun);
+                safeClean, bin, Loc.Instance, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,
                 composition.SettingsPath, composition.Launcher,
                 themeSetting => { theme.Apply(themeSetting); _main?.ApplyTitleBar(); },

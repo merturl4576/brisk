@@ -66,7 +66,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private readonly AppState _state;
     private readonly IEngineHost _host;
     private readonly FixAllService _fixAll;
-    private readonly CleanService _cleanService;
+    private readonly SafeCleanRunner _safeClean;
     private readonly ILiveMetrics _live;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
@@ -92,12 +92,12 @@ public sealed class OverviewViewModel : ViewModelBase
     private HashSet<string>? _seenUndoable;
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
-        CleanService cleanService, ILiveMetrics live, Loc loc, Func<bool> isDryRun)
+        SafeCleanRunner safeClean, ILiveMetrics live, Loc loc, Func<bool> isDryRun)
     {
         _state = state;
         _host = host;
         _fixAll = fixAll;
-        _cleanService = cleanService;
+        _safeClean = safeClean;
         _live = live;
         _loc = loc;
         _isDryRun = isDryRun;
@@ -273,19 +273,29 @@ public sealed class OverviewViewModel : ViewModelBase
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
             ClearReport();
-            var outcome = await Task.Run(() => _cleanService.CleanSafe(snapshot.Cleaner));
-            if (outcome.WasDryRun)
+            // ROUND 13: the same ONE-STEP flow the Depolama page runs. This
+            // button promises "Free up 1.2 GB" — so the bytes have to leave
+            // the disk, not move to the Recycle Bin and sit there. Every
+            // figure below is POST-purge truth.
+            var result = await _safeClean.RunAsync(snapshot.Cleaner);
+            if (result.Outcome.WasDryRun)
             {
                 ReportLines.Add(new ReportLine(_loc["dryrun.blocked"], IsDone: false));
                 return;
             }
-            ReportLines.Add(new ReportLine(_loc.F("clean.recycled",
-                outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes)),
-                IsDone: outcome.RecycledPaths.Count > 0));
-            ReportSummary = outcome.RecycledPaths.Count == 0
+            ReportLines.Add(result.CleanedCount > 0
+                ? new ReportLine(_loc.F("clean.report.summary.freed",
+                    result.CleanedCount, Fmt.Bytes(result.FreedBytes)), IsDone: true)
+                : new ReportLine(_loc["clean.report.none"], IsDone: false));
+            // Partial purge stays visible and honest here too — never folded
+            // into the freed figure, never wearing the done dot.
+            if (result.LeftInBinBytes > 0)
+                ReportLines.Add(new ReportLine(_loc.F("clean.report.binleft",
+                    Fmt.Bytes(result.LeftInBinBytes)), IsDone: false));
+            ReportSummary = result.CleanedCount == 0
                 ? ""
                 : _loc.F("overview.report.summary", _loc.F("overview.report.part.freed",
-                    Fmt.Bytes(outcome.RecycledBytes)));
+                    Fmt.Bytes(result.FreedBytes)));
             await _state.ScanAsync();
         }
         finally

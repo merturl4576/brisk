@@ -41,7 +41,8 @@ public class UndoRoundTripTests
         var state = new AppState(host);
         var fixAll = new FixAllService(host);
         var overview = new OverviewViewModel(state, host, fixAll,
-            new CleanService(host, new Settings()), new NoopLive(), loc, () => false);
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new NoopLive(), loc, () => false);
         var health = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsHealth, doneFilter: FindingSections.IsHealth,
             crossLinkKey: "health.crosslink",

@@ -102,6 +102,13 @@
                 </Button>
             </UniformGrid>
 
+            <!-- Round 13: the tray Clean frees the space for real now, so it
+                 says so — one quiet line, only after a clean has run. -->
+            <TextBlock Style="{StaticResource Faint}" Margin="16,7,16,0"
+                       TextWrapping="Wrap" Text="{Binding LastCleanLine}"
+                       Visibility="{Binding HasLastClean,
+                           Converter={x:Static Brisk:BoolToVis.Instance}}" />
+
             <Separator Background="{DynamicResource Divider}" Margin="0,6,0,0" />
             <DockPanel Margin="14,8,14,6">
                 <TextBlock Style="{StaticResource Faint}" Text="{Binding LastScanLine}" />
