@@ -69,15 +69,19 @@ public sealed class FakeEngineHost : IEngineHost
     public FixOutcome Fix(string ruleId) { Fixed.Add(ruleId); return new(true, ruleId); }
     public FixOutcome Undo(string ruleId) { Undone.Add(ruleId); return new(true, ruleId); }
 
-    public CleanReport Clean(TargetScanResult scan, bool dryRun)
+    public CleanReport Clean(TargetScanResult scan, bool dryRun,
+        Action<CleanEntry>? onEntry = null)
     {
         Cleans.Add((scan.Target.Id, dryRun));
-        if (OnClean is not null) return OnClean(scan, dryRun);
-        var entries = scan.Items
-            .Select(i => new CleanEntry(scan.Target.Id, i.Path, i.Bytes,
-                dryRun ? "dry-run" : "recycled"))
-            .ToList();
-        return new CleanReport(entries);
+        var report = OnClean is not null
+            ? OnClean(scan, dryRun)
+            : new CleanReport(scan.Items
+                .Select(i => new CleanEntry(scan.Target.Id, i.Path, i.Bytes,
+                    dryRun ? "dry-run" : "recycled"))
+                .ToList());
+        if (onEntry is not null)
+            foreach (var entry in report.Entries) onEntry(entry);
+        return report;
     }
 
     public IReadOnlyList<UndoableFix> ListUndoable() => Undoable;
@@ -92,7 +96,8 @@ public sealed class FakeEngineHost : IEngineHost
 
     public bool RunElevated(string cliArgs) { ElevatedRuns.Add(cliArgs); return ElevatedResult; }
     public bool CreateRestorePoint() { RestorePointCalls++; return RestorePointResult; }
-    public long FreeDiskBytes() => 122L << 30;
+    public long FreeDisk { get; set; } = 122L << 30;
+    public long FreeDiskBytes() => FreeDisk;
     public long Lifetime { get; set; }
     public long LifetimeReclaimedBytes() => Lifetime;
     public bool IsElevated() => Elevated;

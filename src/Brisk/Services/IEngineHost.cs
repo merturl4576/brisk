@@ -23,7 +23,10 @@ public interface IEngineHost
         CancellationToken ct = default);
     FixOutcome Fix(string ruleId);
     FixOutcome Undo(string ruleId);
-    CleanReport Clean(TargetScanResult scan, bool dryRun);
+    /// onEntry (additive, round 10): every recorded entry, as it happens,
+    /// on the calling thread — the GUI's live cleaning progress.
+    CleanReport Clean(TargetScanResult scan, bool dryRun,
+        Action<CleanEntry>? onEntry = null);
     IReadOnlyList<UndoableFix> ListUndoable();
     IReadOnlyList<ActionLogEntry> ReadLog(int max = 200);
     IReadOnlyList<StartupEntry> ListStartup();

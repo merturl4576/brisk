@@ -177,8 +177,9 @@ public class FixAllServiceTests
         public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
             CancellationToken ct = default) => _inner.ScanAsync(progress, ct);
         public FixOutcome Undo(string ruleId) => _inner.Undo(ruleId);
-        public CleanReport Clean(TargetScanResult scan, bool dryRun) =>
-            _inner.Clean(scan, dryRun);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun,
+                Action<CleanEntry>? onEntry = null) =>
+            _inner.Clean(scan, dryRun, onEntry);
         public IReadOnlyList<UndoableFix> ListUndoable() => _inner.ListUndoable();
         public IReadOnlyList<ActionLogEntry> ReadLog(int max = 200) => _inner.ReadLog(max);
         public IReadOnlyList<StartupEntry> ListStartup() => _inner.ListStartup();

@@ -535,8 +535,9 @@ public class OverviewViewModelTests
         public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
             System.Threading.CancellationToken ct = default) => Inner.ScanAsync(progress, ct);
         public FixOutcome Undo(string ruleId) => Inner.Undo(ruleId);
-        public CleanReport Clean(TargetScanResult scan, bool dryRun) =>
-            Inner.Clean(scan, dryRun);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun,
+                Action<CleanEntry>? onEntry = null) =>
+            Inner.Clean(scan, dryRun, onEntry);
         public System.Collections.Generic.IReadOnlyList<UndoableFix> ListUndoable() =>
             Inner.ListUndoable();
         public System.Collections.Generic.IReadOnlyList<BriskEngine.Logging.ActionLogEntry>

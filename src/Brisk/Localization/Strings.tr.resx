@@ -91,6 +91,15 @@
   <data name="clean.group.app" xml:space="preserve"><value>Uygulama önbellekleri</value></data>
   <data name="clean.group.other" xml:space="preserve"><value>Diğer</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
+  <data name="clean.cleaning" xml:space="preserve"><value>Temizleniyor…</value></data>
+  <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="clean.report.summary" xml:space="preserve"><value>{0} öğe temizlendi — {1} Geri Dönüşüm Kutusu'na taşındı</value></data>
+  <data name="clean.report.none" xml:space="preserve"><value>Temizlenecek bir şey yoktu — burası zaten temiz.</value></data>
+  <data name="clean.report.disk" xml:space="preserve"><value>Boş disk alanı: {0} → {1}</value></data>
+  <data name="clean.report.disk.gained" xml:space="preserve"><value>Boş disk alanı: {0} → {1} — {2} geri kazanıldı</value></data>
+  <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} dosya çalışan bir uygulama tarafından kullanıldığı için olduğu gibi bırakıldı</value></data>
+  <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} öğe yönetici onayı gerektirdiği için atlandı</value></data>
+  <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} öğe taşınamadığı için atlandı</value></data>
   <data name="settings.language" xml:space="preserve"><value>Dil</value></data>
   <data name="settings.theme" xml:space="preserve"><value>Tema</value></data>
   <data name="settings.dryrun" xml:space="preserve"><value>Kuru çalıştırma (yalnızca raporla, hiçbir şeyi değiştirme)</value></data>

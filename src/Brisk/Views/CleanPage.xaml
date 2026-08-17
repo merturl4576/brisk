@@ -61,26 +61,54 @@
                         <DockPanel Margin="0,2,0,10">
                             <Button DockPanel.Dock="Right" Padding="20,8"
                                     FontSize="12.5" VerticalAlignment="Center"
-                                    Command="{Binding SimpleCleanCommand}"
-                                    Content="{Binding [clean.clean],
-                                        Source={x:Static loc:Loc.Instance}}">
+                                    Command="{Binding SimpleCleanCommand}">
+                                <!-- Content lives in the STYLE (a local value
+                                     would beat the busy trigger). -->
                                 <Button.Style>
                                     <Style TargetType="Button"
                                            BasedOn="{StaticResource PrimaryButton}">
+                                        <Setter Property="Content"
+                                                Value="{Binding [clean.clean],
+                                                    Source={x:Static loc:Loc.Instance}}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding State.IsScanning}"
                                                          Value="True">
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBusy}"
+                                                         Value="True">
+                                                <Setter Property="Content"
+                                                        Value="{Binding [clean.cleaning],
+                                                            Source={x:Static loc:Loc.Instance}}" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>
                             </Button>
+                            <!-- NumeralTick: the total slides down through
+                                 real per-entry engine progress while the
+                                 clean runs — data-driven motion, exempt
+                                 from reduce-motion gating by design. -->
                             <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
                                        FontSize="34" FontWeight="SemiBold"
                                        Foreground="{DynamicResource Text}"
                                        VerticalAlignment="Center"
-                                       Text="{Binding SimpleTotalText}" />
+                                       Brisk:NumeralTick.Value="{Binding SimpleTotalText}" />
+                        </DockPanel>
+                        <!-- Work in flight: a determinate hairline fed by the
+                             engine's own entry stream, and the honest count
+                             beside it. Visible only while cleaning runs. -->
+                        <DockPanel Margin="0,0,0,10"
+                                   Visibility="{Binding IsBusy,
+                                       Converter={x:Static Brisk:BoolToVis.Instance}}">
+                            <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0"
+                                       Style="{StaticResource Faint}"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding ProgressText}" />
+                            <ProgressBar Style="{StaticResource ThinProgress}"
+                                         Minimum="0" Maximum="1"
+                                         VerticalAlignment="Center"
+                                         Value="{Binding ProgressFraction, Mode=OneWay}" />
                         </DockPanel>
                         <ItemsControl ItemsSource="{Binding SimpleGroups}">
                             <ItemsControl.ItemTemplate>
@@ -96,6 +124,30 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <!-- The completion report: what went, what the disk
+                             says, and calmly why anything was left alone —
+                             the same left-rule vocabulary the findings
+                             report speaks, worn quietly inside the card. -->
+                        <DockPanel Margin="0,12,0,0"
+                                   Visibility="{Binding HasReport,
+                                       Converter={x:Static Brisk:BoolToVis.Instance}}">
+                            <Rectangle DockPanel.Dock="Left" Width="2"
+                                       RadiusX="1" RadiusY="1" Margin="0,2"
+                                       Fill="{DynamicResource Good}" />
+                            <StackPanel Margin="12,0,0,0">
+                                <TextBlock Style="{StaticResource ReportLine}"
+                                           FontWeight="SemiBold" TextWrapping="Wrap"
+                                           Text="{Binding ReportSummary}" />
+                                <TextBlock Style="{StaticResource Muted}"
+                                           Margin="0,3,0,0" TextWrapping="Wrap"
+                                           Text="{Binding ReportDiskText}" />
+                                <TextBlock Style="{StaticResource Faint}"
+                                           Margin="0,3,0,0" TextWrapping="Wrap"
+                                           Text="{Binding ReportReasonsText}"
+                                           Visibility="{Binding HasReportReasons,
+                                               Converter={x:Static Brisk:BoolToVis.Instance}}" />
+                            </StackPanel>
+                        </DockPanel>
                         <TextBlock Style="{StaticResource Faint}" Margin="0,10,0,0"
                                    TextWrapping="Wrap"
                                    Text="{Binding [clean.simple.hint],

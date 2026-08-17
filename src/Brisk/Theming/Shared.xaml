@@ -782,6 +782,30 @@
         <Setter Property="FontSize" Value="13" />
     </Style>
 
+    <!-- A 3px determinate hairline for real work in flight (the Depolama
+         simple clean). No animation of its own: the indicator's width IS
+         the engine's per-entry progress stream — data-driven, so it needs
+         no reduce-motion or visibility gating (round-7 rule). -->
+    <Style x:Key="ThinProgress" TargetType="ProgressBar">
+        <Setter Property="Height" Value="3" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Background" Value="{DynamicResource Divider}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid SnapsToDevicePixels="True">
+                        <Border x:Name="PART_Track" CornerRadius="1.5"
+                                Background="{TemplateBinding Background}" />
+                        <Border x:Name="PART_Indicator" CornerRadius="1.5"
+                                HorizontalAlignment="Left"
+                                Background="{TemplateBinding Foreground}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- THE report block, shared by the overview, Sağlık and Performans
          pages — one chrome, two faces (bound to any VM exposing
          ReportLines/ReportSummary/DoneRows/DoneLead/ShowDoneReport):

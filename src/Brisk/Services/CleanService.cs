@@ -1,12 +1,17 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using BriskEngine.Cleaning;
 using BriskEngine.Models;
 
 namespace Brisk.Services;
 
+/// Skipped carries the refused/error entries verbatim (engine English) so
+/// the GUI edge can recompose human-language reasons — the round-9 rule.
 public sealed record CleanOutcome(
     IReadOnlyList<string> RecycledPaths, long RecycledBytes,
-    IReadOnlyList<string> Problems, bool WasDryRun);
+    IReadOnlyList<string> Problems, bool WasDryRun,
+    IReadOnlyList<CleanEntry> Skipped);
 
 /// One clean pass over a set of scanned targets, shared by flyout and window.
 public sealed class CleanService
@@ -34,24 +39,31 @@ public sealed class CleanService
     /// The one definition of "safe to clean in one click" — shared by the
     /// flyout, the overview and the Depolama simple view. Deletion stays
     /// behind its own consented button; fix-all must never call this.
-    public CleanOutcome CleanSafe(ScanResult scan) =>
-        CleanTargets(scan.Targets.Where(IsSafeDefault));
+    /// onEntry (additive, round 10) streams every engine entry as it is
+    /// recorded, on the worker thread — live progress for the GUI.
+    public CleanOutcome CleanSafe(ScanResult scan, Action<CleanEntry>? onEntry = null) =>
+        CleanTargets(scan.Targets.Where(IsSafeDefault), onEntry);
 
-    public CleanOutcome CleanTargets(IEnumerable<TargetScanResult> scans)
+    public CleanOutcome CleanTargets(IEnumerable<TargetScanResult> scans,
+        Action<CleanEntry>? onEntry = null)
     {
         var paths = new List<string>();
         long bytes = 0;
         var problems = new List<string>();
+        var skipped = new List<CleanEntry>();
         foreach (var scan in scans)
         {
-            var report = _host.Clean(scan, _settings.DryRun);
+            var report = _host.Clean(scan, _settings.DryRun, onEntry);
             foreach (var entry in report.Entries)
             {
                 if (entry.Action == "recycled") { paths.Add(entry.Path); bytes += entry.Bytes; }
                 else if (entry.Action is "refused" or "error")
+                {
                     problems.Add($"{entry.Path} — {entry.Reason}");
+                    skipped.Add(entry);
+                }
             }
         }
-        return new CleanOutcome(paths, bytes, problems, _settings.DryRun);
+        return new CleanOutcome(paths, bytes, problems, _settings.DryRun, skipped);
     }
 }

@@ -302,4 +302,171 @@ public class CleanViewModelTests
 
         Assert.Single(host.Cleans);
     }
+
+    /// UX ROUND 10: the owner's live press cleaned 1.39 GB over six minutes
+    /// with zero feedback and read as "does nothing". The simple card must
+    /// now visibly work: busy state, real progress, and a re-press no-op.
+    [Fact]
+    public async Task SimpleClean_ShowsBusyState_AndBlocksThePress_WhileRunning()
+    {
+        var (vm, host, _, state) = Build(SimpleHost());
+        await state.ScanAsync();
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, _) =>
+        {
+            gate.Wait();
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+
+        var run = vm.CleanSimpleAsync();
+
+        Assert.True(vm.IsBusy);
+        Assert.False(vm.SimpleCleanCommand.CanExecute(null));
+        var second = vm.CleanSimpleAsync();
+        Assert.True(second.IsCompleted);      // re-press is a no-op
+
+        gate.Set();
+        await run;
+
+        Assert.False(vm.IsBusy);
+        Assert.True(vm.SimpleCleanCommand.CanExecute(null));
+        Assert.Equal(2, host.Cleans.Count);   // both safe targets, once each
+    }
+
+    /// The big number ticks DOWN through the engine's real per-entry stream
+    /// (2 KB gone → 1 KB left → 0 B), then the closing rescan restores the
+    /// measured truth — never fake progress theater.
+    [Fact]
+    public async Task SimpleClean_CountsTheTotalDown_OnRealEntries()
+    {
+        var (vm, _, _, state) = Build(SimpleHost());
+        await state.ScanAsync();
+        var totals = new List<string>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(vm.SimpleTotalText))
+                totals.Add(vm.SimpleTotalText);
+        };
+
+        await vm.CleanSimpleAsync();
+
+        Assert.Equal(new[] { "1 KB", "0 B", "3 KB" }, totals);
+        Assert.Equal(1.0, vm.ProgressFraction);
+        Assert.Equal(EnglishLoc().F("clean.progress", 2, 2), vm.ProgressText);
+    }
+
+    /// UX ROUND 10 completion report: junk count, bytes moved to the bin,
+    /// and the measured free-disk story — before → after.
+    [Fact]
+    public async Task SimpleClean_Report_TellsCountBytes_AndHonestDiskLine()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, _, state) = Build(SimpleHost());
+        host.FreeDisk = 100L << 30;
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        Assert.True(vm.HasReport);
+        Assert.Equal(loc.F("clean.report.summary", 2, "3 KB"), vm.ReportSummary);
+        // recycling moved bytes to the bin on the same volume — free space
+        // did not move, and the report says exactly that (no fake "gained")
+        Assert.Equal(loc.F("clean.report.disk", "100.0 GB", "100.0 GB"),
+            vm.ReportDiskText);
+        Assert.False(vm.HasReportReasons);
+        Assert.Equal("", vm.ProblemsText);
+    }
+
+    [Fact]
+    public async Task SimpleClean_MeasuredDiskGain_ShowsTheRegainedPhrase()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, _, state) = Build(SimpleHost());
+        host.FreeDisk = 100L << 30;
+        await state.ScanAsync();
+        host.OnClean = (scan, _) =>
+        {
+            host.FreeDisk = 102L << 30;   // the clean visibly freed space
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+
+        await vm.CleanSimpleAsync();
+
+        Assert.Equal(
+            loc.F("clean.report.disk.gained", "100.0 GB", "102.0 GB", "2.0 GB"),
+            vm.ReportDiskText);
+    }
+
+    /// When nothing could go, the report stays calm and says WHY in human
+    /// words (round-9 GUI-edge localization) — never silence, never alarm,
+    /// never a raw English path dump.
+    [Fact]
+    public async Task SimpleClean_NothingRecycled_ReportsCalmly_WithHumanReasons()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, _, state) = Build(SimpleHost());
+        await state.ScanAsync();
+        host.OnClean = (scan, _) => new BriskEngine.Cleaning.CleanReport(
+            scan.Items.Select(i => new BriskEngine.Cleaning.CleanEntry(
+                scan.Target.Id, i.Path, 0, "error",
+                scan.Target.Id == "user-temp"
+                    ? $"SHFileOperation failed (32) for '{i.Path}'"
+                    : $"SHFileOperation failed (5) for '{i.Path}'")).ToList());
+
+        await vm.CleanSimpleAsync();
+
+        Assert.False(vm.HasBanner);
+        Assert.True(vm.HasReport);
+        Assert.Equal(loc["clean.report.none"], vm.ReportSummary);
+        Assert.True(vm.HasReportReasons);
+        Assert.Equal(
+            loc.F("clean.report.skipped.inuse", 1) + "\n"
+            + loc.F("clean.report.skipped.other", 1),
+            vm.ReportReasonsText);
+        Assert.Equal("", vm.ProblemsText);    // the report replaced the dump
+    }
+
+    /// "Reclaim space now" purges the bin — the report's disk line
+    /// re-measures at that moment, when free space actually rises.
+    [Fact]
+    public async Task Reclaim_RemeasuresTheReportDiskLine()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, _, state) = Build(SimpleHost());
+        host.FreeDisk = 100L << 30;
+        await state.ScanAsync();
+        await vm.CleanSimpleAsync();
+        Assert.True(vm.HasBanner);
+
+        host.FreeDisk = 103L << 30;           // the purge freed real bytes
+        vm.ReclaimCommand.Execute(null);
+
+        Assert.False(vm.HasBanner);
+        Assert.True(vm.HasReport);            // the story survives the banner
+        Assert.Equal(
+            loc.F("clean.report.disk.gained", "100.0 GB", "103.0 GB", "3.0 GB"),
+            vm.ReportDiskText);
+    }
+
+    [Fact]
+    public async Task SimpleClean_DryRun_ShowsNoReport()
+    {
+        var host = SimpleHost();
+        var state = new AppState(host);
+        var settings = new Settings { DryRun = true };
+        var vm = new CleanViewModel(state, host,
+            new CleanService(host, settings), new FakeBin(), EnglishLoc(),
+            () => settings.DryRun);
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        Assert.False(vm.HasReport);
+        Assert.False(vm.IsBusy);
+        Assert.Equal(EnglishLoc()["dryrun.blocked"], vm.ProblemsText);
+    }
 }

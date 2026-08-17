@@ -91,6 +91,15 @@
   <data name="clean.group.app" xml:space="preserve"><value>App caches</value></data>
   <data name="clean.group.other" xml:space="preserve"><value>Other</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
+  <data name="clean.cleaning" xml:space="preserve"><value>Cleaning…</value></data>
+  <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="clean.report.summary" xml:space="preserve"><value>{0} items cleaned — {1} moved to the Recycle Bin</value></data>
+  <data name="clean.report.none" xml:space="preserve"><value>Nothing needed cleaning — this area is already tidy.</value></data>
+  <data name="clean.report.disk" xml:space="preserve"><value>Free disk space: {0} → {1}</value></data>
+  <data name="clean.report.disk.gained" xml:space="preserve"><value>Free disk space: {0} → {1} — {2} regained</value></data>
+  <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} files are in use by a running app and were left untouched</value></data>
+  <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} items need administrator approval and were skipped</value></data>
+  <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} items could not be moved and were skipped</value></data>
   <data name="settings.language" xml:space="preserve"><value>Language</value></data>
   <data name="settings.theme" xml:space="preserve"><value>Theme</value></data>
   <data name="settings.dryrun" xml:space="preserve"><value>Dry run (report only, never change anything)</value></data>

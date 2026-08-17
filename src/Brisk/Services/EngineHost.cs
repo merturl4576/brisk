@@ -82,8 +82,9 @@ public sealed class EngineHost : IEngineHost
             : action(rule);
     }
 
-    public CleanReport Clean(TargetScanResult scan, bool dryRun) =>
-        _cleaner.Clean(scan, dryRun);
+    public CleanReport Clean(TargetScanResult scan, bool dryRun,
+        Action<CleanEntry>? onEntry = null) =>
+        _cleaner.Clean(scan, dryRun, onEntry);
 
     public IReadOnlyList<UndoableFix> ListUndoable() => _journal.ListUndoable();
     public IReadOnlyList<ActionLogEntry> ReadLog(int max = 200) =>

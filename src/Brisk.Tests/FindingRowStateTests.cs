@@ -234,8 +234,9 @@ public class FindingRowStateTests
         public virtual FixOutcome Undo(string ruleId) => Inner.Undo(ruleId);
         public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
             CancellationToken ct = default) => Inner.ScanAsync(progress, ct);
-        public CleanReport Clean(TargetScanResult scan, bool dryRun) =>
-            Inner.Clean(scan, dryRun);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun,
+                Action<CleanEntry>? onEntry = null) =>
+            Inner.Clean(scan, dryRun, onEntry);
         public IReadOnlyList<UndoableFix> ListUndoable() => Inner.ListUndoable();
         public IReadOnlyList<ActionLogEntry> ReadLog(int max = 200) => Inner.ReadLog(max);
         public IReadOnlyList<StartupEntry> ListStartup() => Inner.ListStartup();
