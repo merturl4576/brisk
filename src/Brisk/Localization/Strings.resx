@@ -13,7 +13,9 @@
   <data name="overview.status.good" xml:space="preserve"><value>Your PC is in good shape</value></data>
   <data name="overview.status.attention" xml:space="preserve"><value>Some findings need attention</value></data>
   <data name="overview.status.advise" xml:space="preserve"><value>Your PC is in good shape — {0} recommendations to review</value></data>
-  <data name="overview.cleansafe" xml:space="preserve"><value>Safe clean</value></data>
+  <data name="overview.cleanspace" xml:space="preserve"><value>Free up {0}</value></data>
+  <data name="overview.cleanspace.none" xml:space="preserve"><value>Free up disk space</value></data>
+  <data name="overview.actions.hint" xml:space="preserve"><value>Both are safe: setting changes can be undone, and cleaned files go to the Recycle Bin first.</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>What was done</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Fixed: {0}</value></data>
   <data name="overview.report.disabled" xml:space="preserve"><value>Startup disabled: {0}</value></data>
@@ -28,18 +30,18 @@
   <data name="overview.live.temp" xml:space="preserve"><value>Temperature</value></data>
   <data name="overview.live.disk" xml:space="preserve"><value>Free space</value></data>
   <data name="overview.recent" xml:space="preserve"><value>What brisk did</value></data>
-  <data name="overview.report.live" xml:space="preserve"><value>{0} improvements are active on this PC</value></data>
+  <data name="overview.report.live" xml:space="preserve"><value>{0} improvements made on this PC</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Last scan: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Scanning…</value></data>
   <data name="flyout.scan" xml:space="preserve"><value>Scan</value></data>
-  <data name="flyout.fixall" xml:space="preserve"><value>Fix all (safe)</value></data>
+  <data name="flyout.fixall" xml:space="preserve"><value>Speed up this PC</value></data>
   <data name="flyout.clean" xml:space="preserve"><value>Clean</value></data>
   <data name="flyout.details" xml:space="preserve"><value>Open details →</value></data>
   <data name="health.title" xml:space="preserve"><value>System health</value></data>
-  <data name="health.fixall" xml:space="preserve"><value>Fix all (safe)</value></data>
+  <data name="health.fixall" xml:space="preserve"><value>Speed up this PC</value></data>
   <data name="health.fix" xml:space="preserve"><value>Fix</value></data>
   <data name="health.undo" xml:space="preserve"><value>Undo</value></data>
   <data name="health.restorepoint" xml:space="preserve"><value>Create a restore point first</value></data>

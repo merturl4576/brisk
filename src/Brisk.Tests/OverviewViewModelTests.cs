@@ -58,6 +58,19 @@ public class OverviewViewModelTests
         return (vm, host, state);
     }
 
+    /// ROUND 11 (workstream B): the clean button wears its benefit with the
+    /// live HONEST figure — before a scan it stays the plain generic label.
+    [Fact]
+    public async Task CleanButton_WearsTheHonestReclaimableFigure()
+    {
+        var loc = EnglishLoc();
+        var (vm, _, state) = Build();
+
+        Assert.Equal(loc["overview.cleanspace.none"], vm.CleanSafeText);
+        await state.ScanAsync();
+        Assert.Equal(loc.F("overview.cleanspace", "2 KB"), vm.CleanSafeText);
+    }
+
     [Fact]
     public async Task Refresh_PopulatesHeroAndSummary()
     {

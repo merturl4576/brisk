@@ -361,8 +361,12 @@
                         </Style>
                     </Button.Style>
                 </Button>
+                <!-- Round 11: the two action buttons read as two different
+                     JOBS — "Speed up this PC" (settings fixes) next to
+                     "Free up 1.2 GB" (junk files, wearing the live honest
+                     figure). Same commands, same wiring as before. -->
                 <Button Command="{Binding CleanSafeCommand}"
-                        Content="{Binding [overview.cleansafe], Source={x:Static loc:Loc.Instance}}">
+                        Content="{Binding CleanSafeText}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
                             <Style.Triggers>
@@ -377,6 +381,12 @@
                     </Button.Style>
                 </Button>
             </StackPanel>
+
+            <!-- The reassurance the old "(güvenli)" parentheses carried, in
+                 words a person actually reads. -->
+            <TextBlock Style="{StaticResource Faint}" Margin="2,6,0,0"
+                       TextWrapping="Wrap"
+                       Text="{Binding [overview.actions.hint], Source={x:Static loc:Loc.Instance}}" />
 
             <!-- THE report block (shared template): the run story right
                  after an action, the journal-driven "Yapılanlar raporu"

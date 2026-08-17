@@ -13,7 +13,9 @@
   <data name="overview.status.good" xml:space="preserve"><value>Bilgisayarın iyi durumda</value></data>
   <data name="overview.status.attention" xml:space="preserve"><value>İlgilenilmesi gereken bulgular var</value></data>
   <data name="overview.status.advise" xml:space="preserve"><value>Bilgisayarın iyi durumda — incelemen için {0} öneri var</value></data>
-  <data name="overview.cleansafe" xml:space="preserve"><value>Güvenli temizlik</value></data>
+  <data name="overview.cleanspace" xml:space="preserve"><value>{0} yer aç</value></data>
+  <data name="overview.cleanspace.none" xml:space="preserve"><value>Diskte yer aç</value></data>
+  <data name="overview.actions.hint" xml:space="preserve"><value>İkisi de güvenlidir: ayar değişiklikleri geri alınabilir, temizlenen dosyalar önce Geri Dönüşüm Kutusu'na taşınır.</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>Yapılanlar</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Düzeltildi: {0}</value></data>
   <data name="overview.report.disabled" xml:space="preserve"><value>Açılışta kapatıldı: {0}</value></data>
@@ -28,18 +30,18 @@
   <data name="overview.live.temp" xml:space="preserve"><value>Sıcaklık</value></data>
   <data name="overview.live.disk" xml:space="preserve"><value>Boş alan</value></data>
   <data name="overview.recent" xml:space="preserve"><value>Yapılanlar raporu</value></data>
-  <data name="overview.report.live" xml:space="preserve"><value>Bu bilgisayarda {0} iyileştirme etkin</value></data>
+  <data name="overview.report.live" xml:space="preserve"><value>Bu bilgisayarda {0} iyileştirme yapıldı</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Son tarama: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Taranıyor…</value></data>
   <data name="flyout.scan" xml:space="preserve"><value>Tara</value></data>
-  <data name="flyout.fixall" xml:space="preserve"><value>Tümünü düzelt (güvenli)</value></data>
+  <data name="flyout.fixall" xml:space="preserve"><value>Bilgisayarı hızlandır</value></data>
   <data name="flyout.clean" xml:space="preserve"><value>Temizle</value></data>
   <data name="flyout.details" xml:space="preserve"><value>Ayrıntıları aç →</value></data>
   <data name="health.title" xml:space="preserve"><value>Sistem sağlığı</value></data>
-  <data name="health.fixall" xml:space="preserve"><value>Tümünü düzelt (güvenli)</value></data>
+  <data name="health.fixall" xml:space="preserve"><value>Bilgisayarı hızlandır</value></data>
   <data name="health.fix" xml:space="preserve"><value>Düzelt</value></data>
   <data name="health.undo" xml:space="preserve"><value>Geri al</value></data>
   <data name="health.restorepoint" xml:space="preserve"><value>Önce geri yükleme noktası oluştur</value></data>

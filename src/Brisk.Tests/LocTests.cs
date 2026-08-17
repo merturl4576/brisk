@@ -147,6 +147,17 @@ public class LocTests
     [InlineData("clean.group.browser")]
     [InlineData("clean.group.app")]
     [InlineData("clean.group.other")]
+    [InlineData("clean.simple.locked.app")]
+    [InlineData("clean.simple.locked.inuse")]
+    [InlineData("clean.report.skipped.appheld")]
+    [InlineData("clean.report.disk.binned")]
+    [InlineData("clean.report.disk.purged")]
+    [InlineData("clean.report.undone")]
+    [InlineData("overview.cleanspace")]
+    [InlineData("overview.cleanspace.none")]
+    [InlineData("overview.actions.hint")]
+    [InlineData("health.fixall")]
+    [InlineData("flyout.fixall")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

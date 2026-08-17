@@ -84,6 +84,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _liveTempCaption;
     private string _liveDiskText = "—";
     private string _doneLead = "";
+    private string _cleanSafeText;
     private bool _liveBusy;
     private bool _busy;
     /// Rule ids seen in the undoable list on the previous refresh; null until
@@ -101,6 +102,7 @@ public sealed class OverviewViewModel : ViewModelBase
         _loc = loc;
         _isDryRun = isDryRun;
         _liveTempCaption = loc["overview.live.temp"];
+        _cleanSafeText = loc["overview.cleanspace.none"];
         _state.Changed += Refresh;
         // The report block's two faces share one visibility contract; any
         // mutation of either collection re-evaluates it (and the lead line).
@@ -182,6 +184,14 @@ public sealed class OverviewViewModel : ViewModelBase
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CleanSafeCommand { get; }
+    /// The clean button wears its benefit (round 11): "Free up 1.2 GB",
+    /// using the SAME honest figure the Depolama card promises. Before a
+    /// scan, or with nothing to take, it stays the plain generic label.
+    public string CleanSafeText
+    {
+        get => _cleanSafeText;
+        private set => Set(ref _cleanSafeText, value);
+    }
 
     /// MainWindow calls this from IsVisibleChanged/StateChanged. The live
     /// pulse exists only while the window is actually on screen — hidden,
@@ -347,9 +357,13 @@ public sealed class OverviewViewModel : ViewModelBase
         var parts = new List<string>();
         if (hasWork)
             parts.Add(_loc.F("flyout.findings", snapshot.Findings.Count, fixable));
-        // Honest figure (round 11): what the safe clean can take right now.
-        parts.Add(_loc.F("flyout.reclaimable",
-            Fmt.Bytes(CleanService.ReclaimableNowBytes(snapshot.Cleaner))));
+        // Honest figure (round 11): what the safe clean can take right now —
+        // the summary line and the clean button's label share it.
+        var reclaimable = CleanService.ReclaimableNowBytes(snapshot.Cleaner);
+        parts.Add(_loc.F("flyout.reclaimable", Fmt.Bytes(reclaimable)));
+        CleanSafeText = reclaimable > 0
+            ? _loc.F("overview.cleanspace", Fmt.Bytes(reclaimable))
+            : _loc["overview.cleanspace.none"];
         parts.Add(_loc.F("flyout.lastscan",
             snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm")));
         SummaryText = string.Join("   ·   ", parts);
