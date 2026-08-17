@@ -4,10 +4,13 @@
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
     <UserControl.Resources>
-        <!-- Cockpit hero vocabulary — deliberately hero-LOCAL. The hero is an
-             always-dark instrument panel in BOTH themes (a dashboard is a dark
-             surface by nature), so nothing here touches the global theme
-             dictionaries and the rest of the app keeps following Win11. -->
+        <!-- Cockpit hero vocabulary — still hero-LOCAL, but since round 8 the
+             global DARK palette speaks the same language: Bg/BgElevated are
+             the hero's graphite (#0E1116/#151A21) and Good/SeverityWarning/
+             SeverityCritical are these same bright variants. The locals stay
+             because the hero is an always-dark instrument panel in BOTH
+             themes — under the explicit light theme these keys are what keep
+             it dark, so they must not follow the theme dictionaries. -->
         <Color x:Key="HeroGoodColor">#4ADE80</Color>
         <Color x:Key="HeroWarnColor">#FBBF24</Color>
         <Color x:Key="HeroCritColor">#F87171</Color>
@@ -28,10 +31,13 @@
 
         <!-- The ONE permitted gradient: a soft radial vignette, a touch
              lighter behind the ring and settling into deep graphite at the
-             edges (~3–4% luminance shift, not a spotlight). -->
+             edges (~3–4% luminance shift, not a spotlight). The stops are
+             exactly BgElevated → Bg of the dark palette, so on the dark
+             theme the panel melts into the page and only its hairline and
+             the lift behind the ring set it apart. -->
         <RadialGradientBrush x:Key="HeroSurface" Center="0.25,0.5"
                              GradientOrigin="0.25,0.5" RadiusX="0.75" RadiusY="1.2">
-            <GradientStop Color="#151A22" Offset="0" />
+            <GradientStop Color="#151A21" Offset="0" />
             <GradientStop Color="#0E1116" Offset="1" />
         </RadialGradientBrush>
 
