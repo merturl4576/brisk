@@ -59,9 +59,12 @@
                 </StackPanel>
             </DockPanel>
         </Border>
+        <!-- No HorizontalAlignment here: the one content column works by
+             MaxWidth + default Stretch (a width-capped Stretch element is
+             arranged centered) — an explicit Left pins the band to the
+             window edge, outside the column (the round-11 live regression). -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14"
-                    MaxWidth="{StaticResource ContentMaxWidth}"
-                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                    MaxWidth="{StaticResource ContentMaxWidth}">
             <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
                     Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
                 <Button.Style>
