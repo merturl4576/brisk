@@ -350,9 +350,14 @@ public class OverviewViewModelTests
         Assert.NotEmpty(vm.ReportLines);
         Assert.False(vm.ShowDoneReport);
 
-        // the next scan starts a new story → the journal face returns
+        // the next scan starts a new story → the journal face returns.
+        // Deterministic wait: ScanCommand fires-and-forgets its scan, so we
+        // await the state's own Changed signal instead of racing a bare
+        // Task.Yield against the thread pool (this test's old flake).
+        var rescanned = new TaskCompletionSource();
+        state.Changed += () => rescanned.TrySetResult();
         vm.ScanCommand.Execute(null);
-        await Task.Yield();
+        await rescanned.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Empty(vm.ReportLines);
         Assert.True(vm.ShowDoneReport);
     }

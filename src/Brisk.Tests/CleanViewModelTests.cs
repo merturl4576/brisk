@@ -14,14 +14,24 @@ sealed class FakeBin : IRecycleBinSession
 {
     public List<IReadOnlyList<string>> Restored { get; } = new();
     public List<IReadOnlyList<string>> Purged { get; } = new();
+    /// Every MatchingItemIds query, in call order relative to PurgeCalls.
+    public List<IReadOnlyList<string>> IdQueries { get; } = new();
+    /// What MatchingItemIds reports as already in the bin.
+    public List<string> PreExistingIds { get; } = new();
+    /// Every purge with the exclusions it was handed.
+    public List<(IReadOnlyList<string> Paths, IReadOnlyList<string>? Exclude)> PurgeCalls { get; } = new();
     public bool RestoreResult { get; set; } = true;
     /// Paths the fake refuses to purge — the partial-failure seam.
     public HashSet<string> PurgeFails { get; } = new(StringComparer.OrdinalIgnoreCase);
     public bool Restore(IReadOnlyList<string> originalPaths)
     { Restored.Add(originalPaths); return RestoreResult; }
-    public IReadOnlyList<string> Purge(IReadOnlyList<string> originalPaths)
+    public IReadOnlyList<string> MatchingItemIds(IReadOnlyList<string> originalPaths)
+    { IdQueries.Add(originalPaths); return PreExistingIds.ToList(); }
+    public IReadOnlyList<string> Purge(IReadOnlyList<string> originalPaths,
+        IReadOnlyList<string>? excludeItemIds = null)
     {
         Purged.Add(originalPaths);
+        PurgeCalls.Add((originalPaths, excludeItemIds));
         return originalPaths.Where(p => !PurgeFails.Contains(p)).ToList();
     }
     public void OpenRecycleBinUi() { }
@@ -447,7 +457,10 @@ public class CleanViewModelTests
 
         Assert.Equal(new[] { "1 KB", "0 B", "3 KB" }, totals);
         Assert.Equal(1.0, vm.ProgressFraction);
-        Assert.Equal(EnglishLoc().F("clean.progress", 2, 2), vm.ProgressText);
+        // Review round 1 (I7): the purge phase is VISIBLE — after the last
+        // "2 / 2" tick the label becomes the freeing state, which is the
+        // final text the busy card showed.
+        Assert.Equal(EnglishLoc()["clean.purging"], vm.ProgressText);
     }
 
     /// UX ROUND 10 completion report: junk count, bytes moved to the bin,
@@ -470,6 +483,47 @@ public class CleanViewModelTests
         Assert.Equal("", vm.ReportDiskText);
         Assert.False(vm.HasReportReasons);
         Assert.Equal("", vm.ProblemsText);
+    }
+
+    /// REVIEW ROUND 1 (C1): a stale level-clean banner offered "Geri al"
+    /// for bin entries the simple clean's auto-purge could destroy (same
+    /// regenerating cache paths, recycled again). The simple clean must
+    /// dismiss the banner and drop its undo window before touching the bin.
+    [Fact]
+    public async Task SimpleClean_DismissesTheStaleLevelBanner_AndItsUndo()
+    {
+        var (vm, _, bin, state) = Build(Host());
+        await state.ScanAsync();
+        await vm.CleanLevelAsync(vm.Levels.Single(l => l.Level == CleanupLevel.Safe));
+        Assert.True(vm.HasBanner);            // the level clean's banner is up
+
+        await vm.CleanSimpleAsync();
+
+        Assert.False(vm.HasBanner);
+        Assert.False(vm.UndoCommand.CanExecute(null));
+        Assert.False(vm.ReclaimCommand.CanExecute(null));
+        // and no restore was attempted against possibly-purged entries
+        Assert.Empty(bin.Restored);
+    }
+
+    /// REVIEW ROUND 1 (I4): the bin is snapshotted BEFORE recycling — the
+    /// payload identities already matching the planned paths belong to the
+    /// user's own earlier deletions and are excluded from the auto-purge.
+    [Fact]
+    public async Task SimpleClean_SnapshotsBinFirst_AndExcludesPreExistingItems()
+    {
+        var (vm, _, bin, state) = Build(SimpleHost());
+        bin.PreExistingIds.Add(@"C:\$Recycle.Bin\S-1-5-21\$RUSER01.tmp");
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        // the snapshot asked about exactly the planned safe-default items…
+        var query = Assert.Single(bin.IdQueries);
+        Assert.Equal(new[] { @"C:\x\user-temp\item", @"C:\x\discord-cache\item" }, query);
+        // …and the purge was handed those pre-existing identities to skip
+        var purge = Assert.Single(bin.PurgeCalls);
+        Assert.Equal(new[] { @"C:\$Recycle.Bin\S-1-5-21\$RUSER01.tmp" }, purge.Exclude);
     }
 
     /// ROUND 12 partial-purge honesty: freed = only the bytes that actually

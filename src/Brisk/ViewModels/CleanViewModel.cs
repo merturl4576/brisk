@@ -292,10 +292,17 @@ public sealed class CleanViewModel : ViewModelBase
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
+            // A stale level-clean banner must die HERE (review round 1):
+            // its "Geri al" points at bin entries this clean's auto-purge
+            // could destroy (same regenerating cache paths, recycled again)
+            // — an undo offer for permanently deleted data is a lie.
+            Dismiss();
+            _lastRecycled = System.Array.Empty<string>();
             // Live progress starts from what the card currently promises;
             // the engine's per-entry stream ticks it down to the truth.
-            _plannedItems = snapshot.Cleaner.Targets
-                .Where(CleanService.IsSafeDefault).Sum(t => t.Items.Count);
+            var safeDefaults = snapshot.Cleaner.Targets
+                .Where(CleanService.IsSafeDefault).ToList();
+            _plannedItems = safeDefaults.Sum(t => t.Items.Count);
             _processedItems = 0;
             _cleanedBytes = 0;
             _countdownStartBytes = _simpleTotalBytes;
@@ -309,6 +316,15 @@ public sealed class CleanViewModel : ViewModelBase
             // this run's report even after the closing rescan moves on.
             var appHeld = AppHeldReasons(snapshot.Cleaner);
             var freeBefore = _host.FreeDiskBytes();
+            // Snapshot BEFORE recycling (review round 1): bin entries that
+            // already match the planned paths belong to the USER (an
+            // earlier deletion at the same path) — their payload identities
+            // are excluded from the auto-purge below.
+            var plannedPaths = safeDefaults
+                .SelectMany(t => t.Items).Select(i => i.Path).ToList();
+            var preExisting = plannedPaths.Count == 0
+                ? (IReadOnlyList<string>)System.Array.Empty<string>()
+                : await Task.Run(() => _bin.MatchingItemIds(plannedPaths));
             var outcome = await Task.Run(() =>
                 _cleanService.CleanSafe(snapshot.Cleaner, OnCleanEntry));
             if (outcome.WasDryRun)
@@ -320,15 +336,20 @@ public sealed class CleanViewModel : ViewModelBase
             // the raw path-by-path English dump stays off the simple face.
             ProblemsText = "";
             // ONE-STEP (round 12, owner directive): immediately purge from
-            // the bin exactly what THIS run just recycled — the session
-            // purge matches by original-path identity, so the user's own
-            // deleted files are structurally out of reach. No banner, no
-            // "reclaim" button, no undo: the space is simply free. The
-            // rescan AFTER the purge re-measures free space, so the hero's
-            // disk pod and the report's delta show the real gain.
-            var purged = outcome.RecycledPaths.Count == 0
-                ? (IReadOnlyList<string>)System.Array.Empty<string>()
-                : await Task.Run(() => _bin.Purge(outcome.RecycledPaths));
+            // the bin exactly what THIS run just recycled — matched by
+            // original path MINUS the pre-existing payload identities, so
+            // the user's own deleted files are structurally out of reach.
+            // No banner, no "reclaim" button, no undo: the space is simply
+            // free. The purge wears its own visible state, and the rescan
+            // AFTER it re-measures free space so the hero's disk pod and
+            // the report's delta show the real gain.
+            IReadOnlyList<string> purged = System.Array.Empty<string>();
+            if (outcome.RecycledPaths.Count > 0)
+            {
+                ProgressText = _loc["clean.purging"];
+                purged = await Task.Run(() =>
+                    _bin.Purge(outcome.RecycledPaths, preExisting));
+            }
             await _state.ScanAsync();
             ShowReport(outcome, purged, freeBefore, _host.FreeDiskBytes(), appHeld);
         }

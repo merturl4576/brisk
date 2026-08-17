@@ -6,7 +6,7 @@ brisk scans a Windows PC, explains why it is slow with evidence, fixes findings 
 
 Pre-release. Engine + CLI working; GUI, packaging and docs are coming. Windows 10 1809+ / Windows 11, x64.
 
-Cleaned items are moved to the Recycle Bin (nothing is permanently deleted); empty the bin yourself to reclaim the space — automatic purge with an undo window arrives with the GUI.
+Safety model: the cleaner only ever touches an allowlist of caches and temp files that Windows and your apps rebuild on their own. The GUI's one-click clean frees the space immediately (recycle + automatic purge of exactly the items it just recycled — nothing else in your Recycle Bin is touched, and there is no undo for it by design). The advanced per-level cleans and the CLI move items to the Recycle Bin and leave emptying to you. Settings and startup fixes are always undoable.
 
 ## Try it
 
