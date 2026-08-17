@@ -77,6 +77,23 @@ public sealed class CleanRunnerTests : IDisposable
         return (target, new TargetScanResult(target, items, null));
     }
 
+    /// Round 11: the scanner sizes skipped (app-running) targets so the GUI
+    /// can promise "+X when you close the app" — that sizing must NEVER leak
+    /// into a clean. A skipped scan with items cleans nothing, logs nothing.
+    [Fact]
+    public void SkippedScan_CleansNothing_EvenWithItems()
+    {
+        var (target, scan) = ScanOver(Path.Combine(_root, "skipped"), "held.tmp");
+        var skipped = scan with { SkippedReason = "WhatsApp is running — close it to include this target" };
+
+        var report = Runner().Clean(skipped, dryRun: false);
+
+        Assert.Empty(report.Entries);
+        Assert.Empty(_recycler.Recycled);
+        Assert.False(File.Exists(_logPath));   // nothing recorded — same as pre-round-11
+        _ = target;
+    }
+
     [Fact]
     public void RecyclesAuthorizedItems_AndLogs()
     {

@@ -37,15 +37,65 @@ public sealed class ScannerTests : IDisposable
     }
 
     [Fact]
-    public void RunningApp_SkipsTarget()
+    public void RunningApp_SkipsTarget_ButStillSizesIt()
     {
         var dir = Path.Combine(_root, "appcache");
         Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "held.bin"), new byte[64]);
         _processes.Running.Add("chrome");
         var result = new Scanner(new[] { Target("t2", dir, app: "chrome") }, _processes).Scan();
         var t = result.Targets.Single();
         Assert.NotNull(t.SkippedReason);
-        Assert.Empty(t.Items);
+        // Round 11: the skipped target is still SIZED (so the GUI can say
+        // "+64 B when you close chrome") but promises NOTHING.
+        Assert.Equal(64, t.TotalBytes);
+        Assert.Equal(0, t.ReclaimableBytes);
+        Assert.Equal(64, t.BlockedBytes);
+    }
+
+    /// REGRESSION PIN — the 2026-08-17 promise bug: modern WhatsApp Desktop
+    /// runs as "WhatsApp.Root", the registry excluded on "WhatsApp" only, so
+    /// the exclusion never fired and a locked 310 MB cache entered the
+    /// promise. ANY '|'-separated candidate must count as running, and the
+    /// skip reason must name the app in its human form.
+    [Fact]
+    public void RunningApp_SecondaryProcessName_AlsoSkips()
+    {
+        var dir = Path.Combine(_root, "whatsapp");
+        Directory.CreateDirectory(dir);
+        _processes.Running.Add("WhatsApp.Root");
+        var result = new Scanner(
+            new[] { Target("t-wa", dir, app: "WhatsApp|WhatsApp.Root") }, _processes).Scan();
+        var t = result.Targets.Single();
+        Assert.NotNull(t.SkippedReason);
+        Assert.StartsWith("WhatsApp is running", t.SkippedReason);
+        Assert.Equal(0, t.ReclaimableBytes);
+    }
+
+    /// Round 11 honest total: a delete-locked item stays on the shelf (the
+    /// clean still attempts it) but leaves the promise.
+    [Fact]
+    public void LockedItem_StaysInItems_ButLeavesThePromise()
+    {
+        var dir = Path.Combine(_root, "lockedcache");
+        Directory.CreateDirectory(dir);
+        var free = Path.Combine(dir, "free.bin");
+        var held = Path.Combine(dir, "held.bin");
+        File.WriteAllBytes(free, new byte[10]);
+        File.WriteAllBytes(held, new byte[30]);
+        var probe = new FakeLockProbe();
+        probe.LockedPaths.Add(held);
+
+        var result = new Scanner(
+            new[] { ContentsOnlyTarget("t-lock", dir) }, _processes, probe).Scan();
+        var t = result.Targets.Single();
+
+        Assert.Equal(2, t.Items.Count);
+        Assert.Equal(40, t.TotalBytes);
+        Assert.Equal(10, t.ReclaimableBytes);
+        Assert.Equal(30, t.BlockedBytes);
+        Assert.True(t.Items.Single(i => i.Path == held).Locked);
+        Assert.False(t.Items.Single(i => i.Path == free).Locked);
     }
 
     [Fact]
@@ -131,4 +181,11 @@ public sealed class ScannerTests : IDisposable
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
+}
+
+public sealed class FakeLockProbe : ILockProbe
+{
+    public HashSet<string> LockedPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool IsLockedForDelete(string path, System.Threading.CancellationToken ct = default)
+        => LockedPaths.Contains(path);
 }

@@ -34,7 +34,8 @@ public static class Program
             new RealProcessLister(), dataDir);
         var log = new ActionLog(Path.Combine(dataDir, "action-log.jsonl"));
         var fixRunner = new FixRunner(new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl")), log);
-        var scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister());
+        var scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(),
+            new DeleteLockProbe());
         bool IsElevated() => new WindowsPrincipal(WindowsIdentity.GetCurrent())
             .IsInRole(WindowsBuiltInRole.Administrator);
         var cleanRunner = new CleanRunner(new SafetyValidator(), new WindowsRecycler(),
@@ -104,9 +105,11 @@ public static class Program
                     {
                         id = t.Target.Id,
                         bytes = t.TotalBytes,
+                        reclaimableBytes = t.ReclaimableBytes,
                         skipped = t.SkippedReason,
                     }),
                     totalBytes = scan.TotalBytes,
+                    reclaimableBytes = scan.ReclaimableBytes,
                 },
             };
             Console.WriteLine(JsonSerializer.Serialize(payload));
@@ -125,9 +128,12 @@ public static class Program
             Console.WriteLine($"    {f.Evidence}");
         }
 
+        // ReclaimableBytes, not TotalBytes: the printed promise counts only
+        // what 'brisk clean' can actually take right now (running-app and
+        // delete-locked content stays out — the round-11 honesty rule).
         long SafeBytes(CleanupLevel level) => scan.Targets
             .Where(t => t.Target.Level == level)
-            .Sum(t => t.TotalBytes);
+            .Sum(t => t.ReclaimableBytes);
 
         Console.WriteLine(
             $"Reclaimable — Safe: {Fmt.Bytes(SafeBytes(CleanupLevel.Safe))}, " +

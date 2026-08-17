@@ -15,11 +15,17 @@ public sealed class Scanner
 
     private readonly IReadOnlyList<CleanupTarget> _targets;
     private readonly IProcessLister _processes;
+    private readonly ILockProbe? _lockProbe;
 
-    public Scanner(IReadOnlyList<CleanupTarget> targets, IProcessLister processes)
+    /// lockProbe (additive, round 11): when present, every emitted item is
+    /// probed for delete-locks so ReclaimableBytes can promise honestly.
+    /// Without one (unit tests, fakes) nothing is marked locked.
+    public Scanner(IReadOnlyList<CleanupTarget> targets, IProcessLister processes,
+        ILockProbe? lockProbe = null)
     {
         _targets = targets;
         _processes = processes;
+        _lockProbe = lockProbe;
     }
 
     public ScanResult Scan(CancellationToken ct = default,
@@ -40,9 +46,12 @@ public sealed class Scanner
 
     private TargetScanResult ScanTarget(CleanupTarget target, CancellationToken ct)
     {
-        if (target.RequiresAppClosedProcess is { } app && _processes.IsRunning(app))
-            return new TargetScanResult(target, Array.Empty<ResolvedItem>(),
-                $"{app} is running — close it to include this target");
+        // ANY candidate process name counts as running (modern WhatsApp
+        // Desktop is "WhatsApp.Root" — the 2026-08-17 promise bug). A
+        // skipped target is still resolved and SIZED below: the clean never
+        // touches it (CleanRunner refuses skipped scans), but the GUI can
+        // now say what closing the app would free.
+        var appRunning = target.AppProcessCandidates.Any(_processes.IsRunning);
 
         var items = new List<ResolvedItem>();
         foreach (var template in target.PathTemplates)
@@ -57,7 +66,7 @@ public sealed class Scanner
                     // The template directory itself is never deletable for contents-only
                     // targets (SafetyValidator correctly denies it) — emit its immediate
                     // children instead, one item per child.
-                    AddChildren(items, target, path, ct);
+                    AddChildren(items, target, path, appRunning, ct);
                     continue;
                 }
 
@@ -69,16 +78,24 @@ public sealed class Scanner
                      lastWrite > DateTime.UtcNow.AddDays(-OldInstallerMinAgeDays)))
                     continue;
 
-                items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct), lastWrite));
+                items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct),
+                    lastWrite, Locked: !appRunning && IsLocked(path, ct)));
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this path on any other exception
         }
-        return new TargetScanResult(target, items, null);
+        return new TargetScanResult(target, items, appRunning
+            ? $"{target.AppDisplayName} is running — close it to include this target"
+            : null);
     }
 
-    private static void AddChildren(List<ResolvedItem> items, CleanupTarget target, string path,
-        CancellationToken ct)
+    /// Skipped-target items are never probed (the whole target is already
+    /// outside the promise); everything else asks the probe, when one exists.
+    private bool IsLocked(string path, CancellationToken ct) =>
+        _lockProbe?.IsLockedForDelete(path, ct) ?? false;
+
+    private void AddChildren(List<ResolvedItem> items, CleanupTarget target, string path,
+        bool appRunning, CancellationToken ct)
     {
         foreach (var child in Directory.EnumerateFileSystemEntries(path))
         {
@@ -92,7 +109,8 @@ public sealed class Scanner
                 DateTime? lastWrite = null;
                 try { lastWrite = File.GetLastWriteTimeUtc(child); } catch { }
 
-                items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct), lastWrite));
+                items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct),
+                    lastWrite, Locked: !appRunning && IsLocked(child, ct)));
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this child on any other exception

@@ -84,4 +84,18 @@ public class CleanupTargetRegistryTests
         var t = CleanupTargetRegistry.All.Single(t => t.Id == "docker-prune");
         Assert.True(t.RequiresExplicitOptIn);
     }
+
+    /// REGRESSION PIN (2026-08-17): modern WhatsApp Desktop's process is
+    /// "WhatsApp.Root"; with only "WhatsApp" registered, the running-app
+    /// exclusion silently never fired and a locked 310 MB cache entered the
+    /// Depolama promise. Both names must stay registered, and the display
+    /// name must stay the human one.
+    [Fact]
+    public void WhatsAppCache_CoversTheRootProcessName()
+    {
+        var t = CleanupTargetRegistry.All.Single(t => t.Id == "whatsapp-cache");
+        Assert.Contains("WhatsApp", t.AppProcessCandidates);
+        Assert.Contains("WhatsApp.Root", t.AppProcessCandidates);
+        Assert.Equal("WhatsApp", t.AppDisplayName);
+    }
 }

@@ -58,9 +58,13 @@ public static class CleanupTargetRegistry
             new[] { @"%APPDATA%\Code\Cache", @"%APPDATA%\Code\CachedData",
                     @"%APPDATA%\Code\Code Cache" },
             contents: true, regen: true, app: "Code"),
+        // Modern WhatsApp Desktop's root process is "WhatsApp.Root", not
+        // "WhatsApp" — with only the latter, the running-app exclusion never
+        // fired and a locked 310 MB WebView2 profile dir landed in the
+        // promise (the 2026-08-17 live incident). Both names count.
         T("whatsapp-cache", "WhatsApp cache", CleanupLevel.Safe, "App",
             new[] { @"%LOCALAPPDATA%\Packages\5319275A.WhatsAppDesktop_cv1g1gvanyjgm\LocalCache" },
-            contents: true, regen: true, app: "WhatsApp"),
+            contents: true, regen: true, app: "WhatsApp|WhatsApp.Root"),
         T("telegram-media-cache", "Telegram media cache", CleanupLevel.Safe, "App",
             new[] { @"%APPDATA%\Telegram Desktop\tdata\user_data\media_cache" },
             contents: true, regen: true, app: "Telegram"),

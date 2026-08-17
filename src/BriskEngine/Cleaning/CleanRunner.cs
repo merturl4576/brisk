@@ -52,6 +52,13 @@ public sealed class CleanRunner
     public CleanReport Clean(TargetScanResult scan, bool dryRun,
         Action<CleanEntry>? onEntry = null)
     {
+        // A skipped scan (its app is running) cleans NOTHING — since round
+        // 11 the scanner sizes skipped targets so the GUI can promise "+X
+        // when you close the app", and that sizing must never leak into a
+        // clean. Empty report = exactly the pre-round-11 outcome.
+        if (scan.SkippedReason is not null)
+            return new CleanReport(new List<CleanEntry>());
+
         var entries = new List<CleanEntry>();
         void Record(string path, long bytes, string action, string? reason = null)
         {

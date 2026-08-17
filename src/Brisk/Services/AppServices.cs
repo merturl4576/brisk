@@ -41,7 +41,8 @@ public static class AppServices
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl"));
         var host = new EngineHost(ctx, DiagnosticRuleRegistry.All,
-            new Scanner(CleanupTargetRegistry.All, new RealProcessLister()),
+            new Scanner(CleanupTargetRegistry.All, new RealProcessLister(),
+                new DeleteLockProbe()),
             new FixRunner(journal, log),
             new CleanRunner(new SafetyValidator(), new WindowsRecycler(), log, runner,
                 () => new System.Security.Principal.WindowsPrincipal(
