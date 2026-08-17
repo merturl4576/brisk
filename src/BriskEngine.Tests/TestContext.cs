@@ -105,8 +105,26 @@ public sealed class FakeRunningApps : IProcessLister
 
 public static class TestContext
 {
+    /// All context data dirs live under ONE per-run root that the next run
+    /// deletes first. The old CreateTempSubdirectory("brisk-ctx-") leaked a
+    /// loose directory into %TEMP% on every test, and the round-10 incident
+    /// found the app's own cleaner grinding through thousands of them for
+    /// minutes — the suite must never litter the machine it tests on.
+    internal static readonly string CtxRoot = InitCtxRoot();
+
+    private static string InitCtxRoot()
+    {
+        var root = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(), "brisk-test-ctx");
+        try { System.IO.Directory.Delete(root, recursive: true); }
+        catch (System.IO.IOException) { }             // first run, or a file in use
+        catch (UnauthorizedAccessException) { }
+        return System.IO.Directory.CreateDirectory(root).FullName;
+    }
+
     public static DiagnosticContext Empty(string? dataDir = null) => new(
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
         new FakeSensors(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
-        dataDir ?? System.IO.Directory.CreateTempSubdirectory("brisk-ctx-").FullName);
+        dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
+            CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

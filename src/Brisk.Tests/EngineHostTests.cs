@@ -119,6 +119,7 @@ public sealed class EngineHostTests : IDisposable
     private sealed class NullRecycler : IRecycler
     {
         public void Recycle(string path) { }
+        public void Recycle(IReadOnlyList<string> paths) { }
     }
 
     [Fact]

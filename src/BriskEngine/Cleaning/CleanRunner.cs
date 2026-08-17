@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using BriskEngine.Logging;
@@ -38,7 +39,18 @@ public sealed class CleanRunner
         _isElevated = isElevated;
     }
 
-    public CleanReport Clean(TargetScanResult scan, bool dryRun)
+    /// How many paths go into one shell recycle operation. The shell charges
+    /// ~200 ms of overhead per SHFileOperation CALL, so one-call-per-file
+    /// turned ~1900 small temp items into a six-minute silent grind (the
+    /// 2026-08-17 live incident); batches of this size keep the same clean
+    /// at seconds while progress callbacks still tick per chunk.
+    public const int BatchSize = 128;
+
+    /// onEntry (additive, round 10) fires for every recorded entry as it
+    /// happens, on the calling thread — the GUI's live progress. Semantics
+    /// of what gets cleaned are unchanged.
+    public CleanReport Clean(TargetScanResult scan, bool dryRun,
+        Action<CleanEntry>? onEntry = null)
     {
         var entries = new List<CleanEntry>();
         void Record(string path, long bytes, string action, string? reason = null)
@@ -48,6 +60,7 @@ public sealed class CleanRunner
             var logObj = new { ts = DateTime.UtcNow, targetId = entry.TargetId,
                 path = entry.Path, bytes = entry.Bytes, action = entry.Action, reason = entry.Reason };
             _log.Append(logObj);
+            onEntry?.Invoke(entry);
         }
 
         switch (scan.Target.Id)
@@ -76,6 +89,42 @@ public sealed class CleanRunner
                 return new CleanReport(entries);
         }
 
+        // Authorized items are recycled in shell batches; a failed batch is
+        // retried item-by-item so every path still gets an accurate action
+        // and reason ("one bad file never stops the run" holds either way).
+        var batch = new List<ResolvedItem>(BatchSize);
+        void RecycleSingle(ResolvedItem item)
+        {
+            try
+            {
+                // A path already gone was taken by the failed batch's partial
+                // shell work — that IS the recycle, not an error.
+                if (File.Exists(item.Path) || Directory.Exists(item.Path))
+                    _recycler.Recycle(item.Path);
+                Record(item.Path, item.Bytes, "recycled");
+            }
+            catch (Exception ex)
+            {
+                Record(item.Path, 0, "error", ex.Message); // one bad file never stops the run
+            }
+        }
+        void Flush()
+        {
+            if (batch.Count == 0) return;
+            try
+            {
+                _recycler.Recycle(batch.Select(i => i.Path).ToList());
+                foreach (var item in batch) Record(item.Path, item.Bytes, "recycled");
+            }
+            catch (Exception)
+            {
+                // The shell reports one failure for the whole batch; retry
+                // per item to attribute the failure to the path that earned it.
+                foreach (var item in batch) RecycleSingle(item);
+            }
+            batch.Clear();
+        }
+
         var blockedByElevation = scan.Target.RequiresElevation && !_isElevated();
         foreach (var item in scan.Items)
         {
@@ -85,16 +134,10 @@ public sealed class CleanRunner
             if (!auth.Allowed) { Record(item.Path, 0, "refused", auth.Reason); continue; }
             if (dryRun) { Record(item.Path, item.Bytes, "dry-run"); continue; }
 
-            try
-            {
-                _recycler.Recycle(item.Path);
-                Record(item.Path, item.Bytes, "recycled");
-            }
-            catch (Exception ex)
-            {
-                Record(item.Path, 0, "error", ex.Message); // one bad file never stops the run
-            }
+            batch.Add(item);
+            if (batch.Count >= BatchSize) Flush();
         }
+        Flush();
         return new CleanReport(entries);
     }
 }

@@ -10,18 +10,27 @@ using Xunit;
 
 namespace BriskEngine.Tests;
 
+/// Behaves like the shell: a successful recycle removes the path from disk,
+/// a batch processes in order and aborts at the first failing path (so a
+/// failed batch leaves real partial work behind, exactly like SHFileOperation).
 sealed class FakeRecycler : IRecycler
 {
     public List<string> Recycled { get; } = new();
-    public int CallCount { get; private set; }
-    public int ThrowUntilCall { get; set; } = -1; // -1 = never throw
+    public List<int> BatchCalls { get; } = new();
+    public HashSet<string> FailPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public void Recycle(string path)
     {
-        CallCount++;
-        if (ThrowUntilCall >= 0 && CallCount <= ThrowUntilCall)
-            throw new IOException("Fake recycler error");
+        if (FailPaths.Contains(path)) throw new IOException("Fake recycler error");
         Recycled.Add(path);
+        if (File.Exists(path)) File.Delete(path);
+        else if (Directory.Exists(path)) Directory.Delete(path, true);
+    }
+
+    public void Recycle(IReadOnlyList<string> paths)
+    {
+        BatchCalls.Add(paths.Count);
+        foreach (var path in paths) Recycle(path);
     }
 }
 
@@ -122,23 +131,61 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Contains("docker system prune -af", _runner.Commands);
     }
 
+    /// ROOT-CAUSE REGRESSION (round 10): one shell call per file cost
+    /// ~200 ms each and turned ~1900 small temp items into a six-minute
+    /// silent grind on 2026-08-17. Many items must reach the shell as
+    /// ⌈n / BatchSize⌉ batch operations, never one call per file.
     [Fact]
-    public void RecyclerThrow_RecordsError_AndContinues()
+    public void ManyItems_ReachTheShell_InBatches_NeverOneCallPerFile()
     {
-        var (_, scan) = ScanOver(Path.Combine(_root, "cache4"), "a.tmp", "b.tmp");
-        _recycler.ThrowUntilCall = 1; // throw on first call only
+        var files = Enumerable.Range(0, CleanRunner.BatchSize + 2)
+            .Select(i => $"f{i}.tmp").ToArray();
+        var (_, scan) = ScanOver(Path.Combine(_root, "big"), files);
+
         var report = Runner().Clean(scan, dryRun: false);
 
-        Assert.Equal(2, report.Entries.Count);
-        var errorEntry = report.Entries.First(e => e.Action == "error");
-        var recycledEntry = report.Entries.First(e => e.Action == "recycled");
+        Assert.Equal(new[] { CleanRunner.BatchSize, 2 }, _recycler.BatchCalls);
+        Assert.Equal(files.Length,
+            report.Entries.Count(e => e.Action == "recycled"));
+        Assert.Equal(files.Length * 10, report.RecycledBytes);
+    }
 
-        Assert.NotNull(errorEntry.Reason);
-        Assert.NotEmpty(errorEntry.Reason);
-        Assert.Single(_recycler.Recycled); // only second file was recycled
+    /// A failed batch is retried per item: the bad path gets the error, the
+    /// rest still get recycled, and paths the batch's partial shell work
+    /// already took are honestly recorded as recycled — never re-attempted.
+    [Fact]
+    public void BatchFailure_FallsBackPerItem_AttributingEachPath()
+    {
+        var (_, scan) = ScanOver(Path.Combine(_root, "cache4"),
+            "a.tmp", "b.tmp", "c.tmp");
+        var bad = Path.Combine(_root, "cache4", "b.tmp");
+        _recycler.FailPaths.Add(bad); // batch aborts here after taking a.tmp
 
-        var logLines = File.ReadAllLines(_logPath);
-        Assert.Equal(2, logLines.Length);
+        var report = Runner().Clean(scan, dryRun: false);
+
+        Assert.Equal(3, report.Entries.Count);
+        var error = Assert.Single(report.Entries, e => e.Action == "error");
+        Assert.Equal(bad, error.Path);
+        Assert.NotNull(error.Reason);
+        Assert.NotEmpty(error.Reason);
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "recycled"));
+        Assert.Equal(20, report.RecycledBytes);
+        // a.tmp went in the batch's partial work and was NOT recycled twice
+        Assert.Equal(2, _recycler.Recycled.Count);
+        Assert.Equal(3, File.ReadAllLines(_logPath).Length);
+    }
+
+    /// The additive onEntry callback (round 10) reports every entry as it
+    /// is recorded — the GUI's live progress ticks off this stream.
+    [Fact]
+    public void OnEntry_ReportsEveryEntry_InRecordOrder()
+    {
+        var (_, scan) = ScanOver(Path.Combine(_root, "cache5"), "a.tmp", "b.tmp");
+        var seen = new List<CleanEntry>();
+
+        var report = Runner().Clean(scan, dryRun: false, seen.Add);
+
+        Assert.Equal(report.Entries, seen);
     }
 
     [Fact]

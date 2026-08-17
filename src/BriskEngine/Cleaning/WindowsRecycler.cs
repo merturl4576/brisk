@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -38,5 +39,24 @@ public sealed class WindowsRecycler : IRecycler
         };
         var code = SHFileOperationW(ref op);
         if (code != 0) throw new IOException($"SHFileOperation failed ({code}) for '{path}'");
+    }
+
+    /// One SHFileOperation for the whole batch — pFrom takes a
+    /// null-separated list, and embedded nulls survive Unicode string
+    /// marshaling. This is exactly how Explorer deletes a multi-selection.
+    public void Recycle(IReadOnlyList<string> paths)
+    {
+        if (paths.Count == 0) return;
+        var op = new SHFILEOPSTRUCTW
+        {
+            wFunc = FO_DELETE,
+            pFrom = string.Join("\0", paths) + "\0\0", // double-null-terminated list
+            fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI,
+        };
+        var code = SHFileOperationW(ref op);
+        if (code != 0)
+            throw new IOException($"SHFileOperation failed ({code}) for a batch of {paths.Count} items");
+        if (op.fAnyOperationsAborted)
+            throw new IOException($"SHFileOperation aborted part of a batch of {paths.Count} items");
     }
 }
