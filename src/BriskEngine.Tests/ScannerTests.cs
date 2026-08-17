@@ -98,6 +98,38 @@ public sealed class ScannerTests : IDisposable
         Assert.False(t.Items.Single(i => i.Path == free).Locked);
     }
 
+    /// REVIEW ROUND 1 (I2): the probe budget's SCOPE is the target — every
+    /// item of one target draws from the same allowance, and each target
+    /// starts fresh. (A per-item budget let a 500-child temp dir spend
+    /// 500 × 256 handle opens per scan.)
+    [Fact]
+    public void LockProbeBudget_IsSharedAcrossOneTargetsItems_FreshPerTarget()
+    {
+        var dir1 = Path.Combine(_root, "budget1");
+        var dir2 = Path.Combine(_root, "budget2");
+        Directory.CreateDirectory(dir1);
+        Directory.CreateDirectory(dir2);
+        File.WriteAllBytes(Path.Combine(dir1, "a.bin"), new byte[1]);
+        File.WriteAllBytes(Path.Combine(dir1, "b.bin"), new byte[1]);
+        File.WriteAllBytes(Path.Combine(dir2, "c.bin"), new byte[1]);
+        var probe = new FakeLockProbe();
+
+        new Scanner(new[]
+        {
+            ContentsOnlyTarget("t-b1", dir1),
+            ContentsOnlyTarget("t-b2", dir2),
+        }, _processes, probe).Scan();
+
+        var b1 = probe.Calls.Where(c => c.Path.StartsWith(dir1)).Select(c => c.Budget)
+            .Distinct().ToList();
+        var b2 = probe.Calls.Where(c => c.Path.StartsWith(dir2)).Select(c => c.Budget)
+            .Distinct().ToList();
+        Assert.Equal(2, probe.Calls.Count(c => c.Path.StartsWith(dir1)));
+        Assert.Single(b1);            // one budget for both of target 1's items
+        Assert.Single(b2);
+        Assert.NotSame(b1[0], b2[0]); // and a fresh one for target 2
+    }
+
     [Fact]
     public void OldInstallers_FiltersByAge()
     {
@@ -185,7 +217,16 @@ public sealed class ScannerTests : IDisposable
 
 public sealed class FakeLockProbe : ILockProbe
 {
+    private readonly object _gate = new();
     public HashSet<string> LockedPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
-    public bool IsLockedForDelete(string path, System.Threading.CancellationToken ct = default)
-        => LockedPaths.Contains(path);
+    /// Every call with the budget it was handed — the scanner scans targets
+    /// in parallel, so recording is gated.
+    public List<(string Path, LockProbeBudget Budget)> Calls { get; } = new();
+
+    public bool IsLockedForDelete(string path, LockProbeBudget budget,
+        System.Threading.CancellationToken ct = default)
+    {
+        lock (_gate) Calls.Add((path, budget));
+        return LockedPaths.Contains(path);
+    }
 }

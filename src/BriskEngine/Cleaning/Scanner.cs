@@ -53,6 +53,11 @@ public sealed class Scanner
         // now say what closing the app would free.
         var appRunning = target.AppProcessCandidates.Any(_processes.IsRunning);
 
+        // ONE probe budget for the whole target (review round 1): every
+        // item draws from it, so a many-child temp dir is bounded at the
+        // target, not per item.
+        var budget = _lockProbe is null ? null : new LockProbeBudget();
+
         var items = new List<ResolvedItem>();
         foreach (var template in target.PathTemplates)
         foreach (var path in TemplateResolver.Resolve(template))
@@ -66,7 +71,7 @@ public sealed class Scanner
                     // The template directory itself is never deletable for contents-only
                     // targets (SafetyValidator correctly denies it) — emit its immediate
                     // children instead, one item per child.
-                    AddChildren(items, target, path, appRunning, ct);
+                    AddChildren(items, target, path, appRunning, budget, ct);
                     continue;
                 }
 
@@ -79,7 +84,7 @@ public sealed class Scanner
                     continue;
 
                 items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct),
-                    lastWrite, Locked: !appRunning && IsLocked(path, ct)));
+                    lastWrite, Locked: !appRunning && IsLocked(path, budget, ct)));
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this path on any other exception
@@ -90,12 +95,13 @@ public sealed class Scanner
     }
 
     /// Skipped-target items are never probed (the whole target is already
-    /// outside the promise); everything else asks the probe, when one exists.
-    private bool IsLocked(string path, CancellationToken ct) =>
-        _lockProbe?.IsLockedForDelete(path, ct) ?? false;
+    /// outside the promise); everything else asks the probe, when one
+    /// exists, drawing from the target's shared budget.
+    private bool IsLocked(string path, LockProbeBudget? budget, CancellationToken ct) =>
+        budget is not null && (_lockProbe?.IsLockedForDelete(path, budget, ct) ?? false);
 
     private void AddChildren(List<ResolvedItem> items, CleanupTarget target, string path,
-        bool appRunning, CancellationToken ct)
+        bool appRunning, LockProbeBudget? budget, CancellationToken ct)
     {
         foreach (var child in Directory.EnumerateFileSystemEntries(path))
         {
@@ -110,7 +116,7 @@ public sealed class Scanner
                 try { lastWrite = File.GetLastWriteTimeUtc(child); } catch { }
 
                 items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct),
-                    lastWrite, Locked: !appRunning && IsLocked(child, ct)));
+                    lastWrite, Locked: !appRunning && IsLocked(child, budget, ct)));
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this child on any other exception

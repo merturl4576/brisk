@@ -22,12 +22,18 @@ public sealed record CleanupTarget(
     bool BypassesRecycleBin = false,
     bool RequiresElevation = false)
 {
-    /// Every process name that counts as "this app is running".
+    /// Every process name that counts as "this app is running". Trimmed
+    /// and empties dropped (review round 1): a bare Split would let a
+    /// future registry edit like "WhatsApp | WhatsApp.Root" produce
+    /// candidates with spaces that Process.GetProcessesByName never
+    /// matches — silently reviving the exact bug this field exists to fix.
     public IReadOnlyList<string> AppProcessCandidates =>
         RequiresAppClosedProcess is { } app
-            ? app.Split('|') : System.Array.Empty<string>();
+            ? app.Split('|', System.StringSplitOptions.RemoveEmptyEntries
+                           | System.StringSplitOptions.TrimEntries)
+            : System.Array.Empty<string>();
 
     /// The name the GUI shows for this app ("WhatsApp", never "WhatsApp.Root").
     public string? AppDisplayName =>
-        RequiresAppClosedProcess is { } app ? app.Split('|')[0] : null;
+        AppProcessCandidates is { Count: > 0 } candidates ? candidates[0] : null;
 }

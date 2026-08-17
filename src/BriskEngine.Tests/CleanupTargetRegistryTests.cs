@@ -98,4 +98,47 @@ public class CleanupTargetRegistryTests
         Assert.Contains("WhatsApp.Root", t.AppProcessCandidates);
         Assert.Equal("WhatsApp", t.AppDisplayName);
     }
+
+    /// REVIEW ROUND 1 (I3) — registry invariant: every process-name
+    /// candidate of every registered target must be non-empty and trimmed,
+    /// and an app-gated target must yield at least one candidate plus a
+    /// display name. A candidate with a stray space is one that
+    /// Process.GetProcessesByName never matches — the exclusion silently
+    /// never fires, which is exactly the 310 MB WhatsApp bug reborn.
+    [Fact]
+    public void AppProcessCandidates_AreAlwaysNonEmptyAndTrimmed()
+    {
+        foreach (var t in CleanupTargetRegistry.All
+                     .Where(t => t.RequiresAppClosedProcess is not null))
+        {
+            Assert.NotEmpty(t.AppProcessCandidates);
+            Assert.NotNull(t.AppDisplayName);
+            foreach (var candidate in t.AppProcessCandidates)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(candidate),
+                    $"{t.Id}: empty process-name candidate");
+                Assert.True(candidate.Trim() == candidate,
+                    $"{t.Id}: candidate '{candidate}' is not trimmed");
+            }
+        }
+    }
+
+    /// REVIEW ROUND 1 (I3) — the parser itself defends against the
+    /// malformed shapes a future registry edit could take: spaces around
+    /// the separator and a trailing '|' must still yield exact, matchable
+    /// process names (never "" into IsRunning).
+    [Fact]
+    public void AppCandidates_SurviveSpacesAndTrailingSeparators()
+    {
+        var t = new CleanupTarget("x", "X", CleanupLevel.Safe,
+            new List<string> { @"C:\x" }, "Test",
+            RequiresAppClosedProcess: " WhatsApp | WhatsApp.Root |");
+
+        Assert.Equal(new[] { "WhatsApp", "WhatsApp.Root" }, t.AppProcessCandidates);
+        Assert.Equal("WhatsApp", t.AppDisplayName);
+
+        var degenerate = t with { RequiresAppClosedProcess = " | " };
+        Assert.Empty(degenerate.AppProcessCandidates);
+        Assert.Null(degenerate.AppDisplayName);
+    }
 }
