@@ -37,9 +37,29 @@ public sealed class SettingsTests : IDisposable
     {
         var s = Settings.Load(Path.Combine(_root, "nope", "settings.json"));
         Assert.Equal("system", s.Language);
-        Assert.Equal("system", s.Theme);
+        Assert.Equal("dark", s.Theme);   // fresh install opens the cockpit dark
         Assert.False(s.DryRun);
         Assert.False(s.StartWithWindows);
+    }
+
+    [Fact]
+    public void Load_FileWithoutThemeKey_DefaultsToDark()
+    {
+        var path = Path.Combine(_root, "no-theme.json");
+        File.WriteAllText(path, """{ "Language": "tr" }""");
+        var s = Settings.Load(path);
+        Assert.Equal("tr", s.Language);
+        Assert.Equal("dark", s.Theme);
+    }
+
+    [Theory]
+    [InlineData("light")]
+    [InlineData("system")]
+    public void Load_ExplicitThemeChoice_IsHonored(string theme)
+    {
+        var path = Path.Combine(_root, $"theme-{theme}.json");
+        File.WriteAllText(path, $$"""{ "Theme": "{{theme}}" }""");
+        Assert.Equal(theme, Settings.Load(path).Theme);
     }
 
     [Fact]

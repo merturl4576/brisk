@@ -123,14 +123,16 @@ public sealed class SecondaryViewModelTests : IDisposable
             theme => applied.Add("theme:" + theme),
             lang => applied.Add("lang:" + lang));
 
-        vm.Theme = "dark";
+        // "light" — a real change from the dark default, so the setter's
+        // no-change guard doesn't swallow the apply callback.
+        vm.Theme = "light";
         vm.Language = "tr";
         vm.DryRun = true;
         vm.StartWithWindows = true;
 
-        Assert.Equal(new[] { "theme:dark", "lang:tr" }, applied);
+        Assert.Equal(new[] { "theme:light", "lang:tr" }, applied);
         var reloaded = Settings.Load(path);
-        Assert.Equal("dark", reloaded.Theme);
+        Assert.Equal("light", reloaded.Theme);
         Assert.Equal("tr", reloaded.Language);
         Assert.True(reloaded.DryRun);
         Assert.True(reloaded.StartWithWindows);
