@@ -4,7 +4,10 @@
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
     <DockPanel Margin="18,16">
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,14">
+        <!-- Every docked band and the scroll content share the app's one
+             content column (see ContentMaxWidth in Shared.xaml). -->
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,14"
+              MaxWidth="{StaticResource ContentMaxWidth}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -50,6 +53,7 @@
             </StackPanel>
         </Grid>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10"
+                    MaxWidth="{StaticResource ContentMaxWidth}"
                     Visibility="{Binding State.IsScanning,
                         Converter={x:Static Brisk:BoolToVis.Instance}}">
             <ProgressBar IsIndeterminate="True" Height="3" BorderThickness="0"
@@ -63,6 +67,7 @@
             </StackPanel>
         </StackPanel>
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
+                   MaxWidth="{StaticResource ContentMaxWidth}"
                    Text="{Binding Message}">
             <TextBlock.Style>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
@@ -76,9 +81,10 @@
         </TextBlock>
         <!-- Emphasized completion report after a fix run on this page. -->
         <ContentControl DockPanel.Dock="Top" Focusable="False" Content="{Binding}"
+                        MaxWidth="{StaticResource ContentMaxWidth}"
                         ContentTemplate="{StaticResource CompletionReport}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+            <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
                 <ItemsControl ItemsSource="{Binding Rows}"
                               ItemTemplate="{StaticResource FindingCard}" />
                 <TextBlock Margin="0,10,0,6"

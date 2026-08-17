@@ -9,15 +9,19 @@
             <TextBlock Text="{Binding LabelKey, Converter={StaticResource LocKey}}" />
         </DataTemplate>
     </UserControl.Resources>
-    <StackPanel Margin="18,16" MaxWidth="420" HorizontalAlignment="Left">
+    <!-- The page rides the app's one content column; the form itself stays
+         a comfortable 420 wide, left-aligned within that column. -->
+    <StackPanel Margin="18,16" MaxWidth="{StaticResource ContentMaxWidth}">
         <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
                    Text="{Binding [settings.language], Source={x:Static loc:Loc.Instance}}" />
-        <ComboBox Margin="0,4,0,14" ItemsSource="{Binding LanguageOptions}"
+        <ComboBox Margin="0,4,0,14" MaxWidth="420" HorizontalAlignment="Left"
+                  MinWidth="220" ItemsSource="{Binding LanguageOptions}"
                   SelectedValue="{Binding Language}" SelectedValuePath="Value"
                   ItemTemplate="{StaticResource ChoiceTemplate}" />
         <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
                    Text="{Binding [settings.theme], Source={x:Static loc:Loc.Instance}}" />
-        <ComboBox Margin="0,4,0,14" ItemsSource="{Binding ThemeOptions}"
+        <ComboBox Margin="0,4,0,14" MaxWidth="420" HorizontalAlignment="Left"
+                  MinWidth="220" ItemsSource="{Binding ThemeOptions}"
                   SelectedValue="{Binding Theme}" SelectedValuePath="Value"
                   ItemTemplate="{StaticResource ChoiceTemplate}" />
         <CheckBox Style="{StaticResource QuietCheck}" Margin="0,6,0,10"

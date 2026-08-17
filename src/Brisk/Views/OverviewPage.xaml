@@ -91,7 +91,7 @@
         </Style>
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,26,28,24" MaxWidth="640" HorizontalAlignment="Left">
+        <StackPanel Margin="28,26,28,24" MaxWidth="{StaticResource ContentMaxWidth}">
             <!-- Cockpit hero: segmented ring + instrument pods + status
                  readout on one always-dark panel. The controls stay below,
                  on the page's normal surface. Round 7 adds the living
