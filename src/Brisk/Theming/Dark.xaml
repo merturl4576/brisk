@@ -5,6 +5,9 @@
          instrument panel no longer floats as an island — every page sits on
          the same ground. Key NAMES are the Task 8 contract; values only. -->
     <SolidColorBrush x:Key="Bg" Color="#0E1116" />
+    <!-- The nav rail sits one step below the page ground, like the recessed
+         side of an instrument bay; the content area reads as the lit panel. -->
+    <SolidColorBrush x:Key="BgRail" Color="#0B0E12" />
     <SolidColorBrush x:Key="BgElevated" Color="#151A21" />
     <SolidColorBrush x:Key="BgHover" Color="#1B2129" />
     <!-- Hairlines: ~8–10% white over Bg, pre-composed to solid graphite so

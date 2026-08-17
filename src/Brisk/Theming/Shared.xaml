@@ -779,6 +779,12 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
+    <!-- Nav item on the rail. Tag carries an optional Segoe Fluent glyph
+         (iconography, not a localizable string); items without one — the
+         brand — collapse the icon slot. Hover and the checked pill both use
+         BgElevated, the one fill that reads on the recessed BgRail in both
+         themes; selection is carried by the accent bar and the text weight,
+         the Win11 nav-view way. -->
     <Style x:Key="NavRadio" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -787,11 +793,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Grid Margin="8,4">
+                    <Grid Margin="8,2">
                         <Border x:Name="Chrome" CornerRadius="5" MinHeight="34"
                                 Background="Transparent">
-                            <ContentPresenter VerticalAlignment="Center"
-                                              HorizontalAlignment="Left" Margin="12,0" />
+                            <StackPanel Orientation="Horizontal" Margin="12,0"
+                                        VerticalAlignment="Center">
+                                <!-- FontWeight pinned: the checked state's
+                                     SemiBold must not fake-bold the icon font. -->
+                                <TextBlock x:Name="Glyph" Margin="0,0,10,0"
+                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           FontSize="14" FontWeight="Normal"
+                                           VerticalAlignment="Center"
+                                           Text="{TemplateBinding Tag}" />
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </StackPanel>
                         </Border>
                         <Rectangle x:Name="Indicator" Width="3" Height="14"
                                    RadiusX="1.5" RadiusY="1.5"
@@ -800,13 +815,17 @@
                                    Visibility="Collapsed" />
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="Tag" Value="{x:Null}">
+                            <Setter TargetName="Glyph" Property="Visibility"
+                                    Value="Collapsed" />
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Chrome" Property="Background"
                                     Value="{DynamicResource BgElevated}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource BgHover}" />
+                                    Value="{DynamicResource BgElevated}" />
                             <Setter TargetName="Indicator" Property="Visibility"
                                     Value="Visible" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
