@@ -137,7 +137,7 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Func<bool> _isDryRun;
     private readonly FixAllService _fixAll;
     private readonly Func<DiagnosticFinding, bool>? _filter;
-    private readonly IReadOnlyList<string>? _optimizedRuleIds;
+    private readonly Func<string, bool>? _doneFilter;
     private readonly Func<Task> _morphPause;
     private readonly string? _crossLinkKey;
     private string _scoreText = "—";
@@ -145,6 +145,7 @@ public sealed class HealthViewModel : ViewModelBase
     private string _message = "";
     private string _reportSummary = "";
     private string _crossLinkText = "";
+    private string _doneLead = "";
     private bool _hasCrossLink;
     private bool _createRestorePointFirst;
     private bool _busy;
@@ -157,7 +158,7 @@ public sealed class HealthViewModel : ViewModelBase
 
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
         FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null,
-        IReadOnlyList<string>? optimizedRuleIds = null, string? crossLinkKey = null,
+        Func<string, bool>? doneFilter = null, string? crossLinkKey = null,
         Func<Task>? morphPause = null)
     {
         _state = state;
@@ -166,9 +167,13 @@ public sealed class HealthViewModel : ViewModelBase
         _isDryRun = isDryRun;
         _fixAll = fixAll;
         _filter = filter;
-        _optimizedRuleIds = optimizedRuleIds;
+        _doneFilter = doneFilter;
         _crossLinkKey = crossLinkKey;
         _morphPause = morphPause ?? (() => Task.Delay(FixedMorphMs));
+        // The report block's two faces share one visibility contract; any
+        // mutation of either collection re-evaluates it (and the lead line).
+        ReportLines.CollectionChanged += (_, _) => RaiseReportState();
+        DoneRows.CollectionChanged += (_, _) => RaiseReportState();
         // Fix-all drives the same per-row states no matter which surface
         // launched it (this page, the overview, or the flyout): the walk
         // publishes per-rule progress and every page updates its own rows.
@@ -192,11 +197,11 @@ public sealed class HealthViewModel : ViewModelBase
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
     public ObservableCollection<FindingRow> AdviseRows { get; } = new();
-    /// Past-tense done labels for the configured fixable rules that have no
-    /// finding right now — "this is already in good shape", not a to-do.
-    /// Only pages given optimizedRuleIds (Performans) populate it; a rule
-    /// with an active finding shows in the findings list instead, never both.
-    public ObservableCollection<string> OptimizedRows { get; } = new();
+    /// Journal-driven report rows for this page's slice of the rules (the
+    /// doneFilter): every fix still in effect, newest first. Replaces the
+    /// round-5 static "optimized" checklist — the report claims only what
+    /// brisk actually did, straight from the journal.
+    public ObservableCollection<UndoableRow> DoneRows { get; } = new();
 
     /// Post-run completion report, same shape the overview shows (the
     /// shared CompletionReport template binds these by name).
@@ -226,6 +231,15 @@ public sealed class HealthViewModel : ViewModelBase
         get => _reportSummary;
         private set => Set(ref _reportSummary, value);
     }
+    /// The journal report's lead sentence; empty while DoneRows is empty.
+    public string DoneLead
+    {
+        get => _doneLead;
+        private set => Set(ref _doneLead, value);
+    }
+    /// The journal face shows only while no run-scoped report is on screen
+    /// and this page's journal slice has something to say.
+    public bool ShowDoneReport => ReportLines.Count == 0 && DoneRows.Count > 0;
     /// "{n} more findings in <sibling page> →" — shown only on pages built
     /// with a crossLinkKey, and only while the sibling actually has findings.
     public string CrossLinkText
@@ -351,10 +365,49 @@ public sealed class HealthViewModel : ViewModelBase
         }
     }
 
+    /// Undo launched from a journal-report row's context menu — the one
+    /// quiet path to undo on this page (the finding cards carry no undo
+    /// affordance since round 9).
+    public async Task UndoDoneAsync(UndoableRow row)
+    {
+        if (_busy) return;
+        IsBusy = true;                   // set before the first await — re-entry guard
+        try
+        {
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            var outcome = await Task.Run(() => _host.Undo(row.RuleId));
+            if (outcome.Ok)
+            {
+                Message = "";
+                ClearReport();           // a celebration of the undone fix is stale
+            }
+            else
+            {
+                Message = outcome.Message;
+            }
+            await _state.ScanAsync();   // Changed handler refreshes DoneRows
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     private void ClearReport()
     {
         ReportLines.Clear();
         ReportSummary = "";
+    }
+
+    private void RaiseReportState()
+    {
+        DoneLead = DoneRows.Count > 0
+            ? _loc.F("overview.report.live", DoneRows.Count) : "";
+        Raise(nameof(ShowDoneReport));
     }
 
     /// Row lookup for fix-all's per-rule progress. Runs on the fix-all worker
@@ -378,7 +431,8 @@ public sealed class HealthViewModel : ViewModelBase
     {
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
-        var undoable = _host.ListUndoable().Select(u => u.RuleId).ToHashSet();
+        var journal = _host.ListUndoable();
+        var undoable = journal.Select(u => u.RuleId).ToHashSet();
         Rows.Clear();
         AdviseRows.Clear();
         foreach (var finding in snapshot.Findings
@@ -389,12 +443,12 @@ public sealed class HealthViewModel : ViewModelBase
                 .Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
                     row => _ = FixAsync(row), row => _ = UndoAsync(row),
                     _ => OpenStorageRequested?.Invoke()));
-        OptimizedRows.Clear();
-        if (_optimizedRuleIds is not null)
-            foreach (var id in _optimizedRuleIds)
-                if (!snapshot.Findings.Any(f =>
-                        string.Equals(f.RuleId, id, StringComparison.OrdinalIgnoreCase)))
-                    OptimizedRows.Add(DoneLabel.For(_loc, id, $"rule.{id}.title", id));
+        DoneRows.Clear();
+        if (_doneFilter is not null)
+            foreach (var fix in journal
+                         .Where(f => _doneFilter(f.RuleId))
+                         .OrderByDescending(f => f.FixedAtUtc))
+                DoneRows.Add(new UndoableRow(fix, _loc, UndoDoneAsync));
         // The sibling findings page's count: this page's filter complemented.
         // Answers "where did my finding go?" after the category split.
         if (_crossLinkKey is not null && _filter is not null)

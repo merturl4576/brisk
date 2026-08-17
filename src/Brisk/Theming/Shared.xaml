@@ -415,6 +415,55 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Context menu (the done-report rows' quiet Undo path): same flat
+         elevated surface as the ComboBox popup and ToolTip. The default
+         Aero2 menu chrome (gradients, icon gutter) would glare on the
+         cockpit and is more furniture than one action needs. -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="4"
+                            SnapsToDevicePixels="True">
+                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="Chrome" CornerRadius="4" Background="Transparent"
+                            Padding="12,7" MinWidth="110" SnapsToDevicePixels="True">
+                        <ContentPresenter ContentSource="Header"
+                                          RecognizesAccessKey="True"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Chrome" Property="Background"
+                                    Value="{DynamicResource BgHover}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="ToolTip">
         <Setter Property="Background" Value="{DynamicResource BgElevated}" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
@@ -629,6 +678,9 @@
                                Margin="0,4,0,0" Text="{Binding Evidence}"
                                Visibility="{Binding IsDetailsShown,
                                    Converter={x:Static views:BoolToVis.Instance}}" />
+                    <!-- Fix is the only foreground action (round 9): a card
+                         never advertises Undo — that capability lives in the
+                         done-report rows' context menu, where it belongs. -->
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Button x:Name="FixButton"
                                 Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
@@ -636,13 +688,6 @@
                                 Visibility="{Binding CanFix,
                                     Converter={x:Static views:BoolToVis.Instance}}"
                                 Content="{Binding [health.fix],
-                                    Source={x:Static loc:Loc.Instance}}" />
-                        <Button x:Name="UndoButton"
-                                Style="{StaticResource GhostButton}" Margin="0,0,8,0"
-                                Command="{Binding UndoCommand}"
-                                Visibility="{Binding CanUndo,
-                                    Converter={x:Static views:BoolToVis.Instance}}"
-                                Content="{Binding [health.undo],
                                     Source={x:Static loc:Loc.Instance}}" />
                         <Button Style="{StaticResource GhostButton}"
                                 Command="{Binding OpenStorageCommand}"
@@ -660,7 +705,6 @@
                  with the state (StopStoryboard on exit). -->
             <DataTrigger Binding="{Binding IsWorking}" Value="True">
                 <Setter TargetName="FixButton" Property="IsEnabled" Value="False" />
-                <Setter TargetName="UndoButton" Property="IsEnabled" Value="False" />
                 <DataTrigger.EnterActions>
                     <BeginStoryboard x:Name="WorkingPulse">
                         <Storyboard>
@@ -681,18 +725,12 @@
                         Value="{Binding [finding.fixing],
                             Source={x:Static loc:Loc.Instance}}" />
             </DataTrigger>
-            <DataTrigger Binding="{Binding IsUndoing}" Value="True">
-                <Setter TargetName="UndoButton" Property="Content"
-                        Value="{Binding [finding.undoing],
-                            Source={x:Static loc:Loc.Instance}}" />
-            </DataTrigger>
             <!-- Fixed morph: severity dot crossfades to Good, the title to its
                  past-tense outcome, and the impact dots retire. One-shot; the
                  row keeps this face until the follow-up rescan rebuilds the
                  list (the view model delays that rescan past the morph). -->
             <DataTrigger Binding="{Binding IsFixed}" Value="True">
                 <Setter TargetName="FixButton" Property="IsEnabled" Value="False" />
-                <Setter TargetName="UndoButton" Property="IsEnabled" Value="False" />
                 <DataTrigger.EnterActions>
                     <BeginStoryboard>
                         <Storyboard>
@@ -738,61 +776,172 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
-    <!-- Post-run completion report, shared by the overview, Sağlık and
-         Performans pages (bound to any VM exposing ReportLines/ReportSummary).
-         Hidden until a run produces lines; the ✓ lead line and the closing
-         note appear only when something actually ran. Entrance: one-shot
-         fade+slide when the report (re)populates. -->
+    <!-- Report row text: a step up from Body — the report is the emotional
+         payoff of pressing Düzelt, so its lines get to be a little fuller. -->
+    <Style x:Key="ReportLine" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <!-- THE report block, shared by the overview, Sağlık and Performans
+         pages — one chrome, two faces (bound to any VM exposing
+         ReportLines/ReportSummary/DoneRows/DoneLead/ShowDoneReport):
+         · run face: the story of the action just taken (✓ result, outcome
+           lines, closing note), until the next scan starts a new story;
+         · journal face: the standing "Yapılanlar raporu" — every fix still
+           in effect, straight from the journal, newest first with dates.
+         Undo now lives ONLY here (round 9): each journal row's right-click
+         context menu (Shift+F10 with the row focused). No visible
+         affordance, no hint line — present for the one user who goes
+         looking, invisible to everyone else. The whole block collapses
+         while both faces are empty, so there is never an empty frame. -->
     <DataTemplate x:Key="CompletionReport">
         <Border x:Name="ReportChrome" CornerRadius="8" Margin="0,14,0,14"
                 Background="{DynamicResource BgElevated}"
                 BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
-                Padding="16,12">
+                Padding="16,14">
             <Border.RenderTransform>
                 <TranslateTransform />
             </Border.RenderTransform>
-            <StackPanel>
-                <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,4"
-                           Text="{Binding [overview.report.title],
-                               Source={x:Static loc:Loc.Instance}}" />
-                <!-- The ✓ and the result sentence carry the color and weight;
-                     the paragraph itself stays in the Text brush. -->
-                <DockPanel x:Name="ReportLead" Margin="0,2,0,8">
-                    <TextBlock DockPanel.Dock="Left" Text="✓" Margin="0,0,9,0"
-                               FontFamily="Segoe UI Variable Display, Segoe UI"
-                               FontSize="17" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Good}" />
-                    <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
-                               FontSize="17" FontWeight="SemiBold"
-                               Foreground="{DynamicResource Text}"
-                               TextWrapping="Wrap" Text="{Binding ReportSummary}" />
-                </DockPanel>
-                <ItemsControl ItemsSource="{Binding ReportLines}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <DockPanel Margin="0,3">
-                                <Ellipse DockPanel.Dock="Left" Width="8" Height="8"
-                                         Margin="1,0,11,0" VerticalAlignment="Center"
-                                         Fill="{DynamicResource Good}"
-                                         Visibility="{Binding IsDone,
-                                             Converter={x:Static views:BoolToVis.Instance}}" />
-                                <TextBlock Style="{StaticResource Body}"
-                                           TextWrapping="Wrap" Text="{Binding Text}" />
-                            </DockPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock x:Name="ReportEnjoy" Style="{StaticResource Muted}"
-                           Margin="0,8,0,0" TextWrapping="Wrap"
-                           Text="{Binding [overview.report.enjoy],
-                               Source={x:Static loc:Loc.Instance}}" />
-            </StackPanel>
+            <!-- A 2px Good rule on the left edge — the same accent-rule
+                 vocabulary the hero pods speak, worn in the report's own
+                 color. Identity, not ornament. -->
+            <DockPanel>
+                <Rectangle DockPanel.Dock="Left" Width="2" RadiusX="1" RadiusY="1"
+                           Margin="0,2" Fill="{DynamicResource Good}" />
+                <StackPanel Margin="14,0,0,0">
+                    <StackPanel x:Name="SessionBlock">
+                        <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,4"
+                                   Text="{Binding [overview.report.title],
+                                       Source={x:Static loc:Loc.Instance}}" />
+                        <!-- The ✓ and the result sentence carry the color and
+                             weight; the paragraph itself stays in Text. -->
+                        <DockPanel x:Name="ReportLead" Margin="0,2,0,8">
+                            <TextBlock DockPanel.Dock="Left" Text="✓" Margin="0,0,9,0"
+                                       FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Good}" />
+                            <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Text}"
+                                       TextWrapping="Wrap" Text="{Binding ReportSummary}" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding ReportLines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,4">
+                                        <Ellipse DockPanel.Dock="Left" Width="8" Height="8"
+                                                 Margin="1,0,11,0" VerticalAlignment="Center"
+                                                 Fill="{DynamicResource Good}"
+                                                 Visibility="{Binding IsDone,
+                                                     Converter={x:Static views:BoolToVis.Instance}}" />
+                                        <TextBlock Style="{StaticResource ReportLine}"
+                                                   TextWrapping="Wrap" Text="{Binding Text}" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock x:Name="ReportEnjoy" Style="{StaticResource Muted}"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Text="{Binding [overview.report.enjoy],
+                                       Source={x:Static loc:Loc.Instance}}" />
+                    </StackPanel>
+                    <StackPanel x:Name="JournalBlock">
+                        <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,4"
+                                   Text="{Binding [overview.recent],
+                                       Source={x:Static loc:Loc.Instance}}" />
+                        <DockPanel Margin="0,2,0,6">
+                            <TextBlock DockPanel.Dock="Left" Text="✓" Margin="0,0,9,0"
+                                       FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Good}" />
+                            <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Text}"
+                                       TextWrapping="Wrap" Text="{Binding DoneLead}" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding DoneRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="DoneRow" MinHeight="34" CornerRadius="6"
+                                            Padding="8,0" Margin="0,1"
+                                            Background="Transparent" Focusable="True">
+                                        <Border.RenderTransform>
+                                            <TranslateTransform />
+                                        </Border.RenderTransform>
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Command="{Binding UndoCommand}"
+                                                          Header="{Binding [health.undo],
+                                                              Source={x:Static loc:Loc.Instance}}" />
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <DockPanel VerticalAlignment="Center">
+                                            <Ellipse DockPanel.Dock="Left" Width="8" Height="8"
+                                                     Margin="1,0,11,0" VerticalAlignment="Center"
+                                                     Fill="{DynamicResource Good}" />
+                                            <TextBlock DockPanel.Dock="Right"
+                                                       Style="{StaticResource Faint}"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       Text="{Binding WhenText}" />
+                                            <TextBlock Style="{StaticResource ReportLine}"
+                                                       VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"
+                                                       Text="{Binding Title}" />
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <!-- Hover/focus only retint the row —
+                                             nothing is revealed; the context
+                                             menu is the whole story. -->
+                                        <Trigger SourceName="DoneRow" Property="IsMouseOver"
+                                                 Value="True">
+                                            <Setter TargetName="DoneRow" Property="Background"
+                                                    Value="{DynamicResource BgHover}" />
+                                        </Trigger>
+                                        <Trigger SourceName="DoneRow"
+                                                 Property="IsKeyboardFocused" Value="True">
+                                            <Setter TargetName="DoneRow" Property="Background"
+                                                    Value="{DynamicResource BgHover}" />
+                                        </Trigger>
+                                        <!-- One-shot entry for rows born of a fix
+                                             run in this session; the startup
+                                             population stays still. -->
+                                        <DataTrigger Binding="{Binding IsNew}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="DoneRow"
+                                                                         Storyboard.TargetProperty="Opacity"
+                                                                         From="0" To="1" Duration="0:0:0.2">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <CubicEase EasingMode="EaseOut" />
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                        <DoubleAnimation Storyboard.TargetName="DoneRow"
+                                                                         Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                         From="10" To="0" Duration="0:0:0.2">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <CubicEase EasingMode="EaseOut" />
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
         </Border>
         <DataTemplate.Triggers>
             <DataTrigger Binding="{Binding ReportLines.Count}" Value="0">
-                <Setter TargetName="ReportChrome" Property="Visibility"
+                <Setter TargetName="SessionBlock" Property="Visibility"
                         Value="Collapsed" />
-                <!-- Leaving the empty state = the report just populated:
+                <!-- Leaving the empty state = a run just reported:
                      play the entrance. -->
                 <DataTrigger.ExitActions>
                     <BeginStoryboard>
@@ -815,6 +964,19 @@
                     </BeginStoryboard>
                 </DataTrigger.ExitActions>
             </DataTrigger>
+            <DataTrigger Binding="{Binding ShowDoneReport}" Value="False">
+                <Setter TargetName="JournalBlock" Property="Visibility"
+                        Value="Collapsed" />
+            </DataTrigger>
+            <!-- Neither face has anything to say → no frame at all. -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding ReportLines.Count}" Value="0" />
+                    <Condition Binding="{Binding ShowDoneReport}" Value="False" />
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="ReportChrome" Property="Visibility"
+                        Value="Collapsed" />
+            </MultiDataTrigger>
             <DataTrigger Binding="{Binding ReportSummary}" Value="">
                 <Setter TargetName="ReportLead" Property="Visibility"
                         Value="Collapsed" />

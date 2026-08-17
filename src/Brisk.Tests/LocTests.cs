@@ -89,7 +89,7 @@ public class LocTests
     /// either resx falls behind.
     [Theory]
     [InlineData("overview.status.advise")]
-    [InlineData("overview.recent.hint")]
+    [InlineData("overview.report.live")]
     [InlineData("overview.report.summary")]
     [InlineData("overview.report.part.freed")]
     [InlineData("overview.report.part.startup")]
@@ -113,7 +113,6 @@ public class LocTests
     [InlineData("rule.disk-forecast.advice")]
     [InlineData("rule.orphaned-data.advice")]
     [InlineData("rule.stale-dev-caches.advice")]
-    [InlineData("performance.optimized.title")]
     [InlineData("startup.system.hint")]
     [InlineData("startup.app.teams")]
     [InlineData("startup.app.onedrive")]

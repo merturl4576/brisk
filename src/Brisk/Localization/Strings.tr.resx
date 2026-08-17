@@ -28,7 +28,7 @@
   <data name="overview.live.temp" xml:space="preserve"><value>Sıcaklık</value></data>
   <data name="overview.live.disk" xml:space="preserve"><value>Boş alan</value></data>
   <data name="overview.recent" xml:space="preserve"><value>Yapılanlar raporu</value></data>
-  <data name="overview.recent.hint" xml:space="preserve"><value>Her değişiklik geri alınabilir — bir maddenin üstüne gel</value></data>
+  <data name="overview.report.live" xml:space="preserve"><value>Bu bilgisayarda {0} iyileştirme etkin</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
@@ -56,7 +56,6 @@
   <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>
-  <data name="performance.optimized.title" xml:space="preserve"><value>İyi durumda</value></data>
   <data name="startup.title" xml:space="preserve"><value>Açılış programları</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>bu öğe değiştirilemedi — yönetici izni gerekebilir</value></data>
   <data name="startup.heavy" xml:space="preserve"><value>açılışı belirgin yavaşlatır</value></data>

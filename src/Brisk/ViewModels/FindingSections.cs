@@ -15,15 +15,15 @@ public static class FindingSections
                 "visual-effects", "startup-bloat", "ram-pressure" },
         StringComparer.OrdinalIgnoreCase);
 
-    /// Fixable performance levers that read as "already optimized" when a
-    /// scan finds nothing wrong with them — the Performans page's quiet
-    /// reassurance section (reusing the rules' past-tense done labels).
-    public static readonly IReadOnlyList<string> PerformanceOptimizable =
-        new[] { "power-plan", "browser-gpu", "hw-acceleration", "visual-effects" };
-
     public static bool IsPerformance(DiagnosticFinding finding) =>
         Performance.Contains(finding.RuleId);
 
+    /// Same split for journal entries, which only carry a rule id — drives
+    /// each page's slice of the journal-driven done report.
+    public static bool IsPerformance(string ruleId) => Performance.Contains(ruleId);
+
     public static bool IsHealth(DiagnosticFinding finding) =>
         !IsPerformance(finding);
+
+    public static bool IsHealth(string ruleId) => !IsPerformance(ruleId);
 }

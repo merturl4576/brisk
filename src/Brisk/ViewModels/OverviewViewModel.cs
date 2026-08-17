@@ -30,9 +30,10 @@ internal static class DoneLabel
     }
 }
 
-/// One line of the "What brisk did" report (the undo capability formerly
-/// living on the Log page — still there, just demoted to a hover-revealed
-/// link so the list reads as a proud report, not an undo console).
+/// One line of the "What brisk did" report. Undo capability stays on the
+/// row, but with no visible affordance at all: it lives in the row's
+/// right-click context menu (round 9) — the report reads purely as good
+/// work done, and the escape hatch is one quiet, native gesture away.
 public sealed class UndoableRow
 {
     public UndoableRow(UndoableFix fix, Loc loc, Func<UndoableRow, Task> undo,
@@ -55,10 +56,11 @@ public sealed class UndoableRow
     public RelayCommand UndoCommand { get; }
 }
 
-/// The whole-PC page: status hero, one-click actions, a "what was done"
-/// report after each action, and the recent (undoable) actions list. The
-/// raw action log is no longer a page — ActionLog keeps recording in the
-/// engine; only the undo surface lives here.
+/// The whole-PC page: status hero, one-click actions, and ONE report block
+/// with two faces — the run-scoped "what was done" story right after an
+/// action, and the journal-driven "what brisk did" report the rest of the
+/// time (every fix still in effect, with its date). The raw action log is
+/// no longer a page — ActionLog keeps recording in the engine.
 public sealed class OverviewViewModel : ViewModelBase
 {
     private readonly AppState _state;
@@ -81,6 +83,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _liveTempBadgeText = "";
     private string _liveTempCaption;
     private string _liveDiskText = "—";
+    private string _doneLead = "";
     private bool _liveBusy;
     private bool _busy;
     /// Rule ids seen in the undoable list on the previous refresh; null until
@@ -99,6 +102,10 @@ public sealed class OverviewViewModel : ViewModelBase
         _isDryRun = isDryRun;
         _liveTempCaption = loc["overview.live.temp"];
         _state.Changed += Refresh;
+        // The report block's two faces share one visibility contract; any
+        // mutation of either collection re-evaluates it (and the lead line).
+        ReportLines.CollectionChanged += (_, _) => RaiseReportState();
+        DoneRows.CollectionChanged += (_, _) => RaiseReportState();
         ScanCommand = new RelayCommand(() =>
         {
             ClearReport();   // a new scan starts a new story
@@ -113,7 +120,18 @@ public sealed class OverviewViewModel : ViewModelBase
     }
 
     public ObservableCollection<ReportLine> ReportLines { get; } = new();
-    public ObservableCollection<UndoableRow> Recent { get; } = new();
+    /// Journal-driven report rows: every fix still in effect, newest first.
+    public ObservableCollection<UndoableRow> DoneRows { get; } = new();
+    /// The journal report's lead sentence ("{n} improvements are active…");
+    /// empty while the journal is empty.
+    public string DoneLead
+    {
+        get => _doneLead;
+        private set => Set(ref _doneLead, value);
+    }
+    /// The journal face shows only while no run-scoped report is on screen
+    /// and the journal actually has something to say — never an empty frame.
+    public bool ShowDoneReport => ReportLines.Count == 0 && DoneRows.Count > 0;
     public AppState State => _state;
     public bool HasSnapshot => _state.Snapshot is not null;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
@@ -293,12 +311,19 @@ public sealed class OverviewViewModel : ViewModelBase
         ReportSummary = "";
     }
 
+    private void RaiseReportState()
+    {
+        DoneLead = DoneRows.Count > 0
+            ? _loc.F("overview.report.live", DoneRows.Count) : "";
+        Raise(nameof(ShowDoneReport));
+    }
+
     private void Refresh()
     {
-        Recent.Clear();
+        DoneRows.Clear();
         var undoable = _host.ListUndoable();
         foreach (var fix in undoable.OrderByDescending(f => f.FixedAtUtc))
-            Recent.Add(new UndoableRow(fix, _loc, UndoAsync,
+            DoneRows.Add(new UndoableRow(fix, _loc, UndoAsync,
                 isNew: _seenUndoable is { } seen && !seen.Contains(fix.RuleId)));
         _seenUndoable = undoable.Select(f => f.RuleId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);

@@ -28,36 +28,10 @@
                         ContentTemplate="{StaticResource CompletionReport}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
-                <!-- What is already in good shape — quiet past-tense rows.
-                     Doubles as the positive empty state: with no findings,
-                     all four levers land here and the page never looks bare. -->
-                <StackPanel Margin="0,0,0,14">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding OptimizedRows.Count}"
-                                             Value="0">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Style>
-                    <TextBlock Style="{StaticResource SectionLabel}" Margin="0,0,0,6"
-                               Text="{Binding [performance.optimized.title], Source={x:Static loc:Loc.Instance}}" />
-                    <ItemsControl ItemsSource="{Binding OptimizedRows}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                    <TextBlock Style="{StaticResource Muted}" Text="✓"
-                                               Foreground="{DynamicResource Good}"
-                                               Margin="0,0,8,0" />
-                                    <TextBlock Style="{StaticResource Muted}"
-                                               Text="{Binding}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                <!-- Round 5's static "optimized" checklist is gone (round 9):
+                     the shared report block above now tells this page's done
+                     story straight from the journal — brisk claims only what
+                     it actually changed. -->
                 <ItemsControl ItemsSource="{Binding Rows}"
                               ItemTemplate="{StaticResource FindingCard}" />
                 <TextBlock Margin="0,10,0,6"

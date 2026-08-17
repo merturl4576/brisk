@@ -153,50 +153,72 @@ public class HealthViewModelTests
     }
 
     [Fact]
-    public async Task OptimizedRows_ListFindingFreeLevers_NeverDuplicateFindings()
-    {
-        var loc = EnglishLoc();
-        var host = new FakeEngineHost();
-        host.NextSnapshot = TestData.Snapshot(new[]
-        {
-            // power-plan has a live finding → findings list, not "optimized"
-            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
-        });
-        var state = new AppState(host);
-        var perf = new HealthViewModel(state, host, loc, () => false,
-            new FixAllService(host), FindingSections.IsPerformance,
-            FindingSections.PerformanceOptimizable);
-        var health = new HealthViewModel(state, host, loc, () => false,
-            new FixAllService(host), FindingSections.IsHealth);
-        await state.ScanAsync();
-
-        // finding-free levers show their past-tense done labels, in order
-        Assert.Equal(new[]
-        {
-            loc["rule.browser-gpu.done"],
-            loc["rule.hw-acceleration.done"],
-            loc["rule.visual-effects.done"],
-        }, perf.OptimizedRows);
-        Assert.Equal(new[] { "power-plan" }, perf.Rows.Select(r => r.RuleId));
-        // pages without an optimized list (Sağlık) never show the section
-        Assert.Empty(health.OptimizedRows);
-    }
-
-    [Fact]
-    public async Task OptimizedRows_AllLeversClean_FillTheWholeSection()
+    public async Task DoneRows_ComeFromTheJournal_SlicedPerPage_NewestFirst()
     {
         var loc = EnglishLoc();
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot();
+        // journal: one performance fix, one health fix, out of time order
+        host.Undoable.Add(new UndoableFix("browser-gpu",
+            new DateTime(2026, 8, 14, 10, 0, 0, DateTimeKind.Utc)));
+        host.Undoable.Add(new UndoableFix("storage-sense",
+            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
+        host.Undoable.Add(new UndoableFix("power-plan",
+            new DateTime(2026, 8, 16, 10, 0, 0, DateTimeKind.Utc)));
         var state = new AppState(host);
         var perf = new HealthViewModel(state, host, loc, () => false,
             new FixAllService(host), FindingSections.IsPerformance,
-            FindingSections.PerformanceOptimizable);
+            doneFilter: FindingSections.IsPerformance);
+        var health = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsHealth,
+            doneFilter: FindingSections.IsHealth);
         await state.ScanAsync();
 
-        Assert.Empty(perf.Rows);   // the optimized rows ARE the empty state
-        Assert.Equal(4, perf.OptimizedRows.Count);
-        Assert.Contains(loc["rule.power-plan.done"], perf.OptimizedRows);
+        // each page reports its own slice, newest first, in past tense —
+        // only what brisk actually did, never a static checklist
+        Assert.Equal(new[] { "power-plan", "browser-gpu" },
+            perf.DoneRows.Select(r => r.RuleId));
+        Assert.Equal(loc["rule.power-plan.done"], perf.DoneRows[0].Title);
+        Assert.Equal(new[] { "storage-sense" },
+            health.DoneRows.Select(r => r.RuleId));
+        Assert.True(perf.ShowDoneReport);
+        Assert.Equal(loc.F("overview.report.live", 2), perf.DoneLead);
+    }
+
+    [Fact]
+    public async Task DoneRows_EmptyJournal_NoReportFace()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot();
+        var state = new AppState(host);
+        var perf = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), FindingSections.IsPerformance,
+            doneFilter: FindingSections.IsPerformance);
+        await state.ScanAsync();
+
+        Assert.Empty(perf.DoneRows);          // nothing ever fixed
+        Assert.False(perf.ShowDoneReport);    // → no empty frame
+        Assert.Equal("", perf.DoneLead);
+    }
+
+    [Fact]
+    public async Task DoneRow_Undo_CallsHost_ThenRescans()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot();
+        host.Undoable.Add(new UndoableFix("power-plan",
+            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
+        var state = new AppState(host);
+        var perf = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), FindingSections.IsPerformance,
+            doneFilter: FindingSections.IsPerformance,
+            morphPause: () => Task.CompletedTask);
+        await state.ScanAsync();
+
+        await perf.UndoDoneAsync(Assert.Single(perf.DoneRows));
+
+        Assert.Equal(new[] { "power-plan" }, host.Undone);
+        Assert.Equal(2, host.ScanCalls);
     }
 
     [Fact]
@@ -449,7 +471,7 @@ public class HealthViewModelTests
             crossLinkKey: "health.crosslink");
         var perf = new HealthViewModel(state, host, loc, () => false,
             new FixAllService(host), FindingSections.IsPerformance,
-            FindingSections.PerformanceOptimizable,
+            doneFilter: FindingSections.IsPerformance,
             crossLinkKey: "performance.crosslink");
         await state.ScanAsync();
 

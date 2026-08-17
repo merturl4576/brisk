@@ -28,7 +28,7 @@
   <data name="overview.live.temp" xml:space="preserve"><value>Temperature</value></data>
   <data name="overview.live.disk" xml:space="preserve"><value>Free space</value></data>
   <data name="overview.recent" xml:space="preserve"><value>What brisk did</value></data>
-  <data name="overview.recent.hint" xml:space="preserve"><value>Every change can be undone — hover an item</value></data>
+  <data name="overview.report.live" xml:space="preserve"><value>{0} improvements are active on this PC</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
@@ -56,7 +56,6 @@
   <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
   <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
   <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>
-  <data name="performance.optimized.title" xml:space="preserve"><value>Optimized</value></data>
   <data name="startup.title" xml:space="preserve"><value>Startup programs</value></data>
   <data name="startup.togglefailed" xml:space="preserve"><value>couldn't change this item — it may need administrator rights</value></data>
   <data name="startup.heavy" xml:space="preserve"><value>slows startup noticeably</value></data>

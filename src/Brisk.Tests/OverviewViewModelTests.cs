@@ -296,14 +296,14 @@ public class OverviewViewModelTests
     }
 
     [Fact]
-    public async Task Recent_ListsUndoables_UndoCallsHost_ThenRescans()
+    public async Task DoneReport_ListsUndoables_UndoCallsHost_ThenRescans()
     {
         var (vm, host, state) = Build();
         host.Undoable.Add(new UndoableFix("power-plan",
             new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
         await state.ScanAsync();
 
-        var row = Assert.Single(vm.Recent);
+        var row = Assert.Single(vm.DoneRows);
         Assert.Equal("power-plan", row.RuleId);
         // a completed fix reads as its outcome, never as the problem title
         Assert.Equal("Power plan switched to high performance", row.Title);
@@ -315,6 +315,36 @@ public class OverviewViewModelTests
     }
 
     [Fact]
+    public async Task DoneReport_ShowsOnlyWhileJournalHasRows_AndNoSessionReport()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+
+        // nothing ever fixed → no journal face (no empty frame)
+        await state.ScanAsync();
+        Assert.False(vm.ShowDoneReport);
+        Assert.Equal("", vm.DoneLead);
+
+        // journal rows → the journal face, with its lead sentence
+        host.Undoable.Add(new UndoableFix("power-plan",
+            new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
+        await state.ScanAsync();
+        Assert.True(vm.ShowDoneReport);
+        Assert.Equal(loc.F("overview.report.live", 1), vm.DoneLead);
+
+        // a fix run puts the run-scoped story on screen → journal face yields
+        await vm.FixAllAsync();
+        Assert.NotEmpty(vm.ReportLines);
+        Assert.False(vm.ShowDoneReport);
+
+        // the next scan starts a new story → the journal face returns
+        vm.ScanCommand.Execute(null);
+        await Task.Yield();
+        Assert.Empty(vm.ReportLines);
+        Assert.True(vm.ShowDoneReport);
+    }
+
+    [Fact]
     public async Task Undo_DryRun_BlocksWithFeedback()
     {
         var loc = EnglishLoc();
@@ -323,7 +353,7 @@ public class OverviewViewModelTests
             new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
         await state.ScanAsync();
 
-        await vm.UndoAsync(Assert.Single(vm.Recent));
+        await vm.UndoAsync(Assert.Single(vm.DoneRows));
 
         Assert.Empty(host.Undone);
         Assert.Equal(new[] { loc["dryrun.blocked"] },
@@ -348,7 +378,7 @@ public class OverviewViewModelTests
     }
 
     [Fact]
-    public async Task Recent_FlagsOnlyRowsAddedAfterTheFirstRefresh_AsNew()
+    public async Task DoneReport_FlagsOnlyRowsAddedAfterTheFirstRefresh_AsNew()
     {
         var (vm, host, state) = Build();
         host.Undoable.Add(new UndoableFix("power-plan",
@@ -356,22 +386,22 @@ public class OverviewViewModelTests
         await state.ScanAsync();
 
         // startup population: nothing animates, however old the journal is
-        Assert.False(Assert.Single(vm.Recent).IsNew);
+        Assert.False(Assert.Single(vm.DoneRows).IsNew);
 
         // a fix run adds an undoable → its row (and only its row) is new
         host.Undoable.Add(new UndoableFix("visual-effects",
             new DateTime(2026, 8, 15, 11, 0, 0, DateTimeKind.Utc)));
         await state.ScanAsync();
-        Assert.True(vm.Recent.Single(r => r.RuleId == "visual-effects").IsNew);
-        Assert.False(vm.Recent.Single(r => r.RuleId == "power-plan").IsNew);
+        Assert.True(vm.DoneRows.Single(r => r.RuleId == "visual-effects").IsNew);
+        Assert.False(vm.DoneRows.Single(r => r.RuleId == "power-plan").IsNew);
 
         // the next refresh renders it as an ordinary row — one-shot entry
         await state.ScanAsync();
-        Assert.False(vm.Recent.Single(r => r.RuleId == "visual-effects").IsNew);
+        Assert.False(vm.DoneRows.Single(r => r.RuleId == "visual-effects").IsNew);
     }
 
     [Fact]
-    public async Task Recent_RuleWithoutDoneKey_FallsBackToFixedComposition()
+    public async Task DoneReport_RuleWithoutDoneKey_FallsBackToFixedComposition()
     {
         var loc = EnglishLoc();
         var (vm, host, state) = Build();
@@ -379,7 +409,7 @@ public class OverviewViewModelTests
             new DateTime(2026, 8, 15, 10, 0, 0, DateTimeKind.Utc)));
         await state.ScanAsync();
 
-        var row = vm.Recent.Single(r => r.RuleId == "custom-x");
+        var row = vm.DoneRows.Single(r => r.RuleId == "custom-x");
         // no rule.custom-x.done and no rule.custom-x.title in the resx —
         // still an outcome via the generic composition, ruleId as last resort
         Assert.Equal(loc.F("overview.report.fixed", "custom-x"), row.Title);

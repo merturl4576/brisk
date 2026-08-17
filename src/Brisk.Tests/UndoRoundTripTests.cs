@@ -43,17 +43,22 @@ public class UndoRoundTripTests
         var overview = new OverviewViewModel(state, host, fixAll,
             new CleanService(host, new Settings()), new NoopLive(), loc, () => false);
         var health = new HealthViewModel(state, host, loc, () => false, fixAll,
-            FindingSections.IsHealth, crossLinkKey: "health.crosslink",
+            FindingSections.IsHealth, doneFilter: FindingSections.IsHealth,
+            crossLinkKey: "health.crosslink",
             morphPause: () => Task.CompletedTask);
         var perf = new HealthViewModel(state, host, loc, () => false, fixAll,
-            FindingSections.IsPerformance, FindingSections.PerformanceOptimizable,
+            FindingSections.IsPerformance,
+            doneFilter: FindingSections.IsPerformance,
             crossLinkKey: "performance.crosslink",
             morphPause: () => Task.CompletedTask);
         await state.ScanAsync();
 
         Assert.Empty(perf.Rows);                       // nothing to fix while fixed
-        Assert.Contains(loc["rule.browser-gpu.done"], perf.OptimizedRows);
-        var reportRow = Assert.Single(overview.Recent);
+        // the journal-driven done report carries the fix, on Performans only
+        Assert.Equal(loc["rule.browser-gpu.done"],
+            Assert.Single(perf.DoneRows).Title);
+        Assert.Empty(health.DoneRows);
+        var reportRow = Assert.Single(overview.DoneRows);
         Assert.Equal("browser-gpu", reportRow.RuleId);
 
         await overview.UndoAsync(reportRow);
@@ -65,14 +70,14 @@ public class UndoRoundTripTests
         Assert.Equal("browser-gpu", row.RuleId);
         Assert.False(row.IsFixed);                     // fresh Normal row
         Assert.False(row.CanUndo);                     // journal entry consumed
-        Assert.DoesNotContain(loc["rule.browser-gpu.done"], perf.OptimizedRows);
+        Assert.Empty(perf.DoneRows);   // the done report no longer claims it
         // …never on Sağlık, which instead points across the split
         Assert.DoesNotContain(health.Rows, r => r.RuleId == "browser-gpu");
         Assert.True(health.HasCrossLink);
         Assert.Equal(loc.F("health.crosslink", 1), health.CrossLinkText);
         Assert.False(perf.HasCrossLink);
         // and the undone fix left the "What brisk did" report
-        Assert.Empty(overview.Recent);
+        Assert.Empty(overview.DoneRows);
     }
 
     private sealed class NoopLive : ILiveMetrics
