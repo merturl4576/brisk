@@ -70,6 +70,12 @@ public sealed class TargetRow : ViewModelBase
     public ObservableCollection<ItemRow> Items { get; } = new();
 }
 
+/// One human-language row of the simple view ("Geçici dosyalar · 1.2 GB"):
+/// a group of safe-default targets, named in the user's words, never in
+/// tool vocabulary. Presentation only — the engine's targets, levels and
+/// default selection are untouched underneath.
+public sealed record CleanGroupRow(string Name, string SizeText);
+
 public sealed class LevelSection
 {
     public LevelSection(CleanupLevel level, string titleKey,
@@ -99,11 +105,14 @@ public sealed class CleanViewModel : ViewModelBase
     private readonly System.Func<bool> _isDryRun;
 
     private IReadOnlyList<string> _lastRecycled = new List<string>();
+    private long _simpleTotalBytes;
     private bool _busy;
     private bool _hasBanner;
     private string _bannerText = "";
     private string _problemsText = "";
     private string _lifetimeText = "";
+    private string _simpleTotalText = "—";
+    private bool _isAdvancedShown;
     private bool _restoreFailed;
 
     public CleanViewModel(AppState state, IEngineHost host, CleanService cleanService,
@@ -120,7 +129,28 @@ public sealed class CleanViewModel : ViewModelBase
         ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner);
         DismissCommand = new RelayCommand(Dismiss, () => HasBanner);
         OpenBinCommand = new RelayCommand(_bin.OpenRecycleBinUi);
+        SimpleCleanCommand = new RelayCommand(() => _ = CleanSimpleAsync(),
+            () => _simpleTotalBytes > 0);
     }
+
+    /// The simple face of the page: one reclaimable total, a few
+    /// human-language group rows, one Temizle. Everything below computes
+    /// over CleanService.IsSafeDefault — the same predicate the button
+    /// cleans through — so the promise and the action can never disagree.
+    public ObservableCollection<CleanGroupRow> SimpleGroups { get; } = new();
+    public string SimpleTotalText
+    {
+        get => _simpleTotalText;
+        private set => Set(ref _simpleTotalText, value);
+    }
+    /// The full three-level target list stays available behind "Gelişmiş";
+    /// collapsed by default — a non-technical user never has to see it.
+    public bool IsAdvancedShown
+    {
+        get => _isAdvancedShown;
+        set => Set(ref _isAdvancedShown, value);
+    }
+    public RelayCommand SimpleCleanCommand { get; }
 
     public ObservableCollection<LevelSection> Levels { get; } = new();
     public bool HasBanner { get => _hasBanner; private set { Set(ref _hasBanner, value); RaiseBannerCommands(); } }
@@ -132,6 +162,41 @@ public sealed class CleanViewModel : ViewModelBase
     public RelayCommand ReclaimCommand { get; }
     public RelayCommand DismissCommand { get; }
     public RelayCommand OpenBinCommand { get; }
+
+    /// The simple view's one button: exactly what today's safe-level
+    /// defaults would clean (CleanService.CleanSafe — the same call the
+    /// overview and flyout make). Admin-gated and opt-in targets are
+    /// structurally outside this path.
+    public async Task CleanSimpleAsync()
+    {
+        if (_busy) return;
+        _busy = true;                    // set before the first await — re-entry guard
+        try
+        {
+            var snapshot = _state.Snapshot;
+            if (snapshot is null) return;
+            var outcome = await Task.Run(() => _cleanService.CleanSafe(snapshot.Cleaner));
+            if (outcome.WasDryRun)
+            {
+                ProblemsText = _loc["dryrun.blocked"];
+                return;
+            }
+            ProblemsText = string.Join("\n", outcome.Problems);
+            _lastRecycled = outcome.RecycledPaths;
+            RestoreFailed = false;
+            if (outcome.RecycledPaths.Count > 0)
+            {
+                BannerText = _loc.F("clean.recycled",
+                    outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes));
+                HasBanner = true;
+            }
+            await _state.ScanAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     public async Task CleanLevelAsync(LevelSection section)
     {
@@ -210,12 +275,35 @@ public sealed class CleanViewModel : ViewModelBase
     {
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
+        var safeDefaults = snapshot.Cleaner.Targets
+            .Where(CleanService.IsSafeDefault).ToList();
+        _simpleTotalBytes = safeDefaults.Sum(t => t.TotalBytes);
+        SimpleTotalText = Fmt.Bytes(_simpleTotalBytes);
+        SimpleGroups.Clear();
+        foreach (var group in safeDefaults
+                     .GroupBy(t => t.Target.Category)
+                     .Select(g => (g.Key, Bytes: g.Sum(t => t.TotalBytes)))
+                     .Where(g => g.Bytes > 0)
+                     .OrderByDescending(g => g.Bytes))
+            SimpleGroups.Add(new CleanGroupRow(
+                _loc[GroupKey(group.Key)], Fmt.Bytes(group.Bytes)));
+        SimpleCleanCommand.RaiseCanExecuteChanged();
         Levels.Clear();
         Add(CleanupLevel.Safe, "clean.level.safe", snapshot);
         Add(CleanupLevel.Developer, "clean.level.developer", snapshot);
         Add(CleanupLevel.Deep, "clean.level.deep", snapshot);
         LifetimeText = _loc.F("clean.lifetime", Fmt.Bytes(_host.LifetimeReclaimedBytes()));
     }
+
+    /// Engine categories → human words. Anything the mapping doesn't know
+    /// lands under "Other" rather than leaking a technical category name.
+    private static string GroupKey(string category) => category switch
+    {
+        "System" => "clean.group.system",
+        "Browser" => "clean.group.browser",
+        "App" => "clean.group.app",
+        _ => "clean.group.other",
+    };
 
     private void Add(CleanupLevel level, string titleKey, ScanSnapshot snapshot) =>
         Levels.Add(new LevelSection(level, titleKey,

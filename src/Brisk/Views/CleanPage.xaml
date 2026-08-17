@@ -44,9 +44,106 @@
                    MaxWidth="{StaticResource ContentMaxWidth}"
                    Text="{Binding LifetimeText}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <ItemsControl MaxWidth="{StaticResource ContentMaxWidth}"
-                          ItemsSource="{Binding Levels}">
-                <ItemsControl.ItemTemplate>
+            <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
+                <!-- The simple face (round 9): one reclaimable total, one
+                     Temizle, a few human-language group rows. This is the
+                     whole page for a non-technical user; the technical
+                     three-level list waits behind "Gelişmiş" below.
+                     Presentation only — the button runs exactly today's
+                     safe-level defaults (CleanService.CleanSafe). -->
+                <Border Background="{DynamicResource BgElevated}"
+                        BorderBrush="{DynamicResource BorderBrushKey}"
+                        BorderThickness="1" CornerRadius="8" Padding="20,16">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
+                                   Text="{Binding [clean.simple.title],
+                                       Source={x:Static loc:Loc.Instance}}" />
+                        <DockPanel Margin="0,2,0,10">
+                            <Button DockPanel.Dock="Right" Padding="20,8"
+                                    FontSize="12.5" VerticalAlignment="Center"
+                                    Command="{Binding SimpleCleanCommand}"
+                                    Content="{Binding [clean.clean],
+                                        Source={x:Static loc:Loc.Instance}}">
+                                <Button.Style>
+                                    <Style TargetType="Button"
+                                           BasedOn="{StaticResource PrimaryButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding State.IsScanning}"
+                                                         Value="True">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
+                                       FontSize="34" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Text}"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding SimpleTotalText}" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding SimpleGroups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,3">
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Style="{StaticResource Muted}"
+                                                   HorizontalAlignment="Right"
+                                                   Text="{Binding SizeText}" />
+                                        <TextBlock Style="{StaticResource Muted}"
+                                                   Text="{Binding Name}" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Faint}" Margin="0,10,0,0"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding [clean.simple.hint],
+                                       Source={x:Static loc:Loc.Instance}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Power users: the full technical list, exactly as before,
+                     behind one quiet fold. -->
+                <ToggleButton IsChecked="{Binding IsAdvancedShown}" Cursor="Hand"
+                              HorizontalAlignment="Left" Margin="2,14,0,8">
+                    <ToggleButton.Template>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <StackPanel Orientation="Horizontal"
+                                        Background="Transparent">
+                                <Path x:Name="Chevron" Data="M 0 0 L 4.5 4.5 L 9 0"
+                                      StrokeThickness="1.4"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Stroke="{DynamicResource TextMuted}"
+                                      VerticalAlignment="Center" Margin="0,1,8,0"
+                                      RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </Path.RenderTransform>
+                                </Path>
+                                <TextBlock Style="{StaticResource Muted}"
+                                           Text="{Binding [clean.advanced],
+                                               Source={x:Static loc:Loc.Instance}}" />
+                            </StackPanel>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Chevron"
+                                            Property="RenderTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="180" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </ToggleButton.Template>
+                </ToggleButton>
+
+                <ItemsControl ItemsSource="{Binding Levels}"
+                              Visibility="{Binding IsAdvancedShown,
+                                  Converter={x:Static Brisk:BoolToVis.Instance}}">
+                    <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Background="{DynamicResource BgElevated}"
                                 BorderBrush="{DynamicResource BorderBrushKey}"
@@ -125,8 +222,9 @@
                             </StackPanel>
                         </Border>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </ScrollViewer>
     </DockPanel>
 </UserControl>

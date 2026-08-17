@@ -83,6 +83,13 @@
   <data name="clean.dismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="clean.elevation" xml:space="preserve"><value>Administrator required</value></data>
   <data name="clean.skipped" xml:space="preserve"><value>skipped</value></data>
+  <data name="clean.simple.title" xml:space="preserve"><value>Space you can reclaim</value></data>
+  <data name="clean.simple.hint" xml:space="preserve"><value>Only safe, self-restoring files are cleaned — everything goes to the Recycle Bin first.</value></data>
+  <data name="clean.advanced" xml:space="preserve"><value>Advanced</value></data>
+  <data name="clean.group.system" xml:space="preserve"><value>Temporary files</value></data>
+  <data name="clean.group.browser" xml:space="preserve"><value>Browser caches</value></data>
+  <data name="clean.group.app" xml:space="preserve"><value>App caches</value></data>
+  <data name="clean.group.other" xml:space="preserve"><value>Other</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
   <data name="settings.language" xml:space="preserve"><value>Language</value></data>
   <data name="settings.theme" xml:space="preserve"><value>Theme</value></data>

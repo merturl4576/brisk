@@ -82,6 +82,94 @@ public class CleanViewModelTests
         Assert.True(deep.Targets.Single(t => t.Id == "windows-temp").NeedsElevation);
     }
 
+    /// The simple face: human-language groups over EXACTLY the safe-default
+    /// predicate — skipped, opt-in, per-item and non-safe targets never
+    /// count toward the number the one-button Temizle promises.
+    private static FakeEngineHost SimpleHost()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048, category: "System"),
+            TestData.Target("discord-cache", CleanupLevel.Safe, 1024, category: "App"),
+            TestData.Target("chrome-cache", CleanupLevel.Safe, 0,
+                skipped: "chrome is running", app: "chrome", category: "Browser"),
+            TestData.Target("npm-cache", CleanupLevel.Developer, 4096,
+                category: "Package Manager"),
+            TestData.Target("old-installers", CleanupLevel.Deep, 4096, pick: true),
+            TestData.Target("windows-temp", CleanupLevel.Deep, 1024, admin: true));
+        return host;
+    }
+
+    [Fact]
+    public async Task SimpleView_AggregatesSafeDefaults_IntoHumanGroups()
+    {
+        var loc = EnglishLoc();
+        var (vm, _, _, state) = Build(SimpleHost());
+        await state.ScanAsync();
+
+        // total = safe defaults only (2 KB + 1 KB); dev/deep/skipped excluded
+        Assert.Equal("3 KB", vm.SimpleTotalText);
+        // groups in size order, in human words; the empty Browser group
+        // (chrome skipped) never renders
+        Assert.Equal(new[]
+        {
+            (loc["clean.group.system"], "2 KB"),
+            (loc["clean.group.app"], "1 KB"),
+        }, vm.SimpleGroups.Select(g => (g.Name, g.SizeText)));
+        Assert.True(vm.SimpleCleanCommand.CanExecute(null));
+        // the technical list is folded away by default
+        Assert.False(vm.IsAdvancedShown);
+    }
+
+    [Fact]
+    public async Task SimpleClean_RunsExactlyTodaysSafeDefaults_ShowsBanner_Rescans()
+    {
+        var (vm, host, _, state) = Build(SimpleHost());
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        // exactly the safe-default set — never the admin/deep/opt-in targets
+        Assert.Equal(new[] { "user-temp", "discord-cache" },
+            host.Cleans.Select(c => c.TargetId));
+        Assert.Empty(host.ElevatedRuns);
+        Assert.True(vm.HasBanner);
+        Assert.Contains("3 KB", vm.BannerText);
+        Assert.Equal(2, host.ScanCalls);
+    }
+
+    [Fact]
+    public async Task SimpleClean_DryRun_BlocksWithFeedback()
+    {
+        var host = SimpleHost();
+        var state = new AppState(host);
+        var settings = new Settings { DryRun = true };
+        var vm = new CleanViewModel(state, host,
+            new CleanService(host, settings), new FakeBin(), EnglishLoc(),
+            () => settings.DryRun);
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        Assert.Equal(EnglishLoc()["dryrun.blocked"], vm.ProblemsText);
+        Assert.False(vm.HasBanner);
+        Assert.All(host.Cleans, c => Assert.True(c.DryRun));
+    }
+
+    [Fact]
+    public async Task SimpleView_NothingToClean_DisablesTheButton()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("chrome-cache", CleanupLevel.Safe, 0,
+                skipped: "chrome is running", app: "chrome", category: "Browser"));
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+
+        Assert.Empty(vm.SimpleGroups);
+        Assert.False(vm.SimpleCleanCommand.CanExecute(null));
+    }
+
     [Fact]
     public async Task CleanLevel_CleansSelected_ShowsBanner_Rescans()
     {

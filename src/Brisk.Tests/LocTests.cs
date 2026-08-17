@@ -140,6 +140,13 @@ public class LocTests
     [InlineData("clean.target.user-temp")]
     [InlineData("clean.target.windows-temp")]
     [InlineData("tray.tooltip")]
+    [InlineData("clean.simple.title")]
+    [InlineData("clean.simple.hint")]
+    [InlineData("clean.advanced")]
+    [InlineData("clean.group.system")]
+    [InlineData("clean.group.browser")]
+    [InlineData("clean.group.app")]
+    [InlineData("clean.group.other")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

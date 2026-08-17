@@ -83,6 +83,13 @@
   <data name="clean.dismiss" xml:space="preserve"><value>Kapat</value></data>
   <data name="clean.elevation" xml:space="preserve"><value>Yönetici gerekiyor</value></data>
   <data name="clean.skipped" xml:space="preserve"><value>atlandı</value></data>
+  <data name="clean.simple.title" xml:space="preserve"><value>Temizlenebilir alan</value></data>
+  <data name="clean.simple.hint" xml:space="preserve"><value>Yalnızca güvenli, kendini yeniden oluşturan dosyalar temizlenir — her şey önce Geri Dönüşüm Kutusu'na taşınır.</value></data>
+  <data name="clean.advanced" xml:space="preserve"><value>Gelişmiş</value></data>
+  <data name="clean.group.system" xml:space="preserve"><value>Geçici dosyalar</value></data>
+  <data name="clean.group.browser" xml:space="preserve"><value>Tarayıcı önbellekleri</value></data>
+  <data name="clean.group.app" xml:space="preserve"><value>Uygulama önbellekleri</value></data>
+  <data name="clean.group.other" xml:space="preserve"><value>Diğer</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
   <data name="settings.language" xml:space="preserve"><value>Dil</value></data>
   <data name="settings.theme" xml:space="preserve"><value>Tema</value></data>
