@@ -75,7 +75,12 @@
                                                          Value="True">
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsBusy}"
+                                            <!-- IsSimpleCleanBusy, not IsBusy:
+                                                 a Gelişmiş level clean also
+                                                 raises IsBusy, and THIS
+                                                 button isn't the one working
+                                                 then. -->
+                                            <DataTrigger Binding="{Binding IsSimpleCleanBusy}"
                                                          Value="True">
                                                 <Setter Property="Content"
                                                         Value="{Binding [clean.cleaning],
@@ -97,9 +102,11 @@
                         </DockPanel>
                         <!-- Work in flight: a determinate hairline fed by the
                              engine's own entry stream, and the honest count
-                             beside it. Visible only while cleaning runs. -->
+                             beside it. Visible only while THE SIMPLE clean
+                             runs — a level clean must not light this card
+                             up with stale progress. -->
                         <DockPanel Margin="0,0,0,10"
-                                   Visibility="{Binding IsBusy,
+                                   Visibility="{Binding IsSimpleCleanBusy,
                                        Converter={x:Static Brisk:BoolToVis.Instance}}">
                             <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0"
                                        Style="{StaticResource Faint}"

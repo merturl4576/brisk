@@ -453,7 +453,7 @@ public class CleanViewModelTests
     }
 
     [Fact]
-    public async Task SimpleClean_DryRun_ShowsNoReport()
+    public async Task SimpleClean_DryRun_ShowsNoReport_AndNeverMovesTheTotal()
     {
         var host = SimpleHost();
         var state = new AppState(host);
@@ -468,5 +468,50 @@ public class CleanViewModelTests
         Assert.False(vm.HasReport);
         Assert.False(vm.IsBusy);
         Assert.Equal(EnglishLoc()["dryrun.blocked"], vm.ProblemsText);
+        // round-10 review: a dry run reclaims NOTHING — the big number must
+        // still promise the full amount, not a counted-down "0 B"
+        Assert.Equal("3 KB", vm.SimpleTotalText);
+    }
+
+    /// Round-10 review: the simple card's hairline and "Temizleniyor…"
+    /// gate on IsSimpleCleanBusy — a Gelişmiş level clean raises IsBusy
+    /// but must never light the always-visible card with the previous
+    /// simple clean's stale 100% progress.
+    [Fact]
+    public async Task CleanLevel_NeverLightsTheSimpleCardsProgress()
+    {
+        var (vm, host, _, state) = Build(SimpleHost());
+        await state.ScanAsync();
+        await vm.CleanSimpleAsync();          // leaves stale progress behind
+        Assert.Equal(1.0, vm.ProgressFraction);
+
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, _) =>
+        {
+            gate.Wait();
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+        var safe = vm.Levels.Single(l => l.Level == CleanupLevel.Safe);
+        var run = vm.CleanLevelAsync(safe);
+
+        Assert.True(vm.IsBusy);               // the app IS busy…
+        Assert.False(vm.IsSimpleCleanBusy);   // …but the simple card stays dark
+
+        gate.Set();
+        await run;
+        Assert.False(vm.IsBusy);
+        Assert.False(vm.IsSimpleCleanBusy);
+    }
+
+    /// Round-10 review: the big total's push cadence must outlast
+    /// NumeralTick's slide, or every push restarts the animation mid-flight
+    /// and the numeral strobes instead of ticking.
+    [Fact]
+    public void TotalPushCadence_OutlastsTheNumeralTickAnimation()
+    {
+        Assert.True(CleanViewModel.TotalPushMs > Brisk.Views.NumeralTick.DurationMs);
+        Assert.True(CleanViewModel.TotalPushMs >= CleanViewModel.ProgressPushMs);
     }
 }

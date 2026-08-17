@@ -92,37 +92,65 @@ public sealed class CleanRunner
         // Authorized items are recycled in shell batches; a failed batch is
         // retried item-by-item so every path still gets an accurate action
         // and reason ("one bad file never stops the run" holds either way).
+        //
+        // Attribution is OBSERVATION-based (round-10 review): "recycled" is
+        // recorded only for a path that existed before the shell attempt
+        // AND is gone after it. FOF_NOERRORUI lets the shell skip a path
+        // without failing the call, and the scan-to-clean gap lets an app
+        // take its own temp file back — neither may be claimed as our work
+        // (a phantom recycle poisons undo and inflates the freed bytes).
+        // Only the shell call sits in a try: recording must never run twice
+        // because a log write or progress callback threw mid-loop.
         var batch = new List<ResolvedItem>(BatchSize);
         void RecycleSingle(ResolvedItem item)
         {
-            try
+            if (!Exists(item.Path))
             {
-                // A path already gone was taken by the failed batch's partial
-                // shell work — that IS the recycle, not an error.
-                if (File.Exists(item.Path) || Directory.Exists(item.Path))
-                    _recycler.Recycle(item.Path);
+                // Existed when this flush began, gone now: the failed
+                // batch's partial shell work took it — that IS the recycle.
                 Record(item.Path, item.Bytes, "recycled");
+                return;
             }
-            catch (Exception ex)
-            {
-                Record(item.Path, 0, "error", ex.Message); // one bad file never stops the run
-            }
+            var ok = true;
+            Exception? failure = null;
+            try { _recycler.Recycle(item.Path); }
+            catch (Exception ex) { ok = false; failure = ex; } // one bad file never stops the run
+            if (!ok)
+                Record(item.Path, 0, "error", failure!.Message);
+            else if (Exists(item.Path))
+                Record(item.Path, 0, "error", "the shell skipped this path");
+            else
+                Record(item.Path, item.Bytes, "recycled");
         }
         void Flush()
         {
             if (batch.Count == 0) return;
-            try
+            var present = new List<ResolvedItem>(batch.Count);
+            foreach (var item in batch)
             {
-                _recycler.Recycle(batch.Select(i => i.Path).ToList());
-                foreach (var item in batch) Record(item.Path, item.Bytes, "recycled");
-            }
-            catch (Exception)
-            {
-                // The shell reports one failure for the whole batch; retry
-                // per item to attribute the failure to the path that earned it.
-                foreach (var item in batch) RecycleSingle(item);
+                if (Exists(item.Path)) present.Add(item);
+                else Record(item.Path, 0, "error",
+                    "no longer exists (nothing to recycle)");
             }
             batch.Clear();
+            if (present.Count == 0) return;
+            var batchOk = true;
+            try { _recycler.Recycle(present.Select(i => i.Path).ToList()); }
+            catch (Exception) { batchOk = false; }
+            if (batchOk)
+            {
+                foreach (var item in present)
+                {
+                    if (Exists(item.Path))
+                        Record(item.Path, 0, "error", "the shell skipped this path");
+                    else
+                        Record(item.Path, item.Bytes, "recycled");
+                }
+                return;
+            }
+            // The shell reports one failure for the whole batch; retry per
+            // item to attribute the failure to the path that earned it.
+            foreach (var item in present) RecycleSingle(item);
         }
 
         var blockedByElevation = scan.Target.RequiresElevation && !_isElevated();
@@ -140,4 +168,7 @@ public sealed class CleanRunner
         Flush();
         return new CleanReport(entries);
     }
+
+    private static bool Exists(string path) =>
+        File.Exists(path) || Directory.Exists(path);
 }

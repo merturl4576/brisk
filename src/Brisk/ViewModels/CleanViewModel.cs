@@ -108,7 +108,11 @@ public sealed class CleanViewModel : ViewModelBase
 
     /// Progress pushes are throttled to this cadence so a fast batch of
     /// entries never floods the dispatcher; the final entry always pushes.
-    internal const int ProgressPushMs = 80;
+    public const int ProgressPushMs = 80;
+    /// The big total gets its OWN, slower cadence: every text change
+    /// restarts NumeralTick's 170 ms slide, so pushing at the progress
+    /// cadence would strobe the numeral mid-animation (round-10 review).
+    public const int TotalPushMs = 300;
     /// Below this, a free-space delta is measurement noise, not a story.
     internal const long DiskGainVisibleBytes = 10L << 20;
 
@@ -123,6 +127,7 @@ public sealed class CleanViewModel : ViewModelBase
     private bool _isAdvancedShown;
     private bool _restoreFailed;
     private bool _isBusy;
+    private bool _isSimpleCleanBusy;
     private double _progressFraction;
     private string _progressText = "";
     private bool _hasReport;
@@ -134,6 +139,7 @@ public sealed class CleanViewModel : ViewModelBase
     private long _cleanedBytes;
     private long _countdownStartBytes;
     private long _lastProgressPush;
+    private long _lastTotalPush;
     private long _reportFreeBefore;
 
     public CleanViewModel(AppState state, IEngineHost host, CleanService cleanService,
@@ -186,6 +192,15 @@ public sealed class CleanViewModel : ViewModelBase
         {
             if (Set(ref _isBusy, value)) SimpleCleanCommand.RaiseCanExecuteChanged();
         }
+    }
+    /// The simple card's hairline, counter and "Temizleniyor…" swap bind
+    /// HERE, not to IsBusy: a Gelişmiş level clean also raises IsBusy, and
+    /// the always-visible card must never light up with the previous simple
+    /// clean's stale progress (round-10 review).
+    public bool IsSimpleCleanBusy
+    {
+        get => _isSimpleCleanBusy;
+        private set => Set(ref _isSimpleCleanBusy, value);
     }
     /// Real progress, never theater: processed / planned items, advanced
     /// only by the engine's own per-entry stream.
@@ -244,6 +259,7 @@ public sealed class CleanViewModel : ViewModelBase
         if (_busy) return;
         _busy = true;                    // set before the first await — re-entry guard
         IsBusy = true;
+        IsSimpleCleanBusy = true;
         try
         {
             var snapshot = _state.Snapshot;
@@ -256,6 +272,7 @@ public sealed class CleanViewModel : ViewModelBase
             _cleanedBytes = 0;
             _countdownStartBytes = _simpleTotalBytes;
             _lastProgressPush = 0;
+            _lastTotalPush = 0;
             ProgressFraction = 0;
             ProgressText = _loc.F("clean.progress", 0, _plannedItems);
             HasReport = false;
@@ -285,26 +302,37 @@ public sealed class CleanViewModel : ViewModelBase
         {
             _busy = false;
             IsBusy = false;
+            IsSimpleCleanBusy = false;
         }
     }
 
     /// Runs on the engine's worker thread for every recorded entry. Scalar
     /// property changes are safe cross-thread in WPF; pushes are throttled,
-    /// and the last entry always lands so the bar finishes at 100%.
+    /// and the last entry always lands so the bar finishes at 100%. Only
+    /// "recycled" bytes tick the total down — a dry run reclaims nothing,
+    /// so the big number must not move (round-10 review).
     private void OnCleanEntry(CleanEntry entry)
     {
         var processed = Interlocked.Increment(ref _processedItems);
-        if (entry.Action is "recycled" or "dry-run")
+        if (entry.Action == "recycled")
             Interlocked.Add(ref _cleanedBytes, entry.Bytes);
         var now = System.Environment.TickCount64;
-        if (processed < _plannedItems && now - _lastProgressPush < ProgressPushMs)
-            return;
-        _lastProgressPush = now;
-        ProgressFraction = _plannedItems == 0
-            ? 1 : (double)processed / _plannedItems;
-        ProgressText = _loc.F("clean.progress", processed, _plannedItems);
-        SimpleTotalText = Fmt.Bytes(System.Math.Max(0,
-            _countdownStartBytes - Interlocked.Read(ref _cleanedBytes)));
+        var final = processed >= _plannedItems;
+        if (final || now - _lastProgressPush >= ProgressPushMs)
+        {
+            _lastProgressPush = now;
+            ProgressFraction = _plannedItems == 0
+                ? 1 : (double)processed / _plannedItems;
+            ProgressText = _loc.F("clean.progress", processed, _plannedItems);
+        }
+        // The numeral rides its own slower cadence so each NumeralTick
+        // slide (170 ms) finishes before the next value lands.
+        if (final || now - _lastTotalPush >= TotalPushMs)
+        {
+            _lastTotalPush = now;
+            SimpleTotalText = Fmt.Bytes(System.Math.Max(0,
+                _countdownStartBytes - Interlocked.Read(ref _cleanedBytes)));
+        }
     }
 
     private void ShowReport(CleanOutcome outcome, long freeBefore, long freeAfter)

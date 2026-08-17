@@ -13,15 +13,19 @@ namespace BriskEngine.Tests;
 /// Behaves like the shell: a successful recycle removes the path from disk,
 /// a batch processes in order and aborts at the first failing path (so a
 /// failed batch leaves real partial work behind, exactly like SHFileOperation).
+/// SkipPaths mimics FOF_NOERRORUI's quiet skip: the call "succeeds" but the
+/// path stays on disk — only observation can tell it was never recycled.
 sealed class FakeRecycler : IRecycler
 {
     public List<string> Recycled { get; } = new();
     public List<int> BatchCalls { get; } = new();
     public HashSet<string> FailPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public HashSet<string> SkipPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public void Recycle(string path)
     {
         if (FailPaths.Contains(path)) throw new IOException("Fake recycler error");
+        if (SkipPaths.Contains(path)) return;   // quiet shell skip
         Recycled.Add(path);
         if (File.Exists(path)) File.Delete(path);
         else if (Directory.Exists(path)) Directory.Delete(path, true);
@@ -186,6 +190,74 @@ public sealed class CleanRunnerTests : IDisposable
         var report = Runner().Clean(scan, dryRun: false, seen.Add);
 
         Assert.Equal(report.Entries, seen);
+    }
+
+    /// CRITICAL REGRESSION (round-10 review): a scanned path its owning app
+    /// already took back (routine in %TEMP%) must never be recorded as OUR
+    /// recycle — a phantom RecycledPaths entry poisons undo (restore counts
+    /// paths the bin never held → false "restore failed") and inflates the
+    /// freed bytes. Layered defense: the fail-closed validator refuses a
+    /// path whose real path no longer resolves (this test), and Flush's
+    /// before/after observation covers the authorize→flush and quiet-skip
+    /// windows (the tests around this one). Either way: 0 bytes, never
+    /// recycled, never sent to the shell.
+    [Fact]
+    public void PathGoneBeforeClean_NeverBecomesAPhantomRecycle()
+    {
+        var (_, scan) = ScanOver(Path.Combine(_root, "cache6"),
+            "a.tmp", "b.tmp", "c.tmp");
+        var gone = Path.Combine(_root, "cache6", "b.tmp");
+        File.Delete(gone);                    // the app took its file back
+
+        var report = Runner().Clean(scan, dryRun: false);
+
+        var refused = Assert.Single(report.Entries, e => e.Action == "refused");
+        Assert.Equal(gone, refused.Path);
+        Assert.Equal(0, refused.Bytes);
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "recycled"));
+        Assert.DoesNotContain(report.Entries,
+            e => e.Action == "recycled" && e.Path == gone);
+        Assert.Equal(20, report.RecycledBytes);
+        Assert.Equal(2, Assert.Single(_recycler.BatchCalls)); // never sent to the shell
+    }
+
+    /// CRITICAL REGRESSION (round-10 review): FOF_NOERRORUI lets the shell
+    /// quietly skip a path while the batch call still "succeeds" — recycled
+    /// is recorded only when the path is OBSERVED gone afterwards.
+    [Fact]
+    public void ShellQuietSkip_IsAnError_NotARecordedRecycle()
+    {
+        var (_, scan) = ScanOver(Path.Combine(_root, "cache7"),
+            "a.tmp", "b.tmp", "c.tmp");
+        var skipped = Path.Combine(_root, "cache7", "b.tmp");
+        _recycler.SkipPaths.Add(skipped);     // "success", file still on disk
+
+        var report = Runner().Clean(scan, dryRun: false);
+
+        var error = Assert.Single(report.Entries, e => e.Action == "error");
+        Assert.Equal(skipped, error.Path);
+        Assert.Equal(0, error.Bytes);
+        Assert.Contains("skipped", error.Reason);
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "recycled"));
+        Assert.Equal(20, report.RecycledBytes);
+        Assert.True(File.Exists(skipped));    // and the file is honestly still there
+    }
+
+    /// Round-10 review: only the shell call sits inside the try — a log
+    /// write or progress callback that throws mid-recording must surface,
+    /// never re-run the loop and record the same items twice.
+    [Fact]
+    public void RecordingFailure_Surfaces_AndNeverDoubleRecords()
+    {
+        var (_, scan) = ScanOver(Path.Combine(_root, "cache8"), "a.tmp", "b.tmp");
+
+        Assert.Throws<InvalidOperationException>(() => Runner().Clean(
+            scan, dryRun: false,
+            _ => throw new InvalidOperationException("progress sink died")));
+
+        // exactly ONE journal line: the entry recorded before the callback
+        // threw — the old catch-around-the-loop would have re-recorded it
+        Assert.Single(File.ReadAllLines(_logPath));
     }
 
     [Fact]
