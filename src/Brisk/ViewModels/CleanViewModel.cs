@@ -122,6 +122,13 @@ public sealed class CleanViewModel : ViewModelBase
     internal const long DiskGainVisibleBytes = 10L << 20;
 
     private IReadOnlyList<string> _lastRecycled = new List<string>();
+    /// Payload identities that were ALREADY in the bin at the same original
+    /// paths before the last level clean ran — the banner's "Alanı şimdi
+    /// boşalt" must exclude them (fix round 2: with $I matching live, an
+    /// unexcluded banner purge could take a USER's earlier deletion — and a
+    /// Deep level clean targets Downloads, so that collateral would be user
+    /// data, not cache).
+    private IReadOnlyList<string> _lastPreExisting = System.Array.Empty<string>();
     private long _simpleTotalBytes;
     private bool _busy;
     private bool _hasBanner;
@@ -298,6 +305,7 @@ public sealed class CleanViewModel : ViewModelBase
             // — an undo offer for permanently deleted data is a lie.
             Dismiss();
             _lastRecycled = System.Array.Empty<string>();
+            _lastPreExisting = System.Array.Empty<string>();
             // Live progress starts from what the card currently promises;
             // the engine's per-entry stream ticks it down to the truth.
             var safeDefaults = snapshot.Cleaner.Targets
@@ -494,6 +502,15 @@ public sealed class CleanViewModel : ViewModelBase
                     : row.Scan);
             }
 
+            // Snapshot BEFORE recycling (fix round 2, symmetric with the
+            // simple flow): bin entries already matching the paths this
+            // level clean is about to recycle belong to the USER — the
+            // banner's "Alanı şimdi boşalt" must never take them.
+            var plannedPaths = scans
+                .SelectMany(s => s.Items).Select(i => i.Path).ToList();
+            _lastPreExisting = plannedPaths.Count == 0
+                ? System.Array.Empty<string>()
+                : await Task.Run(() => _bin.MatchingItemIds(plannedPaths));
             var outcome = await Task.Run(() => _cleanService.CleanTargets(scans));
             problems.AddRange(outcome.Problems);
             _lastRecycled = outcome.RecycledPaths;
@@ -524,10 +541,12 @@ public sealed class CleanViewModel : ViewModelBase
         _ = _state.ScanAsync();
     }
 
-    /// Banner-only since round 12: purge what a LEVEL clean recycled.
+    /// Banner-only since round 12: purge what a LEVEL clean recycled —
+    /// minus the payload identities that were already in the bin before it
+    /// ran (fix round 2: the user's own earlier deletions stay untouched).
     private void Reclaim()
     {
-        _bin.Purge(_lastRecycled);
+        _bin.Purge(_lastRecycled, _lastPreExisting);
         Dismiss();
     }
 

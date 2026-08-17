@@ -372,6 +372,32 @@ public class CleanViewModelTests
         Assert.False(vm.HasBanner);
     }
 
+    /// REVIEW FIX ROUND 2: the banner's "Alanı şimdi boşalt" purges with
+    /// the SAME pre-existing-identity exclusion the simple flow uses — a
+    /// level clean snapshots the bin before recycling, and a user's earlier
+    /// deletion at the same original path (a Deep clean targets Downloads —
+    /// user data) is structurally out of the banner purge's reach.
+    [Fact]
+    public async Task Reclaim_ExcludesBinItemsThatPredateTheLevelClean()
+    {
+        var (vm, _, bin, state) = Build(Host());
+        bin.PreExistingIds.Add(@"C:\$Recycle.Bin\S-1-5-21\$RUSERDL.exe");
+        await state.ScanAsync();
+
+        await vm.CleanLevelAsync(vm.Levels.Single(l => l.Level == CleanupLevel.Safe));
+
+        // the snapshot ran BEFORE the clean, over the paths it would recycle
+        var query = Assert.Single(bin.IdQueries);
+        Assert.Equal(new[] { @"C:\x\user-temp\item" }, query);
+
+        vm.ReclaimCommand.Execute(null);
+
+        // …and the banner purge was handed those identities to skip
+        var purge = Assert.Single(bin.PurgeCalls);
+        Assert.Equal(new[] { @"C:\x\user-temp\item" }, purge.Paths);
+        Assert.Equal(new[] { @"C:\$Recycle.Bin\S-1-5-21\$RUSERDL.exe" }, purge.Exclude);
+    }
+
     [Fact]
     public async Task CleanLevel_ReentrantCallWhileBusy_IsNoOp()
     {
