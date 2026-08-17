@@ -40,6 +40,34 @@ public class HealthViewModelTests
             new FixAllService(host), morphPause: () => Task.CompletedTask), host, state);
     }
 
+    /// ROUND 11 page hero: the numeric score twin drives the gauge sweep,
+    /// and the status sentence speaks over THIS page's slice of findings.
+    [Fact]
+    public async Task PageHero_ScoreValueAndStatusLine_FollowThePagesSlice()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        Assert.Equal(0.0, vm.ScoreValue);   // empty track before the first scan
+        await state.ScanAsync();
+
+        Assert.Equal(72.0, vm.ScoreValue);
+        Assert.Equal(loc["overview.status.attention"], vm.StatusLine);
+
+        // fixables gone, one advise left → positive with the count
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("custom-x", Severity.Info, RuleCategory.Advise,
+                stars: 2, canFix: false),
+        });
+        await state.ScanAsync();
+        Assert.Equal(loc.F("overview.status.advise", 1), vm.StatusLine);
+
+        // nothing at all → plain good news
+        host.NextSnapshot = TestData.Snapshot();
+        await state.ScanAsync();
+        Assert.Equal(loc["overview.status.good"], vm.StatusLine);
+    }
+
     [Fact]
     public async Task Rows_MapFindings_TitlesLocalized_WithEngineFallback()
     {

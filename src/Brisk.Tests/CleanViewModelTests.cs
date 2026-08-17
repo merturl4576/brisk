@@ -100,6 +100,23 @@ public class CleanViewModelTests
         return host;
     }
 
+    /// ROUND 11 page hero: the Depolama strip's pods — free disk space and
+    /// the lifetime reclaimed figure as bare values.
+    [Fact]
+    public async Task PageHero_FreeDiskAndLifetimePods_Populate()
+    {
+        var host = SimpleHost();
+        host.FreeDisk = 122L << 30;
+        host.Lifetime = 5L << 30;
+        var (vm, _, _, state) = Build(host);
+        Assert.Equal("—", vm.FreeDiskText);   // quiet dashes before the scan
+        Assert.Equal("—", vm.LifetimeValueText);
+        await state.ScanAsync();
+
+        Assert.Equal("122.0 GB", vm.FreeDiskText);
+        Assert.Equal("5.0 GB", vm.LifetimeValueText);
+    }
+
     [Fact]
     public async Task SimpleView_AggregatesSafeDefaults_IntoHumanGroups()
     {

@@ -6,9 +6,64 @@
     <DockPanel Margin="18,16">
         <!-- Every docked band and the scroll content share the app's one
              content column (see ContentMaxWidth in Shared.xaml). -->
-        <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionLabel}"
-                   Margin="0,0,0,10" MaxWidth="{StaticResource ContentMaxWidth}"
-                   Text="{Binding [perf.title], Source={x:Static loc:Loc.Instance}}" />
+        <!-- Round 11 page hero: performance posture as instruments — the
+             count of improvements actually made leads (mono numeral, the
+             journal's truth), with the waiting findings and the startup
+             load as pods. No fake score, no ambient clocks: everything
+             here is a real number that moves only when the data does. -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource HeroStrip}"
+                MaxWidth="{StaticResource ContentMaxWidth}" Margin="0,0,0,14">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center"
+                            MinWidth="120">
+                    <TextBlock Style="{StaticResource HeroScore}" FontSize="44"
+                               Foreground="{StaticResource HeroText}"
+                               Text="{Binding DoneRows.Count, Mode=OneWay}" />
+                    <TextBlock Style="{StaticResource HeroStripCaption}"
+                               Margin="2,2,0,0"
+                               Text="{Binding [perf.hero.done], Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+                <StackPanel Margin="22,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource HeroStripCaption}"
+                               Text="{Binding [perf.title], Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Margin="0,5,0,12" TextWrapping="Wrap"
+                               FontFamily="Segoe UI Variable Text, Segoe UI"
+                               FontSize="14" Foreground="{StaticResource HeroText}"
+                               Text="{Binding StatusLine}" />
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource HeroPod}" Margin="0,0,10,0">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="2"
+                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                           Fill="{StaticResource HeroAccent}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HeroPodValue}"
+                                               Text="{Binding Rows.Count, Mode=OneWay}" />
+                                    <TextBlock Style="{StaticResource HeroPodCaption}"
+                                               Margin="0,2,0,0"
+                                               Text="{Binding [perf.hero.findings], Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource HeroPod}">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="2"
+                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                           Fill="{StaticResource HeroAccent}" />
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HeroPodValue}"
+                                               Text="{Binding DataContext.Items.Count,
+                                                   ElementName=StartupSection, Mode=OneWay}" />
+                                    <TextBlock Style="{StaticResource HeroPodCaption}"
+                                               Margin="0,2,0,0"
+                                               Text="{Binding [perf.hero.startup], Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
                    MaxWidth="{StaticResource ContentMaxWidth}"
                    Text="{Binding Message}">

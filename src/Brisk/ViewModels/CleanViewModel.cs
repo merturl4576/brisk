@@ -128,6 +128,8 @@ public sealed class CleanViewModel : ViewModelBase
     private string _bannerText = "";
     private string _problemsText = "";
     private string _lifetimeText = "";
+    private string _freeDiskText = "—";
+    private string _lifetimeValueText = "—";
     private string _simpleTotalText = "—";
     private bool _isAdvancedShown;
     private bool _restoreFailed;
@@ -275,6 +277,14 @@ public sealed class CleanViewModel : ViewModelBase
     public string BannerText { get => _bannerText; private set => Set(ref _bannerText, value); }
     public string ProblemsText { get => _problemsText; private set => Set(ref _problemsText, value); }
     public string LifetimeText { get => _lifetimeText; private set => Set(ref _lifetimeText, value); }
+    /// Page-hero pods (round 11): the C: drive's free space and the
+    /// lifetime reclaimed figure, as bare values.
+    public string FreeDiskText { get => _freeDiskText; private set => Set(ref _freeDiskText, value); }
+    public string LifetimeValueText
+    {
+        get => _lifetimeValueText;
+        private set => Set(ref _lifetimeValueText, value);
+    }
     public bool RestoreFailed { get => _restoreFailed; private set => Set(ref _restoreFailed, value); }
     public RelayCommand UndoCommand { get; }
     public RelayCommand ReclaimCommand { get; }
@@ -571,7 +581,10 @@ public sealed class CleanViewModel : ViewModelBase
         Add(CleanupLevel.Safe, "clean.level.safe", snapshot);
         Add(CleanupLevel.Developer, "clean.level.developer", snapshot);
         Add(CleanupLevel.Deep, "clean.level.deep", snapshot);
-        LifetimeText = _loc.F("clean.lifetime", Fmt.Bytes(_host.LifetimeReclaimedBytes()));
+        var lifetime = _host.LifetimeReclaimedBytes();
+        LifetimeText = _loc.F("clean.lifetime", Fmt.Bytes(lifetime));
+        LifetimeValueText = Fmt.Bytes(lifetime);
+        FreeDiskText = Fmt.Bytes(_host.FreeDiskBytes());
     }
 
     /// Engine categories → human words. Anything the mapping doesn't know

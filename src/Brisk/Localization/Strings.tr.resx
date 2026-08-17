@@ -99,6 +99,11 @@
   <data name="clean.report.none" xml:space="preserve"><value>Temizlenecek bir şey yoktu — burası zaten temiz.</value></data>
   <data name="clean.report.disk" xml:space="preserve"><value>Boş disk alanı: {0} → {1}</value></data>
   <data name="clean.report.disk.gained" xml:space="preserve"><value>Boş disk alanı: {0} → {1} — {2} geri kazanıldı</value></data>
+  <data name="perf.hero.done" xml:space="preserve"><value>yapılan iyileştirme</value></data>
+  <data name="perf.hero.findings" xml:space="preserve"><value>bekleyen bulgu</value></data>
+  <data name="perf.hero.startup" xml:space="preserve"><value>açılış programı</value></data>
+  <data name="clean.hero.reclaimable" xml:space="preserve"><value>şu an temizlenebilir</value></data>
+  <data name="clean.hero.lifetime" xml:space="preserve"><value>bugüne dek temizlendi</value></data>
   <data name="clean.simple.locked.app" xml:space="preserve"><value>{0} kapatılırsa +{1} daha</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} da şu an açık uygulamaların tuttuğu dosyalarda — kapanınca boşalır</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} açık olduğu için önbelleği ({1}) atlandı — kapatıp yeniden temizleyebilirsin</value></data>

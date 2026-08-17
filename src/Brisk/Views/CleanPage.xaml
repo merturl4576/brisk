@@ -40,13 +40,64 @@
         <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,8"
                    MaxWidth="{StaticResource ContentMaxWidth}"
                    TextWrapping="Wrap" Text="{Binding ProblemsText}" />
-        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Faint}" Margin="0,8,0,0"
-                   MaxWidth="{StaticResource ContentMaxWidth}"
-                   Text="{Binding LifetimeText}" />
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
-                <!-- The simple face (round 9): one reclaimable total, one
-                     Temizle, a few human-language group rows. This is the
+                <!-- Round 11 page hero: the storage story as instruments —
+                     THE reclaimable number lives here now (it counts down
+                     live through the engine's per-entry stream during a
+                     clean), with free space and the lifetime figure as
+                     pods. One number on the page, worn as status. -->
+                <Border Style="{StaticResource HeroStrip}" Margin="0,0,0,12">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                            <!-- NumeralTick: data-driven motion, exempt from
+                                 reduce-motion gating by design. -->
+                            <TextBlock Style="{StaticResource HeroScore}" FontSize="40"
+                                       Foreground="{StaticResource HeroText}"
+                                       Brisk:NumeralTick.Value="{Binding SimpleTotalText}" />
+                            <TextBlock Style="{StaticResource HeroStripCaption}"
+                                       Margin="2,2,0,0"
+                                       Text="{Binding [clean.hero.reclaimable],
+                                           Source={x:Static loc:Loc.Instance}}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+                            <Border Style="{StaticResource HeroPod}" Margin="0,0,10,0">
+                                <DockPanel>
+                                    <Rectangle DockPanel.Dock="Left" Width="2"
+                                               RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                               Fill="{StaticResource HeroAccent}" />
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource HeroPodValue}"
+                                                   Brisk:NumeralTick.Value="{Binding FreeDiskText}" />
+                                        <TextBlock Style="{StaticResource HeroPodCaption}"
+                                                   Margin="0,2,0,0"
+                                                   Text="{Binding [overview.live.disk],
+                                                       Source={x:Static loc:Loc.Instance}}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource HeroPod}">
+                                <DockPanel>
+                                    <Rectangle DockPanel.Dock="Left" Width="2"
+                                               RadiusX="1" RadiusY="1" Margin="0,2,10,2"
+                                               Fill="{StaticResource HeroAccent}" />
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource HeroPodValue}"
+                                                   Brisk:NumeralTick.Value="{Binding LifetimeValueText}" />
+                                        <TextBlock Style="{StaticResource HeroPodCaption}"
+                                                   Margin="0,2,0,0"
+                                                   Text="{Binding [clean.hero.lifetime],
+                                                       Source={x:Static loc:Loc.Instance}}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+                <!-- The simple face (round 9): the groups, one Temizle. The
+                     big number moved up into the hero (round 11) — one
+                     number on the page, no duplicated promise. This is the
                      whole page for a non-technical user; the technical
                      three-level list waits behind "Gelişmiş" below.
                      Presentation only — the button runs exactly today's
@@ -55,10 +106,7 @@
                         BorderBrush="{DynamicResource BorderBrushKey}"
                         BorderThickness="1" CornerRadius="8" Padding="20,16">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
-                                   Text="{Binding [clean.simple.title],
-                                       Source={x:Static loc:Loc.Instance}}" />
-                        <DockPanel Margin="0,2,0,10">
+                        <DockPanel Margin="0,0,0,10">
                             <Button DockPanel.Dock="Right" Padding="20,8"
                                     FontSize="12.5" VerticalAlignment="Center"
                                     Command="{Binding SimpleCleanCommand}">
@@ -90,15 +138,10 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
-                            <!-- NumeralTick: the total slides down through
-                                 real per-entry engine progress while the
-                                 clean runs — data-driven motion, exempt
-                                 from reduce-motion gating by design. -->
-                            <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI"
-                                       FontSize="34" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource Text}"
+                            <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
                                        VerticalAlignment="Center"
-                                       Brisk:NumeralTick.Value="{Binding SimpleTotalText}" />
+                                       Text="{Binding [clean.simple.title],
+                                           Source={x:Static loc:Loc.Instance}}" />
                         </DockPanel>
                         <!-- Work in flight: a determinate hairline fed by the
                              engine's own entry stream, and the honest count

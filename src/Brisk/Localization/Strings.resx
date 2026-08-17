@@ -99,6 +99,11 @@
   <data name="clean.report.none" xml:space="preserve"><value>Nothing needed cleaning — this area is already tidy.</value></data>
   <data name="clean.report.disk" xml:space="preserve"><value>Free disk space: {0} → {1}</value></data>
   <data name="clean.report.disk.gained" xml:space="preserve"><value>Free disk space: {0} → {1} — {2} regained</value></data>
+  <data name="perf.hero.done" xml:space="preserve"><value>improvements made</value></data>
+  <data name="perf.hero.findings" xml:space="preserve"><value>findings waiting</value></data>
+  <data name="perf.hero.startup" xml:space="preserve"><value>startup programs</value></data>
+  <data name="clean.hero.reclaimable" xml:space="preserve"><value>reclaimable right now</value></data>
+  <data name="clean.hero.lifetime" xml:space="preserve"><value>reclaimed so far</value></data>
   <data name="clean.simple.locked.app" xml:space="preserve"><value>+{1} more if you close {0}</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} more in files that running apps are holding — frees up when they close</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} is open, so its cache ({1}) was skipped — close {0} and clean again</value></data>

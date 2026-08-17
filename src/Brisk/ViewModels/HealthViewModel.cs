@@ -141,7 +141,9 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Func<Task> _morphPause;
     private readonly string? _crossLinkKey;
     private string _scoreText = "—";
+    private double _scoreValue;
     private string _scoreBrushKey = "";
+    private string _statusLine = "";
     private string _message = "";
     private string _reportSummary = "";
     private string _crossLinkText = "";
@@ -219,11 +221,18 @@ public sealed class HealthViewModel : ViewModelBase
     public AppState State => _state;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
     public string ScoreText { get => _scoreText; private set => Set(ref _scoreText, value); }
+    /// Numeric twin of ScoreText for the page hero's gauge sweep (round 11)
+    /// — 0 until the first scan, an empty track under the "—" digits.
+    public double ScoreValue { get => _scoreValue; private set => Set(ref _scoreValue, value); }
     public string ScoreBrushKey
     {
         get => _scoreBrushKey;
         private set => Set(ref _scoreBrushKey, value);
     }
+    /// The page hero's status sentence, over THIS page's slice of the
+    /// findings: work to do → attention; only advice left → positive with
+    /// the count; nothing → plain good news (round 11).
+    public string StatusLine { get => _statusLine; private set => Set(ref _statusLine, value); }
     public string Message { get => _message; private set => Set(ref _message, value); }
     /// The report's ✓ lead line; empty while the last run changed nothing.
     public string ReportSummary
@@ -458,7 +467,11 @@ public sealed class HealthViewModel : ViewModelBase
             CrossLinkText = elsewhere > 0 ? _loc.F(_crossLinkKey, elsewhere) : "";
         }
         ScoreText = snapshot.Health.ToString();
+        ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
+        StatusLine = Rows.Count > 0 ? _loc["overview.status.attention"]
+            : AdviseRows.Count > 0 ? _loc.F("overview.status.advise", AdviseRows.Count)
+            : _loc["overview.status.good"];
         FixAllCommand.RaiseCanExecuteChanged();
     }
 }

@@ -6,52 +6,93 @@
     <DockPanel Margin="18,16">
         <!-- Every docked band and the scroll content share the app's one
              content column (see ContentMaxWidth in Shared.xaml). -->
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,14"
-              MaxWidth="{StaticResource ContentMaxWidth}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Style="{StaticResource SectionLabel}" Margin="0"
-                           Text="{Binding [health.title], Source={x:Static loc:Loc.Instance}}" />
-                <TextBlock Style="{StaticResource ScoreText}" FontSize="30"
-                           Margin="0,2,0,0" Text="{Binding ScoreText}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal"
-                        VerticalAlignment="Bottom">
-                <CheckBox Style="{StaticResource QuietCheck}" Margin="0,0,16,0"
-                          IsChecked="{Binding CreateRestorePointFirst}"
-                          Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
-                <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
-                        Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
-                                    <Setter Property="IsEnabled" Value="False" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <Button Command="{Binding FixAllCommand}"
-                        Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
-                                    <Setter Property="IsEnabled" Value="False" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
-                                    <Setter Property="IsEnabled" Value="False" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-            </StackPanel>
-        </Grid>
+        <!-- Round 11 page hero: the domain's state leads the page — the
+             health score on its own instrument ring, on the same always-
+             dark panel the overview cockpit wears, one size lighter. No
+             ambient clocks here: the gauge sweep and the numeral are
+             data-driven and only move when a scan speaks. -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource HeroStrip}"
+                MaxWidth="{StaticResource ContentMaxWidth}" Margin="0,0,0,10">
+            <DockPanel>
+                <Grid DockPanel.Dock="Left" Width="132" Height="132">
+                    <Brisk:SegmentedGauge Width="132" Height="132" Layer="Unlit"
+                                          UnlitBrush="{StaticResource HeroUnlit}"
+                                          Score="{Binding ScoreValue}" />
+                    <Brisk:SegmentedGauge Width="132" Height="132" Layer="Lit"
+                                          Score="{Binding ScoreValue}">
+                        <Brisk:SegmentedGauge.Style>
+                            <Style TargetType="{x:Type Brisk:SegmentedGauge}">
+                                <Setter Property="LitBrush"
+                                        Value="{StaticResource HeroGood}" />
+                                <Setter Property="GlowColor"
+                                        Value="{StaticResource HeroGoodColor}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                 Value="SeverityWarning">
+                                        <Setter Property="LitBrush"
+                                                Value="{StaticResource HeroWarn}" />
+                                        <Setter Property="GlowColor"
+                                                Value="{StaticResource HeroWarnColor}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                 Value="SeverityCritical">
+                                        <Setter Property="LitBrush"
+                                                Value="{StaticResource HeroCrit}" />
+                                        <Setter Property="GlowColor"
+                                                Value="{StaticResource HeroCritColor}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Brisk:SegmentedGauge.Style>
+                    </Brisk:SegmentedGauge>
+                    <TextBlock Style="{StaticResource HeroScore}" FontSize="30"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Brisk:NumeralTick.Value="{Binding ScoreText}" />
+                </Grid>
+                <StackPanel Margin="22,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource HeroStripCaption}"
+                               Text="{Binding [health.title], Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Margin="0,5,0,0" TextWrapping="Wrap"
+                               FontFamily="Segoe UI Variable Text, Segoe UI"
+                               FontSize="14" Foreground="{StaticResource HeroText}"
+                               Text="{Binding StatusLine}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14"
+                    MaxWidth="{StaticResource ContentMaxWidth}"
+                    HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
+                    Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Margin="0,0,16,0" Command="{Binding FixAllCommand}"
+                    Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <CheckBox Style="{StaticResource QuietCheck}" VerticalAlignment="Center"
+                      IsChecked="{Binding CreateRestorePointFirst}"
+                      Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
+        </StackPanel>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10"
                     MaxWidth="{StaticResource ContentMaxWidth}"
                     Visibility="{Binding State.IsScanning,

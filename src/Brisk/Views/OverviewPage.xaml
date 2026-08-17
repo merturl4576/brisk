@@ -3,93 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
-    <UserControl.Resources>
-        <!-- Cockpit hero vocabulary — still hero-LOCAL, but since round 8 the
-             global DARK palette speaks the same language: Bg/BgElevated are
-             the hero's graphite (#0E1116/#151A21) and Good/SeverityWarning/
-             SeverityCritical are these same bright variants. The locals stay
-             because the hero is an always-dark instrument panel in BOTH
-             themes — under the explicit light theme these keys are what keep
-             it dark, so they must not follow the theme dictionaries. -->
-        <Color x:Key="HeroGoodColor">#4ADE80</Color>
-        <Color x:Key="HeroWarnColor">#FBBF24</Color>
-        <Color x:Key="HeroCritColor">#F87171</Color>
-        <SolidColorBrush x:Key="HeroGood" Color="{StaticResource HeroGoodColor}" />
-        <SolidColorBrush x:Key="HeroWarn" Color="{StaticResource HeroWarnColor}" />
-        <SolidColorBrush x:Key="HeroCrit" Color="{StaticResource HeroCritColor}" />
-        <SolidColorBrush x:Key="HeroText" Color="#F2F4F8" />
-        <SolidColorBrush x:Key="HeroMuted" Color="#8CFFFFFF" />
-        <SolidColorBrush x:Key="HeroUnlit" Color="#1FFFFFFF" />
-        <SolidColorBrush x:Key="HeroHairline" Color="#14FFFFFF" />
-        <SolidColorBrush x:Key="HeroPodFill" Color="#0AFFFFFF" />
-        <Color x:Key="HeroAccentColor">#4CC2FF</Color>
-        <SolidColorBrush x:Key="HeroAccent" Color="{StaticResource HeroAccentColor}" />
-        <!-- Living-cockpit motion paints: the orbit's hairline dashes (13%
-             white) and the inner CPU ring's 70%-opacity accent. -->
-        <SolidColorBrush x:Key="HeroOrbit" Color="#21FFFFFF" />
-        <SolidColorBrush x:Key="HeroAccentRing" Color="#B34CC2FF" />
-
-        <!-- The ONE permitted gradient: a soft radial vignette, a touch
-             lighter behind the ring and settling into deep graphite at the
-             edges (~3–4% luminance shift, not a spotlight). The stops are
-             exactly BgElevated → Bg of the dark palette, so on the dark
-             theme the panel melts into the page and only its hairline and
-             the lift behind the ring set it apart. -->
-        <RadialGradientBrush x:Key="HeroSurface" Center="0.25,0.5"
-                             GradientOrigin="0.25,0.5" RadiusX="0.75" RadiusY="1.2">
-            <GradientStop Color="#151A21" Offset="0" />
-            <GradientStop Color="#0E1116" Offset="1" />
-        </RadialGradientBrush>
-
-        <!-- The ONE permitted glow still lives on the lit arc only, but the
-             gauge now builds the DropShadowEffect itself (see GlowColor):
-             a shared XAML effect resource gets frozen and a frozen Freezable
-             cannot be animated — and round 7's breathing animates it. -->
-
-        <!-- Digital numerals: the score in mono, colored by the shared
-             score → brush-key mapping (hero-bright variants of it). -->
-        <Style x:Key="HeroScore" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="56" />
-            <Setter Property="Foreground" Value="{StaticResource HeroText}" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="Good">
-                    <Setter Property="Foreground" Value="{StaticResource HeroGood}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="SeverityWarning">
-                    <Setter Property="Foreground" Value="{StaticResource HeroWarn}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding ScoreBrushKey}" Value="SeverityCritical">
-                    <Setter Property="Foreground" Value="{StaticResource HeroCrit}" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Instrument pods: transparent-dark chips with a hairline edge and
-             a 2px accent left-rule. No glow here — the ring owns the glow. -->
-        <Style x:Key="HeroPod" TargetType="Border">
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Background" Value="{StaticResource HeroPodFill}" />
-            <Setter Property="BorderBrush" Value="{StaticResource HeroHairline}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="12,9,12,8" />
-        </Style>
-        <Style x:Key="HeroPodValue" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="23" />
-            <Setter Property="Foreground" Value="{StaticResource HeroText}" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
-        <Style x:Key="HeroPodCaption" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
-            <Setter Property="FontSize" Value="10.5" />
-            <Setter Property="Foreground" Value="{StaticResource HeroMuted}" />
-            <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
-    </UserControl.Resources>
+    <!-- The cockpit hero vocabulary (Hero* colors, brushes, HeroScore,
+         HeroPod*) moved to Shared.xaml in round 11 — the page heroes on
+         Sağlık, Performans and Depolama speak the same language. The ONE
+         permitted glow still lives on the lit arc only; the gauge builds
+         its DropShadowEffect in code (a shared XAML effect resource gets
+         frozen, and a frozen Freezable cannot be animated). -->
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,26,28,24" MaxWidth="{StaticResource ContentMaxWidth}">
             <!-- Cockpit hero: segmented ring + instrument pods + status
