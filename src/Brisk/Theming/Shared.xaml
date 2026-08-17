@@ -502,6 +502,21 @@
                                                 <Setter Property="Fill"
                                                         Value="{DynamicResource SeverityCritical}" />
                                             </DataTrigger>
+                                            <!-- Advise rows are information, not
+                                                 alarms: whatever severity the rule
+                                                 reported, the marker is a hollow
+                                                 neutral ring, never a warning dot.
+                                                 Last trigger wins over the severity
+                                                 ones above by style-trigger order. -->
+                                            <DataTrigger Binding="{Binding IsAdvise}"
+                                                         Value="True">
+                                                <Setter Property="Fill"
+                                                        Value="Transparent" />
+                                                <Setter Property="Stroke"
+                                                        Value="{DynamicResource TextFaint}" />
+                                                <Setter Property="StrokeThickness"
+                                                        Value="1.3" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Ellipse.Style>
@@ -512,10 +527,31 @@
                         </Grid>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                                     HorizontalAlignment="Right">
-                            <TextBlock x:Name="ImpactDots"
-                                       Style="{StaticResource Faint}" FontSize="10"
+                            <!-- Impact dots read as "how big is the problem" —
+                                 wrong frame for advice, so advise rows swap
+                                 them for the quiet category word instead. -->
+                            <TextBlock x:Name="ImpactDots" FontSize="10"
                                        VerticalAlignment="Center" Margin="0,0,12,0"
-                                       Text="{Binding ImpactText}" />
+                                       Text="{Binding ImpactText}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock"
+                                           BasedOn="{StaticResource Faint}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAdvise}"
+                                                         Value="True">
+                                                <Setter Property="Visibility"
+                                                        Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource Faint}"
+                                       Typography.Capitals="AllSmallCaps"
+                                       VerticalAlignment="Center" Margin="0,0,12,0"
+                                       Text="{Binding CategoryText}"
+                                       Visibility="{Binding IsAdvise,
+                                           Converter={x:Static views:BoolToVis.Instance}}" />
                             <Path Data="M 0 0 L 4.5 4.5 L 9 0" StrokeThickness="1.4"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                   Stroke="{DynamicResource TextFaint}"
