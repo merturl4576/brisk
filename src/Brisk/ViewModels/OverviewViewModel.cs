@@ -347,7 +347,9 @@ public sealed class OverviewViewModel : ViewModelBase
         var parts = new List<string>();
         if (hasWork)
             parts.Add(_loc.F("flyout.findings", snapshot.Findings.Count, fixable));
-        parts.Add(_loc.F("flyout.reclaimable", Fmt.Bytes(snapshot.Cleaner.TotalBytes)));
+        // Honest figure (round 11): what the safe clean can take right now.
+        parts.Add(_loc.F("flyout.reclaimable",
+            Fmt.Bytes(CleanService.ReclaimableNowBytes(snapshot.Cleaner))));
         parts.Add(_loc.F("flyout.lastscan",
             snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm")));
         SummaryText = string.Join("   ·   ", parts);

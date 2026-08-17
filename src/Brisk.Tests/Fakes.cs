@@ -22,14 +22,17 @@ public static class TestData
 
     public static TargetScanResult Target(string id, CleanupLevel level, long bytes,
         string? skipped = null, bool pick = false, bool optIn = false, bool admin = false,
-        string? app = null, string category = "Test")
+        string? app = null, string category = "Test", long lockedBytes = 0)
     {
         var target = new CleanupTarget(id, id, level, new List<string> { @"C:\x\" + id },
             category, RequiresAppClosedProcess: app, RequiresIndividualSelection: pick,
             RequiresExplicitOptIn: optIn, RequiresElevation: admin);
-        var items = bytes == 0
-            ? (IReadOnlyList<ResolvedItem>)Array.Empty<ResolvedItem>()
-            : new[] { new ResolvedItem(id, @"C:\x\" + id + @"\item", bytes, null) };
+        var items = new List<ResolvedItem>();
+        if (bytes > 0)
+            items.Add(new ResolvedItem(id, @"C:\x\" + id + @"\item", bytes, null));
+        if (lockedBytes > 0)
+            items.Add(new ResolvedItem(id, @"C:\x\" + id + @"\held", lockedBytes, null,
+                Locked: true));
         return new TargetScanResult(target, items, skipped);
     }
 

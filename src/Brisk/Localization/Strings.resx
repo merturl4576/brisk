@@ -97,6 +97,12 @@
   <data name="clean.report.none" xml:space="preserve"><value>Nothing needed cleaning — this area is already tidy.</value></data>
   <data name="clean.report.disk" xml:space="preserve"><value>Free disk space: {0} → {1}</value></data>
   <data name="clean.report.disk.gained" xml:space="preserve"><value>Free disk space: {0} → {1} — {2} regained</value></data>
+  <data name="clean.simple.locked.app" xml:space="preserve"><value>+{1} more if you close {0}</value></data>
+  <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} more in files that running apps are holding — frees up when they close</value></data>
+  <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} is open, so its cache ({1}) was skipped — close {0} and clean again</value></data>
+  <data name="clean.report.disk.binned" xml:space="preserve"><value>{0} is waiting in the Recycle Bin — "Reclaim space now" turns it into free space</value></data>
+  <data name="clean.report.disk.purged" xml:space="preserve"><value>Recycle Bin emptied — {0} freed for good</value></data>
+  <data name="clean.report.undone" xml:space="preserve"><value>Everything was put back — nothing changed</value></data>
   <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} files are in use by a running app and were left untouched</value></data>
   <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} items need administrator approval and were skipped</value></data>
   <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} items could not be moved and were skipped</value></data>

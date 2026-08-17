@@ -131,6 +131,23 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <!-- The honest second half (round 11): bytes the
+                             number above deliberately does NOT contain,
+                             each with its actionable why — "+310 MB when
+                             you close WhatsApp". Quiet, informative, never
+                             an alarm. -->
+                        <ItemsControl Margin="0,4,0,0"
+                                      ItemsSource="{Binding LockedNotes}"
+                                      Visibility="{Binding HasLockedNotes,
+                                          Converter={x:Static Brisk:BoolToVis.Instance}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Style="{StaticResource Faint}"
+                                               Margin="0,2" TextWrapping="Wrap"
+                                               Text="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <!-- The completion report: what went, what the disk
                              says, and calmly why anything was left alone —
                              the same left-rule vocabulary the findings
@@ -145,14 +162,54 @@
                                 <TextBlock Style="{StaticResource ReportLine}"
                                            FontWeight="SemiBold" TextWrapping="Wrap"
                                            Text="{Binding ReportSummary}" />
-                                <TextBlock Style="{StaticResource Muted}"
-                                           Margin="0,3,0,0" TextWrapping="Wrap"
-                                           Text="{Binding ReportDiskText}" />
+                                <!-- No more "571.3 GB → 571.3 GB": the line
+                                     says where the bytes ARE (bin / freed),
+                                     and disappears when there is nothing
+                                     truthful to say. -->
+                                <TextBlock Margin="0,3,0,0" TextWrapping="Wrap"
+                                           Text="{Binding ReportDiskText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock"
+                                               BasedOn="{StaticResource Muted}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ReportDiskText}"
+                                                             Value="">
+                                                    <Setter Property="Visibility"
+                                                            Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <TextBlock Style="{StaticResource Faint}"
                                            Margin="0,3,0,0" TextWrapping="Wrap"
                                            Text="{Binding ReportReasonsText}"
                                            Visibility="{Binding HasReportReasons,
                                                Converter={x:Static Brisk:BoolToVis.Instance}}" />
+                                <!-- ONE result surface (round 11): the
+                                     banner's actions moved in here. Reclaim
+                                     stays a visible chip; Undo keeps its
+                                     round-9 posture — quiet but present. -->
+                                <StackPanel Orientation="Horizontal" Margin="0,9,0,0"
+                                            Visibility="{Binding HasReportActions,
+                                                Converter={x:Static Brisk:BoolToVis.Instance}}">
+                                    <Button Style="{StaticResource GhostButton}"
+                                            Command="{Binding ReclaimCommand}"
+                                            Content="{Binding [clean.reclaim],
+                                                Source={x:Static loc:Loc.Instance}}" />
+                                    <Button Style="{StaticResource LinkButton}"
+                                            Margin="14,0,0,0" VerticalAlignment="Center"
+                                            Foreground="{DynamicResource TextMuted}"
+                                            Command="{Binding UndoCommand}"
+                                            Content="{Binding [clean.undo],
+                                                Source={x:Static loc:Loc.Instance}}" />
+                                    <Button Style="{StaticResource LinkButton}"
+                                            Margin="8,0,0,0" VerticalAlignment="Center"
+                                            Command="{Binding OpenBinCommand}"
+                                            Visibility="{Binding RestoreFailed,
+                                                Converter={x:Static Brisk:BoolToVis.Instance}}"
+                                            Content="↗" />
+                                </StackPanel>
                             </StackPanel>
                         </DockPanel>
                         <TextBlock Style="{StaticResource Faint}" Margin="0,10,0,0"

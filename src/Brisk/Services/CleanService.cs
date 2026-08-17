@@ -36,6 +36,25 @@ public sealed class CleanService
         && !t.Target.RequiresExplicitOptIn
         && t.Items.Count > 0;
 
+    /// The honest headline (round 11): over the SAME predicate the button
+    /// cleans through, but counting only bytes the clean can take right now
+    /// — delete-locked items stay on the shelf and out of the promise.
+    /// Every reclaimable figure the GUI utters comes from here.
+    public static long ReclaimableNowBytes(ScanResult scan) =>
+        scan.Targets.Where(IsSafeDefault).Sum(t => t.ReclaimableBytes);
+
+    /// A safe-level target sitting out because its app is running: the
+    /// actionable half of the promise ("+310 MB when you close WhatsApp").
+    /// Same shape as IsSafeDefault minus the skip, so the two can never
+    /// overlap or leave a gap.
+    public static bool IsAppHeld(TargetScanResult t) =>
+        t.Target.Level == CleanupLevel.Safe
+        && t.SkippedReason is not null
+        && t.Target.AppDisplayName is not null
+        && !t.Target.RequiresIndividualSelection
+        && !t.Target.RequiresExplicitOptIn
+        && t.TotalBytes > 0;
+
     /// The one definition of "safe to clean in one click" — shared by the
     /// flyout, the overview and the Depolama simple view. Deletion stays
     /// behind its own consented button; fix-all must never call this.

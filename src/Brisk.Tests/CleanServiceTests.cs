@@ -40,6 +40,27 @@ public class CleanServiceTests
         Assert.All(host.Cleans, c => Assert.True(c.DryRun));
     }
 
+    /// ROUND 11: the one honest figure every GUI surface promises — safe
+    /// defaults only, minus delete-locked items, minus app-held targets.
+    [Fact]
+    public void ReclaimableNowBytes_CountsOnlyWhatTheCleanCanTakeRightNow()
+    {
+        var scan = new ScanResult(new[]
+        {
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048, lockedBytes: 4096),
+            TestData.Target("whatsapp-cache", CleanupLevel.Safe, 310L << 20,
+                skipped: "WhatsApp is running — close it to include this target",
+                app: "WhatsApp|WhatsApp.Root"),
+            TestData.Target("npm-cache", CleanupLevel.Developer, 1024),
+            TestData.Target("old-installers", CleanupLevel.Deep, 512, pick: true),
+        });
+
+        Assert.Equal(2048, CleanService.ReclaimableNowBytes(scan));
+        // the app-held classifier sees exactly the skipped safe target
+        Assert.Equal(new[] { "whatsapp-cache" }, scan.Targets
+            .Where(CleanService.IsAppHeld).Select(t => t.Target.Id));
+    }
+
     [Fact]
     public void CleanTargets_CollectsRefusalsAndErrors_AsProblems()
     {

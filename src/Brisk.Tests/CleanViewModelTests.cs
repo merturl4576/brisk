@@ -121,8 +121,11 @@ public class CleanViewModelTests
         Assert.False(vm.IsAdvancedShown);
     }
 
+    /// ROUND 11: the owner saw the top banner AND the in-card report repeat
+    /// each other after a simple clean. One result surface now — the report
+    /// carries the actions; the banner belongs to advanced level cleans.
     [Fact]
-    public async Task SimpleClean_RunsExactlyTodaysSafeDefaults_ShowsBanner_Rescans()
+    public async Task SimpleClean_RunsExactlyTodaysSafeDefaults_OneResultSurface_Rescans()
     {
         var (vm, host, _, state) = Build(SimpleHost());
         await state.ScanAsync();
@@ -133,9 +136,72 @@ public class CleanViewModelTests
         Assert.Equal(new[] { "user-temp", "discord-cache" },
             host.Cleans.Select(c => c.TargetId));
         Assert.Empty(host.ElevatedRuns);
-        Assert.True(vm.HasBanner);
-        Assert.Contains("3 KB", vm.BannerText);
+        Assert.False(vm.HasBanner);           // no duplicated banner
+        Assert.True(vm.HasReport);
+        Assert.True(vm.HasReportActions);     // Undo + Reclaim live in the report
+        Assert.True(vm.UndoCommand.CanExecute(null));
+        Assert.True(vm.ReclaimCommand.CanExecute(null));
         Assert.Equal(2, host.ScanCalls);
+    }
+
+    /// REGRESSION PIN — the 2026-08-17 trust bug in GUI terms: the card
+    /// promised ~450 MB and delivered 22 MB because a running app's cache
+    /// (WhatsApp, 310 MB) and delete-locked temp files sat in the headline.
+    /// The headline now counts ONLY what Temizle can take right now; the
+    /// held bytes get their own actionable lines instead.
+    [Fact]
+    public async Task SimpleView_HonestTotal_ExcludesAppHeldAndLockedBytes()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048,
+                category: "System", lockedBytes: 120L << 20),
+            TestData.Target("whatsapp-cache", CleanupLevel.Safe, 310L << 20,
+                skipped: "WhatsApp is running — close it to include this target",
+                app: "WhatsApp|WhatsApp.Root", category: "App"));
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+
+        // headline + groups: the 2 KB that can actually go — never the
+        // 310 MB app-held cache or the 120 MB locked temp content
+        Assert.Equal("2 KB", vm.SimpleTotalText);
+        var group = Assert.Single(vm.SimpleGroups);
+        Assert.Equal((loc["clean.group.system"], "2 KB"), (group.Name, group.SizeText));
+        // the held bytes are surfaced, actionably, in the user's words
+        Assert.True(vm.HasLockedNotes);
+        Assert.Equal(new[]
+        {
+            loc.F("clean.simple.locked.app", "WhatsApp", "310 MB"),
+            loc.F("clean.simple.locked.inuse", "120 MB"),
+        }, vm.LockedNotes);
+    }
+
+    /// The post-clean report explains the app-held survivor with the action
+    /// attached ("close WhatsApp and clean again") — no more silently
+    /// untouched 310 MB groups.
+    [Fact]
+    public async Task SimpleClean_Report_ExplainsAppHeldSurvivors()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048, category: "System"),
+            TestData.Target("whatsapp-cache", CleanupLevel.Safe, 310L << 20,
+                skipped: "WhatsApp is running — close it to include this target",
+                app: "WhatsApp|WhatsApp.Root", category: "App"));
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+
+        await vm.CleanSimpleAsync();
+
+        // the skipped target never reached the engine…
+        Assert.Equal(new[] { "user-temp" }, host.Cleans.Select(c => c.TargetId));
+        // …and the report says why its bytes are still there, actionably
+        Assert.True(vm.HasReportReasons);
+        Assert.Equal(
+            loc.F("clean.report.skipped.appheld", "WhatsApp", "310 MB"),
+            vm.ReportReasonsText);
     }
 
     [Fact]
@@ -371,10 +437,10 @@ public class CleanViewModelTests
 
         Assert.True(vm.HasReport);
         Assert.Equal(loc.F("clean.report.summary", 2, "3 KB"), vm.ReportSummary);
-        // recycling moved bytes to the bin on the same volume — free space
-        // did not move, and the report says exactly that (no fake "gained")
-        Assert.Equal(loc.F("clean.report.disk", "100.0 GB", "100.0 GB"),
-            vm.ReportDiskText);
+        // ROUND 11: recycling moved bytes to the bin on the same volume, so
+        // free space did not move — the line says where the bytes ARE
+        // instead of the meaningless "100.0 GB → 100.0 GB"
+        Assert.Equal(loc.F("clean.report.disk.binned", "3 KB"), vm.ReportDiskText);
         Assert.False(vm.HasReportReasons);
         Assert.Equal("", vm.ProblemsText);
     }
@@ -421,7 +487,10 @@ public class CleanViewModelTests
 
         Assert.False(vm.HasBanner);
         Assert.True(vm.HasReport);
+        Assert.False(vm.HasReportActions);    // nothing to purge or put back
         Assert.Equal(loc["clean.report.none"], vm.ReportSummary);
+        // nothing recycled, nothing measured — no disk line at all (round 11)
+        Assert.Equal("", vm.ReportDiskText);
         Assert.True(vm.HasReportReasons);
         Assert.Equal(
             loc.F("clean.report.skipped.inuse", 1) + "\n"
@@ -431,25 +500,66 @@ public class CleanViewModelTests
     }
 
     /// "Reclaim space now" purges the bin — the report's disk line
-    /// re-measures at that moment, when free space actually rises.
+    /// re-measures at that moment, when free space actually rises, and the
+    /// actions retire (nothing left to purge or put back).
     [Fact]
     public async Task Reclaim_RemeasuresTheReportDiskLine()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, bin, state) = Build(SimpleHost());
+        host.FreeDisk = 100L << 30;
+        await state.ScanAsync();
+        await vm.CleanSimpleAsync();
+        Assert.True(vm.HasReportActions);
+
+        host.FreeDisk = 103L << 30;           // the purge freed real bytes
+        vm.ReclaimCommand.Execute(null);
+
+        Assert.Single(bin.Purged);
+        Assert.True(vm.HasReport);            // the story stays up
+        Assert.False(vm.HasReportActions);
+        Assert.Equal(
+            loc.F("clean.report.disk.gained", "100.0 GB", "103.0 GB", "3.0 GB"),
+            vm.ReportDiskText);
+    }
+
+    /// A purge whose measured delta is below the noise floor still gets a
+    /// truthful line: the bin was emptied, the recycled bytes are gone for
+    /// good — never a "100.0 GB → 100.0 GB".
+    [Fact]
+    public async Task Reclaim_SmallDelta_SaysTheBinWasEmptied()
     {
         var loc = EnglishLoc();
         var (vm, host, _, state) = Build(SimpleHost());
         host.FreeDisk = 100L << 30;
         await state.ScanAsync();
         await vm.CleanSimpleAsync();
-        Assert.True(vm.HasBanner);
 
-        host.FreeDisk = 103L << 30;           // the purge freed real bytes
-        vm.ReclaimCommand.Execute(null);
+        vm.ReclaimCommand.Execute(null);      // free space barely moved
 
-        Assert.False(vm.HasBanner);
-        Assert.True(vm.HasReport);            // the story survives the banner
-        Assert.Equal(
-            loc.F("clean.report.disk.gained", "100.0 GB", "103.0 GB", "3.0 GB"),
-            vm.ReportDiskText);
+        Assert.Equal(loc.F("clean.report.disk.purged", "3 KB"), vm.ReportDiskText);
+        Assert.False(vm.HasReportActions);
+    }
+
+    /// Undo from the report puts everything back: the story flips to the
+    /// undone line, the actions retire, and a rescan refills the promise.
+    [Fact]
+    public async Task Undo_AfterSimpleClean_TellsTheUndoneStory_AndRescans()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, bin, state) = Build(SimpleHost());
+        await state.ScanAsync();
+        await vm.CleanSimpleAsync();
+        var scansBefore = host.ScanCalls;
+
+        vm.UndoCommand.Execute(null);
+
+        Assert.Single(bin.Restored);
+        Assert.True(vm.HasReport);
+        Assert.False(vm.HasReportActions);
+        Assert.Equal(loc["clean.report.undone"], vm.ReportSummary);
+        Assert.Equal("", vm.ReportDiskText);
+        Assert.Equal(scansBefore + 1, host.ScanCalls);   // the shelf refills
     }
 
     [Fact]

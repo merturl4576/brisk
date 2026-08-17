@@ -53,7 +53,10 @@ public class FlyoutViewModelTests
         Assert.Equal("72", vm.HealthText);
         Assert.Equal("SeverityWarning", vm.HealthBrushKey);
         Assert.Equal("2 findings · 1 one-click fixable", vm.FindingsLine);
-        Assert.Contains("7 KB", vm.ReclaimLine);   // 2048+4096+1024 = 7168
+        // ROUND 11 honesty: the flyout's Clean runs the safe defaults, so
+        // its line promises exactly that — 2 KB (user-temp), never the
+        // deep/dev shelves (old-installers, npm) it would not touch.
+        Assert.Contains("2 KB", vm.ReclaimLine);
         Assert.Contains("Last scan:", vm.LastScanLine);
     }
 

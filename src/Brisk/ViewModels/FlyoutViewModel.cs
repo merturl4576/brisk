@@ -110,7 +110,11 @@ public sealed class FlyoutViewModel : ViewModelBase
         var fixable = snapshot.Findings.Count(f =>
             f.Category != RuleCategory.Advise && f.CanFix);
         FindingsLine = _loc.F("flyout.findings", snapshot.Findings.Count, fixable);
-        ReclaimLine = _loc.F("flyout.reclaimable", Fmt.Bytes(snapshot.Cleaner.TotalBytes));
+        // The honest figure (round 11): the flyout's Clean button runs the
+        // safe defaults, so its "reclaimable" line promises exactly that —
+        // never deep/dev shelves or locked bytes it would not touch.
+        ReclaimLine = _loc.F("flyout.reclaimable",
+            Fmt.Bytes(CleanService.ReclaimableNowBytes(snapshot.Cleaner)));
         LastScanLine = _loc.F("flyout.lastscan",
             snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm"));
         Raise(nameof(HasSnapshot));

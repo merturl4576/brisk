@@ -46,8 +46,10 @@ public sealed class TargetRow : ViewModelBase
         SkippedReason = scan.SkippedReason;
         // The engine's skip reason is English prose; the GUI recomposes it
         // from data it already has (the only skip cause is "app running").
+        // AppDisplayName, never the raw candidate list — the user knows
+        // "WhatsApp", not "WhatsApp|WhatsApp.Root".
         SkippedText = scan.SkippedReason is null ? ""
-            : scan.Target.RequiresAppClosedProcess is { } app
+            : scan.Target.AppDisplayName is { } app
                 ? loc.F("clean.skipped.apprunning", app)
                 : loc["clean.skipped"];
         IsSelectable = scan.SkippedReason is null
@@ -86,7 +88,10 @@ public sealed class LevelSection
         Level = level;
         TitleKey = titleKey;
         Targets = new ObservableCollection<TargetRow>(targets);
-        TotalText = Fmt.Bytes(Targets.Sum(t => t.Scan.TotalBytes));
+        // ReclaimableBytes: the level header promises what ITS clean can
+        // take right now — skipped and delete-locked content stays out
+        // (the per-row sizes still show everything, with the skip note).
+        TotalText = Fmt.Bytes(Targets.Sum(t => t.Scan.ReclaimableBytes));
         CleanCommand = new RelayCommand(() => _ = clean(this));
     }
 
@@ -131,6 +136,8 @@ public sealed class CleanViewModel : ViewModelBase
     private double _progressFraction;
     private string _progressText = "";
     private bool _hasReport;
+    private bool _hasReportActions;
+    private bool _hasLockedNotes;
     private string _reportSummary = "";
     private string _reportDiskText = "";
     private string _reportReasonsText = "";
@@ -141,6 +148,8 @@ public sealed class CleanViewModel : ViewModelBase
     private long _lastProgressPush;
     private long _lastTotalPush;
     private long _reportFreeBefore;
+    private long _reportRecycledBytes;
+    private bool _reportPurged;
 
     public CleanViewModel(AppState state, IEngineHost host, CleanService cleanService,
         IRecycleBinSession bin, Loc loc, System.Func<bool> isDryRun)
@@ -152,8 +161,11 @@ public sealed class CleanViewModel : ViewModelBase
         _loc = loc;
         _isDryRun = isDryRun;
         _state.Changed += Refresh;
-        UndoCommand = new RelayCommand(Undo, () => HasBanner);
-        ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner);
+        // Undo/Reclaim serve BOTH result surfaces: the banner (advanced
+        // level cleans) and the in-card report's action row (simple clean,
+        // round 11 — the duplicated banner+report pair collapsed into one).
+        UndoCommand = new RelayCommand(Undo, () => HasBanner || HasReportActions);
+        ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner || HasReportActions);
         DismissCommand = new RelayCommand(Dismiss, () => HasBanner);
         OpenBinCommand = new RelayCommand(_bin.OpenRecycleBinUi);
         SimpleCleanCommand = new RelayCommand(() => _ = CleanSimpleAsync(),
@@ -173,6 +185,16 @@ public sealed class CleanViewModel : ViewModelBase
     {
         get => _simpleTotalText;
         private set => Set(ref _simpleTotalText, value);
+    }
+    /// The other half of the honest promise (round 11): bytes the clean
+    /// CANNOT take right now, each with its actionable why — "+310 MB when
+    /// you close WhatsApp", "+120 MB in files apps are using". The headline
+    /// above never contains these.
+    public ObservableCollection<string> LockedNotes { get; } = new();
+    public bool HasLockedNotes
+    {
+        get => _hasLockedNotes;
+        private set => Set(ref _hasLockedNotes, value);
     }
     /// The full three-level target list stays available behind "Gelişmiş";
     /// collapsed by default — a non-technical user never has to see it.
@@ -219,6 +241,15 @@ public sealed class CleanViewModel : ViewModelBase
     /// disk says, and — calmly — why anything was left alone. Stays up
     /// until the next press starts a new story.
     public bool HasReport { get => _hasReport; private set => Set(ref _hasReport, value); }
+    /// True while the report still offers its actions ("Reclaim space now",
+    /// the quiet "Undo") — recycled work exists and was neither purged nor
+    /// put back. Round 11: the report IS the one result surface of a simple
+    /// clean; the top banner belongs to the advanced level cleans alone.
+    public bool HasReportActions
+    {
+        get => _hasReportActions;
+        private set { if (Set(ref _hasReportActions, value)) RaiseBannerCommands(); }
+    }
     public string ReportSummary
     {
         get => _reportSummary;
@@ -276,6 +307,11 @@ public sealed class CleanViewModel : ViewModelBase
             ProgressFraction = 0;
             ProgressText = _loc.F("clean.progress", 0, _plannedItems);
             HasReport = false;
+            HasReportActions = false;
+            // Captured BEFORE the clean: the app-held survivors' story
+            // ("WhatsApp is open, its 310 MB cache was skipped") belongs to
+            // this run's report even after the closing rescan moves on.
+            var appHeld = AppHeldReasons(snapshot.Cleaner);
             var freeBefore = _host.FreeDiskBytes();
             var outcome = await Task.Run(() =>
                 _cleanService.CleanSafe(snapshot.Cleaner, OnCleanEntry));
@@ -286,17 +322,14 @@ public sealed class CleanViewModel : ViewModelBase
             }
             // The report tells the problems' story in human language below;
             // the raw path-by-path English dump stays off the simple face.
+            // No top banner here (round 11): the owner saw banner + report
+            // repeat each other — the report is the one result surface of a
+            // simple clean, and it carries Undo and "Reclaim space now".
             ProblemsText = "";
             _lastRecycled = outcome.RecycledPaths;
             RestoreFailed = false;
-            if (outcome.RecycledPaths.Count > 0)
-            {
-                BannerText = _loc.F("clean.recycled",
-                    outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes));
-                HasBanner = true;
-            }
             await _state.ScanAsync();
-            ShowReport(outcome, freeBefore, _host.FreeDiskBytes());
+            ShowReport(outcome, freeBefore, _host.FreeDiskBytes(), appHeld);
         }
         finally
         {
@@ -335,31 +368,57 @@ public sealed class CleanViewModel : ViewModelBase
         }
     }
 
-    private void ShowReport(CleanOutcome outcome, long freeBefore, long freeAfter)
+    /// One line per running app holding safe-level cache back — the same
+    /// aggregation the card's LockedNotes show, worn as a report reason
+    /// ("WhatsApp is open, so its cache (310 MB) was skipped — close it…").
+    private List<string> AppHeldReasons(ScanResult scan) => scan.Targets
+        .Where(CleanService.IsAppHeld)
+        .GroupBy(t => t.Target.AppDisplayName!)
+        .OrderByDescending(g => g.Sum(t => t.TotalBytes))
+        .Select(g => _loc.F("clean.report.skipped.appheld",
+            g.Key, Fmt.Bytes(g.Sum(t => t.TotalBytes))))
+        .ToList();
+
+    private void ShowReport(CleanOutcome outcome, long freeBefore, long freeAfter,
+        IReadOnlyList<string> appHeld)
     {
         _reportFreeBefore = freeBefore;
+        _reportRecycledBytes = outcome.RecycledBytes;
+        _reportPurged = false;
         ReportSummary = outcome.RecycledPaths.Count > 0
             ? _loc.F("clean.report.summary",
                 outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes))
             : _loc["clean.report.none"];
         ReportDiskText = DiskLine(freeBefore, freeAfter);
         var (inUse, admin, other) = ClassifySkips(outcome.Skipped);
-        var reasons = new List<string>(3);
+        var reasons = new List<string>(3 + appHeld.Count);
+        // The app-held lines lead: they explain the LARGEST absent bytes and
+        // carry the action (close the app, clean again).
+        reasons.AddRange(appHeld);
         if (inUse > 0) reasons.Add(_loc.F("clean.report.skipped.inuse", inUse));
         if (admin > 0) reasons.Add(_loc.F("clean.report.skipped.admin", admin));
         if (other > 0) reasons.Add(_loc.F("clean.report.skipped.other", other));
         ReportReasonsText = string.Join("\n", reasons);
         HasReport = true;
+        HasReportActions = outcome.RecycledPaths.Count > 0;
     }
 
-    /// Honest disk arithmetic: recycling moves bytes to the bin on the same
-    /// volume, so free space often barely moves until "reclaim" purges — the
-    /// gained-phrase only appears once the measured delta is a real story.
-    private string DiskLine(long before, long after) =>
-        after - before >= DiskGainVisibleBytes
-            ? _loc.F("clean.report.disk.gained",
-                Fmt.Bytes(before), Fmt.Bytes(after), Fmt.Bytes(after - before))
-            : _loc.F("clean.report.disk", Fmt.Bytes(before), Fmt.Bytes(after));
+    /// Honest disk arithmetic (round 11 — no more "571.3 GB → 571.3 GB"):
+    /// a measured, story-sized gain gets the before→after line; otherwise
+    /// the line says where the bytes actually ARE — in the Recycle Bin
+    /// until "reclaim" purges, freed for good after it. Nothing recycled,
+    /// nothing gained → no disk line at all.
+    private string DiskLine(long before, long after)
+    {
+        if (after - before >= DiskGainVisibleBytes)
+            return _loc.F("clean.report.disk.gained",
+                Fmt.Bytes(before), Fmt.Bytes(after), Fmt.Bytes(after - before));
+        if (_reportPurged)
+            return _loc.F("clean.report.disk.purged", Fmt.Bytes(_reportRecycledBytes));
+        if (_reportRecycledBytes > 0)
+            return _loc.F("clean.report.disk.binned", Fmt.Bytes(_reportRecycledBytes));
+        return "";
+    }
 
     /// GUI-edge reason mapping (the round-9 rule): the engine's English
     /// prose is recomposed from the patterns the GUI knows — Win32 error 32
@@ -434,8 +493,18 @@ public sealed class CleanViewModel : ViewModelBase
 
     private void Undo()
     {
-        if (_bin.Restore(_lastRecycled)) Dismiss();
-        else RestoreFailed = true;
+        if (!_bin.Restore(_lastRecycled)) { RestoreFailed = true; return; }
+        Dismiss();
+        if (HasReportActions)
+        {
+            // The report's story flips honestly: nothing is cleaned anymore.
+            HasReportActions = false;
+            ReportSummary = _loc["clean.report.undone"];
+            ReportDiskText = "";
+            ReportReasonsText = "";
+        }
+        // The shelf refilled — rescan so the promise returns to the truth.
+        _ = _state.ScanAsync();
     }
 
     private void Reclaim()
@@ -443,7 +512,10 @@ public sealed class CleanViewModel : ViewModelBase
         _bin.Purge(_lastRecycled);
         Dismiss();
         // Purging is the moment free space actually rises — the report's
-        // disk line re-measures so the promise and the disk agree.
+        // disk line re-measures so the promise and the disk agree, and the
+        // actions retire (nothing left to purge or put back).
+        _reportPurged = true;
+        HasReportActions = false;
         if (HasReport)
             ReportDiskText = DiskLine(_reportFreeBefore, _host.FreeDiskBytes());
     }
@@ -467,16 +539,33 @@ public sealed class CleanViewModel : ViewModelBase
         if (snapshot is null) return;
         var safeDefaults = snapshot.Cleaner.Targets
             .Where(CleanService.IsSafeDefault).ToList();
-        _simpleTotalBytes = safeDefaults.Sum(t => t.TotalBytes);
+        // ReclaimableBytes everywhere (round 11): the headline, the groups
+        // and the countdown promise only what Temizle can take RIGHT NOW.
+        _simpleTotalBytes = CleanService.ReclaimableNowBytes(snapshot.Cleaner);
         SimpleTotalText = Fmt.Bytes(_simpleTotalBytes);
         SimpleGroups.Clear();
         foreach (var group in safeDefaults
                      .GroupBy(t => t.Target.Category)
-                     .Select(g => (g.Key, Bytes: g.Sum(t => t.TotalBytes)))
+                     .Select(g => (g.Key, Bytes: g.Sum(t => t.ReclaimableBytes)))
                      .Where(g => g.Bytes > 0)
                      .OrderByDescending(g => g.Bytes))
             SimpleGroups.Add(new CleanGroupRow(
                 _loc[GroupKey(group.Key)], Fmt.Bytes(group.Bytes)));
+        // What the headline does NOT contain, made actionable: one line per
+        // running app holding cache back, one line for delete-locked files.
+        LockedNotes.Clear();
+        foreach (var held in snapshot.Cleaner.Targets
+                     .Where(CleanService.IsAppHeld)
+                     .GroupBy(t => t.Target.AppDisplayName!)
+                     .Select(g => (App: g.Key, Bytes: g.Sum(t => t.TotalBytes)))
+                     .OrderByDescending(g => g.Bytes))
+            LockedNotes.Add(_loc.F("clean.simple.locked.app",
+                held.App, Fmt.Bytes(held.Bytes)));
+        var lockedInPlace = safeDefaults.Sum(t => t.BlockedBytes);
+        if (lockedInPlace > 0)
+            LockedNotes.Add(_loc.F("clean.simple.locked.inuse",
+                Fmt.Bytes(lockedInPlace)));
+        HasLockedNotes = LockedNotes.Count > 0;
         SimpleCleanCommand.RaiseCanExecuteChanged();
         Levels.Clear();
         Add(CleanupLevel.Safe, "clean.level.safe", snapshot);
