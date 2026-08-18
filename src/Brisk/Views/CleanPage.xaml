@@ -59,9 +59,24 @@
                 </StackPanel>
             </DockPanel>
         </Border>
-        <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,0,0,8"
+        <!-- Round 16: this used to carry the engine's raw path-by-path
+             English dump, above the hero and OUTSIDE the scroll viewer, so
+             a level clean with two dozen held files pushed the page off
+             screen. It carries human sentences now, and nothing at all
+             when there is nothing to say. -->
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,8"
                    MaxWidth="{StaticResource ContentMaxWidth}"
-                   TextWrapping="Wrap" Text="{Binding ProblemsText}" />
+                   TextWrapping="Wrap" Text="{Binding ProblemsText}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ProblemsText}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
                 <!-- Round 11 page hero: the storage story as instruments —

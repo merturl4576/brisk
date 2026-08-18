@@ -687,6 +687,34 @@ public class CleanViewModelTests
         Assert.False(vm.IsSimpleCleanBusy);
     }
 
+    /// ROUND 16, from the owner's screenshot: a Gelişmiş clean handed the
+    /// engine's raw problem list straight to the page — one English line
+    /// per failed path, above the hero and outside the scroll viewer — and
+    /// pushed the whole card off screen. Round 12 gave the simple flow
+    /// human sentences for exactly this; the level flow tells the same
+    /// story the same way now, and never says C:\ at the user.
+    [Fact]
+    public async Task LevelClean_TellsItsProblemsInHumanLanguage()
+    {
+        var loc = EnglishLoc();
+        var host = Host();
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+        var safe = vm.Levels.Single(l => l.Level == CleanupLevel.Safe);
+        var planned = safe.Targets.Where(t => t.IsSelected).Sum(t => t.Scan.Items.Count);
+        host.OnClean = (scan, _) => new BriskEngine.Cleaning.CleanReport(
+            scan.Items.Select(i => new BriskEngine.Cleaning.CleanEntry(
+                scan.Target.Id, i.Path, 0, "error",
+                BriskEngine.Cleaning.CleanRunner.HeldReason)).ToList());
+
+        await vm.CleanLevelAsync(safe);
+
+        Assert.True(planned > 0);
+        Assert.Equal(loc.F("clean.report.skipped.inuse", planned), vm.ProblemsText);
+        Assert.DoesNotContain(@"C:\", vm.ProblemsText);
+        Assert.DoesNotContain("SHFileOperation", vm.ProblemsText);
+    }
+
     /// ROUND 15: when the PROBE finds the lock instead of the shell, the
     /// report must still say "N files are in use by a running app" — the
     /// reason text changed, the story the user reads did not.

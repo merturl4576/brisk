@@ -471,6 +471,21 @@ public sealed class CleanViewModel : ViewModelBase
                 Fmt.Bytes(before), Fmt.Bytes(after), Fmt.Bytes(after - before))
             : "";
 
+    /// ROUND 16: a level clean used to hand the engine's raw problem list
+    /// straight to the page — one English line per failed path, above the
+    /// hero and OUTSIDE the scroll viewer, so a run with two dozen held
+    /// files pushed the whole card off the screen. Round 12 gave the simple
+    /// flow human sentences for exactly this; the Gelişmiş levels tell the
+    /// same story the same way now. Elevation and dry-run notes are built
+    /// localized above and keep their own lines.
+    private IEnumerable<string> SkipSentences(IReadOnlyList<CleanEntry> skipped)
+    {
+        var (inUse, admin, other) = ClassifySkips(skipped);
+        if (inUse > 0) yield return _loc.F("clean.report.skipped.inuse", inUse);
+        if (admin > 0) yield return _loc.F("clean.report.skipped.admin", admin);
+        if (other > 0) yield return _loc.F("clean.report.skipped.other", other);
+    }
+
     /// GUI-edge reason mapping (the round-9 rule): the engine's English
     /// prose is recomposed from the patterns the GUI knows — Win32 error 32
     /// is a sharing violation (a running app holds the file), the runner's
@@ -540,7 +555,7 @@ public sealed class CleanViewModel : ViewModelBase
                 ? System.Array.Empty<string>()
                 : await Task.Run(() => _bin.MatchingItemIds(plannedPaths));
             var outcome = await Task.Run(() => _cleanService.CleanTargets(scans));
-            problems.AddRange(outcome.Problems);
+            problems.AddRange(SkipSentences(outcome.Skipped));
             _lastRecycled = outcome.RecycledPaths;
             RestoreFailed = false;
             ProblemsText = string.Join("\n", problems);
