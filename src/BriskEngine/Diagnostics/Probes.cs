@@ -41,3 +41,9 @@ public interface IDiskInfoProbe
     long FreeBytes(string driveRoot);   // driveRoot like @"C:\"
     long TotalBytes(string driveRoot);
 }
+
+public interface IDisplayProbe
+{
+    IReadOnlyList<DisplayInfo> Displays();
+    void SetRefreshRate(string deviceName, int hz);
+}

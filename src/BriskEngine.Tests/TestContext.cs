@@ -103,6 +103,21 @@ public sealed class FakeRunningApps : IProcessLister
     public bool IsRunning(string processName) => Running.Contains(processName);
 }
 
+public sealed class FakeDisplays : IDisplayProbe
+{
+    public List<DisplayInfo> Attached = new();
+    public List<(string Device, int Hz)> SetCalls = new();
+
+    public IReadOnlyList<DisplayInfo> Displays() => Attached;
+
+    public void SetRefreshRate(string deviceName, int hz)
+    {
+        SetCalls.Add((deviceName, hz));
+        var i = Attached.FindIndex(d => d.DeviceName == deviceName);
+        if (i >= 0) Attached[i] = Attached[i] with { CurrentHz = hz };
+    }
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -124,7 +139,7 @@ public static class TestContext
 
     public static DiagnosticContext Empty(string? dataDir = null) => new(
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
-        new FakeSensors(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
+        new FakeSensors(), new FakeDisplays(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

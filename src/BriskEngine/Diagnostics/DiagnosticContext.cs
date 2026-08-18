@@ -7,6 +7,7 @@ public sealed record DiagnosticContext(
     IRegistryProbe Registry,
     IProcessInfoProbe Processes,
     ISensorProbe Sensors,
+    IDisplayProbe Displays,
     IDiskInfoProbe Disk,
     IFileProbe Files,
     IProcessLister RunningApps,

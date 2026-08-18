@@ -49,6 +49,12 @@ file sealed class NullSensors : ISensorProbe
     public int GpuCount() => 0;
 }
 
+file sealed class NullDisplays : IDisplayProbe
+{
+    public IReadOnlyList<DisplayInfo> Displays() => System.Array.Empty<DisplayInfo>();
+    public void SetRefreshRate(string deviceName, int hz) { }
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -98,7 +104,7 @@ public sealed class EngineHostTests : IDisposable
     private EngineHost Host(params IDiagnosticRule[] rules)
     {
         var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
-            new NullProcessInfo(), new NullSensors(), new NullDisk(), new NullFiles(),
+            new NullProcessInfo(), new NullSensors(), new NullDisplays(), new NullDisk(), new NullFiles(),
             new NothingRuns(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
