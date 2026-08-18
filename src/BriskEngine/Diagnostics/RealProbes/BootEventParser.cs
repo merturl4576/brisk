@@ -18,9 +18,11 @@ internal sealed record ParsedOffender(DateTime BootStarted, BootOffender Offende
 /// the tests needs neither the log nor elevation to prove they are right.
 ///
 /// Everything is read by field name. The ID 100 payload alone carries 44 Data
-/// elements whose order Microsoft never promised, and index 4 of that payload
-/// is SystemBootInstance — a boot *counter*, 392 on the machine this was
-/// verified against, which an off-by-one would report as a 392 ms boot.
+/// elements whose order Microsoft never promised, and BootTime sits at index 5
+/// with SystemBootInstance and UserBootInstance immediately before it at
+/// indexes 3 and 4 — both boot *counters*, both 392 on the machine this was
+/// verified against, either of which an off-by-one would report as a 392 ms
+/// boot.
 internal static class BootEventParser
 {
     private static readonly XNamespace EventNs =
@@ -65,6 +67,19 @@ internal static class BootEventParser
         return new ParsedOffender(bootStarted, new BootOffender(
             name, Text(fields, "FriendlyName"), Text(fields, "Path"), degradationMs));
     }
+
+    /// The bound for the offender walk: the earliest boot in the set.
+    ///
+    /// Deliberately not the last element's start. That would assume ID 101
+    /// records arrive in non-increasing BootStarted order, and a clock
+    /// correction between boots — NTP catching up, a flat RTC, a dual-boot
+    /// machine writing local time to it — lets a newer boot carry an earlier
+    /// BootStartTime. The walk would then stop early and drop the offenders of
+    /// every boot behind it, with nothing to say it had.
+    ///
+    /// Requires a non-empty set; the only caller returns before this on empty.
+    internal static DateTime OldestStart(IReadOnlyList<ParsedBoot> boots) =>
+        boots.Min(boot => boot.Started);
 
     /// Attaches each offender to the boot it belongs to.
     ///

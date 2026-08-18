@@ -13,6 +13,11 @@ namespace BriskEngine.Diagnostics.RealProbes;
 /// than an exception — same contract as RealSensorProbe. Parsing lives in
 /// BootEventParser so it can be tested without the log; this class is only the
 /// reading and the failure handling.
+///
+/// Every failure here loses information rather than inventing it: a record that
+/// will not read is skipped, never guessed at. That is the right trade for this
+/// data, but it does mean a result can be short of what Windows logged, which
+/// is why nothing in this file or on BootRecord claims completeness.
 public sealed class RealEventLogProbe : IEventLogProbe
 {
     private const string ChannelName = "Microsoft-Windows-Diagnostics-Performance/Operational";
@@ -30,10 +35,10 @@ public sealed class RealEventLogProbe : IEventLogProbe
         if (boots.Count == 0) return Array.Empty<BootRecord>();
 
         // Only the offenders that can belong to a boot we kept are worth
-        // reading, and the oldest of those bounds the walk. Reading every ID 101
-        // in the channel would mean scanning years of history to attach a
-        // handful of names.
-        var offenders = ReadOffendersBackTo(boots[boots.Count - 1].Started);
+        // reading, and the earliest of those bounds the walk. Reading every
+        // ID 101 in the channel would mean scanning years of history to attach
+        // a handful of names.
+        var offenders = ReadOffendersBackTo(BootEventParser.OldestStart(boots));
         return BootEventParser.Assemble(boots, offenders);
     }
 
@@ -56,12 +61,13 @@ public sealed class RealEventLogProbe : IEventLogProbe
         {
             while (boots.Count < count)
             {
-                var xml = NextRecordXml(reader);
-                if (xml is null) break;
+                var step = NextRecord(reader);
+                if (step.Ended) break;
+                if (step.Xml is null) continue;   // a record that would not render
                 ParsedBoot? parsed;
                 try
                 {
-                    parsed = BootEventParser.ReadBoot(xml);
+                    parsed = BootEventParser.ReadBoot(step.Xml);
                 }
                 catch (Exception)
                 {
@@ -76,9 +82,9 @@ public sealed class RealEventLogProbe : IEventLogProbe
     }
 
     /// Walks ID 101 newest-first and stops at the first record belonging to a
-    /// boot older than `oldestBootStart`. The channel is written in order, so
-    /// once the walk is past that boot there is nothing left that can attach to
-    /// anything we kept.
+    /// boot that started before `oldestBootStart`. The channel is written in
+    /// order, so once the walk is past the earliest boot we kept there is
+    /// nothing left that can attach to anything.
     private static List<ParsedOffender> ReadOffendersBackTo(DateTime oldestBootStart)
     {
         var offenders = new List<ParsedOffender>();
@@ -98,12 +104,13 @@ public sealed class RealEventLogProbe : IEventLogProbe
         {
             while (true)
             {
-                var xml = NextRecordXml(reader);
-                if (xml is null) break;
+                var step = NextRecord(reader);
+                if (step.Ended) break;
+                if (step.Xml is null) continue;
                 ParsedOffender? parsed;
                 try
                 {
-                    parsed = BootEventParser.ReadOffender(xml);
+                    parsed = BootEventParser.ReadOffender(step.Xml);
                 }
                 catch (Exception)
                 {
@@ -117,19 +124,42 @@ public sealed class RealEventLogProbe : IEventLogProbe
         return offenders;
     }
 
-    /// The XML of the next record, or null when the channel is exhausted or the
-    /// reader itself has failed. A reader that throws is finished — retrying it
-    /// would spin — so unlike a bad record this ends the walk.
-    private static string? NextRecordXml(EventLogReader reader)
+    /// One step of a walk: XML to parse, a record to skip, or the end of the
+    /// channel. The two failures are genuinely different and must not share an
+    /// outcome. A reader that throws is finished — retrying it would spin — so
+    /// that ends the walk. A record that will not render is one record: the
+    /// reader has already advanced past it, so skipping cannot spin, and
+    /// stopping there would silently hide every older record behind it.
+    private readonly record struct RecordStep(string? Xml, bool Ended)
     {
+        internal static RecordStep End() => new(null, true);
+        internal static RecordStep Skip() => new(null, false);
+        internal static RecordStep Read(string xml) => new(xml, false);
+    }
+
+    private static RecordStep NextRecord(EventLogReader reader)
+    {
+        EventRecord? record;
         try
         {
-            using var record = reader.ReadEvent();
-            return record?.ToXml();
+            record = reader.ReadEvent();
         }
         catch (Exception)
         {
-            return null;
+            return RecordStep.End();
+        }
+        if (record is null) return RecordStep.End();
+
+        using (record)
+        {
+            try
+            {
+                return RecordStep.Read(record.ToXml());
+            }
+            catch (Exception)
+            {
+                return RecordStep.Skip();
+            }
         }
     }
 

@@ -72,12 +72,19 @@ public interface IDisplayProbe
 /// blamed programs capped at N spans several boots and can be cut mid-boot with
 /// nothing to signal it, so a caller could report "Windows blames these three"
 /// when Windows blamed four. Offenders therefore only ever arrive attached to
-/// the boot they belong to, where the list is always that boot's whole set.
+/// the boot they belong to, where nothing is cut to fit a count.
+///
+/// That removes the truncation a paged call invites. It is not a completeness
+/// guarantee — a record brisk cannot read is dropped rather than guessed at —
+/// so see BootRecord.Offenders for what can still go missing and how to phrase
+/// a result built on it.
 public interface IEventLogProbe
 {
-    /// Up to `count` boots, newest first, each carrying every program Windows
+    /// Up to `count` boots, newest first, each carrying the programs Windows
     /// blamed for it, ordered worst degradation first. A boot Windows blamed
-    /// nobody for comes back with an empty Offenders list, which is common.
+    /// nobody for comes back with an empty Offenders list, which is common —
+    /// on the machine this was verified against, three of the ten most recent
+    /// boots had nobody blamed, including the newest.
     ///
     /// The channel behind this is admin-only, so an implementation returns the
     /// boots it managed to read — empty when it cannot open the log at all —

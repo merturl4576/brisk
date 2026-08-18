@@ -16,8 +16,9 @@ namespace BriskEngine.Tests;
 public class EventLogProbeTests
 {
     /// BootTime 51237, MainPathBootTime 24437, BootStartTime 2026-08-17T20:40:16.7269640Z.
-    /// Note SystemBootInstance and UserBootInstance are both 392 — a boot
-    /// counter sitting two elements ahead of BootTime in the payload.
+    /// BootTime sits at index 5, with SystemBootInstance (index 3) and
+    /// UserBootInstance (index 4) immediately before it — both boot counters,
+    /// both 392, either of which an off-by-one would read as a 392 ms boot.
     private const string RealBootXml =
         @"<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><Provider Name='Microsoft-Windows-Diagnostics-Performance' Guid='{cfc18ec0-96b1-4eba-961b-622caee05b0a}'/><EventID>100</EventID><Version>2</Version><Level>3</Level><Task>4002</Task><Opcode>34</Opcode><Keywords>0x8000000000010000</Keywords><TimeCreated SystemTime='2026-08-18T09:33:20.2798602Z'/><EventRecordID>1492</EventRecordID><Correlation ActivityID='{9c836a43-2e88-0009-e53a-849c882edd01}'/><Execution ProcessID='4932' ThreadID='7208'/><Channel>Microsoft-Windows-Diagnostics-Performance/Operational</Channel><Computer>DESKTOP-92JC71A</Computer><Security UserID='S-1-5-19'/></System><EventData><Data Name='BootTsVersion'>2</Data><Data Name='BootStartTime'>2026-08-17T20:40:16.7269640Z</Data><Data Name='BootEndTime'>2026-08-18T09:33:12.5438360Z</Data><Data Name='SystemBootInstance'>392</Data><Data Name='UserBootInstance'>392</Data><Data Name='BootTime'>51237</Data><Data Name='MainPathBootTime'>24437</Data><Data Name='BootKernelInitTime'>79</Data><Data Name='BootDriverInitTime'>608</Data><Data Name='BootDevicesInitTime'>957</Data><Data Name='BootPrefetchInitTime'>0</Data><Data Name='BootPrefetchBytes'>0</Data><Data Name='BootAutoChkTime'>0</Data><Data Name='BootSmssInitTime'>10962</Data><Data Name='BootCriticalServicesInitTime'>423</Data><Data Name='BootUserProfileProcessingTime'>5400</Data><Data Name='BootMachineProfileProcessingTime'>152</Data><Data Name='BootExplorerInitTime'>4731</Data><Data Name='BootNumStartupApps'>16</Data><Data Name='BootPostBootTime'>26800</Data><Data Name='BootIsRebootAfterInstall'>false</Data><Data Name='BootRootCauseStepImprovementBits'>0</Data><Data Name='BootRootCauseGradualImprovementBits'>0</Data><Data Name='BootRootCauseStepDegradationBits'>0</Data><Data Name='BootRootCauseGradualDegradationBits'>0</Data><Data Name='BootIsDegradation'>false</Data><Data Name='BootIsStepDegradation'>false</Data><Data Name='BootIsGradualDegradation'>false</Data><Data Name='BootImprovementDelta'>0</Data><Data Name='BootDegradationDelta'>0</Data><Data Name='BootIsRootCauseIdentified'>false</Data><Data Name='OSLoaderDuration'>1308</Data><Data Name='BootPNPInitStartTimeMS'>79</Data><Data Name='BootPNPInitDuration'>1396</Data><Data Name='OtherKernelInitDuration'>225</Data><Data Name='SystemPNPInitStartTimeMS'>1605</Data><Data Name='SystemPNPInitDuration'>572</Data><Data Name='SessionInitStartTimeMS'>2193</Data><Data Name='Session0InitDuration'>6727</Data><Data Name='Session1InitDuration'>260</Data><Data Name='SessionInitOtherDuration'>3974</Data><Data Name='WinLogonStartTimeMS'>13156</Data><Data Name='OtherLogonInitActivityDuration'>997</Data><Data Name='UserLogonWaitDuration'>729</Data></EventData></Event>";
 
@@ -248,6 +249,39 @@ public class EventLogProbeTests
             Array.Empty<ParsedOffender>());
 
         Assert.Equal(new[] { Utc(3), Utc(2), Utc(1) }, assembled.Select(b => b.When));
+    }
+
+    // ---- the offender walk's bound -----------------------------------------
+
+    /// The bound must be the earliest boot in the set, not the last one read.
+    /// Boots normally arrive newest-first so the two agree, but a clock
+    /// correction between boots lets a newer boot carry an earlier start — and
+    /// taking the last would then stop the walk early and silently drop the
+    /// offenders of every boot behind it.
+    [Fact]
+    public void OldestStart_TakesTheEarliestStart_NotTheLastBootRead()
+    {
+        var clockWentBackwards = new[]
+        {
+            new ParsedBoot(Utc(3), 30000, null),
+            new ParsedBoot(Utc(1), 10000, null),   // earliest, and not last
+            new ParsedBoot(Utc(2), 20000, null),
+        };
+
+        Assert.Equal(Utc(1), BootEventParser.OldestStart(clockWentBackwards));
+    }
+
+    [Fact]
+    public void OldestStart_OnBootsInTheUsualOrder_IsTheLastOne()
+    {
+        var newestFirst = new[]
+        {
+            new ParsedBoot(Utc(3), 30000, null),
+            new ParsedBoot(Utc(2), 20000, null),
+            new ParsedBoot(Utc(1), 10000, null),
+        };
+
+        Assert.Equal(Utc(1), BootEventParser.OldestStart(newestFirst));
     }
 
     // ---- context wiring ----------------------------------------------------

@@ -20,14 +20,30 @@ public sealed record BootRecord(
     int BootMs,
 
     // Time to the point the desktop is usable. Nullable on purpose: Windows
-    // not recording it is not the same as it being zero, and a zero here would
-    // let a consumer compute BootMs - MainPathMs and blame a user's own
-    // programs for 100% of a boot they had nothing to do with.
+    // not recording it is not the same as it being zero, and a zero would make
+    // BootMs - MainPathMs come out as the whole boot.
+    //
+    // That difference is worth naming, because it is tempting to read it as
+    // "Windows versus your own programs" and it is not. On both verified
+    // payloads it equals BootPostBootTime exactly (51237 - 24437 = 26800;
+    // 111814 - 25314 = 86500), so the subtraction only reproduces a field
+    // Windows already publishes by name, and what it means is main path versus
+    // post-boot. Neither half is attributable to the user's own software.
     int? MainPathMs,
 
-    // Everything Windows blamed for this boot, worst first. Always complete for
-    // the boot — never truncated — so a consumer saying "Windows blames these
-    // three" can be sure there was no fourth.
+    // The programs Windows blamed for this boot, worst first.
+    //
+    // Never a page or a prefix: nothing here is cut to fit a caller's count,
+    // which is the one failure a flat "recent offenders" call could not avoid.
+    //
+    // But this is best effort, not a guarantee of completeness. A record
+    // Windows wrote without a name, a delay, or a boot to attach it to is
+    // dropped rather than guessed at, and one that will not read is skipped —
+    // losing a name beats inventing or misattributing one. So this can be
+    // short of what Windows logged without being able to say so.
+    //
+    // Which makes it safe to say "Windows blamed these three" and never "only
+    // these three" or "these three are all of them".
     IReadOnlyList<BootOffender> Offenders);
 
 /// One program Windows blamed for slowing a boot (ID 101). DegradationMs is the
