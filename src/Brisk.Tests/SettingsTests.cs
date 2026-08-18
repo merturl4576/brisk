@@ -11,6 +11,8 @@ public sealed class SettingsTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-set-").FullName;
 
+    private const string ExePath = @"C:\Apps\brisk-app.exe";
+
     [Fact]
     public void Load_MissingFile_GivesDefaults()
     {
@@ -96,14 +98,51 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void StartupLauncher_IsOn_FollowsTheQueryExitCode()
     {
-        var runner = new FakeProcessRunner();
-        var launcher = new StartupLauncher(runner, new FakeRegistry(), @"C:\Apps\brisk-app.exe");
+        var runner = new TaskStateRunner();
+        var launcher = new StartupLauncher(runner, new FakeRegistry(), ExePath);
 
-        runner.NextExitCode = 0;
-        Assert.True(launcher.IsOn());
-
-        runner.NextExitCode = 1;
         Assert.False(launcher.IsOn());
+        launcher.Apply(true);
+        Assert.True(launcher.IsOn());
+        launcher.Apply(false);
+        Assert.False(launcher.IsOn());
+    }
+
+    /// WAVE C, C2. Every read of the task state used to launch schtasks.exe,
+    /// and one of those reads happens on the dispatcher — the Settings
+    /// checkbox binds it, and that binding is evaluated inside MainWindow's
+    /// constructor. One spawn, then the cache; only Apply can change the
+    /// answer, so only Apply invalidates it.
+    [Fact]
+    public void StartupLauncher_IsOn_AsksSchtasksOnce_ThenAgainOnlyAfterApply()
+    {
+        var runner = new TaskStateRunner();
+        var launcher = new StartupLauncher(runner, new FakeRegistry(), ExePath);
+
+        launcher.IsOn();
+        launcher.IsOn();
+        launcher.IsOn();
+        Assert.Single(runner.Calls.Where(c => c.Args.Contains("/Query")));
+
+        // Apply knows what it just did, so a successful one updates the cache
+        // instead of paying for another launch.
+        launcher.Apply(true);
+        Assert.True(launcher.IsOn());
+        Assert.Single(runner.Calls.Where(c => c.Args.Contains("/Query")));
+    }
+
+    /// A refused Apply leaves the task in a state this class may no longer
+    /// assume, so the cache is dropped rather than guessed at.
+    [Fact]
+    public void StartupLauncher_RefusedApply_DoesNotCacheAGuess()
+    {
+        var runner = new TaskStateRunner { TaskExists = true, DeleteSucceeds = false };
+        var launcher = new StartupLauncher(runner, new FakeRegistry(), ExePath);
+
+        Assert.False(launcher.Apply(false));
+
+        Assert.True(launcher.IsOn());   // still there — and it went and asked
+        Assert.Single(runner.Calls.Where(c => c.Args.Contains("/Query")));
     }
 
     private static FakeRegistry RegistryWithLegacyValue()

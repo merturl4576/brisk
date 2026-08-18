@@ -23,6 +23,24 @@ public sealed class SettingsViewModel : ViewModelBase
         _launcher = launcher;
         _applyTheme = applyTheme;
         _applyLanguage = applyLanguage;
+        // The Startup page can turn brisk's autostart off too. One backing
+        // truth is not enough on its own: WPF caches a bound value until
+        // something raises PropertyChanged, so without this the checkbox kept
+        // whatever it read when the page was built.
+        _launcher.Changed += () =>
+        {
+            // ...and while we are here, keep settings.json in step. It is only
+            // read by the one-time HKCU\Run migration now, but a stored answer
+            // that contradicts the machine is exactly the kind of drift this
+            // wave exists to remove.
+            var on = _launcher.IsOn();
+            if (_settings.StartWithWindows != on)
+            {
+                _settings.StartWithWindows = on;
+                _settings.Save(_settingsPath);
+            }
+            Raise(nameof(StartWithWindows));
+        };
     }
 
     public IReadOnlyList<ChoiceOption> LanguageOptions { get; } = new[]

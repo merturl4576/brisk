@@ -103,6 +103,9 @@ public sealed class StartupViewModel : ViewModelBase
         _isDryRun = isDryRun;
         _launcher = launcher;
         state.Changed += Refresh;
+        // The Settings page owns the same toggle; a change there has to reach
+        // this list too, or brisk's own row would keep its old reading.
+        launcher.Changed += Refresh;
     }
 
     public ObservableCollection<StartupItemRow> Items { get; } = new();

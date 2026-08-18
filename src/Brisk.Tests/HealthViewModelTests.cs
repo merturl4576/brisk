@@ -757,7 +757,7 @@ public class HealthViewModelTests
     {
         var host = new FakeEngineHost
         {
-            SessionIdentity = new SessionIdentity(@"PC\Admin", @"PC\alice"),
+            SessionIdentity = new SessionIdentity(@"PC\Admin", @"PC\alice", true),
         };
 
         var state = new AppState(host, EnglishLoc());
@@ -785,7 +785,7 @@ public class HealthViewModelTests
     {
         var host = new FakeEngineHost
         {
-            SessionIdentity = new SessionIdentity(@"PC\Admin", null),
+            SessionIdentity = SessionIdentity.Unknown(@"PC\Admin"),
         };
 
         Assert.False(new AppState(host, EnglishLoc()).HasIdentityWarning);

@@ -168,6 +168,7 @@
   <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
   <data name="banner.dismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="identity.otheraccount.short" xml:space="preserve"><value>Acting on {0}’s profile, not {1}’s.</value></data>
   <data name="identity.otheraccount" xml:space="preserve"><value>brisk is running as {0}, but {1} is signed in. Windows asked for an administrator and gave brisk that account’s profile — so the settings, startup entries, temp files and browser caches brisk reports and cleans belong to {0}, not to {1}.</value></data>
   <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk raised the display to its highest refresh rate and put the previous setting back after 15 seconds with no answer. That usually means the cable or the adapter cannot carry the higher rate.</value></data>
   <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk could not restore the previous display setting: {0}. The change was never saved, so restarting Windows brings the previous setting back.</value></data>

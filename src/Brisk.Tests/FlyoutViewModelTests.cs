@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
+using BriskEngine.Diagnostics;
 using BriskEngine.Models;
 using Xunit;
 
@@ -123,6 +124,27 @@ public class FlyoutViewModelTests
         // timer running past this test's return.
         vm.State.KeepDisplayCommand.Execute(null);
         await vm.State.PendingConfirmTask!;
+    }
+
+    /// WAVE C, C1. The flyout is the app's DEFAULT surface — App.xaml.cs shows
+    /// it, not the main window, unless launched with "--tray" — and it carries
+    /// its own Clean and Fix all. So a standard-account user who lives in the
+    /// tray could recycle another account's browser caches and temp files
+    /// without ever meeting the main window's disclosure bar. The strip binds
+    /// through State, which is what this pins; the markup itself is XAML and
+    /// unreachable from here.
+    [Fact]
+    public void IdentityWarning_IsReadableFromTheFlyoutsOwnState()
+    {
+        var host = new FakeEngineHost
+        {
+            SessionIdentity = new SessionIdentity(@"PC\Admin", @"PC\alice", true),
+        };
+        var vm = Vm(host);
+
+        Assert.True(vm.State.HasIdentityWarning);
+        Assert.Contains(@"PC\Admin", vm.State.IdentityWarningShort);
+        Assert.Contains(@"PC\alice", vm.State.IdentityWarningShort);
     }
 
     /// FIX WAVE, Finding 6. The flyout is the one fix surface the main

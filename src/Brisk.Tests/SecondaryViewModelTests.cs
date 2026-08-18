@@ -77,6 +77,60 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.True(vm.ToggleFailed);
     }
 
+    /// WAVE C, C2. B3 gave the two surfaces one backing truth, and the symptom
+    /// survived it: SettingsPage is built once and WPF caches a bound value
+    /// until something raises PropertyChanged, so turning brisk off on the
+    /// Startup page left the checkbox reading "on" for the life of the
+    /// process. It self-healed only if the user clicked the stale checkbox,
+    /// which is a confusing repair.
+    [Fact]
+    public async Task StartupPageTurningBriskOff_ReachesTheSettingsCheckbox()
+    {
+        var runner = new TaskStateRunner { TaskExists = true };
+        var launcher = new StartupLauncher(runner, new FakeRegistry(),
+            @"C:\x\brisk-app.exe");
+        var settings = new Settings { StartWithWindows = true };
+        var settingsVm = new SettingsViewModel(settings,
+            Path.Combine(_root, "cross.json"), launcher, _ => { }, _ => { });
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var startupVm = new StartupViewModel(state, host, EnglishLoc(),
+            () => false, launcher);
+        await state.ScanAsync();
+
+        var raised = new List<string>();
+        settingsVm.PropertyChanged += (_, e) => raised.Add(e.PropertyName ?? "");
+        startupVm.Items.Single(i => i.Hive == StartupItemRow.TaskHive).IsEnabled = false;
+
+        Assert.False(settingsVm.StartWithWindows);
+        Assert.Contains(nameof(SettingsViewModel.StartWithWindows), raised);
+        // ...and the stored record stops contradicting the machine (the
+        // drift the coordinator listed as out of scope: it was two lines
+        // once the notification existed, so it is closed here).
+        Assert.False(Settings.Load(Path.Combine(_root, "cross.json")).StartWithWindows);
+    }
+
+    /// The other direction: the Settings page owns the same toggle, so the
+    /// Startup page's own row must not keep its old reading either.
+    [Fact]
+    public async Task SettingsTurningBriskOn_ReachesTheStartupPage()
+    {
+        var launcher = new StartupLauncher(new TaskStateRunner(), new FakeRegistry(),
+            @"C:\x\brisk-app.exe");
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var startupVm = new StartupViewModel(state, host, EnglishLoc(),
+            () => false, launcher);
+        var settingsVm = new SettingsViewModel(new Settings(),
+            Path.Combine(_root, "cross2.json"), launcher, _ => { }, _ => { });
+        await state.ScanAsync();
+        Assert.DoesNotContain(startupVm.Items, i => i.Hive == StartupItemRow.TaskHive);
+
+        settingsVm.StartWithWindows = true;
+
+        Assert.Contains(startupVm.Items, i => i.Hive == StartupItemRow.TaskHive);
+    }
+
     /// WAVE B, B4. "brisk" was a CONTAINS-match in the known-apps table, so
     /// BriskBard — a real browser — would have been described to its owner as
     /// "brisk itself, turn this off to stop it starting with Windows": a false

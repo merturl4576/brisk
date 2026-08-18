@@ -199,6 +199,7 @@ public sealed class FakeEngineHost : IEngineHost
 
     /// Same account by default — the ordinary case, and on an administrator
     /// account the only one. Set it to model over-the-shoulder elevation.
-    public SessionIdentity SessionIdentity { get; set; } = new("PC\alice", "PC\alice");
+    public SessionIdentity SessionIdentity { get; set; } =
+        new(@"PC\alice", @"PC\alice", false);
     public SessionIdentity Session() => SessionIdentity;
 }

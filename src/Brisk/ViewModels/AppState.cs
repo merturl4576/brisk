@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
+using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules;
 
 namespace Brisk.ViewModels;
@@ -39,14 +40,17 @@ public sealed class AppState : ViewModelBase
     private string _displayNotice = "";
     private Task _scan = Task.CompletedTask;
 
-    /// toUiThread is how Changed and DisplayNotice get back to the dispatcher.
-    /// Both fire from the display rescue, which resolves on a thread-pool
-    /// thread with no SynchronizationContext under it, and every subscriber is
-    /// UI-affine: FlyoutViewModel.Refresh ends in RaiseCanExecuteChanged (which
-    /// sets IsEnabled on a ButtonBase) and HealthViewModel.Refresh clears an
-    /// ObservableCollection behind a CollectionView. The first one to throw
-    /// aborts the rest of the invocation list, so a rescan that never reaches
-    /// the pages is exactly as useless as no rescan at all.
+    /// toUiThread is how Changed and the notice get back to the dispatcher.
+    /// Both are written by the display rescue, which resolves on a thread-pool
+    /// thread with no SynchronizationContext under it. Changed still has
+    /// UI-affine subscribers — FlyoutViewModel.Refresh ends in
+    /// RaiseCanExecuteChanged, which sets IsEnabled on a ButtonBase, and
+    /// HealthViewModel.Refresh clears an ObservableCollection behind a
+    /// CollectionView — and the first one to throw aborts the rest of the
+    /// invocation list, so a rescan that never reaches the pages is exactly as
+    /// useless as no rescan at all. (The notice is a plain bound property now,
+    /// which WPF would marshal on its own; it goes through the same door so
+    /// there is one rule here, not two.)
     ///
     /// App.xaml.cs passes Dispatcher.Invoke — the same marshalling it already
     /// uses for the tray's Changed handler and for ShowMain. The default runs
@@ -58,25 +62,29 @@ public sealed class AppState : ViewModelBase
         _toUi = toUiThread ?? (action => action());
         KeepDisplayCommand = new RelayCommand(() => PendingConfirmation?.Keep());
         DismissDisplayNoticeCommand = new RelayCommand(() => DisplayNotice = "");
-        IdentityWarning = IdentityWarningFor(host, _loc);
+        var session = SessionOf(host);
+        IdentityWarning = session is null ? ""
+            : _loc.F("identity.otheraccount", session.ProcessUser,
+                session.InteractiveUser ?? "");
+        IdentityWarningShort = session is null ? ""
+            : _loc.F("identity.otheraccount.short", session.ProcessUser,
+                session.InteractiveUser ?? "");
     }
 
-    /// Asked once, at composition. A probe that cannot answer reports the
-    /// interactive user as unknown, and an unknown answer must never become a
-    /// confident claim about whose files these are — so it stays silent.
-    private static string IdentityWarningFor(IEngineHost host, Loc loc)
+    /// Asked once, at composition; null whenever there is nothing to say. A
+    /// probe that cannot answer reports the interactive user as unknown, and
+    /// an unknown answer must never become a confident claim about whose files
+    /// these are — so it stays silent.
+    private static SessionIdentity? SessionOf(IEngineHost host)
     {
         try
         {
             var session = host.Session();
-            return session.DiffersFromInteractiveUser
-                ? loc.F("identity.otheraccount", session.ProcessUser,
-                    session.InteractiveUser ?? "")
-                : "";
+            return session.DiffersFromInteractiveUser ? session : null;
         }
         catch (Exception)
         {
-            return "";
+            return null;
         }
     }
 
@@ -183,6 +191,13 @@ public sealed class AppState : ViewModelBase
     /// profile of the person reading the screen. Fixed for the life of the
     /// process: it is a fact about this run, not a state that changes.
     public string IdentityWarning { get; }
+
+    /// The same fact in one line, for the flyout — which is the app's DEFAULT
+    /// surface (App.xaml.cs shows it, not the main window, unless "--tray")
+    /// and carries its own Clean and Fix all. A standard-account user who
+    /// lives in the tray would otherwise recycle another account's browser
+    /// caches without ever meeting the full bar.
+    public string IdentityWarningShort { get; }
 
     public bool HasIdentityWarning => IdentityWarning.Length > 0;
 

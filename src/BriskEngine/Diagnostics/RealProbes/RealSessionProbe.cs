@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Threading.Tasks;
 
 namespace BriskEngine.Diagnostics.RealProbes;
 
@@ -25,24 +26,60 @@ public sealed class RealSessionProbe : ISessionProbe
     private const int WtsUserName = 5;
     private const int WtsDomainName = 7;
 
+    /// Everything below can reach the LSA — WindowsIdentity.Name resolves a SID
+    /// to a name, NTAccount.Translate does the reverse — and on a domain-joined
+    /// machine with an unreachable domain controller either can block for
+    /// seconds. This runs inside AppState's constructor, on the dispatcher,
+    /// before any window paints, so the whole resolution is bounded. Expiry is
+    /// treated as "nothing is known", which already means brisk says nothing:
+    /// the safe direction costs nothing here.
+    private static readonly TimeSpan Bound = TimeSpan.FromSeconds(2);
+
     public SessionIdentity Current()
     {
-        using var identity = WindowsIdentity.GetCurrent();
-        var processUser = identity.Name;
-        var interactive = InteractiveUser();
-        if (interactive is null) return new SessionIdentity(processUser, null);
+        var resolve = Task.Run(Resolve);
+        return resolve.Wait(Bound)
+            ? resolve.Result
+            // Environment.UserName reads the process token, not the directory,
+            // so it cannot be the thing that is hanging. It is only ever used
+            // inside a message this verdict guarantees is never shown.
+            : SessionIdentity.Unknown(Environment.UserName);
+    }
 
-        // Prefer SIDs: names are not unique across domains, and this decides
-        // whether brisk tells the user their profile is not the one being read.
-        var processSid = identity.User?.Value;
-        var interactiveSid = TranslateToSid(interactive);
-        if (processSid is not null && interactiveSid is not null)
-            return new SessionIdentity(processUser,
-                string.Equals(processSid, interactiveSid, StringComparison.Ordinal)
-                    ? processUser        // same account: report no difference at all
-                    : interactive);
+    private static SessionIdentity Resolve()
+    {
+        try
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            var processUser = identity.Name;
+            var interactive = InteractiveUser();
+            if (interactive is null) return SessionIdentity.Unknown(processUser);
 
-        return new SessionIdentity(processUser, interactive);
+            // SIDs decide wherever both sides resolve, and their verdict is
+            // CARRIED on the record rather than re-derived from the names: two
+            // accounts in different forests can share one DOMAIN\user
+            // spelling, and telling those apart is the entire reason to compare
+            // SIDs in the first place.
+            var processSid = identity.User?.Value;
+            var interactiveSid = TranslateToSid(interactive);
+            if (processSid is not null && interactiveSid is not null)
+            {
+                var differs = !string.Equals(processSid, interactiveSid,
+                    StringComparison.Ordinal);
+                return new SessionIdentity(processUser,
+                    differs ? interactive : processUser, differs);
+            }
+
+            // Neither SID resolved: fall back to names, leaf-first, so an empty
+            // WTSDomainName cannot manufacture a mismatch out of a bare
+            // "alice" against "PC\alice".
+            return new SessionIdentity(processUser, interactive,
+                SessionIdentity.NamesDiffer(processUser, interactive));
+        }
+        catch (SystemException)
+        {
+            return SessionIdentity.Unknown(Environment.UserName);
+        }
     }
 
     private static string? TranslateToSid(string accountName)

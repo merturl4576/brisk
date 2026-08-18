@@ -53,7 +53,8 @@ file sealed class NullSensors : ISensorProbe
 /// process token and the signed-in user are the same account.
 file sealed class SameUserSession : ISessionProbe
 {
-    public SessionIdentity Current() => new("PC\alice", "PC\alice");
+    public SessionIdentity Current() =>
+        new(@"PC\alice", @"PC\alice", false);
 }
 
 file sealed class NullDisplays : IDisplayProbe

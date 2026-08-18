@@ -1,3 +1,4 @@
+using System;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 
@@ -25,6 +26,13 @@ public sealed class StartupLauncher
     private readonly IProcessRunner _runner;
     private readonly IRegistryProbe _registry;
     private readonly string _exePath;
+    /// Null until first asked. The task state is read by two surfaces (the
+    /// Settings checkbox and the Startup page's brisk row) and by the
+    /// migration, and every read used to be a schtasks.exe launch — including
+    /// one on the dispatcher, from a binding evaluated in MainWindow's
+    /// constructor. One spawn, then the cache, invalidated by the only thing
+    /// that can change the answer: Apply.
+    private bool? _isOn;
 
     public StartupLauncher(IProcessRunner runner, IRegistryProbe registry, string exePath)
     {
@@ -33,8 +41,15 @@ public sealed class StartupLauncher
         _exePath = exePath;
     }
 
-    public bool IsOn() =>
+    public bool IsOn() => _isOn ??=
         _runner.Run("schtasks.exe", $"/Query /TN {TaskName}").ExitCode == 0;
+
+    /// Raised after Apply changes (or fails to change) the task. Both surfaces
+    /// that show brisk's own autostart subscribe: with one backing truth but
+    /// no notification, WPF kept the value it read when the page was built, so
+    /// turning brisk off on the Startup page still left the Settings checkbox
+    /// showing "on" for the life of the process.
+    public event Action? Changed;
 
     /// False when schtasks refused — Group Policy, an AV product, a
     /// locked-down task store. Discarding that exit code is what let
@@ -43,11 +58,15 @@ public sealed class StartupLauncher
     public bool Apply(bool on)
     {
         var ok = on ? CreateTask() : DeleteTask();
+        // A refused apply leaves the task as it was, but "as it was" is no
+        // longer something this class may assume — re-ask on the next read.
+        _isOn = ok ? on : null;
         // Either direction is a fresh decision about brisk's autostart, and
         // the old Run value is part of the answer — left behind after "off" it
         // would have brisk claiming to have left startup while still sitting
         // in it. Migrate() does the same for users who never touch the toggle.
         RemoveLegacyValue();
+        Changed?.Invoke();
         return ok;
     }
 
@@ -67,7 +86,7 @@ public sealed class StartupLauncher
     public void Migrate(bool autostartWanted)
     {
         if (_registry.GetString(LegacyRunKey, LegacyValueName) is null) return;
-        if (autostartWanted && !IsOn()) CreateTask();
+        if (autostartWanted && !IsOn()) { CreateTask(); _isOn = null; }
         RemoveLegacyValue();
     }
 

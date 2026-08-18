@@ -60,6 +60,17 @@
                 <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
                            Text="{Binding ReclaimLine}" />
             </StackPanel>
+            <!-- The flyout is the app's DEFAULT surface and carries its own
+                 Clean and Fix all, so a standard-account user who lives in the
+                 tray has to meet this here — the main window's bar is on a
+                 window they may never open. -->
+            <Border Margin="0,6,0,2" Padding="16,6"
+                    Background="{DynamicResource SeverityCritical}"
+                    Visibility="{Binding State.HasIdentityWarning,
+                        Converter={x:Static Brisk:BoolToVis.Instance}}">
+                <TextBlock TextWrapping="Wrap" Foreground="White"
+                           Text="{Binding State.IdentityWarningShort}" />
+            </Border>
             <StackPanel Orientation="Horizontal" Margin="16,7,16,0"
                         Visibility="{Binding State.IsScanning,
                             Converter={x:Static Brisk:BoolToVis.Instance}}">
