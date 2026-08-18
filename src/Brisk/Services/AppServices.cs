@@ -59,7 +59,7 @@ public static class AppServices
             LiveMetrics = new LiveMetrics(sensors, processInfo, host.FreeDiskBytes),
             Settings = Settings.Load(settingsPath),
             SettingsPath = settingsPath,
-            Launcher = new StartupLauncher(registry,
+            Launcher = new StartupLauncher(runner,
                 Path.Combine(AppContext.BaseDirectory, "brisk-app.exe")),
         };
     }

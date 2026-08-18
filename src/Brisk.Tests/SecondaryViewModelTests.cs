@@ -10,23 +10,6 @@ using Xunit;
 
 namespace Brisk.Tests;
 
-file sealed class RegFake : IRegistryProbe
-{
-    public Dictionary<string, Dictionary<string, object>> Keys { get; } =
-        new(StringComparer.OrdinalIgnoreCase);
-    private Dictionary<string, object> Key(string k) =>
-        Keys.TryGetValue(k, out var d) ? d : Keys[k] = new(StringComparer.OrdinalIgnoreCase);
-    public string? GetString(string k, string v) => Key(k).TryGetValue(v, out var o) ? o as string : null;
-    public void SetString(string k, string v, string value) => Key(k)[v] = value;
-    public void DeleteValue(string k, string v) => Key(k).Remove(v);
-    public byte[]? GetBytes(string k, string v) => Key(k).TryGetValue(v, out var o) ? o as byte[] : null;
-    public void SetBytes(string k, string v, byte[] value) => Key(k)[v] = value;
-    public int? GetInt(string k, string v) => null;
-    public void SetInt(string k, string v, int value) { }
-    public IReadOnlyList<string> GetValueNames(string k) => Key(k).Keys.ToList();
-    public IReadOnlyList<string> GetSubKeyNames(string k) => Array.Empty<string>();
-}
-
 public sealed class SecondaryViewModelTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-vm2-").FullName;
@@ -116,10 +99,10 @@ public sealed class SecondaryViewModelTests : IDisposable
     {
         var path = Path.Combine(_root, "settings.json");
         var settings = new Settings();
-        var reg = new RegFake();
+        var runner = new FakeProcessRunner();
         var applied = new List<string>();
         var vm = new SettingsViewModel(settings, path,
-            new StartupLauncher(reg, @"C:\x\brisk-app.exe"),
+            new StartupLauncher(runner, @"C:\x\brisk-app.exe"),
             theme => applied.Add("theme:" + theme),
             lang => applied.Add("lang:" + lang));
 
@@ -136,12 +119,12 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.Equal("tr", reloaded.Language);
         Assert.True(reloaded.DryRun);
         Assert.True(reloaded.StartWithWindows);
-        Assert.NotNull(reg.GetString(
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run", "brisk"));
+        Assert.Contains(runner.Calls,
+            c => c.Exe == "schtasks.exe" && c.Args.Contains("/Create"));
 
         vm.StartWithWindows = false;
-        Assert.Null(reg.GetString(
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run", "brisk"));
+        Assert.Contains(runner.Calls,
+            c => c.Exe == "schtasks.exe" && c.Args.Contains("/Delete"));
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }

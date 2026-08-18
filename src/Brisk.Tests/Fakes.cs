@@ -11,6 +11,18 @@ using BriskEngine.Models;
 
 namespace Brisk.Tests;
 
+public sealed class FakeProcessRunner : BriskEngine.Cleaning.IProcessRunner
+{
+    public System.Collections.Generic.List<(string Exe, string Args)> Calls = new();
+    public int NextExitCode;
+
+    public (int ExitCode, string StdOut) Run(string exe, string args)
+    {
+        Calls.Add((exe, args));
+        return (NextExitCode, "");
+    }
+}
+
 public static class TestData
 {
     public static DiagnosticFinding Finding(string ruleId, Severity sev = Severity.Warning,
