@@ -135,6 +135,7 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Bayat geliştirici önbellekleri</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Görsel efektler bilgisayarı yavaşlatıyor</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Depolama Alanı Algılayıcısı kapalı</value></data>
+  <data name="rule.display-refresh.title" xml:space="preserve"><value>Ekran, desteklediği yenileme hızının altında çalışıyor</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
@@ -147,6 +148,7 @@
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Ağır açılış programları kapatıldı</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Görsel efektler performansa göre ayarlandı</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Depolama Alanı Algılayıcısı açıldı</value></data>
+  <data name="rule.display-refresh.done" xml:space="preserve"><value>Ekranlar en yüksek yenileme hızına alındı</value></data>
   <data name="rule.power-plan.evidence" xml:space="preserve"><value>Etkin plan: {0}. Bu plan CPU hızlarını bilerek sınırlar; performans planı işlemcinin tam turbo hızına çıkmasına izin verir.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>Bu bilgisayarda iki GPU var; {0} için yüksek performanslı GPU tercihi tanımlı değil, bu yüzden Windows onu yavaş tümleşik GPU'da çalıştırabilir.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
@@ -157,6 +159,7 @@
   <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>Bellek %{0} dolu. En çok kullananlar: {1}. Bunlardan bazılarını kapatmak ya da açılıştan kaldırmak belleği rahatlatır.</value></data>
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Boş alan azalıyor; bu hızla disk yaklaşık {0} gün içinde dolacak.</value></data>
+  <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows ekranı desteklediğinden yavaş bir hızda bırakmış; bu yüzden ekrandaki her şey daha düşük hızda akıyor.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} açık — dahil etmek için önce kapat</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} boş · {1}</value></data>
   <data name="clean.target.user-temp" xml:space="preserve"><value>Kullanıcı geçici dosyaları</value></data>
