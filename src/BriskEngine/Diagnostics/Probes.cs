@@ -65,3 +65,12 @@ public interface IDisplayProbe
     /// would bring back the mode the user just asked brisk to take away.
     void PersistCurrentModes();
 }
+
+/// Windows' own boot measurements, newest first. The channel behind this is
+/// admin-only, so an implementation returns empty rather than throwing when it
+/// cannot be read — a missing boot history is something a rule can handle.
+public interface IEventLogProbe
+{
+    IReadOnlyList<BootRecord> RecentBoots(int count);
+    IReadOnlyList<BootOffender> RecentOffenders(int count);
+}

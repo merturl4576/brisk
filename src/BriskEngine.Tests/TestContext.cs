@@ -152,6 +152,16 @@ public sealed class FakeDisplays : IDisplayProbe
     public void PersistCurrentModes() => PersistCalls++;
 }
 
+public sealed class FakeEventLog : IEventLogProbe
+{
+    public List<BootRecord> Boots = new();
+    public List<BootOffender> Offenders = new();
+    public IReadOnlyList<BootRecord> RecentBoots(int count) =>
+        Boots.GetRange(0, Math.Min(count, Boots.Count));
+    public IReadOnlyList<BootOffender> RecentOffenders(int count) =>
+        Offenders.GetRange(0, Math.Min(count, Offenders.Count));
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -173,7 +183,7 @@ public static class TestContext
 
     public static DiagnosticContext Empty(string? dataDir = null) => new(
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
-        new FakeSensors(), new FakeDisplays(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
+        new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

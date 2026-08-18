@@ -8,6 +8,7 @@ public sealed record DiagnosticContext(
     IProcessInfoProbe Processes,
     ISensorProbe Sensors,
     IDisplayProbe Displays,
+    IEventLogProbe EventLog,
     IDiskInfoProbe Disk,
     IFileProbe Files,
     IProcessLister RunningApps,
