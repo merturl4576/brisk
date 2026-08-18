@@ -130,6 +130,54 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.DoesNotContain(vm.Items, i => i.Name == "brisk");
     }
 
+    // Pins the toggle's destination: brisk's row must reach StartupLauncher
+    // (schtasks), never _host.SetStartupEnabled -- the engine's StartupManager
+    // has no idea brisk's autostart is a Scheduled Task. A refactor that
+    // collapsed this closure into the host-backed one would silently no-op
+    // while still reporting success; this test fails loudly if that happens.
+    [Fact]
+    public async Task StartupList_BriskToggle_RoutesToLauncher_NotHost()
+    {
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var runner = new FakeProcessRunner { NextExitCode = 0 };   // task exists
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
+            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+
+        await state.ScanAsync();
+
+        var briskRow = vm.Items.Single(i => i.Name == "brisk");
+        briskRow.IsEnabled = false;
+
+        Assert.Contains(runner.Calls,
+            c => c.Exe == "schtasks.exe" && c.Args.Contains("/Delete"));
+        Assert.Empty(host.StartupToggles);
+    }
+
+    // Pins that a successful toggle clears a stale ToggleFailed banner --
+    // otherwise a dry-run (or an earlier failed host-row toggle) leaves the
+    // warning on screen even though brisk's own toggle just succeeded.
+    [Fact]
+    public async Task StartupList_BriskToggle_ClearsToggleFailed_OnSuccess()
+    {
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var runner = new FakeProcessRunner { NextExitCode = 0 };   // task exists
+        var dryRun = true;
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => dryRun,
+            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+
+        await state.ScanAsync();
+        var briskRow = vm.Items.Single(i => i.Name == "brisk");
+
+        briskRow.IsEnabled = false;   // dry run: fails, sets ToggleFailed
+        Assert.True(vm.ToggleFailed);
+
+        dryRun = false;
+        briskRow.IsEnabled = false;   // now succeeds: must clear ToggleFailed
+        Assert.False(vm.ToggleFailed);
+    }
+
     [Fact]
     public void Settings_SettersPersistAndApply()
     {

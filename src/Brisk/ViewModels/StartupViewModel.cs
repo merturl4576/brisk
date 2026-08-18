@@ -103,7 +103,10 @@ public sealed class StartupViewModel : ViewModelBase
         Items.Clear();
 
         // brisk criticizes startup bloat, so when it joins startup it shows up
-        // in the same list, switchable by the same toggle.
+        // in the same list, switchable by the same toggle. It is pinned to
+        // the very top, ahead of the heavy-first sort below and regardless
+        // of its own (false) KnownHeavy — self-accountability should be
+        // unmissable, not buried under three heavy apps. Not a sort bug.
         if (_launcher.IsOn())
             Items.Add(new StartupItemRow(
                 new StartupEntry("Task", "brisk", true, false), _loc,
@@ -111,6 +114,7 @@ public sealed class StartupViewModel : ViewModelBase
                 {
                     if (_isDryRun()) { ToggleFailed = true; return false; }
                     _launcher.Apply(enabled);
+                    ToggleFailed = false;
                     return true;
                 }));
 
