@@ -180,6 +180,34 @@ public class LocTests
         Assert.DoesNotContain("Geri Dönüşüm", loc["clean.simple.hint"]);
     }
 
+    /// ROUND 13: "the next clean or Windows will take care of it" was false
+    /// — only deterministically-named files are ever recycled again, so a
+    /// randomly-named leftover never gets a second pass. Only the truthful
+    /// half survives.
+    [Fact]
+    public void BinLeft_PromisesNoSecondPass()
+    {
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        Assert.Equal("{0} stayed in the Recycle Bin", loc["clean.report.binleft"]);
+        loc.SetLanguage("tr");
+        Assert.Equal("{0} Geri Dönüşüm Kutusu'nda kaldı", loc["clean.report.binleft"]);
+    }
+
+    /// ROUND 13: the overview footer was the last place still promising
+    /// the Recycle Bin, but the button right beside it now purges what it
+    /// recycles — same one-step flow as the Depolama page. The reassurance
+    /// keeps only what stayed true: these files rebuild themselves.
+    [Fact]
+    public void ActionsHint_NoLongerPromisesTheRecycleBin()
+    {
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        Assert.DoesNotContain("Recycle Bin", loc["overview.actions.hint"]);
+        loc.SetLanguage("tr");
+        Assert.DoesNotContain("Geri Dönüşüm", loc["overview.actions.hint"]);
+    }
+
     [Fact]
     public void SetLanguage_RaisesIndexerChange()
     {

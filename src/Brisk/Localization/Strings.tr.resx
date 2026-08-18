@@ -15,7 +15,7 @@
   <data name="overview.status.advise" xml:space="preserve"><value>Bilgisayarın iyi durumda — incelemen için {0} öneri var</value></data>
   <data name="overview.cleanspace" xml:space="preserve"><value>{0} yer aç</value></data>
   <data name="overview.cleanspace.none" xml:space="preserve"><value>Diskte yer aç</value></data>
-  <data name="overview.actions.hint" xml:space="preserve"><value>İkisi de güvenlidir: ayar değişiklikleri geri alınabilir, temizlenen dosyalar önce Geri Dönüşüm Kutusu'na taşınır.</value></data>
+  <data name="overview.actions.hint" xml:space="preserve"><value>İkisi de güvenlidir: ayar değişiklikleri geri alınabilir, yalnızca Windows'un ve uygulamaların kendi kendine yeniden oluşturduğu dosyalar temizlenir.</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>Yapılanlar</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Düzeltildi: {0}</value></data>
   <data name="overview.report.disabled" xml:space="preserve"><value>Açılışta kapatıldı: {0}</value></data>
@@ -108,7 +108,7 @@
   <data name="clean.simple.locked.app" xml:space="preserve"><value>{0} kapatılırsa +{1} daha</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} da şu an açık uygulamaların tuttuğu dosyalarda — kapanınca boşalır</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} açık olduğu için önbelleği ({1}) atlandı — kapatıp yeniden temizleyebilirsin</value></data>
-  <data name="clean.report.binleft" xml:space="preserve"><value>{0} Geri Dönüşüm Kutusu'nda kaldı — bir sonraki temizlik ya da Windows halleder</value></data>
+  <data name="clean.report.binleft" xml:space="preserve"><value>{0} Geri Dönüşüm Kutusu'nda kaldı</value></data>
   <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} dosya çalışan bir uygulama tarafından kullanıldığı için olduğu gibi bırakıldı</value></data>
   <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} öğe yönetici onayı gerektirdiği için atlandı</value></data>
   <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} öğe taşınamadığı için atlandı</value></data>

@@ -15,7 +15,7 @@
   <data name="overview.status.advise" xml:space="preserve"><value>Your PC is in good shape — {0} recommendations to review</value></data>
   <data name="overview.cleanspace" xml:space="preserve"><value>Free up {0}</value></data>
   <data name="overview.cleanspace.none" xml:space="preserve"><value>Free up disk space</value></data>
-  <data name="overview.actions.hint" xml:space="preserve"><value>Both are safe: setting changes can be undone, and cleaned files go to the Recycle Bin first.</value></data>
+  <data name="overview.actions.hint" xml:space="preserve"><value>Both are safe: setting changes can be undone, and only files Windows and your apps rebuild on their own are cleaned.</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>What was done</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Fixed: {0}</value></data>
   <data name="overview.report.disabled" xml:space="preserve"><value>Startup disabled: {0}</value></data>
@@ -108,7 +108,7 @@
   <data name="clean.simple.locked.app" xml:space="preserve"><value>+{1} more if you close {0}</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} more in files that running apps are holding — frees up when they close</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} is open, so its cache ({1}) was skipped — close {0} and clean again</value></data>
-  <data name="clean.report.binleft" xml:space="preserve"><value>{0} stayed in the Recycle Bin — the next clean or Windows will take care of it</value></data>
+  <data name="clean.report.binleft" xml:space="preserve"><value>{0} stayed in the Recycle Bin</value></data>
   <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} files are in use by a running app and were left untouched</value></data>
   <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} items need administrator approval and were skipped</value></data>
   <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} items could not be moved and were skipped</value></data>
