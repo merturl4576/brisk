@@ -3,9 +3,13 @@ using System.Collections.Generic;
 
 namespace BriskEngine.Diagnostics;
 
-/// One boot, as Windows measured it (event ID 100), carrying every program
+/// One boot, as Windows measured it (event ID 100), carrying the programs
 /// Windows blamed for it (event ID 101). Windows timed this itself, which is
 /// what makes it stronger than any heuristic brisk could invent.
+///
+/// The offender list is best effort, not a guaranteed-complete set — see the
+/// comment on Offenders below for what can be missing and how to phrase a
+/// result built on it.
 ///
 /// Field names verified against a live channel on Windows 11 build 26200. The
 /// documented PostBootTime and BootDegradationTime do not exist under those
@@ -27,8 +31,12 @@ public sealed record BootRecord(
     // "Windows versus your own programs" and it is not. On both verified
     // payloads it equals BootPostBootTime exactly (51237 - 24437 = 26800;
     // 111814 - 25314 = 86500), so the subtraction only reproduces a field
-    // Windows already publishes by name, and what it means is main path versus
-    // post-boot. Neither half is attributable to the user's own software.
+    // Windows already publishes by name. It is a phase split — main path versus
+    // post-boot — not a system-versus-you split. The user's own programs are
+    // not absent from either half: brisk-app.exe was blamed for 26081 ms of one
+    // measured boot. But neither half is a measure of them, because both also
+    // hold Windows' own work. The only per-program figure anywhere in this data
+    // is BootOffender.DegradationMs.
     int? MainPathMs,
 
     // The programs Windows blamed for this boot, worst first.
