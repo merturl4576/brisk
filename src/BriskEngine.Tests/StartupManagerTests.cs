@@ -93,16 +93,8 @@ public sealed class StartupManagerTests : IDisposable
         Assert.False(Manager().SetEnabled("HKLM", "Svc", false));
     }
 
-    private static void StoreTask(FakeRegistry reg, string pfn, string task, int state)
-    {
-        var apps = StartupManager.StoreRoot;
-        if (!reg.SubKeys.TryGetValue(apps, out var pfns)) reg.SubKeys[apps] = pfns = new List<string>();
-        if (!pfns.Contains(pfn)) pfns.Add(pfn);
-        var appKey = $@"{apps}\{pfn}";
-        if (!reg.SubKeys.TryGetValue(appKey, out var tasks)) reg.SubKeys[appKey] = tasks = new List<string>();
-        if (!tasks.Contains(task)) tasks.Add(task);
-        reg.SetInt($@"{appKey}\{task}", "State", state);
-    }
+    private static void StoreTask(FakeRegistry reg, string pfn, string task, int state) =>
+        StoreRegistry.Task(reg, pfn, task, state);
 
     [Fact]
     public void StoreApps_AreListed_WithTheirEnabledState()
@@ -178,6 +170,116 @@ public sealed class StartupManagerTests : IDisposable
 
         Assert.Single(items);
         Assert.Equal("HKCU", items[0].Hive);
+    }
+
+    // The State value mirrors WinRT's StartupTaskState: 0 Disabled,
+    // 1 DisabledByUser, 2 Enabled, 3 DisabledByPolicy, 4 EnabledByPolicy.
+    // Three of the five mean the task does not start, so reading "anything but
+    // 0" as enabled had brisk claiming two disabled states start with Windows.
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    [InlineData(4, true)]
+    public void StateIsReadAsTheStartupTaskStateEnum_NotAsNonZero(int state, bool starts)
+    {
+        var reg = new FakeRegistry();
+        StoreTask(reg, "Contoso.Widget_abcdefghijklm", "WidgetStartup", state);
+
+        var row = Assert.Single(new StartupManager(reg, null).List());
+
+        Assert.Equal(starts, row.Enabled);
+    }
+
+    // The real WhatsApp record on the maintainer's machine: a GUID-named task
+    // enabled, the named one disabled. The app starts, so the row says so --
+    // and the toggle writes every task, including the one already at the
+    // target, or enabling would leave half the package behind.
+    [Fact]
+    public void APackageWithOneTaskOnAndOneOff_ReadsEnabled_AndTogglesBoth()
+    {
+        var reg = new FakeRegistry();
+        const string Pfn = "5319275A.WhatsAppDesktop_cv1g1gvanyjgm";
+        StoreTask(reg, Pfn, "2defd21c-0b9e-4e4e-873a-2a68c47d7da5", 2);
+        StoreTask(reg, Pfn, "WhatsAppStartupTask", 0);
+        var guidTask = $@"{StartupManager.StoreRoot}\{Pfn}\2defd21c-0b9e-4e4e-873a-2a68c47d7da5";
+        var namedTask = $@"{StartupManager.StoreRoot}\{Pfn}\WhatsAppStartupTask";
+
+        var row = Assert.Single(new StartupManager(reg, null).List(), i => i.Hive == "Store");
+        Assert.True(row.Enabled);
+
+        Assert.True(new StartupManager(reg, null).SetEnabled("Store", "WhatsAppDesktop", enabled: false));
+        Assert.Equal(0, reg.GetInt(guidTask, "State"));
+        Assert.Equal(0, reg.GetInt(namedTask, "State"));
+
+        Assert.True(new StartupManager(reg, null).SetEnabled("Store", "WhatsAppDesktop", enabled: true));
+        Assert.Equal(2, reg.GetInt(guidTask, "State"));
+        Assert.Equal(2, reg.GetInt(namedTask, "State"));
+    }
+
+    // The package key also holds Schemas, SplashScreen and friends. Nothing
+    // there starts with Windows, and this guard is the only thing keeping them
+    // off the user's startup page.
+    [Fact]
+    public void SubkeysWithoutAState_AreNotStartupTasks()
+    {
+        var reg = new FakeRegistry();
+        var root = StartupManager.StoreRoot;
+        StoreTask(reg, "SpotifyAB.SpotifyMusic_zpdnekdrzrea0", "Spotify", 2);
+        reg.SubKeys[$@"{root}\SpotifyAB.SpotifyMusic_zpdnekdrzrea0"].Add("Schemas");
+        // ...and a package whose subkeys are ALL of that kind gets no row.
+        reg.SubKeys[root].Add("Contoso.NoStartupTasks_abcdefghijklm");
+        reg.SubKeys[$@"{root}\Contoso.NoStartupTasks_abcdefghijklm"] =
+            new List<string> { "Schemas", "PersistedStorageItemTable", "SplashScreen" };
+
+        var items = new StartupManager(reg, null).List();
+
+        Assert.Equal(new[] { "SpotifyMusic" }, items.Select(i => i.Name).ToArray());
+    }
+
+    [Fact]
+    public void SetEnabled_ForAStorePackageThatIsNotThere_ReturnsFalse()
+    {
+        var reg = new FakeRegistry();
+        StoreTask(reg, "SpotifyAB.SpotifyMusic_zpdnekdrzrea0", "Spotify", 2);
+
+        Assert.False(new StartupManager(reg, null).SetEnabled("Store", "NoSuchApp", enabled: false));
+        // ...and it touched nothing on the way to saying so.
+        Assert.Equal(2, reg.GetInt($@"{StartupManager.StoreRoot}\SpotifyAB.SpotifyMusic_zpdnekdrzrea0\Spotify", "State"));
+    }
+
+    [Fact]
+    public void SetEnabled_WhenTheStoreTaskDeniesTheWrite_ReturnsFalse()
+    {
+        var reg = new FakeRegistry();
+        StoreTask(reg, "SpotifyAB.SpotifyMusic_zpdnekdrzrea0", "Spotify", 2);
+        reg.DenyWriteKeys.Add(
+            $@"{StartupManager.StoreRoot}\SpotifyAB.SpotifyMusic_zpdnekdrzrea0\Spotify");
+
+        Assert.False(new StartupManager(reg, null).SetEnabled("Store", "SpotifyMusic", enabled: false));
+    }
+
+    // Two publishers can ship packages that shorten to the same name. The name
+    // is also the handle SetEnabled resolves, so an ambiguous label would put
+    // two identical rows on the page and make either one write to both.
+    [Fact]
+    public void PackagesThatShortenAlike_AreLabelledApart_AndToggleIndependently()
+    {
+        var reg = new FakeRegistry();
+        StoreTask(reg, "Microsoft.Copilot_8wekyb3d8bbwe", "Copilot.StartupTaskId", 2);
+        StoreTask(reg, "Contoso.Copilot_zzzzzzzzzzzzz", "ContosoStartup", 2);
+        var microsoft = $@"{StartupManager.StoreRoot}\Microsoft.Copilot_8wekyb3d8bbwe\Copilot.StartupTaskId";
+        var contoso = $@"{StartupManager.StoreRoot}\Contoso.Copilot_zzzzzzzzzzzzz\ContosoStartup";
+
+        var names = new StartupManager(reg, null).List().Select(i => i.Name).ToArray();
+        Assert.Equal(2, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Contains("Microsoft.Copilot", names);
+        Assert.Contains("Contoso.Copilot", names);
+
+        Assert.True(new StartupManager(reg, null).SetEnabled("Store", "Microsoft.Copilot", enabled: false));
+        Assert.Equal(0, reg.GetInt(microsoft, "State"));
+        Assert.Equal(2, reg.GetInt(contoso, "State"));   // the neighbour is untouched
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }

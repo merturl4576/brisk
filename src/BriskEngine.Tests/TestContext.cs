@@ -40,7 +40,11 @@ public sealed class FakeRegistry : IRegistryProbe
         Values[K(k, v)] = value;
     }
     public int? GetInt(string k, string v) => Values.TryGetValue(K(k, v), out var o) ? o as int? : null;
-    public void SetInt(string k, string v, int value) => Values[K(k, v)] = value;
+    public void SetInt(string k, string v, int value)
+    {
+        if (DenyWriteKeys.Contains(k)) throw new UnauthorizedAccessException();
+        Values[K(k, v)] = value;
+    }
     public IReadOnlyList<string> GetValueNames(string keyPath)
     {
         var names = new List<string>();
@@ -51,6 +55,24 @@ public sealed class FakeRegistry : IRegistryProbe
     }
     public IReadOnlyList<string> GetSubKeyNames(string keyPath) =>
         SubKeys.TryGetValue(keyPath, out var s) ? s : new List<string>();
+}
+
+/// Plants a Store startup task the way Windows records one: the package family
+/// name under SystemAppData, the task id under the package, the State value
+/// under the task. Shared so the StartupManager tests and the StartupBloatRule
+/// tests cannot drift into describing two different registries.
+public static class StoreRegistry
+{
+    public static void Task(FakeRegistry reg, string packageFamilyName, string task, int state)
+    {
+        var apps = StartupManager.StoreRoot;
+        if (!reg.SubKeys.TryGetValue(apps, out var pfns)) reg.SubKeys[apps] = pfns = new List<string>();
+        if (!pfns.Contains(packageFamilyName)) pfns.Add(packageFamilyName);
+        var appKey = $@"{apps}\{packageFamilyName}";
+        if (!reg.SubKeys.TryGetValue(appKey, out var tasks)) reg.SubKeys[appKey] = tasks = new List<string>();
+        if (!tasks.Contains(task)) tasks.Add(task);
+        reg.SetInt($@"{appKey}\{task}", "State", state);
+    }
 }
 
 public sealed class FakeProcessInfo : IProcessInfoProbe
