@@ -61,6 +61,34 @@ public class RefreshConfirmationTests
         Assert.Equal(1, rollbackCount);
     }
 
+    // A second call that arrives while the first is still inside its window
+    // (a duplicate event handler, a double-click) must not invent an answer
+    // from a still-false RolledBack. Both callers should see the same real
+    // outcome once the window actually elapses, and the rollback should
+    // still run exactly once.
+    [Fact]
+    public async Task ConcurrentCall_WhileFirstStillPending_ObservesTheRealOutcome()
+    {
+        var rollbackCount = 0;
+        var gate = new TaskCompletionSource<object?>();
+        var confirmation = new RefreshConfirmation(
+            () => rollbackCount++, (_, _) => gate.Task);
+
+        var first = confirmation.AwaitConfirmationAsync();
+        var second = confirmation.AwaitConfirmationAsync();
+
+        // Neither call has an answer yet — the window has not elapsed.
+        Assert.False(first.IsCompleted);
+        Assert.False(second.IsCompleted);
+
+        // The window elapses.
+        gate.SetResult(null);
+
+        Assert.False(await first);
+        Assert.False(await second);
+        Assert.Equal(1, rollbackCount);
+    }
+
     [Fact]
     public void DefaultWindow_IsFifteenSeconds()
     {

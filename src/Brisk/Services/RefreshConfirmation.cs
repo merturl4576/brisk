@@ -13,11 +13,12 @@ public sealed class RefreshConfirmation
     private readonly Action _rollback;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
     private readonly CancellationTokenSource _kept = new();
+    private readonly object _gate = new();
 
-    // One confirmation per applied change: the wait — and the rollback it can
-    // trigger — must run at most once per instance, even if a caller invokes
-    // AwaitConfirmationAsync again or concurrently.
-    private bool _answered;
+    // One run per instance: every caller — sequential or concurrent — is
+    // handed the same task and observes that single run's real outcome,
+    // rather than a guess made while the run is still in flight.
+    private Task<bool>? _pending;
 
     public RefreshConfirmation(Action rollback,
         Func<TimeSpan, CancellationToken, Task>? delay = null)
@@ -32,14 +33,16 @@ public sealed class RefreshConfirmation
 
     /// True when the user confirmed the picture is back; false when the window
     /// elapsed and the prior mode was restored.
-    public async Task<bool> AwaitConfirmationAsync()
+    public Task<bool> AwaitConfirmationAsync()
     {
-        if (_answered)
+        lock (_gate)
         {
-            return !RolledBack;
+            return _pending ??= RunAsync();
         }
-        _answered = true;
+    }
 
+    private async Task<bool> RunAsync()
+    {
         try
         {
             await _delay(Window, _kept.Token);
