@@ -364,7 +364,7 @@ public static class Program
         Console.WriteLine("    --all                    apply every Auto rule with a finding");
         Console.WriteLine("    --rule <id>               apply/undo a single rule");
         Console.WriteLine("    --undo                   undo the named rule's last fix");
-        Console.WriteLine("    --keep                   make the display refresh fix permanent");
+        Console.WriteLine("    --keep                   commit the display mode currently on screen");
         Console.WriteLine("    --yes                    actually mutate (otherwise dry-run)");
         Console.WriteLine("  clean                      reclaim disk space");
         Console.WriteLine("    --level <safe|developer|deep>  which cleanup level to run");

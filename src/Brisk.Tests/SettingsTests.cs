@@ -137,8 +137,8 @@ public sealed class SettingsTests : IDisposable
 
     /// FIX WAVE, Finding 7. This branch replaced HKCU\Run with a Scheduled
     /// Task but removed nothing, and the maintainer's own machine still
-    /// carries the old value. A user who once asked brisk to start with
-    /// Windows still means it — so the migration honours that through the
+    /// carries the old value. A user whose setting still says "start with
+    /// Windows" means it — so the migration honours that through the
     /// mechanism that works today, then drops the value.
     [Fact]
     public void Migrate_MovesTheLegacyRunValueOntoTheTask()
@@ -146,7 +146,8 @@ public sealed class SettingsTests : IDisposable
         var runner = new TaskRunner();
         var registry = RegistryWithLegacyValue();
 
-        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe").Migrate();
+        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
+            .Migrate(autostartWanted: true);
 
         Assert.Contains(runner.Calls, c => c.Args.Contains("/Create"));
         Assert.Null(registry.GetString(StartupLauncher.LegacyRunKey,
@@ -165,23 +166,47 @@ public sealed class SettingsTests : IDisposable
         var runner = new TaskRunner { TaskExists = true };
         Assert.Contains(startup.List(), e => e.Name == "brisk");   // the second row
 
-        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe").Migrate();
+        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
+            .Migrate(autostartWanted: true);
 
         Assert.DoesNotContain(startup.List(), e => e.Name == "brisk");
     }
 
-    /// ...but never at the cost of the autostart itself: if the task cannot be
-    /// created, dropping the value would silently take away something the user
-    /// chose.
+    /// FIX WAVE re-review, N2. The value is evidence of an OLD intent only. A
+    /// user who upgraded to the task-based build and then explicitly turned
+    /// autostart OFF in Settings has exactly this machine state — value
+    /// present, no task — and treating the value as consent there lets the
+    /// oldest implicit choice beat the newest explicit one, silently, at
+    /// startup before any window exists to notice it.
     [Fact]
-    public void Migrate_KeepsTheValue_WhenTheTaskCannotBeCreated()
+    public void Migrate_DoesNotPutBriskBackIntoStartup_AgainstANewerChoice()
+    {
+        var runner = new TaskRunner();                  // no task on this machine
+        var registry = RegistryWithLegacyValue();
+
+        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
+            .Migrate(autostartWanted: false);
+
+        Assert.DoesNotContain(runner.Calls, c => c.Args.Contains("/Create"));
+        // ...and the dead value goes anyway: that half depends on nothing.
+        Assert.Null(registry.GetString(StartupLauncher.LegacyRunKey,
+            StartupLauncher.LegacyValueName));
+    }
+
+    /// Removing the value does not depend on the task either. It is an
+    /// autostart Windows skips regardless (brisk requires elevation), so
+    /// keeping it after a failed schtasks preserves nothing real while
+    /// guaranteeing the duplicate "brisk" row.
+    [Fact]
+    public void Migrate_RemovesTheValue_EvenWhenTheTaskCannotBeCreated()
     {
         var runner = new TaskRunner { CreateSucceeds = false };
         var registry = RegistryWithLegacyValue();
 
-        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe").Migrate();
+        new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
+            .Migrate(autostartWanted: true);
 
-        Assert.NotNull(registry.GetString(StartupLauncher.LegacyRunKey,
+        Assert.Null(registry.GetString(StartupLauncher.LegacyRunKey,
             StartupLauncher.LegacyValueName));
     }
 
@@ -193,7 +218,7 @@ public sealed class SettingsTests : IDisposable
         var runner = new TaskRunner();
 
         new StartupLauncher(runner, new FakeRegistry(), @"C:\Apps\brisk-app.exe")
-            .Migrate();
+            .Migrate(autostartWanted: true);
 
         Assert.Empty(runner.Calls);
     }

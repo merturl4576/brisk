@@ -29,6 +29,7 @@ public sealed class AppState : ViewModelBase
 {
     private readonly IEngineHost _host;
     private readonly Loc _loc;
+    private readonly Action<Action> _toUi;
     private readonly object _confirmGate = new();
     private ScanSnapshot? _snapshot;
     private bool _isScanning;
@@ -37,10 +38,23 @@ public sealed class AppState : ViewModelBase
     private RefreshConfirmation? _pendingConfirmation;
     private Task _scan = Task.CompletedTask;
 
-    public AppState(IEngineHost host, Loc? loc = null)
+    /// toUiThread is how Changed and DisplayNotice get back to the dispatcher.
+    /// Both fire from the display rescue, which resolves on a thread-pool
+    /// thread with no SynchronizationContext under it, and every subscriber is
+    /// UI-affine: FlyoutViewModel.Refresh ends in RaiseCanExecuteChanged (which
+    /// sets IsEnabled on a ButtonBase) and HealthViewModel.Refresh clears an
+    /// ObservableCollection behind a CollectionView. The first one to throw
+    /// aborts the rest of the invocation list, so a rescan that never reaches
+    /// the pages is exactly as useless as no rescan at all.
+    ///
+    /// App.xaml.cs passes Dispatcher.Invoke — the same marshalling it already
+    /// uses for the tray's Changed handler and for ShowMain. The default runs
+    /// inline, which is what unit tests (no dispatcher) need.
+    public AppState(IEngineHost host, Loc? loc = null, Action<Action>? toUiThread = null)
     {
         _host = host;
         _loc = loc ?? Loc.Instance;
+        _toUi = toUiThread ?? (action => action());
         KeepDisplayCommand = new RelayCommand(() => PendingConfirmation?.Keep());
     }
 
@@ -155,7 +169,9 @@ public sealed class AppState : ViewModelBase
         {
             IsScanning = false;
         }
-        Changed?.Invoke();
+        // Marshalled: a scan started by the rollback resolves on the thread
+        // pool, and every subscriber touches UI objects (see the constructor).
+        _toUi(() => Changed?.Invoke());
     }
 
     /// The one place every fix surface reports a rule it just fixed — a
@@ -204,8 +220,13 @@ public sealed class AppState : ViewModelBase
             // happens to get scheduled.
             PendingConfirmation = confirmation;
         }
-        ConfirmationRaised?.Invoke();
-
+        // Started BEFORE the raise below. The raise reaches a window
+        // (App.xaml.cs calls ShowMain), and a dispatcher shutting down throws
+        // there — which would leave the gate above latched with no rollback
+        // task behind it at all: fix-all dead app-wide, the window topmost
+        // until restart, and the rest of the batch abandoned on the worker
+        // thread. The rescue has to exist before anything can fail.
+        //
         // Only the wait-then-maybe-rollback goes on a background thread:
         // ChangeDisplaySettingsEx plus the journal/log writes it triggers
         // must never block the UI thread.
@@ -244,15 +265,31 @@ public sealed class AppState : ViewModelBase
                 }
             }
 
-            if (notice is not null) DisplayNotice?.Invoke(notice);
-
             // Without this, both findings pages keep showing "Displays raised
             // to their highest refresh rate" as an active, undoable fix for a
             // mode that went back minutes ago. Only a scan repopulates those
             // rows, and nothing scans on a timer, so the claim would stand
             // until something unrelated happened to trigger one.
+            // The rescan runs first, so the pages are already telling the
+            // truth by the time the sentence explaining it arrives.
             if (!kept) await RescanAsync();
+            // Marshalled for the same reason Changed is: OverviewViewModel
+            // puts this straight into an ObservableCollection.
+            if (notice is not null) _toUi(() => DisplayNotice?.Invoke(notice));
         });
+
+        try
+        {
+            ConfirmationRaised?.Invoke();
+        }
+        catch (Exception)
+        {
+            // There is nowhere to report this: the failure IS the surface that
+            // would have carried the report. The rescue above is already
+            // running, so the worst case is a confirmation with no overlay,
+            // which resolves itself in 15 seconds by putting the display back.
+            // Letting it escape would abort the fix batch and strand the gate.
+        }
     }
 
     /// A rescan a scan already running cannot swallow: that one started BEFORE

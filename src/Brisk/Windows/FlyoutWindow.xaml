@@ -78,6 +78,16 @@
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>
+                                <!-- The flyout is the one fix surface the main
+                                     window's overlay does not cover, so this is
+                                     the button a user can press while brisk is
+                                     still asking whether the picture came back.
+                                     It is refused for up to 15 seconds; without
+                                     this it just swallowed the click. -->
+                                <DataTrigger Binding="{Binding State.IsAwaitingDisplayConfirmation}"
+                                             Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding IsBusy}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>

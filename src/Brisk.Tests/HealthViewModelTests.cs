@@ -652,6 +652,66 @@ public class HealthViewModelTests
         Assert.Null(state.PendingConfirmation);
     }
 
+    /// FIX WAVE re-review, N1. The rescue resolves inside Task.Run, so there
+    /// is no SynchronizationContext under it and Changed fired on a
+    /// thread-pool thread. Every subscriber is UI-affine —
+    /// FlyoutViewModel.Refresh ends in RaiseCanExecuteChanged (IsEnabled on a
+    /// ButtonBase), HealthViewModel.Refresh clears an ObservableCollection
+    /// behind a CollectionView — so the first one threw, the throw aborted the
+    /// rest of the invocation list, and RescanAsync's blanket catch swallowed
+    /// it: the rescan reached nobody. xUnit has no dispatcher, so no
+    /// assertion about rows could ever have caught that.
+    ///
+    /// This pins the seam instead. The marshal here queues instead of running,
+    /// which is only possible if the raise genuinely goes THROUGH it.
+    [Fact]
+    public async Task RollbackRescan_ReachesSubscribersThroughTheUiMarshal()
+    {
+        var queued = new List<Action>();
+        var host = new FakeEngineHost();
+        var state = new AppState(host, EnglishLoc(), toUiThread: queued.Add);
+        var changed = 0;
+        var notices = 0;
+        state.Changed += () => changed++;
+        state.DisplayNotice += _ => notices++;
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        state.ConfirmDisplayFix("display-refresh");
+        await state.PendingConfirmTask!;
+
+        // Nothing has reached a subscriber yet: the "dispatcher" has not run.
+        Assert.Equal(0, changed);
+        Assert.Equal(0, notices);
+        Assert.NotEmpty(queued);
+
+        foreach (var action in queued) action();
+
+        Assert.True(changed > 0, "the rollback's rescan never raised Changed");
+        Assert.Equal(1, notices);
+    }
+
+    /// FIX WAVE re-review, N4(b). ConfirmationRaised reaches a window
+    /// (App.xaml.cs calls ShowMain), and a dispatcher shutting down throws
+    /// there. Raised between the gate closing and the rollback task existing,
+    /// that left the gate latched with no rescue behind it at all: fix-all
+    /// dead app-wide, the window topmost until restart, and the rest of the
+    /// fix batch abandoned on the worker thread.
+    [Fact]
+    public async Task ConfirmationRaisedThatThrows_LeavesAWorkingRescueBehindIt()
+    {
+        var host = new FakeEngineHost();
+        var state = new AppState(host, EnglishLoc());
+        state.ConfirmationRaised += () => throw new InvalidOperationException("no dispatcher");
+        state.ConfirmationWindow = TimeSpan.Zero;
+
+        state.ConfirmDisplayFix("display-refresh");
+
+        Assert.NotNull(state.PendingConfirmTask);
+        await state.PendingConfirmTask!;
+        Assert.Null(state.PendingConfirmation);          // the gate reopened
+        Assert.Equal(new[] { "display-refresh" }, host.Undone);
+    }
+
     /// Fix round 1 (Important, Finding 3): a rollback that could not
     /// actually restore the previous mode must not look identical to one
     /// that did. FakeEngineHost.Undo always succeeds, so a thin override

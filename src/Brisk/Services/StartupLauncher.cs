@@ -46,17 +46,24 @@ public sealed class StartupLauncher
         RemoveLegacyValue();
     }
 
-    /// Called once at startup. A machine carrying the old Run value asked, at
-    /// some point, for brisk to start with Windows — so the migration honours
-    /// that request through the mechanism that actually works today, and only
-    /// then drops the value. The value goes only once the task is really
-    /// there: dropping it after a failed schtasks call would silently take
-    /// away an autostart the user chose.
-    public void Migrate()
+    /// Called once at startup, with the user's CURRENT autostart setting.
+    ///
+    /// The old Run value is evidence of an old intent only. A user who
+    /// upgraded to the task-based build and then explicitly turned autostart
+    /// off in Settings has precisely this machine state — value present, no
+    /// task — and treating the value as consent there would put brisk back
+    /// into startup against the newest thing the user actually said. So the
+    /// task is created only when the setting still says yes; SettingsViewModel
+    /// writes that flag on every toggle, which makes it the honest record.
+    ///
+    /// The value itself goes unconditionally: it is a dead autostart either
+    /// way (Windows skips it now that brisk requires elevation) and a second
+    /// "brisk" row in brisk's own startup list whose toggle changes nothing.
+    public void Migrate(bool autostartWanted)
     {
         if (_registry.GetString(LegacyRunKey, LegacyValueName) is null) return;
-        if (!IsOn()) CreateTask();
-        if (IsOn()) RemoveLegacyValue();
+        if (autostartWanted && !IsOn()) CreateTask();
+        RemoveLegacyValue();
     }
 
     private void CreateTask() =>

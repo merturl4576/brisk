@@ -274,6 +274,37 @@ public class OverviewViewModelTests
         await state.PendingConfirmTask!;
     }
 
+    /// FIX WAVE re-review, Finding 4. DisplayNotice reached only Health and
+    /// Performance, but ShowMain() surfaces the window on whichever page is
+    /// selected — Overview by default — so the likeliest user watched the
+    /// screen flick back and was told nothing at all. The spec sentence is
+    /// unconditional, so this page has to carry it too.
+    [Fact]
+    public async Task RollbackNotice_LandsInTheOverviewReport()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var state = new AppState(host, loc);
+        var fixAll = new FixAllService(host);
+        state.TrackFixes(fixAll);
+        var vm = new OverviewViewModel(state, host, fixAll,
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new FakeLive(), loc, () => false);
+        await state.ScanAsync();
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAllAsync();
+        await state.PendingConfirmTask!;
+
+        Assert.Contains(vm.ReportLines,
+            line => line.Text == loc["display-confirm.rolledback"]);
+    }
+
     [Fact]
     public async Task FixAll_DryRun_BlocksWithFeedback_NeverCallsHost()
     {

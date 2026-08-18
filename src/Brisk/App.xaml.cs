@@ -50,9 +50,21 @@ public partial class App : Application
             // changes nothing real — and the value itself is an autostart that
             // Windows skips anyway, now that brisk requires elevation.
             // Migrated once, at startup.
-            composition.Launcher.Migrate();
+            // Gated on the setting, not on the value alone: the value is
+            // evidence of an OLD intent. A user who upgraded to the
+            // task-based build and then explicitly turned autostart OFF has
+            // exactly this machine state — stale value, no task — and
+            // recreating the task there would let the oldest implicit choice
+            // beat the newest explicit one, silently, before any window
+            // exists. The dead value goes either way.
+            composition.Launcher.Migrate(composition.Settings.StartWithWindows);
 
-            var state = new AppState(composition.Host, Loc.Instance);
+            // Dispatcher.Invoke is the third use of the same precedent in
+            // this file (the tray's Changed handler, ShowMain below): the
+            // display rescue resolves on a thread-pool thread, and every
+            // Changed / DisplayNotice subscriber touches UI objects.
+            var state = new AppState(composition.Host, Loc.Instance,
+                action => Dispatcher.Invoke(action));
             var cleanService = new CleanService(composition.Host, composition.Settings);
             var fixAllService = new FixAllService(composition.Host);
             // The confirmation starts at the mode change, not at the end of
