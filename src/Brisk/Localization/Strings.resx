@@ -136,6 +136,7 @@
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Visual effects are slowing this PC</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Storage Sense is off</value></data>
   <data name="rule.display-refresh.title" xml:space="preserve"><value>A display is running below its refresh rate</value></data>
+  <data name="rule.search-web-results.title" xml:space="preserve"><value>Start menu search waits on the internet</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
@@ -149,6 +150,7 @@
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Visual effects tuned for performance</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
   <data name="rule.display-refresh.done" xml:space="preserve"><value>Displays raised to their highest refresh rate</value></data>
+  <data name="rule.search-web-results.done" xml:space="preserve"><value>Start menu search no longer queries the web</value></data>
   <data name="rule.power-plan.evidence" xml:space="preserve"><value>Active plan: {0}. This plan deliberately limits CPU boost clocks; a performance plan lets the CPU reach its full turbo frequency.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>This machine has two GPUs, but {0} has no high-performance GPU preference, so Windows may run it on the slow integrated GPU.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
@@ -160,6 +162,7 @@
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Free space has been shrinking; disk full in ~{0} days at the current rate.</value></data>
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows left the display slower than it supports, so everything on screen moves at the lower rate.</value></data>
+  <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Every keystroke in Start is sent to Bing, and local results for your apps and files wait for that round-trip. Turning web results off makes Start answer immediately. Takes effect after you sign in again.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} is running — close it to include this</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} free · {1}</value></data>
   <data name="clean.target.user-temp" xml:space="preserve"><value>User temp files</value></data>

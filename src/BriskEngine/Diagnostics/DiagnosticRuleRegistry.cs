@@ -11,6 +11,6 @@ public static class DiagnosticRuleRegistry
         new StartupBloatRule(), new RamPressureRule(), new ThermalsRule(),
         new DiskBreakdownRule(), new DiskForecastRule(), new OrphanedDataRule(),
         new StaleDevCachesRule(), new VisualEffectsRule(), new StorageSenseRule(),
-        new DisplayRefreshRule(),
+        new DisplayRefreshRule(), new SearchWebResultsRule(),
     };
 }
