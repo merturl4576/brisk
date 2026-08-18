@@ -59,7 +59,7 @@ reported first; fixes are applied only after explicit approval.
 | Wave | Rules | New infrastructure |
 |---|---|---|
 | 1 | `display-refresh`, `search-web-results` | `IDisplayProbe`, elevation manifest, scheduled-task autostart |
-| 2 | `boot-degradation`, `memory-speed` | `IEventLogProbe`, `IHardwareProbe` |
+| 2 | `boot-degradation`, `memory-speed` | `IEventLogProbe`, `IHardwareProbe`, Store-app startup tasks |
 | 3 | `hardware-wall`, `update-settling`, change detection | `FindingKind`, `ScanHistory` |
 
 **Waves 2 and 3 were swapped after wave 1 shipped.** The original order put both
@@ -134,10 +134,24 @@ does not fight Group Policy.
 
 ### 3. `memory-speed` — Advise, Warning, 4 stars
 
-**Detect.** Via WMI `Win32_PhysicalMemory`: `ConfiguredClockSpeed` at least
-200 MT/s below `Speed` means the XMP/EXPO profile was never enabled and the
-modules run at the JEDEC fallback. The margin absorbs vendor rounding; a gap
-smaller than that is noise, not a misconfiguration.
+**Detect.** Via WMI `Win32_PhysicalMemory`, compare `ConfiguredClockSpeed` against
+`Speed`. The original 200 MT/s threshold was wrong and real hardware caught it: the
+maintainer's machine runs two 3200 MT/s modules at 2933, which would have fired the
+rule and sent him into a BIOS to enable a profile that would not have helped — 2933
+is a JEDEC speed and the platform's own ceiling. WMI cannot tell us the memory
+controller's maximum or whether an XMP profile exists, so the gap alone does not
+identify its cause.
+
+Fire only on the signature of a profile that was genuinely never enabled: a
+configured speed at or below **80%** of rated. XMP-off on a 3200 kit lands at the
+2133 or 2400 JEDEC base — a gap of a third. A platform ceiling lands within a few
+hundred MT/s. The first is worth telling someone about; the second is the hardware
+they bought.
+
+**Never claim the cause.** Even above the threshold, brisk cannot see whether the
+board supports the rated speed. The finding states what it measured and names both
+possible explanations. Prescribing a BIOS change brisk cannot verify would be the
+category's characteristic lie.
 
 **Report in MT/s, never MHz.** DDR performs two transfers per clock, so a
 module reported as "2400" is running at 4800 MT/s. The single most-upvoted
@@ -184,15 +198,34 @@ after an update is normal and must not raise a finding.
 it belongs to these three". Windows measured this itself, which makes it
 stronger than any heuristic.
 
-**Fixable where the evidence lines up.** When an offender Windows named is also a
-disableable startup entry, offer the switch: *"Windows measured this costing you
-12 s at every boot"* next to a button that turns it off, undoably, through the
-existing `StartupManager`. Where the name does not match a startup entry — a
-driver, a service — the finding stays advisory and says so rather than guessing.
+**Read the schema that exists, not the documented one.** On Windows 11 26100 the
+ID 100 payload carries `BootTime` and `MainPathBootTime`; `PostBootTime` and
+`BootDegradationTime` come back empty. Measured on the maintainer's machine, so the
+rule reports what is actually populated.
 
-That link is the point of the rule. Everything else in the category tells you how
-many programs start with Windows; this tells you which ones you are actually
-paying for, using Windows' own measurement, and hands you the switch.
+**Fixable where the evidence lines up — which requires seeing Store apps.** When an
+offender Windows named is also a disableable startup entry, offer the switch:
+*"Windows measured this costing you 37 s at every boot"* next to a button that turns
+it off, undoably.
+
+That link is nearly worthless against `Run` keys alone, and real hardware showed why.
+The maintainer's eight worst offenders — Defender, Spotify, Edge WebView, TiWorker,
+Google's updater — overlap his `Run` entries almost not at all, because what Windows
+blames is mostly services, Windows components and **Store apps**. Spotify alone cost
+him 37 seconds and `StartupManager` cannot see it.
+
+So this wave extends `StartupManager` to Store-app startup tasks, which live under
+`HKCU\Software\Classes\Local Settings\…\AppModel\SystemAppData\<PFN>\<TaskId>\State`
+(2 = enabled, 0 = disabled) — the same records Task Manager writes. On the
+maintainer's machine that surfaces seven enabled entries brisk was blind to, one of
+them the second-largest boot cost on the system.
+
+**Where the offender is not disableable, say so and stop.** Defender is the single
+largest cost on that machine at 52 seconds, and brisk must not touch it — naming it
+honestly as protection doing its job, and pointing at what *is* actionable, is worth
+more than a button. Everything else in the category tells you how many programs start
+with Windows; this tells you which ones you are actually paying for, using Windows'
+own measurement, and is honest about which of them it can do nothing about.
 
 ### 6. `update-settling` — Notice, Info, no score impact
 
