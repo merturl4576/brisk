@@ -255,5 +255,26 @@ public sealed class SettingsTests : IDisposable
             StartupLauncher.LegacyValueName));
     }
 
+    /// The Run value has a companion record in Explorer's StartupApproved
+    /// table holding its enabled/disabled bit. Removing the value while
+    /// leaving that behind keeps dead data describing a startup entry that no
+    /// longer exists — and it would decide the toggle state of any future
+    /// "brisk" Run value before the user ever saw it.
+    [Fact]
+    public void StartupLauncher_Off_AlsoClearsTheOrphanedApprovalRecord()
+    {
+        var registry = RegistryWithLegacyValue();
+        registry.SetBytes(StartupLauncher.LegacyApprovedKey, StartupLauncher.LegacyValueName,
+            new byte[] { 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+
+        new StartupLauncher(new TaskStateRunner(), registry, @"C:\Apps\brisk-app.exe")
+            .Apply(false);
+
+        Assert.Null(registry.GetString(StartupLauncher.LegacyRunKey,
+            StartupLauncher.LegacyValueName));
+        Assert.Null(registry.GetBytes(StartupLauncher.LegacyApprovedKey,
+            StartupLauncher.LegacyValueName));
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }

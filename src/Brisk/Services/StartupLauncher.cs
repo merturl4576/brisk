@@ -23,6 +23,15 @@ public sealed class StartupLauncher
         @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
     internal const string LegacyValueName = "brisk";
 
+    /// The Run value never travels alone: Explorer keeps its enabled/disabled
+    /// bit in a parallel StartupApproved record, written by Task Manager and
+    /// read by brisk's own startup list. Dropping only the value leaves that
+    /// record behind as a permanent description of an entry that no longer
+    /// exists — and it would silently re-decide the toggle for any future
+    /// "brisk" Run value that ever appeared here.
+    internal const string LegacyApprovedKey =
+        @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+
     private readonly IProcessRunner _runner;
     private readonly IRegistryProbe _registry;
     private readonly string _exePath;
@@ -98,6 +107,9 @@ public sealed class StartupLauncher
     private bool DeleteTask() =>
         _runner.Run("schtasks.exe", $"/Delete /F /TN {TaskName}").ExitCode == 0;
 
-    private void RemoveLegacyValue() =>
+    private void RemoveLegacyValue()
+    {
         _registry.DeleteValue(LegacyRunKey, LegacyValueName);
+        _registry.DeleteValue(LegacyApprovedKey, LegacyValueName);
+    }
 }

@@ -58,6 +58,11 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
     public System.Collections.Generic.Dictionary<string, string> Strings { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// StartupApproved records are binary, and swallowing them left a test
+    /// unable to see whether brisk clears its own orphaned one.
+    public System.Collections.Generic.Dictionary<string, byte[]> Blobs { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     private static string Key(string keyPath, string valueName) =>
         keyPath + "\\" + valueName;
 
@@ -65,10 +70,15 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
         Strings.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
     public void SetString(string keyPath, string valueName, string value) =>
         Strings[Key(keyPath, valueName)] = value;
-    public void DeleteValue(string keyPath, string valueName) =>
+    public void DeleteValue(string keyPath, string valueName)
+    {
         Strings.Remove(Key(keyPath, valueName));
-    public byte[]? GetBytes(string keyPath, string valueName) => null;
-    public void SetBytes(string keyPath, string valueName, byte[] value) { }
+        Blobs.Remove(Key(keyPath, valueName));
+    }
+    public byte[]? GetBytes(string keyPath, string valueName) =>
+        Blobs.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
+    public void SetBytes(string keyPath, string valueName, byte[] value) =>
+        Blobs[Key(keyPath, valueName)] = value;
     public int? GetInt(string keyPath, string valueName) => null;
     public void SetInt(string keyPath, string valueName, int value) { }
     /// Real enough for StartupManager.List(), so a test can watch brisk's own
