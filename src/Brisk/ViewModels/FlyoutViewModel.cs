@@ -99,6 +99,12 @@ public sealed class FlyoutViewModel : ViewModelBase
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
+            // Round-13 review (I1): the busy flag above guards only THIS
+            // button; the lease guards the ONE runner all three clean
+            // surfaces share. Taken before anything below mutates the page,
+            // so a clean running elsewhere leaves this one untouched.
+            using var lease = _safeClean.TryBegin();
+            if (lease is null) return;
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
             LastCleanLine = "";              // a new press starts a new story
@@ -114,6 +120,14 @@ public sealed class FlyoutViewModel : ViewModelBase
                     ? _loc["clean.report.none"]
                     : _loc.F("clean.report.summary.freed",
                         result.CleanedCount, Fmt.Bytes(result.FreedBytes));
+            // Round-13 review (I2): the other two surfaces name a partial
+            // purge; the tray was the one place that computed the leftover
+            // and dropped it, so "1 item cleaned — 0 B freed" arrived with
+            // its reason missing. The window is SizeToContent="Height" and
+            // the line wraps, so the second sentence costs nothing.
+            if (result.LeftInBinBytes > 0)
+                LastCleanLine += "\n" + _loc.F("clean.report.binleft",
+                    Fmt.Bytes(result.LeftInBinBytes));
             await _state.ScanAsync();
         }
         finally

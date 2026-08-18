@@ -164,6 +164,8 @@ public class FlyoutViewModelTests
 
     /// ROUND 13: a purge that falls short never inflates the brief line —
     /// freed is what actually left the disk (0 B here), not the 2 KB moved.
+    /// Round-13 review (I2): and the tray NAMES what stayed behind, like the
+    /// other two surfaces do — "0 B freed" with no reason is a dead end.
     [Fact]
     public async Task CleanSafe_PartialPurge_ReportsFreedNotRecycled()
     {
@@ -177,7 +179,10 @@ public class FlyoutViewModelTests
 
         Assert.Equal(0, vm.LastCleanResult!.FreedBytes);
         Assert.Equal(2048, vm.LastCleanResult!.LeftInBinBytes);
-        Assert.Equal(loc.F("clean.report.summary.freed", 1, "0 B"), vm.LastCleanLine);
+        Assert.Equal(
+            loc.F("clean.report.summary.freed", 1, "0 B") + "\n"
+                + loc.F("clean.report.binleft", "2 KB"),
+            vm.LastCleanLine);
     }
 
     [Fact]

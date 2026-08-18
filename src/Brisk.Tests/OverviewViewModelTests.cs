@@ -603,6 +603,58 @@ public class OverviewViewModelTests
         Assert.Equal("", vm.LiveTempBadgeText);
     }
 
+    /// ROUND 13 review (I1): one runner sits behind three buttons, so the
+    /// per-view-model busy flags cannot stop the tray and the overview from
+    /// purging at the same time — double-counted freed bytes, and a "still
+    /// in the Recycle Bin" line for bytes already gone. The runner's lease
+    /// makes the whole sequence single-flight app-wide; the surface that
+    /// loses it does nothing at all, exactly like a re-press does.
+    [Fact]
+    public async Task CleanSafe_WhileAnotherSurfaceIsCleaning_IsNoOp()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        var state = new AppState(host);
+        var bin = new FakeBin();
+        var runner = new SafeCleanRunner(new CleanService(host, new Settings()), bin);
+        var overview = new OverviewViewModel(state, host, new FixAllService(host),
+            runner, new FakeLive(), EnglishLoc(), () => false);
+        var flyout = new FlyoutViewModel(state, runner, new FixAllService(host),
+            EnglishLoc(), () => false);
+        await state.ScanAsync();
+
+        // OnClean blocks on the background thread until the test releases it,
+        // so the tray's clean is provably still holding the runner (not a
+        // timing assumption) when the overview button is pressed.
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, _) =>
+        {
+            gate.Wait();
+            return new CleanReport(scan.Items
+                .Select(i => new CleanEntry(scan.Target.Id, i.Path, i.Bytes, "recycled"))
+                .ToList());
+        };
+
+        var tray = flyout.CleanSafeAsync();
+        var press = overview.CleanSafeAsync();
+
+        // The lease is taken and refused SYNCHRONOUSLY, before either method
+        // reaches its first await, so this is a fact rather than a timing
+        // assumption: the overview press comes back already completed while
+        // the tray's clean is still blocked in the engine.
+        Assert.True(press.IsCompleted);
+        Assert.False(tray.IsCompleted);
+
+        gate.Set();
+        await tray;
+        await press;
+
+        // One clean, one purge: the bin was never handed two runs at once.
+        Assert.Single(host.Cleans);
+        Assert.Single(bin.PurgeCalls);
+    }
+
     /// Fakes.cs is locked; startup-disable semantics are simulated with a
     /// decorator whose Fix("startup-bloat") disables the heavy entries,
     /// exactly like the real StartupBloatRule.Fix does.

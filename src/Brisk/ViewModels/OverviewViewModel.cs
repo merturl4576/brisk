@@ -270,6 +270,12 @@ public sealed class OverviewViewModel : ViewModelBase
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
+            // Round-13 review (I1): the busy flag above guards only THIS
+            // button; the lease guards the ONE runner all three clean
+            // surfaces share. Taken before anything below mutates the page,
+            // so a clean running elsewhere leaves this one untouched.
+            using var lease = _safeClean.TryBegin();
+            if (lease is null) return;
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
             ClearReport();

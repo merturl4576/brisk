@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BriskEngine.Cleaning;
 using BriskEngine.Models;
@@ -41,11 +42,43 @@ public sealed class SafeCleanRunner
 {
     private readonly CleanService _cleanService;
     private readonly IRecycleBinSession _bin;
+    private int _running;                // 0 = idle, 1 = a surface owns it
 
     public SafeCleanRunner(CleanService cleanService, IRecycleBinSession bin)
     {
         _cleanService = cleanService;
         _bin = bin;
+    }
+
+    /// Round-13 review (I1): each view model's busy flag guards its OWN
+    /// button, but all three share this ONE runner — so a tray clean could
+    /// start while Depolama's was still mid-flight. Both would purge, both
+    /// would count the same bytes as freed, and whichever lost the race
+    /// would file a "still in the Recycle Bin" line for bytes already gone.
+    ///
+    /// The lease makes the sequence single-flight app-wide. Take it BEFORE
+    /// touching any UI state: a surface that loses it must be a complete
+    /// no-op — not a half-cleared report or a dismissed banner for a run
+    /// that never starts — exactly like a re-press on the same surface.
+    /// Null means someone else is cleaning; dispose to hand the runner back.
+    public IDisposable? TryBegin()
+        => Interlocked.CompareExchange(ref _running, 1, 0) == 0
+            ? new Lease(this)
+            : null;
+
+    private sealed class Lease : IDisposable
+    {
+        private SafeCleanRunner? _owner;
+
+        public Lease(SafeCleanRunner owner) => _owner = owner;
+
+        /// Idempotent — a second Dispose must never release a lease that a
+        /// LATER clean is holding.
+        public void Dispose()
+        {
+            var owner = Interlocked.Exchange(ref _owner, null);
+            if (owner is not null) Volatile.Write(ref owner._running, 0);
+        }
     }
 
     /// onEntry streams every engine entry as it is recorded, on the worker
@@ -54,6 +87,10 @@ public sealed class SafeCleanRunner
     public async Task<SafeCleanResult> RunAsync(ScanResult scan,
         Action<CleanEntry>? onEntry = null, Action? onPurging = null)
     {
+        if (Volatile.Read(ref _running) == 0)
+            throw new InvalidOperationException(
+                "SafeCleanRunner.RunAsync requires the lease from TryBegin() — "
+                + "without it two surfaces can purge the bin at once.");
         var plannedPaths = scan.Targets.Where(CleanService.IsSafeDefault)
             .SelectMany(t => t.Items).Select(i => i.Path).ToList();
         var preExisting = plannedPaths.Count == 0
