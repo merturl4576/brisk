@@ -58,8 +58,12 @@ Do not re-derive it; do check it still holds if something surprises you.
 - Boot times over the last eight boots: 51, 112, 45, 57, 60, 94, 51, 74 seconds.
   Median ≈ 57 s. `MainPathBootTime` sits around 21-26 s, so most of the cost is
   after the main path.
-- ID 100's payload carries `BootTime` and `MainPathBootTime`. **`PostBootTime` and
-  `BootDegradationTime` come back empty** on Windows 11 26100 — do not depend on them.
+- ID 100's payload carries `BootTime` and `MainPathBootTime`. ~~`PostBootTime` and
+  `BootDegradationTime` come back empty on Windows 11 26100.~~ **Corrected while Task 2 was
+  built:** those names do not exist. The payload spells them `BootPostBootTime` and
+  `BootDegradationDelta`, both populated, and the build is **26200**. `BootTime` sits at
+  index 5 of 44 elements with `SystemBootInstance` = 392 at index 3, which is why every
+  value must be read by name.
 - ID 101's payload: `Name`, `FriendlyName`, `Version`, `TotalTime`,
   `DegradationTime`, `Path`, `ProductName`, `CompanyName`. The log also carries
   103 (service) and 108, 200, 203 which this wave ignores.
@@ -301,6 +305,14 @@ git commit -m "feat: the startup list stops being blind to store apps"
 ---
 
 ### Task 2: Event log probe
+
+> **Superseded in implementation — read the code, not this section, for the shapes.**
+> The two-call surface below (`RecentBoots` + `RecentOffenders`) was rejected during review
+> and replaced: the probe now correlates, so `RecentBoots` returns boots that carry their
+> own `Offenders`, `BootOffender` has no timestamp, and `MainPathMs` is `int?`. The reason
+> is recorded in the ledger — a flat offender list could be cut mid-boot with no way for the
+> consumer to tell a partial list from a complete one. This section is left as written so the
+> record shows what was asked before the machine answered back.
 
 **Files:**
 - Create: `src/BriskEngine/Diagnostics/BootRecord.cs`
