@@ -155,11 +155,8 @@ public sealed class FakeDisplays : IDisplayProbe
 public sealed class FakeEventLog : IEventLogProbe
 {
     public List<BootRecord> Boots = new();
-    public List<BootOffender> Offenders = new();
     public IReadOnlyList<BootRecord> RecentBoots(int count) =>
         Boots.GetRange(0, Math.Min(count, Boots.Count));
-    public IReadOnlyList<BootOffender> RecentOffenders(int count) =>
-        Offenders.GetRange(0, Math.Min(count, Offenders.Count));
 }
 
 public static class TestContext

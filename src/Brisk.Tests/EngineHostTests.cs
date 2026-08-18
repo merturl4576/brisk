@@ -68,7 +68,6 @@ file sealed class NullDisplays : IDisplayProbe
 file sealed class NullEventLog : IEventLogProbe
 {
     public IReadOnlyList<BootRecord> RecentBoots(int count) => System.Array.Empty<BootRecord>();
-    public IReadOnlyList<BootOffender> RecentOffenders(int count) => System.Array.Empty<BootOffender>();
 }
 
 file sealed class NullDisk : IDiskInfoProbe

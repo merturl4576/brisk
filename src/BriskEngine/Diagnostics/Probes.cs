@@ -66,11 +66,22 @@ public interface IDisplayProbe
     void PersistCurrentModes();
 }
 
-/// Windows' own boot measurements, newest first. The channel behind this is
-/// admin-only, so an implementation returns empty rather than throwing when it
-/// cannot be read — a missing boot history is something a rule can handle.
+/// Windows' own boot measurements.
+///
+/// There is deliberately no separate "recent offenders" call. A flat list of
+/// blamed programs capped at N spans several boots and can be cut mid-boot with
+/// nothing to signal it, so a caller could report "Windows blames these three"
+/// when Windows blamed four. Offenders therefore only ever arrive attached to
+/// the boot they belong to, where the list is always that boot's whole set.
 public interface IEventLogProbe
 {
+    /// Up to `count` boots, newest first, each carrying every program Windows
+    /// blamed for it, ordered worst degradation first. A boot Windows blamed
+    /// nobody for comes back with an empty Offenders list, which is common.
+    ///
+    /// The channel behind this is admin-only, so an implementation returns the
+    /// boots it managed to read — empty when it cannot open the log at all —
+    /// rather than throwing. A missing boot history is something a rule can
+    /// handle; an exception out of a probe is not.
     IReadOnlyList<BootRecord> RecentBoots(int count);
-    IReadOnlyList<BootOffender> RecentOffenders(int count);
 }

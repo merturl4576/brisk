@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
-using System.Globalization;
-using System.Xml.Linq;
 
 namespace BriskEngine.Diagnostics.RealProbes;
 
@@ -10,13 +8,11 @@ namespace BriskEngine.Diagnostics.RealProbes;
 /// its own boot and named the programs that delayed it, which is why these
 /// numbers beat anything brisk could infer from the outside.
 ///
-/// Two things shape this class. The channel is admin-only, so an ordinary
-/// `brisk scan` hits UnauthorizedAccessException and must come back with an
-/// empty history rather than an exception — same contract as RealSensorProbe.
-/// And values are pulled out of the payload by field name, never by position:
-/// the ID 100 payload alone carries 40-odd Data elements whose order is not
-/// contractual, and an index-based read would keep compiling while silently
-/// reporting the wrong millisecond count.
+/// The channel is admin-only, so an ordinary `brisk scan` hits
+/// UnauthorizedAccessException and must come back with an empty history rather
+/// than an exception — same contract as RealSensorProbe. Parsing lives in
+/// BootEventParser so it can be tested without the log; this class is only the
+/// reading and the failure handling.
 public sealed class RealEventLogProbe : IEventLogProbe
 {
     private const string ChannelName = "Microsoft-Windows-Diagnostics-Performance/Operational";
@@ -27,83 +23,119 @@ public sealed class RealEventLogProbe : IEventLogProbe
     /// ...and one of these per program it decided to blame for that boot.
     private const int BootDegradationEventId = 101;
 
-    private static readonly XNamespace EventNs =
-        "http://schemas.microsoft.com/win/2004/08/events/event";
-
-    public IReadOnlyList<BootRecord> RecentBoots(int count) =>
-        Read(BootPerformanceEventId, count, static (when, fields) =>
-            Int(fields, "BootTime") is int bootMs
-                ? new BootRecord(when, bootMs, Int(fields, "MainPathBootTime") ?? 0)
-                : null);
-
-    public IReadOnlyList<BootOffender> RecentOffenders(int count) =>
-        Read(BootDegradationEventId, count, static (when, fields) =>
-        {
-            var name = Text(fields, "Name");
-            // A blamed program with no name and no measured delay is not
-            // something a user can act on, so it is not worth reporting.
-            if (name.Length == 0 || Int(fields, "DegradationTime") is not int degradationMs)
-                return null;
-            return new BootOffender(
-                when, name, Text(fields, "FriendlyName"), Text(fields, "Path"), degradationMs);
-        });
-
-    private static IReadOnlyList<T> Read<T>(
-        int eventId, int count, Func<DateTime, IReadOnlyDictionary<string, string>, T?> parse)
-        where T : class
+    public IReadOnlyList<BootRecord> RecentBoots(int count)
     {
-        var found = new List<T>();
-        if (count <= 0) return found;
+        if (count <= 0) return Array.Empty<BootRecord>();
+        var boots = ReadBoots(count);
+        if (boots.Count == 0) return Array.Empty<BootRecord>();
+
+        // Only the offenders that can belong to a boot we kept are worth
+        // reading, and the oldest of those bounds the walk. Reading every ID 101
+        // in the channel would mean scanning years of history to attach a
+        // handful of names.
+        var offenders = ReadOffendersBackTo(boots[boots.Count - 1].Started);
+        return BootEventParser.Assemble(boots, offenders);
+    }
+
+    private static List<ParsedBoot> ReadBoots(int count)
+    {
+        var boots = new List<ParsedBoot>();
+        EventLogReader reader;
         try
         {
-            var query = new EventLogQuery(
-                ChannelName, PathType.LogName, $"*[System[(EventID={eventId})]]")
-            {
-                ReverseDirection = true,   // newest boot first — "recent" is the whole point
-            };
-            using var reader = new EventLogReader(query);
-            while (found.Count < count)
-            {
-                using var record = reader.ReadEvent();
-                if (record is null) break;   // no more events in the channel
-                var parsed = parse(record.TimeCreated ?? DateTime.MinValue, Fields(record.ToXml()));
-                if (parsed is not null) found.Add(parsed);
-            }
+            reader = OpenReader(BootPerformanceEventId);
         }
         catch (Exception)
         {
-            // No elevation (UnauthorizedAccessException), no such channel on this
-            // edition of Windows, or a record that would not render. A probe never
-            // lets its own failure reach a rule: an absent boot history reads as
-            // "we have nothing to say", which is true, and stays true.
-            return found;
+            // No elevation (UnauthorizedAccessException), or no such channel on
+            // this edition of Windows. Nothing to say, which is true and stays true.
+            return boots;
         }
-        return found;
-    }
 
-    /// EventData/Data elements keyed by their Name attribute. Names repeat in a
-    /// well-formed payload only if Microsoft ships a duplicate, so the last one
-    /// wins rather than throwing.
-    private static IReadOnlyDictionary<string, string> Fields(string xml)
-    {
-        var fields = new Dictionary<string, string>(StringComparer.Ordinal);
-        var root = XDocument.Parse(xml).Root;
-        if (root is null) return fields;
-        foreach (var data in root.Elements(EventNs + "EventData").Elements(EventNs + "Data"))
+        using (reader)
         {
-            var name = data.Attribute("Name")?.Value;
-            if (name is null) continue;
-            fields[name] = data.Value;
+            while (boots.Count < count)
+            {
+                var xml = NextRecordXml(reader);
+                if (xml is null) break;
+                ParsedBoot? parsed;
+                try
+                {
+                    parsed = BootEventParser.ReadBoot(xml);
+                }
+                catch (Exception)
+                {
+                    // One record that will not parse must not hide every older
+                    // boot behind it, so this skips rather than stopping.
+                    continue;
+                }
+                if (parsed is not null) boots.Add(parsed);
+            }
         }
-        return fields;
+        return boots;
     }
 
-    private static int? Int(IReadOnlyDictionary<string, string> fields, string name) =>
-        fields.TryGetValue(name, out var raw)
-        && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
-            ? value
-            : null;
+    /// Walks ID 101 newest-first and stops at the first record belonging to a
+    /// boot older than `oldestBootStart`. The channel is written in order, so
+    /// once the walk is past that boot there is nothing left that can attach to
+    /// anything we kept.
+    private static List<ParsedOffender> ReadOffendersBackTo(DateTime oldestBootStart)
+    {
+        var offenders = new List<ParsedOffender>();
+        EventLogReader reader;
+        try
+        {
+            reader = OpenReader(BootDegradationEventId);
+        }
+        catch (Exception)
+        {
+            // The boots were readable and these were not, so the boots still
+            // stand — they simply arrive with nobody blamed.
+            return offenders;
+        }
 
-    private static string Text(IReadOnlyDictionary<string, string> fields, string name) =>
-        fields.TryGetValue(name, out var raw) ? raw : string.Empty;
+        using (reader)
+        {
+            while (true)
+            {
+                var xml = NextRecordXml(reader);
+                if (xml is null) break;
+                ParsedOffender? parsed;
+                try
+                {
+                    parsed = BootEventParser.ReadOffender(xml);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+                if (parsed is null) continue;
+                if (parsed.BootStarted < oldestBootStart) break;
+                offenders.Add(parsed);
+            }
+        }
+        return offenders;
+    }
+
+    /// The XML of the next record, or null when the channel is exhausted or the
+    /// reader itself has failed. A reader that throws is finished — retrying it
+    /// would spin — so unlike a bad record this ends the walk.
+    private static string? NextRecordXml(EventLogReader reader)
+    {
+        try
+        {
+            using var record = reader.ReadEvent();
+            return record?.ToXml();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static EventLogReader OpenReader(int eventId) =>
+        new(new EventLogQuery(ChannelName, PathType.LogName, $"*[System[(EventID={eventId})]]")
+        {
+            ReverseDirection = true,   // newest boot first — "recent" is the whole point
+        });
 }
