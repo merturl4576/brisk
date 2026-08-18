@@ -95,6 +95,32 @@ public class FlyoutViewModelTests
         Assert.Equal(new[] { "startup-bloat" }, host.Fixed);
     }
 
+    /// Fix round 1 (Critical): FixAllService is unfiltered, and the tray's
+    /// Fix all is one of the four surfaces that can fix display-refresh — a
+    /// display mode change that can blank the screen. The confirmation must
+    /// reach the shared AppState from here too, not just from the findings
+    /// pages, or the tray would be the one place the rescue never runs.
+    [Fact]
+    public async Task FixAll_RaisesTheDisplayConfirmation_WhenItFixesDisplayRefresh()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.NotNull(vm.State.PendingConfirmation);
+        // Resolve rather than leave the real 15-second window's background
+        // timer running past this test's return.
+        vm.State.KeepDisplayCommand.Execute(null);
+        await vm.State.PendingConfirmTask!;
+    }
+
     [Fact]
     public async Task FixAll_DryRun_NeverCallsHostFix()
     {

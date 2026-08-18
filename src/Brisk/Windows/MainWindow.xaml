@@ -42,5 +42,30 @@
             <views:CleanPage x:Name="CleanView" Visibility="Collapsed" />
             <views:SettingsPage x:Name="SettingsView" Visibility="Collapsed" />
         </Grid>
+        <!-- A display mode change can blank the screen. This lives here, not
+             on any one page, because Fix all on EITHER findings page (and
+             the tray's Fix all) can trigger it — the window's DataContext is
+             the shared AppState, so the prompt covers whichever page is
+             showing no matter which button started the fix. -->
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Background="#CC000000"
+                Visibility="{Binding PendingConfirmation,
+                    Converter={x:Static views:NullToVis.Instance}}">
+            <Border Style="{StaticResource HeroStrip}" MaxWidth="420" Padding="24"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold"
+                               Margin="0,0,0,8" TextWrapping="Wrap"
+                               Text="{Binding [display-confirm.title],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,16"
+                               Text="{Binding [display-confirm.body],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <Button HorizontalAlignment="Right"
+                            Command="{Binding KeepDisplayCommand}"
+                            Content="{Binding [display-confirm.keep],
+                                Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </Window>

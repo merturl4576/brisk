@@ -245,6 +245,31 @@ public class OverviewViewModelTests
             vm.ReportSummary);
     }
 
+    /// Fix round 1 (Critical): FixAllService is unfiltered, and the
+    /// overview's Fix all is one of the four surfaces that can fix
+    /// display-refresh — a display mode change that can blank the screen.
+    /// The confirmation must reach the shared AppState from here too, not
+    /// just from the findings pages.
+    [Fact]
+    public async Task FixAll_RaisesTheDisplayConfirmation_WhenItFixesDisplayRefresh()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.NotNull(state.PendingConfirmation);
+        // Resolve rather than leave the real 15-second window's background
+        // timer running past this test's return.
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
     [Fact]
     public async Task FixAll_DryRun_BlocksWithFeedback_NeverCallsHost()
     {

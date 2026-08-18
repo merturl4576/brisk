@@ -81,7 +81,7 @@ public partial class App : Application
                 Loc.Instance.SetLanguage);
 
             _flyout = new FlyoutWindow(flyoutVm);
-            _main = new MainWindow(overviewVm, healthVm, perfVm, startupVm,
+            _main = new MainWindow(state, overviewVm, healthVm, perfVm, startupVm,
                 cleanVm, settingsVm, theme);
             flyoutVm.OpenDetailsRequested += () =>
             {

@@ -84,7 +84,12 @@ public sealed class FlyoutViewModel : ViewModelBase
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
             if (_isDryRun()) return;   // dry run: report only, nothing to fix here
-            await Task.Run(() => _fixAll.Run(snapshot));
+            var result = await Task.Run(() => _fixAll.Run(snapshot));
+            // See AppState.ConfirmDisplayFix: the tray's fix-all is one of
+            // the surfaces that can fix display-refresh, so it reports
+            // through the shared state the same as the pages do.
+            foreach (var finding in result.FixedRules)
+                _state.ConfirmDisplayFix(finding.RuleId);
             await _state.ScanAsync();
         }
         finally

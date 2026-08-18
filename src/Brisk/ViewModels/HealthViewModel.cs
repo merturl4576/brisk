@@ -151,7 +151,6 @@ public sealed class HealthViewModel : ViewModelBase
     private bool _hasCrossLink;
     private bool _createRestorePointFirst;
     private bool _busy;
-    private RefreshConfirmation? _pendingConfirmation;
 
     /// How long a row's Fixed morph gets to play before the follow-up rescan
     /// may rebuild the list. Chosen approach: delay the rescan trigger (not
@@ -196,7 +195,11 @@ public sealed class HealthViewModel : ViewModelBase
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CrossNavigateCommand = new RelayCommand(
             () => CrossNavigateRequested?.Invoke());
-        KeepDisplayCommand = new RelayCommand(() => PendingConfirmation?.Keep());
+        // A failed rescue must never look identical to a successful one:
+        // both Health and Performance subscribe (the same AppState is
+        // shared by both instances), so whichever page the user lands on
+        // after a failed rollback still explains what happened.
+        _state.RollbackFailed += msg => Message = msg;
     }
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
@@ -271,19 +274,6 @@ public sealed class HealthViewModel : ViewModelBase
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CrossNavigateCommand { get; }
-    public RelayCommand KeepDisplayCommand { get; }
-
-    /// Non-null while a display mode change is still provisional. The view
-    /// shows a countdown over the page; a user staring at a black screen
-    /// cannot answer it, which is exactly what the timeout means.
-    public RefreshConfirmation? PendingConfirmation
-    {
-        get => _pendingConfirmation;
-        private set => Set(ref _pendingConfirmation, value);
-    }
-
-    /// Overridable so tests can elapse the window without waiting.
-    public TimeSpan ConfirmationWindow { get; set; } = TimeSpan.FromSeconds(15);
 
     public async Task FixAllAsync()
     {
@@ -315,10 +305,12 @@ public sealed class HealthViewModel : ViewModelBase
                 ReportSummary = FixReport.Populate(_loc, result, ReportLines);
                 if (result.Applied > 0) await _morphPause();
             }
-            // Fire-and-forget, same reasoning as FixAsync: a real window must
-            // not hold up the rescan below.
+            // FixAllService is deliberately unfiltered (see HasWork above):
+            // pressing Fix all on EITHER page can fix display-refresh, so the
+            // confirmation has to live on the shared state, not this page's
+            // own view model — see AppState.ConfirmDisplayFix.
             foreach (var finding in result.FixedRules)
-                _ = ConfirmDisplayAsync(finding.RuleId);
+                _state.ConfirmDisplayFix(finding.RuleId);
             await _state.ScanAsync();
         }
         finally
@@ -354,11 +346,7 @@ public sealed class HealthViewModel : ViewModelBase
             {
                 Message = outcome.Message;
             }
-            // Fire-and-forget: a real (non-zero) window must not hold up the
-            // rescan below, and the confirmation's own Undo goes by rule id
-            // for exactly that reason — the row this rescan produces may not
-            // be the row we started with.
-            if (outcome.Ok) _ = ConfirmDisplayAsync(row.RuleId);
+            if (outcome.Ok) _state.ConfirmDisplayFix(row.RuleId);
             await _state.ScanAsync();
         }
         finally
@@ -427,26 +415,6 @@ public sealed class HealthViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
-        }
-    }
-
-    /// Undo goes through the host by rule id rather than through a row: the
-    /// fix triggers a rescan, so by now the row may be gone.
-    private async Task ConfirmDisplayAsync(string ruleId)
-    {
-        if (ruleId != "display-refresh") return;
-        var confirmation = new RefreshConfirmation(() => _host.Undo(ruleId))
-        {
-            Window = ConfirmationWindow,
-        };
-        PendingConfirmation = confirmation;
-        try
-        {
-            await confirmation.AwaitConfirmationAsync();
-        }
-        finally
-        {
-            PendingConfirmation = null;
         }
     }
 

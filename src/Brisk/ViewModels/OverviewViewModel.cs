@@ -256,6 +256,11 @@ public sealed class OverviewViewModel : ViewModelBase
             }
             var result = await Task.Run(() => _fixAll.Run(snapshot));
             ReportSummary = FixReport.Populate(_loc, result, ReportLines);
+            // Fix all here acts on the whole snapshot, not just this page's
+            // slice — see AppState.ConfirmDisplayFix for why the display
+            // mode rescue has to live there instead of on this view model.
+            foreach (var finding in result.FixedRules)
+                _state.ConfirmDisplayFix(finding.RuleId);
             await _state.ScanAsync();
         }
         finally

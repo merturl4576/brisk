@@ -10,13 +10,17 @@ public partial class MainWindow : Window
     private readonly ThemeManager _theme;
     private readonly OverviewViewModel _overview;
 
-    public MainWindow(OverviewViewModel overview, HealthViewModel health,
+    public MainWindow(AppState state, OverviewViewModel overview, HealthViewModel health,
         HealthViewModel performance, StartupViewModel startup,
         CleanViewModel clean, SettingsViewModel settings, ThemeManager theme)
     {
         _theme = theme;
         _overview = overview;
         InitializeComponent();
+        // Every hosted page sets its own DataContext below, so this only
+        // reaches the window-level overlay (the display-refresh confirm
+        // prompt) — the one piece of UI that belongs to no single page.
+        DataContext = state;
         OverviewView.DataContext = overview;
         HealthView.Bind(health);
         PerfView.Bind(performance, startup);

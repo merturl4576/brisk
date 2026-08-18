@@ -306,6 +306,11 @@ public class HealthViewModelTests
     }
 
     // A display change can blank the screen, so it is applied provisionally.
+    // The confirmation lives on AppState (fix round 1), not on this page's
+    // own view model: FixAllService acts unfiltered, so Fix all on EITHER
+    // findings page — and the tray — can trigger display-refresh, and only
+    // the shared state is guaranteed to be watched by whichever page (or
+    // MainWindow's own overlay) is actually on screen.
     [Fact]
     public async Task FixingDisplayRefresh_RaisesAConfirmation()
     {
@@ -319,7 +324,16 @@ public class HealthViewModelTests
 
         await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
 
-        Assert.NotNull(vm.PendingConfirmation);
+        // Structural, not incidental: ConfirmDisplayFix sets this on the
+        // caller's own thread before it ever touches a background task, so
+        // it is guaranteed set the moment FixAsync returns control here —
+        // regardless of the (default, 15s) window still being open.
+        Assert.NotNull(state.PendingConfirmation);
+        // Resolve it via Keep (the same path a user answering "yes" takes)
+        // instead of leaving the real 15-second window's timer running
+        // after this test returns.
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
     }
 
     [Fact]
@@ -330,7 +344,7 @@ public class HealthViewModelTests
 
         await vm.FixAsync(vm.Rows.First(r => r.RuleId == "power-plan"));
 
-        Assert.Null(vm.PendingConfirmation);
+        Assert.Null(state.PendingConfirmation);
     }
 
     [Fact]
@@ -345,11 +359,74 @@ public class HealthViewModelTests
         await state.ScanAsync();
 
         // Zero-length window: the same path a user takes by not answering.
-        vm.ConfirmationWindow = TimeSpan.Zero;
+        state.ConfirmationWindow = TimeSpan.Zero;
         await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        // A real join point (fix round 1): the rollback runs on a background
+        // task now, so waiting for it is what makes the assertions below
+        // deterministic rather than trusting a zero delay to finish first.
+        await state.PendingConfirmTask!;
 
         Assert.Equal(new[] { "display-refresh" }, host.Undone);
-        Assert.Null(vm.PendingConfirmation);
+        Assert.Null(state.PendingConfirmation);
+    }
+
+    /// Fix round 1 (Critical): FixAllService is unfiltered, so pressing Fix
+    /// all on the HEALTH page — which never shows display-refresh as a row,
+    /// since Task 2 routes it to Performance — can still fix it. Before the
+    /// confirmation moved to AppState, that meant the rollback ran with no
+    /// overlay watching anywhere: this proves the fix reaches the shared
+    /// state even from a page whose own filter excludes the rule entirely.
+    [Fact]
+    public async Task FixAllOnHealthPage_StillRaisesTheDisplayConfirmation()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var state = new AppState(host);
+        var health = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), FindingSections.IsHealth,
+            morphPause: () => Task.CompletedTask);
+        await state.ScanAsync();
+        Assert.Empty(health.Rows);   // display-refresh is not even a row here
+
+        await health.FixAllAsync();
+
+        Assert.NotNull(state.PendingConfirmation);
+        // Same cleanup as above: resolve rather than leave the 15-second
+        // window's background timer running past this test's return.
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
+    /// Fix round 1 (Important, Finding 3): a rollback that could not
+    /// actually restore the previous mode must not look identical to one
+    /// that did. FakeEngineHost.Undo always succeeds, so a thin override
+    /// simulates the journal-has-nothing-to-undo case FixRunner.Undo really
+    /// returns, and asserts the failure surfaces on the page's Message
+    /// instead of vanishing silently.
+    [Fact]
+    public async Task FailedRollback_SurfacesOnTheMessage_InsteadOfLookingLikeSuccess()
+    {
+        var inner = new FakeEngineHost();
+        inner.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var host = new UndoFailsHost(inner, "display-refresh: nothing to undo");
+        var state = new AppState(host);
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), morphPause: () => Task.CompletedTask);
+        await state.ScanAsync();
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        await state.PendingConfirmTask!;
+
+        Assert.Equal("display-refresh: nothing to undo", vm.Message);
     }
 
     [Fact]
@@ -696,6 +773,40 @@ public class HealthViewModelTests
         public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
             CancellationToken ct = default) => _inner.ScanAsync(progress, ct);
         public FixOutcome Undo(string ruleId) => _inner.Undo(ruleId);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun,
+                Action<CleanEntry>? onEntry = null) =>
+            _inner.Clean(scan, dryRun, onEntry);
+        public IReadOnlyList<UndoableFix> ListUndoable() => _inner.ListUndoable();
+        public IReadOnlyList<ActionLogEntry> ReadLog(int max = 200) => _inner.ReadLog(max);
+        public IReadOnlyList<StartupEntry> ListStartup() => _inner.ListStartup();
+        public bool SetStartupEnabled(string hive, string name, bool enabled) =>
+            _inner.SetStartupEnabled(hive, name, enabled);
+        public bool RunElevated(string cliArgs) => _inner.RunElevated(cliArgs);
+        public bool CreateRestorePoint() => _inner.CreateRestorePoint();
+        public long FreeDiskBytes() => _inner.FreeDiskBytes();
+        public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
+        public bool IsElevated() => _inner.IsElevated();
+    }
+
+    /// Fakes.cs is a locked contract, so a failed rollback (the journal
+    /// already had no prior state — FixRunner.Undo's real "nothing to undo"
+    /// case) is simulated with a thin decorator that only overrides Undo.
+    private sealed class UndoFailsHost : IEngineHost
+    {
+        private readonly FakeEngineHost _inner;
+        private readonly string _message;
+
+        public UndoFailsHost(FakeEngineHost inner, string message)
+        {
+            _inner = inner;
+            _message = message;
+        }
+
+        public FixOutcome Undo(string ruleId) => new(false, _message);
+
+        public FixOutcome Fix(string ruleId) => _inner.Fix(ruleId);
+        public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
+            CancellationToken ct = default) => _inner.ScanAsync(progress, ct);
         public CleanReport Clean(TargetScanResult scan, bool dryRun,
                 Action<CleanEntry>? onEntry = null) =>
             _inner.Clean(scan, dryRun, onEntry);
