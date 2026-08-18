@@ -127,19 +127,19 @@ public sealed class DeleteLockProbeTests : IDisposable
     {
         var deep = Path.Combine(_root, "deep");
         Directory.CreateDirectory(deep);
-        for (var i = 0; i < 400; i++)
-            File.WriteAllBytes(Path.Combine(deep, $"f{i}.tmp"), new byte[1]);
+        for (var i = 0; i < LockProbeBudget.MaxPerItem * 2; i++)
+            File.WriteAllBytes(Path.Combine(deep, $"f{i:D5}.tmp"), new byte[1]);
 
         var held = Path.Combine(_root, "held-behind.bin");
         File.WriteAllBytes(held, new byte[8]);
 
-        // One allowance for the whole target, smaller than the deep tree.
-        var budget = new LockProbeBudget(256);
+        // A target allowance the deep tree would swallow whole if it could.
+        var budget = new LockProbeBudget(LockProbeBudget.MaxPerItem + 400);
         using (File.Open(held, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             Assert.False(_probe.IsLockedForDelete(deep, budget));
-            // The tree is capped at MaxPerItem, so the cheap check behind it
-            // is still affordable — without the cap this read as unlocked.
+            // Capped at MaxPerItem, so the cheap check behind it is still
+            // affordable — uncapped, this read as unlocked.
             Assert.True(_probe.IsLockedForDelete(held, budget));
             Assert.True(budget.Remaining > 0);
         }
@@ -152,13 +152,36 @@ public sealed class DeleteLockProbeTests : IDisposable
     {
         var deep = Path.Combine(_root, "wide");
         Directory.CreateDirectory(deep);
-        for (var i = 0; i < 400; i++)
-            File.WriteAllBytes(Path.Combine(deep, $"w{i}.tmp"), new byte[1]);
+        for (var i = 0; i < LockProbeBudget.MaxPerItem * 2; i++)
+            File.WriteAllBytes(Path.Combine(deep, $"w{i:D5}.tmp"), new byte[1]);
 
         var budget = new LockProbeBudget(LockProbeBudget.DefaultPerTarget);
         Assert.False(_probe.IsLockedForDelete(deep, budget));
         Assert.True(LockProbeBudget.DefaultPerTarget - budget.Remaining
             <= LockProbeBudget.MaxPerItem);
+    }
+
+    /// ROUND 15 review (I1): the cap has to clear a REAL profile tree, or a
+    /// "free" verdict is truncation wearing evidence's clothes. Both
+    /// WebView2 profiles on the reporting machine are 384 and 985 entries
+    /// deep, and at MaxPerItem = 64 both stopped at their 64th and reported
+    /// free — the exact 2026-08-17 shape the probe exists to catch, which
+    /// rounds 11-14 caught because such a tree fits the shared allowance.
+    [Fact]
+    public void AHeldFile_DeepInAProfileSizedTree_IsStillFound()
+    {
+        var profile = Path.Combine(_root, "EBWebView");
+        Directory.CreateDirectory(profile);
+        // Filler that sorts BEFORE the held file, so the walk must get past
+        // several hundred entries to reach it.
+        for (var i = 0; i < 600; i++)
+            File.WriteAllBytes(Path.Combine(profile, $"a{i:D5}.dat"), new byte[1]);
+        var held = Path.Combine(profile, "zzz-LOCK");
+        File.WriteAllBytes(held, new byte[8]);
+
+        using (File.Open(held, FileMode.Open, FileAccess.Read, FileShare.Read))
+            Assert.True(_probe.IsLockedForDelete(profile, Budget()));
+        Assert.False(_probe.IsLockedForDelete(profile, Budget()));
     }
 
     [Fact]

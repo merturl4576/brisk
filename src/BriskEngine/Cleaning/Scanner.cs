@@ -84,14 +84,37 @@ public sealed class Scanner
                     continue;
 
                 items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct),
-                    lastWrite, Locked: !appRunning && IsLocked(path, budget, ct)));
+                    lastWrite, Locked: false));   // probed below, largest first
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this path on any other exception
         }
+        ProbeLargestFirst(items, appRunning, budget, ct);
         return new TargetScanResult(target, items, appRunning
             ? $"{target.AppDisplayName} is running — close it to include this target"
             : null);
+    }
+
+    /// ROUND 15 review (I1): the allowance is finite, so WHAT it is spent on
+    /// decides the promise's error bound. Spent in walk order it leaves an
+    /// arbitrary tail unverified — and an unverified item is counted as
+    /// free, so the arbitrary tail is exactly the promise's risk. Spent
+    /// largest-first the unverified tail is the SMALLEST it can be in the
+    /// only unit the promise is made in: bytes. Sizes are already computed
+    /// above, so this costs an ordering, not a walk.
+    private void ProbeLargestFirst(List<ResolvedItem> items, bool appRunning,
+        LockProbeBudget? budget, CancellationToken ct)
+    {
+        // A skipped target is wholly outside the promise; nothing to verify.
+        if (appRunning || budget is null || _lockProbe is null) return;
+        foreach (var i in Enumerable.Range(0, items.Count)
+                     .OrderByDescending(n => items[n].Bytes)
+                     .ToList())
+        {
+            ct.ThrowIfCancellationRequested();
+            if (IsLocked(items[i].Path, budget, ct))
+                items[i] = items[i] with { Locked = true };
+        }
     }
 
     /// Skipped-target items are never probed (the whole target is already
@@ -116,7 +139,7 @@ public sealed class Scanner
                 try { lastWrite = File.GetLastWriteTimeUtc(child); } catch { }
 
                 items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct),
-                    lastWrite, Locked: !appRunning && IsLocked(child, budget, ct)));
+                    lastWrite, Locked: false));   // probed by the caller, largest first
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this child on any other exception

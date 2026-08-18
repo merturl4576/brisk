@@ -485,7 +485,7 @@ public sealed class CleanViewModel : ViewModelBase
                 admin++;
             else if (entry.Action == "error"
                      && (entry.Reason?.Contains("(32)") == true
-                         || entry.Reason?.Contains("held by a running app") == true))
+                         || entry.Reason == BriskEngine.Cleaning.CleanRunner.HeldReason))
                 inUse++;
             else
                 other++;

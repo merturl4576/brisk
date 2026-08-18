@@ -72,6 +72,31 @@ public sealed class ScannerTests : IDisposable
         Assert.Equal(0, t.ReclaimableBytes);
     }
 
+    /// ROUND 15 review (I1): the allowance is finite, so WHAT it is spent
+    /// on decides the promise's error bound. Spent in walk order the
+    /// unverified tail is arbitrary — and unverified counts as free, so the
+    /// arbitrary tail IS the risk. Spent largest-first, whatever goes
+    /// unverified is the smallest it can be in the only unit the promise is
+    /// made in: bytes.
+    [Fact]
+    public void TheAllowance_IsSpentOnTheBiggestItemsFirst()
+    {
+        var dir = Path.Combine(_root, "order");
+        Directory.CreateDirectory(dir);
+        // Written smallest-first, and named so walk order is the OPPOSITE
+        // of size order — walk order would probe 'a' first.
+        File.WriteAllBytes(Path.Combine(dir, "a-small.bin"), new byte[10]);
+        File.WriteAllBytes(Path.Combine(dir, "b-medium.bin"), new byte[500]);
+        File.WriteAllBytes(Path.Combine(dir, "c-largest.bin"), new byte[9000]);
+        var probe = new FakeLockProbe();
+
+        new Scanner(new[] { ContentsOnlyTarget("t-order", dir) }, _processes, probe).Scan();
+
+        Assert.Equal(
+            new[] { "c-largest.bin", "b-medium.bin", "a-small.bin" },
+            probe.Calls.Select(c => Path.GetFileName(c.Path)).ToArray());
+    }
+
     /// Round 11 honest total: a delete-locked item stays on the shelf (the
     /// clean still attempts it) but leaves the promise.
     [Fact]

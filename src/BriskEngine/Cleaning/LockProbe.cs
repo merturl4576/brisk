@@ -30,7 +30,16 @@ public sealed class LockProbeBudget
     /// locks turned out to be — was waved through unprobed. Capping what
     /// one item may spend keeps the cheap, high-value checks affordable no
     /// matter what order the walk meets them in. A file still costs 1.
-    public const int MaxPerItem = 64;
+    ///
+    /// The cap must clear a real profile tree, not a fixture (round-15
+    /// review, I1): 64 stopped both WebView2 profiles on the reporting
+    /// machine at their 64th entry — 384 and 985 entries deep — and their
+    /// "free" verdict was then truncation, not evidence. That is the exact
+    /// 2026-08-17 shape the probe exists to catch, and rounds 11-14 caught
+    /// it because a 985-entry tree fits inside the shared allowance. At
+    /// 0.058 ms a probe, this ceiling costs ~59 ms for one tree and eight
+    /// of them still fit in DefaultPerTarget.
+    public const int MaxPerItem = 1024;
 
     private int _remaining;
 
