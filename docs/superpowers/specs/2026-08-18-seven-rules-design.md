@@ -59,8 +59,16 @@ reported first; fixes are applied only after explicit approval.
 | Wave | Rules | New infrastructure |
 |---|---|---|
 | 1 | `display-refresh`, `search-web-results` | `IDisplayProbe`, elevation manifest, scheduled-task autostart |
-| 2 | `memory-speed`, `hardware-wall` | `IHardwareProbe`, `FindingKind` |
-| 3 | `boot-degradation`, `update-settling`, change detection | `IEventLogProbe`, `ScanHistory` |
+| 2 | `boot-degradation`, `memory-speed` | `IEventLogProbe`, `IHardwareProbe` |
+| 3 | `hardware-wall`, `update-settling`, change detection | `FindingKind`, `ScanHistory` |
+
+**Waves 2 and 3 were swapped after wave 1 shipped.** The original order put both
+advisory-only rules in wave 2, so it would have delivered a release where nothing
+could be acted on. Boot attribution and memory speed are the two findings a user
+screenshots and sends to someone — *"your boot takes 31 s and 19 s of it is these
+three"*, *"your RAM has been at half its rated speed"* — and the project's goal is a
+repository people star, which advisory-only work does not serve. The unfixable
+notices and the history store move to wave 3, where they belong together.
 
 Elevation lands in wave 1: thermals are silently dead without it today, and
 wave 3's event log needs it too.
@@ -176,9 +184,15 @@ after an update is normal and must not raise a finding.
 it belongs to these three". Windows measured this itself, which makes it
 stronger than any heuristic.
 
-**No fix in this wave.** Mapping an event-log offender to a disableable startup
-entry is fuzzy; `startup-bloat` already owns disabling. Linking the two is
-noted as future work rather than guessed at now.
+**Fixable where the evidence lines up.** When an offender Windows named is also a
+disableable startup entry, offer the switch: *"Windows measured this costing you
+12 s at every boot"* next to a button that turns it off, undoably, through the
+existing `StartupManager`. Where the name does not match a startup entry — a
+driver, a service — the finding stays advisory and says so rather than guessing.
+
+That link is the point of the rule. Everything else in the category tells you how
+many programs start with Windows; this tells you which ones you are actually
+paying for, using Windows' own measurement, and hands you the switch.
 
 ### 6. `update-settling` — Notice, Info, no score impact
 
@@ -212,9 +226,28 @@ how regularly brisk runs, which is why autostart is worth keeping.
 
 ## Elevation and autostart
 
-The app currently ships no manifest, so it runs as a standard user and
-`RealSensorProbe` silently returns null — a user with a genuine heat problem is
-told nothing. That is the bug this fixes.
+The app currently ships no manifest, so it runs as a standard user. The stated
+reason for elevating was `RealSensorProbe` returning nothing, leaving a user with a
+genuine heat problem told nothing.
+
+**That reason turned out to be wrong, and this record corrects it.** Measured on the
+maintainer's machine after wave 1 shipped: GPU temperature reads fine *without*
+elevation, through the vendor API. CPU temperature does not read *with* elevation
+either, because LibreHardwareMonitor gets it through the WinRing0 kernel driver, and
+WinRing0 is on Microsoft's vulnerable-driver blocklist. That machine has
+`VulnerableDriverBlocklistEnable = 1` and Memory Integrity running, so the driver
+cannot load at any privilege level. On a default Windows 11, thermals will be
+GPU-only regardless of what brisk asks for.
+
+There is an exact irony here worth keeping: Memory Integrity is the feature this spec
+deliberately refuses to let brisk switch off. It is also the thing blocking brisk's
+own CPU temperature reading. That was the right call and this is its price.
+
+Elevation is still required — the `admin: true` cleanup targets under
+`%SystemRoot%` need it, and so does wave 2's boot event log, which is only readable
+elevated. So the manifest stays; only its justification changes. `ThermalsRule` must
+also stop reporting GPU-only in silence and say that CPU temperature is unavailable
+and why.
 
 **Manifest.** `requestedExecutionLevel = requireAdministrator`. Every serious
 tool in this category does the same (winutil, Optimizer, System Informer,
