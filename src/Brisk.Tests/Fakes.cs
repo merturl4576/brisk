@@ -63,6 +63,16 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
     public System.Collections.Generic.Dictionary<string, byte[]> Blobs { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// Store startup tasks are DWORDs under per-package subkeys, and
+    /// StartupManager reads all three shapes. A fake that answered null and
+    /// empty to those would let an app-layer test of the Store rows pass while
+    /// seeing no Store rows at all.
+    public System.Collections.Generic.Dictionary<string, int> Ints { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> SubKeys { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     private static string Key(string keyPath, string valueName) =>
         keyPath + "\\" + valueName;
 
@@ -79,17 +89,20 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
         Blobs.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
     public void SetBytes(string keyPath, string valueName, byte[] value) =>
         Blobs[Key(keyPath, valueName)] = value;
-    public int? GetInt(string keyPath, string valueName) => null;
-    public void SetInt(string keyPath, string valueName, int value) { }
-    /// Real enough for StartupManager.List(), so a test can watch brisk's own
-    /// stale row disappear from the startup list the GUI actually renders.
+    public int? GetInt(string keyPath, string valueName) =>
+        Ints.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
+    public void SetInt(string keyPath, string valueName, int value) =>
+        Ints[Key(keyPath, valueName)] = value;
+    /// Run values are strings, so listing only Strings is what the real key
+    /// holds — the binaries and DWORDs above live under different keys and
+    /// are read by name, never enumerated.
     public System.Collections.Generic.IReadOnlyList<string> GetValueNames(string keyPath) =>
         Strings.Keys
             .Where(k => k.StartsWith(keyPath + "\\", StringComparison.OrdinalIgnoreCase))
             .Select(k => k.Substring(keyPath.Length + 1))
             .ToList();
     public System.Collections.Generic.IReadOnlyList<string> GetSubKeyNames(string keyPath) =>
-        Array.Empty<string>();
+        SubKeys.TryGetValue(keyPath, out var s) ? s : (System.Collections.Generic.IReadOnlyList<string>)Array.Empty<string>();
 }
 
 public static class TestData
