@@ -39,7 +39,7 @@ public static class Program
         bool IsElevated() => new WindowsPrincipal(WindowsIdentity.GetCurrent())
             .IsInRole(WindowsBuiltInRole.Administrator);
         var cleanRunner = new CleanRunner(new SafetyValidator(), new WindowsRecycler(),
-            log, runner, IsElevated);
+            log, runner, IsElevated, new DeleteLockProbe());
 
         try
         {

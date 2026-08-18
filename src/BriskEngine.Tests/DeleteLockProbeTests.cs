@@ -117,6 +117,50 @@ public sealed class DeleteLockProbeTests : IDisposable
         }
     }
 
+    /// ROUND 15, the defect behind the 2026-08-18 promise (card said
+    /// 180 MB, clean delivered 48): the allowance was drained by RECURSION,
+    /// not breadth. One deep directory early in %TEMP% spent everything,
+    /// and every held top-level file after it — one probe each, and exactly
+    /// where the locks turned out to be — was waved through unprobed.
+    [Fact]
+    public void ADeepDirectory_CannotStarveTheItemsBehindIt()
+    {
+        var deep = Path.Combine(_root, "deep");
+        Directory.CreateDirectory(deep);
+        for (var i = 0; i < 400; i++)
+            File.WriteAllBytes(Path.Combine(deep, $"f{i}.tmp"), new byte[1]);
+
+        var held = Path.Combine(_root, "held-behind.bin");
+        File.WriteAllBytes(held, new byte[8]);
+
+        // One allowance for the whole target, smaller than the deep tree.
+        var budget = new LockProbeBudget(256);
+        using (File.Open(held, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            Assert.False(_probe.IsLockedForDelete(deep, budget));
+            // The tree is capped at MaxPerItem, so the cheap check behind it
+            // is still affordable — without the cap this read as unlocked.
+            Assert.True(_probe.IsLockedForDelete(held, budget));
+            Assert.True(budget.Remaining > 0);
+        }
+    }
+
+    /// The cap is per ITEM, so a single tree can never spend more than its
+    /// share however deep it goes.
+    [Fact]
+    public void OneTree_SpendsAtMostItsOwnShare()
+    {
+        var deep = Path.Combine(_root, "wide");
+        Directory.CreateDirectory(deep);
+        for (var i = 0; i < 400; i++)
+            File.WriteAllBytes(Path.Combine(deep, $"w{i}.tmp"), new byte[1]);
+
+        var budget = new LockProbeBudget(LockProbeBudget.DefaultPerTarget);
+        Assert.False(_probe.IsLockedForDelete(deep, budget));
+        Assert.True(LockProbeBudget.DefaultPerTarget - budget.Remaining
+            <= LockProbeBudget.MaxPerItem);
+    }
+
     [Fact]
     public void Budget_CountsDownAndRefuses()
     {

@@ -28,16 +28,25 @@ public sealed class CleanRunner
     private readonly ActionLog _log;
     private readonly IProcessRunner _processRunner;
     private readonly Func<bool> _isElevated;
+    private readonly ILockProbe? _lockProbe;
 
     public CleanRunner(SafetyValidator validator, IRecycler recycler, ActionLog log,
-        IProcessRunner processRunner, Func<bool> isElevated)
+        IProcessRunner processRunner, Func<bool> isElevated,
+        ILockProbe? lockProbe = null)
     {
         _validator = validator;
         _recycler = recycler;
         _log = log;
         _processRunner = processRunner;
         _isElevated = isElevated;
+        _lockProbe = lockProbe;
     }
+
+    /// What a path held by a running app is recorded as when the probe —
+    /// not the shell — is the one that found out. The GUI matches this
+    /// phrase the same way it matches Win32 32, so the report still says
+    /// "N files are in use by a running app".
+    public const string HeldReason = "held by a running app (probed before the move)";
 
     /// How many paths go into one shell recycle operation. The shell charges
     /// ~200 ms of overhead per SHFileOperation CALL, so one-call-per-file
@@ -215,6 +224,7 @@ public sealed class CleanRunner
         }
 
         var blockedByElevation = scan.Target.RequiresElevation && !_isElevated();
+        var lockBudget = _lockProbe is null ? null : new LockProbeBudget();
         foreach (var item in scan.Items)
         {
             if (blockedByElevation) { Record(item.Path, 0, "refused", "requires administrator"); continue; }
@@ -222,6 +232,20 @@ public sealed class CleanRunner
             var auth = _validator.Authorize(item.Path, scan.Target);
             if (!auth.Allowed) { Record(item.Path, 0, "refused", auth.Reason); continue; }
             if (dryRun) { Record(item.Path, item.Bytes, "dry-run"); continue; }
+
+            // ROUND 15: ask the cheap question before the expensive one. A
+            // DELETE-access probe costs 0.058 ms; letting the shell discover
+            // the same lock costs ~1.02 SECONDS, measured across the
+            // 2026-08-18 run where 28 held files spent roughly 60 s of a
+            // 92 s clean failing a batch and then failing alone. A "locked"
+            // verdict is never a guess — the probe spent a handle and
+            // Windows refused it, which is the same wall the move would hit.
+            if (lockBudget is not null
+                && _lockProbe!.IsLockedForDelete(item.Path, lockBudget))
+            {
+                Record(item.Path, 0, "error", HeldReason);
+                continue;
+            }
 
             batch.Add(item);
             if (batch.Count >= BatchSize) Flush();

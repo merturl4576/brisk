@@ -687,6 +687,36 @@ public class CleanViewModelTests
         Assert.False(vm.IsSimpleCleanBusy);
     }
 
+    /// ROUND 15: when the PROBE finds the lock instead of the shell, the
+    /// report must still say "N files are in use by a running app" — the
+    /// reason text changed, the story the user reads did not.
+    [Fact]
+    public async Task ProbeHeldReason_StillReadsAsInUse()
+    {
+        var loc = EnglishLoc();
+        var host = SimpleHost();
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+        // One path the PROBE found held, one the SHELL found held: the user
+        // is owed the same sentence for both.
+        host.OnClean = (scan, _) => new BriskEngine.Cleaning.CleanReport(
+            scan.Items.Select((i, n) => new BriskEngine.Cleaning.CleanEntry(
+                scan.Target.Id, i.Path, 0, "error",
+                n == 0 ? BriskEngine.Cleaning.CleanRunner.HeldReason
+                       : "SHFileOperation failed (32) for '" + i.Path + "'")).ToList());
+
+        await vm.CleanSimpleAsync();
+
+        var held = scanItemCount(host);
+        Assert.Contains(loc.F("clean.report.skipped.inuse", held), vm.ReportReasonsText);
+        Assert.DoesNotContain(loc.F("clean.report.skipped.other", 1), vm.ReportReasonsText);
+
+        static int scanItemCount(FakeEngineHost h) =>
+            h.NextSnapshot.Cleaner.Targets
+                .Where(Brisk.Services.CleanService.IsSafeDefault)
+                .Sum(t => t.Items.Count);
+    }
+
     /// ROUND 14: between the press and the first recorded entry the app has
     /// real work to do — the bin snapshot reads every $I record in the
     /// Recycle Bin, and the engine authorizes every path before the first

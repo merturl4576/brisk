@@ -69,8 +69,8 @@ public sealed class CleanRunnerTests : IDisposable
         _log = new ActionLog(_logPath);
     }
 
-    private CleanRunner Runner(bool elevated = false) =>
-        new(new SafetyValidator(), _recycler, _log, _runner, () => elevated);
+    private CleanRunner Runner(bool elevated = false, ILockProbe? lockProbe = null) =>
+        new(new SafetyValidator(), _recycler, _log, _runner, () => elevated, lockProbe);
 
     private (CleanupTarget, TargetScanResult) ScanOver(string dir, params string[] files)
     {
@@ -218,6 +218,54 @@ public sealed class CleanRunnerTests : IDisposable
         // call per path — within one call of the old fallback's n + 1,
         // where head-splitting alone would have spent 2n - 1.
         Assert.Equal(files.Length + 2, _recycler.ShellCalls);
+    }
+
+    /// ROUND 15: a DELETE-access probe costs 0.058 ms; letting the shell
+    /// discover the same lock costs ~1.02 SECONDS, and the runner pays it
+    /// TWICE per held file — once for the batch it aborts, once for the
+    /// retry that abort earns. On the 2026-08-18 run that was ~60 s of a
+    /// 92 s clean. A path the probe already knows is held must never reach
+    /// the shell, and must still be named in the report.
+    [Fact]
+    public void ProbeKnownHeldPaths_NeverReachTheShell()
+    {
+        var dir = Path.Combine(_root, "probed");
+        var (_, scan) = ScanOver(dir, "a.tmp", "b.tmp", "c.tmp");
+        var probe = new FakeLockProbe();
+        probe.LockedPaths.Add(Path.Combine(dir, "b.tmp"));
+
+        var report = Runner(lockProbe: probe).Clean(scan, dryRun: false);
+
+        // ONE batch over the two takeable paths: no aborted call, no retry.
+        Assert.Equal(new[] { 2 }, _recycler.BatchCalls);
+        Assert.Equal(1, _recycler.ShellCalls);
+        Assert.DoesNotContain(Path.Combine(dir, "b.tmp"), _recycler.Recycled);
+        Assert.True(File.Exists(Path.Combine(dir, "b.tmp")));
+
+        // …and the held path is still named, with the reason the GUI reads
+        // as "in use by a running app".
+        var held = Assert.Single(report.Entries, e => e.Action == "error");
+        Assert.Equal(Path.Combine(dir, "b.tmp"), held.Path);
+        Assert.Equal(CleanRunner.HeldReason, held.Reason);
+        Assert.Equal(0, held.Bytes);
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "recycled"));
+    }
+
+    /// A dry run promises what a real one WOULD take, so it must not start
+    /// reporting held paths as errors — the probe sits after that branch.
+    [Fact]
+    public void DryRun_IsUnchangedByTheProbe()
+    {
+        var dir = Path.Combine(_root, "probed-dry");
+        var (_, scan) = ScanOver(dir, "a.tmp", "b.tmp");
+        var probe = new FakeLockProbe();
+        probe.LockedPaths.Add(Path.Combine(dir, "b.tmp"));
+
+        var report = Runner(lockProbe: probe).Clean(scan, dryRun: true);
+
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "dry-run"));
+        Assert.Empty(probe.Calls);
+        Assert.Empty(_recycler.BatchCalls);
     }
 
     /// The shape the drain CANNOT catch, and the honest cost of it

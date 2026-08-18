@@ -47,7 +47,8 @@ public static class AppServices
             new CleanRunner(new SafetyValidator(), new WindowsRecycler(), log, runner,
                 () => new System.Security.Principal.WindowsPrincipal(
                     System.Security.Principal.WindowsIdentity.GetCurrent())
-                    .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator)),
+                    .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator),
+                new DeleteLockProbe()),
             journal, new StartupManager(registry, log), logPath,
             Path.Combine(AppContext.BaseDirectory, "Brisk.Cli.exe"));
 

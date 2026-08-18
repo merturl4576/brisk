@@ -14,10 +14,23 @@ namespace BriskEngine.Cleaning;
 /// the round-10 behavior, never worse.
 public sealed class LockProbeBudget
 {
-    /// Enough for one root probe on every child of a big temp dir plus
-    /// change for the shallow walks where locks actually live (lockfiles
-    /// sit near profile roots; ACL denials sit on the dir itself).
-    public const int DefaultPerTarget = 512;
+    /// ROUND 15, from the 2026-08-18 live run: 512 was set to bound a cost
+    /// that was never there. One DELETE-access probe measures at 0.058 ms,
+    /// so the whole old allowance bought ~30 ms — while a %TEMP% of ~300
+    /// entries with nested children blew straight past it, and everything
+    /// after the cliff was assumed unlocked. The card promised 180 MB and
+    /// the clean delivered 48. This allowance costs ~475 ms if it is ever
+    /// spent in full, and real %TEMP% folders never come close.
+    public const int DefaultPerTarget = 8192;
+
+    /// ROUND 15, the actual defect behind the 180-vs-48 promise: the
+    /// allowance was drained by RECURSION, not by breadth. One deep
+    /// directory early in %TEMP% spent everything, and every top-level file
+    /// after it — each costing a single probe, and each exactly where the
+    /// locks turned out to be — was waved through unprobed. Capping what
+    /// one item may spend keeps the cheap, high-value checks affordable no
+    /// matter what order the walk meets them in. A file still costs 1.
+    public const int MaxPerItem = 64;
 
     private int _remaining;
 
@@ -77,7 +90,10 @@ public sealed class DeleteLockProbe : ILockProbe
             if ((attrs & FileAttributes.ReparsePoint) != 0) return false;
             if ((attrs & FileAttributes.Directory) == 0)
                 return budget.TryTake() && ProbeOne(path, isDirectory: false);
-            return ProbeDirectory(new DirectoryInfo(path), budget, ct);
+            // A tree draws from BOTH allowances: the target's, and its own
+            // share of it, so it cannot starve the items behind it.
+            return ProbeDirectory(new DirectoryInfo(path), budget,
+                new LockProbeBudget(LockProbeBudget.MaxPerItem), ct);
         }
         catch (OperationCanceledException) { throw; }
         catch
@@ -89,11 +105,11 @@ public sealed class DeleteLockProbe : ILockProbe
     }
 
     private bool ProbeDirectory(DirectoryInfo dir, LockProbeBudget budget,
-        CancellationToken ct)
+        LockProbeBudget item, CancellationToken ct)
     {
         // The directory handle itself: catches ACL-denied dirs (the
         // mullvad-updates case) in one open.
-        if (!budget.TryTake()) return false;
+        if (!item.TryTake() || !budget.TryTake()) return false;
         if (ProbeOne(dir.FullName, isDirectory: true)) return true;
 
         FileSystemInfo[] entries;
@@ -108,11 +124,11 @@ public sealed class DeleteLockProbe : ILockProbe
             bool locked;
             if (entry is DirectoryInfo sub)
             {
-                locked = ProbeDirectory(sub, budget, ct);
+                locked = ProbeDirectory(sub, budget, item, ct);
             }
             else
             {
-                if (!budget.TryTake()) return false;
+                if (!item.TryTake() || !budget.TryTake()) return false;
                 locked = ProbeOne(entry.FullName, isDirectory: false);
             }
             if (locked) return true;   // one held file blocks the whole move

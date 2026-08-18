@@ -484,7 +484,8 @@ public sealed class CleanViewModel : ViewModelBase
             if (entry.Action == "refused" && entry.Reason == "requires administrator")
                 admin++;
             else if (entry.Action == "error"
-                     && entry.Reason?.Contains("(32)") == true)
+                     && (entry.Reason?.Contains("(32)") == true
+                         || entry.Reason?.Contains("held by a running app") == true))
                 inUse++;
             else
                 other++;
