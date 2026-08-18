@@ -33,3 +33,25 @@ public class SessionIdentityTests
         Assert.False(new SessionIdentity(@"PC\Admin", null)
             .DiffersFromInteractiveUser);
 }
+
+/// The record above is pure; this exercises the P/Invoke itself, which is the
+/// part nothing else can check. It cannot assert WHO the machine says is
+/// signed in — that depends on the box the suite runs on — but a wrong
+/// signature, a wrong WTS info class or a bad marshal shows up here as a
+/// throw or as garbage rather than silently mis-accusing a real user later.
+public class RealSessionProbeTests
+{
+    [Fact]
+    public void AnswersWithoutThrowing_AndNamesTheProcessAccount()
+    {
+        var identity = new BriskEngine.Diagnostics.RealProbes.RealSessionProbe().Current();
+
+        Assert.False(string.IsNullOrWhiteSpace(identity.ProcessUser));
+        Assert.Contains("\\", identity.ProcessUser);        // DOMAIN\user
+        if (identity.InteractiveUser is { } interactive)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(interactive));
+            Assert.DoesNotContain('\0', interactive);      // no marshalling debris
+        }
+    }
+}
