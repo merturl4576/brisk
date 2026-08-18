@@ -189,26 +189,38 @@
                                        Style="{StaticResource Faint}"
                                        VerticalAlignment="Center"
                                        Text="{Binding ProgressText}" />
-                            <ProgressBar Minimum="0" Maximum="1"
-                                         VerticalAlignment="Center"
-                                         Value="{Binding ProgressFraction, Mode=OneWay}">
-                                <ProgressBar.Style>
-                                    <Style TargetType="ProgressBar"
-                                           BasedOn="{StaticResource ThinProgress}">
-                                        <Style.Triggers>
-                                            <!-- Round-14 review: a determinate
-                                                 bar parked at 0 through the
-                                                 preparing phase IS the frozen
-                                                 screen the 2026-08-18 report
-                                                 photographed. -->
-                                            <DataTrigger Binding="{Binding IsProgressIndeterminate}"
-                                                         Value="True">
-                                                <Setter Property="IsIndeterminate" Value="True" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ProgressBar.Style>
-                            </ProgressBar>
+                            <!-- TWO bars, one at a time. ThinProgress
+                                 replaces the template with a track and an
+                                 indicator and nothing else, so setting
+                                 IsIndeterminate on IT draws a static FULL
+                                 bar — a worse lie than the parked empty one
+                                 the 2026-08-18 report photographed (round-14
+                                 re-review, measured). The uncountable phases
+                                 borrow the sweeping bar the scan rows
+                                 already use: same 3 px, same brushes, and
+                                 the stock template's own animation. -->
+                            <Grid VerticalAlignment="Center">
+                                <ProgressBar Minimum="0" Maximum="1"
+                                             Value="{Binding ProgressFraction, Mode=OneWay}">
+                                    <ProgressBar.Style>
+                                        <Style TargetType="ProgressBar"
+                                               BasedOn="{StaticResource ThinProgress}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsProgressIndeterminate}"
+                                                             Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ProgressBar.Style>
+                                </ProgressBar>
+                                <ProgressBar IsIndeterminate="True" Height="3"
+                                             BorderThickness="0"
+                                             Background="{DynamicResource Divider}"
+                                             Foreground="{DynamicResource AccentBrush}"
+                                             Visibility="{Binding IsProgressIndeterminate,
+                                                 Converter={x:Static Brisk:BoolToVis.Instance}}" />
+                            </Grid>
                         </DockPanel>
                         <ItemsControl ItemsSource="{Binding SimpleGroups}">
                             <ItemsControl.ItemTemplate>

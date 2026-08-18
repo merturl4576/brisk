@@ -367,12 +367,15 @@ public sealed class CleanViewModel : ViewModelBase
         }
         finally
         {
-            _busy = false;
-            IsBusy = false;
-            IsSimpleCleanBusy = false;
             // The purge phase leaves the sweep on; the run ending takes it
-            // off, so the next press never opens on a stale animation.
+            // off, so the next press never opens on a stale animation. The
+            // re-entry guard is released LAST (round-14 re-review): nothing
+            // here can interleave today, but a guard that outlives the state
+            // it protects is the habit worth keeping.
             IsProgressIndeterminate = false;
+            IsSimpleCleanBusy = false;
+            IsBusy = false;
+            _busy = false;
         }
     }
 
