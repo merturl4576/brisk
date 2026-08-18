@@ -194,38 +194,67 @@ the application, driver and service that delayed it. Read the last five boots
 and report the median, requiring at least three to be present — one bad boot
 after an update is normal and must not raise a finding.
 
-**Report.** Not "you have 43 startup items" but "boot takes 31 s, and 19 s of
-it belongs to these three". Windows measured this itself, which makes it
-stronger than any heuristic.
+**Report the boot cost and the names — and never join them with a sum.** The
+tempting sentence, *"boot takes 57 s and 37 s of it belongs to these three"*, is
+false, and building the probe proved it. Windows' `DegradationTime` means "this
+program started slower than Windows expected", not "this program added that much to
+your boot". On the maintainer's machine a 51.2 s boot had **no** blamed programs at
+all while a *faster* 45.3 s boot had two, and three of his ten most recent boots
+named nobody. The list does not explain the total and must never be presented as if
+it does.
 
-**Read the schema that exists, not the documented one.** On Windows 11 26100 the
-ID 100 payload carries `BootTime` and `MainPathBootTime`; `PostBootTime` and
-`BootDegradationTime` come back empty. Measured on the maintainer's machine, so the
-rule reports what is actually populated.
+So the rule says two true things side by side and lets the user connect them: how
+long boot takes, and which programs Windows recorded starting slower than expected.
+The phrasing rule the probe already carries applies to the copy: **"Windows blamed
+these three", never "only these three"** — the offender list is best effort, and a
+record that cannot be read is dropped rather than guessed at.
 
-**Fixable where the evidence lines up — which requires seeing Store apps.** When an
-offender Windows named is also a disableable startup entry, offer the switch:
-*"Windows measured this costing you 37 s at every boot"* next to a button that turns
-it off, undoably.
+It also needs wording for the boot Windows blamed nobody for. That is a third of
+recent boots here, and reporting a slow boot with an empty list is a normal outcome,
+not a failure to explain.
+
+**Read the schema that exists, not the documented one.** On Windows 11 **26200**,
+ID 100 carries `BootTime` and `MainPathBootTime`. The documented `PostBootTime` and
+`BootDegradationTime` are absent — not empty, *absent*: the payload calls them
+`BootPostBootTime` and `BootDegradationDelta`, and both are populated. And
+`BootMs − MainPathMs` is exactly `BootPostBootTime`, verified on two payloads, so
+that subtraction buys nothing Windows does not already publish. It means main path
+versus post-boot, **not** "Windows versus your programs" — four of the five
+offenders named on that machine are Microsoft's own.
+
+Read every value **by field name**. ID 100 carries 44 `Data` elements, `BootTime`
+sits at index 5, and index 3 is `SystemBootInstance` = 392. An index-based read
+would have reported a boot counter as a millisecond count.
+
+`FriendlyName` can be empty — `brisk-app.exe` itself arrived with none — so the copy
+must fall back to the executable name rather than printing a blank.
+
+**Actionable where the evidence lines up — which requires seeing Store apps.** When a
+program Windows named is also a disableable startup entry, the Startup page carries
+the switch, and the finding can point at it.
 
 That link is nearly worthless against `Run` keys alone, and real hardware showed why.
-The maintainer's eight worst offenders — Defender, Spotify, Edge WebView, TiWorker,
-Google's updater — overlap his `Run` entries almost not at all, because what Windows
-blames is mostly services, Windows components and **Store apps**. Spotify alone cost
-him 37 seconds and `StartupManager` cannot see it.
+The programs Windows blamed on the maintainer's machine — Defender, Spotify, Edge
+WebView, TiWorker, Google's updater — overlap his `Run` entries almost not at all,
+because what Windows blames is mostly services, Windows components and **Store apps**.
+Spotify was recorded starting 37 s slower than expected, and `StartupManager` could
+not see it at all.
 
 So this wave extends `StartupManager` to Store-app startup tasks, which live under
-`HKCU\Software\Classes\Local Settings\…\AppModel\SystemAppData\<PFN>\<TaskId>\State`
-(2 = enabled, 0 = disabled) — the same records Task Manager writes. On the
-maintainer's machine that surfaces seven enabled entries brisk was blind to, one of
-them the second-largest boot cost on the system.
+`HKCU\Software\Classes\Local Settings\…\AppModel\SystemAppData\<PFN>\<TaskId>\State`.
+The values mirror the WinRT `StartupTaskState` enum — `0` disabled, `1` disabled by
+user, `2` enabled, `3` disabled by policy, `4` enabled by policy — and only `2` and
+`4` mean the app starts. On that machine only `0` and `2` were ever observed, so the
+rest is read off the enum, not off a measurement. That surfaced **seven enabled
+packages** brisk was blind to, including both of Spotify's tasks.
 
-**Where the offender is not disableable, say so and stop.** Defender is the single
-largest cost on that machine at 52 seconds, and brisk must not touch it — naming it
-honestly as protection doing its job, and pointing at what *is* actionable, is worth
-more than a button. Everything else in the category tells you how many programs start
-with Windows; this tells you which ones you are actually paying for, using Windows'
-own measurement, and is honest about which of them it can do nothing about.
+**Where the program is not disableable, say so and stop.** Defender carried the
+largest single degradation on that machine, 52 s on one boot, and brisk must not
+touch it. Naming it honestly as protection doing its job, and pointing at what *is*
+actionable, is worth more than a button it should never offer. Everything else in the
+category tells you how many programs start with Windows; this tells you which ones
+Windows itself recorded as slow, and is honest about which of them brisk can do
+nothing about — and about the fact that the list does not add up to the total.
 
 ### 6. `update-settling` — Notice, Info, no score impact
 
