@@ -283,7 +283,7 @@ public sealed class OverviewViewModel : ViewModelBase
             // button promises "Free up 1.2 GB" — so the bytes have to leave
             // the disk, not move to the Recycle Bin and sit there. Every
             // figure below is POST-purge truth.
-            var result = await _safeClean.RunAsync(snapshot.Cleaner);
+            var result = await _safeClean.RunAsync(lease, snapshot.Cleaner);
             if (result.Outcome.WasDryRun)
             {
                 ReportLines.Add(new ReportLine(_loc["dryrun.blocked"], IsDone: false));

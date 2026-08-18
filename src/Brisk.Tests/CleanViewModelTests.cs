@@ -687,6 +687,47 @@ public class CleanViewModelTests
         Assert.False(vm.IsSimpleCleanBusy);
     }
 
+    /// ROUND 13 re-review (minors 14 + 15): a press that loses the runner's
+    /// lease is a COMPLETE no-op. The banner it would have dismissed and the
+    /// undo identities it would have cleared survive, because the lease is
+    /// taken before any of that runs — and the level clean, which RECYCLES
+    /// into a bin another surface is about to purge, waits its turn too.
+    [Fact]
+    public async Task RefusedLease_LeavesTheBannerAndTheBinUntouched()
+    {
+        var host = Host();
+        var state = new AppState(host);
+        var bin = new FakeBin();
+        var cleanService = new CleanService(host, new Settings());
+        var runner = new SafeCleanRunner(cleanService, bin);
+        var vm = new CleanViewModel(state, host, cleanService, runner, bin,
+            EnglishLoc(), () => false);
+        await state.ScanAsync();
+
+        // A level clean first, so there IS a banner with live undo identities
+        // for the refused presses to damage.
+        var safe = vm.Levels.Single(l => l.Level == CleanupLevel.Safe);
+        await vm.CleanLevelAsync(safe);
+        Assert.True(vm.HasBanner);
+        var cleans = host.Cleans.Count;
+        var purges = bin.PurgeCalls.Count;
+
+        // Another surface now owns the runner.
+        using var held = runner.TryBegin();
+        Assert.NotNull(held);
+
+        await vm.CleanSimpleAsync();
+        await vm.CleanLevelAsync(safe);
+        vm.UndoCommand.Execute(null);
+        vm.ReclaimCommand.Execute(null);
+
+        Assert.True(vm.HasBanner);                       // never dismissed
+        Assert.False(vm.RestoreFailed);                  // no failed restore either
+        Assert.Equal(cleans, host.Cleans.Count);         // no engine pass
+        Assert.Equal(purges, bin.PurgeCalls.Count);      // nothing purged
+        Assert.Empty(bin.Restored);                      // nothing restored
+    }
+
     /// Round-10 review: the big total's push cadence must outlast
     /// NumeralTick's slide, or every push restarts the animation mid-flight
     /// and the numeral strobes instead of ticking.

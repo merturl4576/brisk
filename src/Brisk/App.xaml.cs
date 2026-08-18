@@ -53,6 +53,10 @@ public partial class App : Application
             // sequence, so the same promise cannot mean two things.
             var bin = new ShellRecycleBinSession();
             var safeClean = new SafeCleanRunner(cleanService, bin);
+            // The lease refuses a second clean; this is how the UI SHOWS it
+            // (round-13 re-review N1) — every clean button disables while
+            // any surface holds the runner.
+            state.TrackCleaning(safeClean);
             Func<bool> isDryRun = () => composition.Settings.DryRun;
             var flyoutVm = new FlyoutViewModel(state, safeClean, fixAllService,
                 Loc.Instance, isDryRun);

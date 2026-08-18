@@ -20,12 +20,34 @@
                            Text="{Binding BannerText}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                             HorizontalAlignment="Right">
-                    <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0"
-                            Command="{Binding UndoCommand}"
-                            Content="{Binding [clean.undo], Source={x:Static loc:Loc.Instance}}" />
-                    <Button Style="{StaticResource GhostButton}" Margin="0,0,6,0"
-                            Command="{Binding ReclaimCommand}"
-                            Content="{Binding [clean.reclaim], Source={x:Static loc:Loc.Instance}}" />
+                    <Button Margin="0,0,6,0" Command="{Binding UndoCommand}"
+                            Content="{Binding [clean.undo], Source={x:Static loc:Loc.Instance}}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                <Style.Triggers>
+                                    <!-- Restore mutates the bin too, so it waits
+                                         its turn behind any clean in flight. -->
+                                    <DataTrigger Binding="{Binding State.IsCleaning}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Margin="0,0,6,0" Command="{Binding ReclaimCommand}"
+                            Content="{Binding [clean.reclaim], Source={x:Static loc:Loc.Instance}}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                <Style.Triggers>
+                                    <!-- Same: this purges, so it never runs
+                                         alongside another surface's purge. -->
+                                    <DataTrigger Binding="{Binding State.IsCleaning}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                     <Button Style="{StaticResource LinkButton}" VerticalAlignment="Center"
                             Margin="0,0,10,0" Command="{Binding OpenBinCommand}"
                             Visibility="{Binding RestoreFailed,
@@ -120,6 +142,18 @@
                                                     Source={x:Static loc:Loc.Instance}}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding State.IsScanning}"
+                                                         Value="True">
+                                                <Setter Property="IsEnabled" Value="False" />
+                                            </DataTrigger>
+                                            <!-- Round-13 re-review (N1): one
+                                                 runner behind every clean
+                                                 button, so ANY clean in
+                                                 flight — this card's, the
+                                                 overview's, the tray's —
+                                                 refuses the lease. The
+                                                 button says so instead of
+                                                 going dead under the press. -->
+                                            <DataTrigger Binding="{Binding State.IsCleaning}"
                                                          Value="True">
                                                 <Setter Property="IsEnabled" Value="False" />
                                             </DataTrigger>
@@ -305,10 +339,25 @@
                                         <TextBlock Style="{StaticResource Muted}"
                                                    VerticalAlignment="Center" Margin="0,0,10,0"
                                                    Text="{Binding TotalText}" />
-                                        <Button Style="{StaticResource PrimaryButton}"
-                                                Command="{Binding CleanCommand}"
+                                        <Button Command="{Binding CleanCommand}"
                                                 Content="{Binding [clean.clean],
-                                                    Source={x:Static loc:Loc.Instance}}" />
+                                                    Source={x:Static loc:Loc.Instance}}">
+                                            <!-- The section is the DataContext
+                                                 here, so the shared signal
+                                                 comes off the page's. -->
+                                            <Button.Style>
+                                                <Style TargetType="Button"
+                                                       BasedOn="{StaticResource PrimaryButton}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True"
+                                                            Binding="{Binding DataContext.State.IsCleaning,
+                                                                RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                            <Setter Property="IsEnabled" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </StackPanel>
                                 </DockPanel>
                                 <ItemsControl ItemsSource="{Binding Targets}" Margin="0,6,0,0">

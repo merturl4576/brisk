@@ -61,10 +61,23 @@ public sealed class SafeCleanRunner
     /// no-op — not a half-cleared report or a dismissed banner for a run
     /// that never starts — exactly like a re-press on the same surface.
     /// Null means someone else is cleaning; dispose to hand the runner back.
+    /// The lease covers every bin mutation, not just this runner's own
+    /// sequence — a level clean, an undo and a reclaim take it too, so the
+    /// bin is only ever handed to one caller at a time.
     public IDisposable? TryBegin()
-        => Interlocked.CompareExchange(ref _running, 1, 0) == 0
-            ? new Lease(this)
-            : null;
+    {
+        if (Interlocked.CompareExchange(ref _running, 1, 0) != 0) return null;
+        RunningChanged?.Invoke(true);
+        return new Lease(this);
+    }
+
+    /// Round-13 re-review (N1): the lease alone made a refused press SILENT
+    /// — every clean button stayed enabled while another surface cleaned,
+    /// and pressing one did nothing at all. This is the shared signal the
+    /// buttons disable on, so the refusal is visible before it happens.
+    /// Raised on whichever thread takes or releases the lease; in practice
+    /// always the dispatcher, since every clean surface presses from it.
+    public event Action<bool>? RunningChanged;
 
     private sealed class Lease : IDisposable
     {
@@ -72,25 +85,33 @@ public sealed class SafeCleanRunner
 
         public Lease(SafeCleanRunner owner) => _owner = owner;
 
+        public bool IsHeldBy(SafeCleanRunner runner)
+            => ReferenceEquals(Volatile.Read(ref _owner), runner);
+
         /// Idempotent — a second Dispose must never release a lease that a
         /// LATER clean is holding.
         public void Dispose()
         {
             var owner = Interlocked.Exchange(ref _owner, null);
-            if (owner is not null) Volatile.Write(ref owner._running, 0);
+            if (owner is null) return;
+            Volatile.Write(ref owner._running, 0);
+            owner.RunningChanged?.Invoke(false);
         }
     }
 
     /// onEntry streams every engine entry as it is recorded, on the worker
     /// thread (live progress); onPurging fires once between the recycle and
     /// the purge, for surfaces that show the freeing phase.
-    public async Task<SafeCleanResult> RunAsync(ScanResult scan,
+    /// The lease is the TOKEN, not a flag to check (round-13 re-review,
+    /// minor 12): "somebody holds it" would pass exactly the case worth
+    /// catching — a second surface running while the first holds the lease.
+    public async Task<SafeCleanResult> RunAsync(IDisposable lease, ScanResult scan,
         Action<CleanEntry>? onEntry = null, Action? onPurging = null)
     {
-        if (Volatile.Read(ref _running) == 0)
+        if (lease is not Lease held || !held.IsHeldBy(this))
             throw new InvalidOperationException(
-                "SafeCleanRunner.RunAsync requires the lease from TryBegin() — "
-                + "without it two surfaces can purge the bin at once.");
+                "SafeCleanRunner.RunAsync requires THIS runner's live lease from "
+                + "TryBegin() — without it two surfaces can purge the bin at once.");
         var plannedPaths = scan.Targets.Where(CleanService.IsSafeDefault)
             .SelectMany(t => t.Items).Select(i => i.Path).ToList();
         var preExisting = plannedPaths.Count == 0

@@ -28,12 +28,26 @@ public sealed class AppState : ViewModelBase
     private readonly IEngineHost _host;
     private ScanSnapshot? _snapshot;
     private bool _isScanning;
+    private bool _isCleaning;
     private string _progressText = "";
 
     public AppState(IEngineHost host) { _host = host; }
 
     public ScanSnapshot? Snapshot { get => _snapshot; private set => Set(ref _snapshot, value); }
     public bool IsScanning { get => _isScanning; private set => Set(ref _isScanning, value); }
+
+    /// Round-13 re-review (N1): the sibling of IsScanning. One runner sits
+    /// behind three clean buttons, so while ANY surface is cleaning the
+    /// other two would be refused the lease — silently, since each view
+    /// model's busy flag only knows about its own button. Every clean
+    /// button binds here, so the refusal is visible instead of swallowed.
+    public bool IsCleaning { get => _isCleaning; private set => Set(ref _isCleaning, value); }
+
+    /// Wired once at composition: the runner owns the lease, this owns the
+    /// signal the UI binds to. Nothing else may set it — a flag that could
+    /// drift from the lease would disable buttons for a clean that ended.
+    public void TrackCleaning(SafeCleanRunner runner)
+        => runner.RunningChanged += running => IsCleaning = running;
     public string ProgressText { get => _progressText; private set => Set(ref _progressText, value); }
 
     public event Action? Changed;

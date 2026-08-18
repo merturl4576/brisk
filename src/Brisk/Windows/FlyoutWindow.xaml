@@ -93,6 +93,14 @@
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>
+                                <!-- Round-13 re-review (N1): ONE runner behind
+                                     three clean buttons — while any surface is
+                                     cleaning the others would be refused the
+                                     lease, so they say so instead of going
+                                     dead under the press. -->
+                                <DataTrigger Binding="{Binding State.IsCleaning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding IsBusy}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>

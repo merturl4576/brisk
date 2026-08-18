@@ -343,7 +343,7 @@ public sealed class CleanViewModel : ViewModelBase
             // The purge wears its own visible state, and the rescan AFTER it
             // re-measures free space so the hero's disk pod and the report's
             // delta show the real gain.
-            var result = await _safeClean.RunAsync(snapshot.Cleaner, OnCleanEntry,
+            var result = await _safeClean.RunAsync(lease, snapshot.Cleaner, OnCleanEntry,
                 () => ProgressText = _loc["clean.purging"]);
             if (result.Outcome.WasDryRun)
             {
@@ -472,6 +472,13 @@ public sealed class CleanViewModel : ViewModelBase
         IsBusy = true;
         try
         {
+            // Round-13 re-review (minor 15): EVERY bin mutation takes the
+            // lease, not just the runner's own sequence. This one recycles,
+            // and items it recycles mid-flight sit in no other run's
+            // exclusion snapshot — a concurrent simple purge would destroy
+            // them while the banner this raises still offers "Geri al".
+            using var lease = _safeClean.TryBegin();
+            if (lease is null) return;
             var selected = section.Targets.Where(t => t.IsSelected).ToList();
             var problems = new List<string>();
 
@@ -529,6 +536,12 @@ public sealed class CleanViewModel : ViewModelBase
     /// shelf and the promise return to the truth.
     private void Undo()
     {
+        // Round-13 re-review (minor 15): the lease guards restores too — a
+        // restore racing another surface's purge would fight over the same
+        // entries. The button disables on State.IsCleaning, so this is the
+        // backstop, not the user-facing story.
+        using var lease = _safeClean.TryBegin();
+        if (lease is null) return;
         if (!_bin.Restore(_lastRecycled)) { RestoreFailed = true; return; }
         Dismiss();
         _ = _state.ScanAsync();
@@ -539,6 +552,12 @@ public sealed class CleanViewModel : ViewModelBase
     /// ran (fix round 2: the user's own earlier deletions stay untouched).
     private void Reclaim()
     {
+        // Round-13 re-review: this purge overlaps a simple clean's paths
+        // (user-temp is both a safe default and individually selectable),
+        // so without the lease a concurrent run would under-report its own
+        // freed bytes and file a spurious "left in the bin" line.
+        using var lease = _safeClean.TryBegin();
+        if (lease is null) return;
         _bin.Purge(_lastRecycled, _lastPreExisting);
         Dismiss();
     }

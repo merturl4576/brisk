@@ -112,28 +112,36 @@ public sealed class FlyoutViewModel : ViewModelBase
             // Depolama page and the overview button — recycle, then purge
             // exactly this run's own items. The line below therefore reports
             // space that is actually free, not bytes parked in the bin.
-            var result = await _safeClean.RunAsync(snapshot.Cleaner);
+            var result = await _safeClean.RunAsync(lease, snapshot.Cleaner);
             LastCleanResult = result;
             LastCleanLine = result.Outcome.WasDryRun
                 ? _loc["dryrun.blocked"]
                 : result.CleanedCount == 0
                     ? _loc["clean.report.none"]
-                    : _loc.F("clean.report.summary.freed",
-                        result.CleanedCount, Fmt.Bytes(result.FreedBytes));
-            // Round-13 review (I2): the other two surfaces name a partial
-            // purge; the tray was the one place that computed the leftover
-            // and dropped it, so "1 item cleaned — 0 B freed" arrived with
-            // its reason missing. The window is SizeToContent="Height" and
-            // the line wraps, so the second sentence costs nothing.
-            if (result.LeftInBinBytes > 0)
-                LastCleanLine += "\n" + _loc.F("clean.report.binleft",
-                    Fmt.Bytes(result.LeftInBinBytes));
+                    : CleanedLine(result);
             await _state.ScanAsync();
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    /// Round-13 review (I2): the other two surfaces name a partial purge;
+    /// the tray was the one place that computed the leftover and dropped
+    /// it, so "1 item cleaned — 0 B freed" arrived with its reason missing.
+    /// The window is SizeToContent="Height" and the line wraps, so the
+    /// second sentence costs nothing. It lives INSIDE the cleaned-something
+    /// branch (re-review minor 13) rather than trusting the engine to keep
+    /// a dry run's recycled bytes at zero.
+    private string CleanedLine(SafeCleanResult result)
+    {
+        var freed = _loc.F("clean.report.summary.freed",
+            result.CleanedCount, Fmt.Bytes(result.FreedBytes));
+        return result.LeftInBinBytes > 0
+            ? freed + "\n" + _loc.F("clean.report.binleft",
+                Fmt.Bytes(result.LeftInBinBytes))
+            : freed;
     }
 
     private void Refresh()
