@@ -205,7 +205,14 @@ public sealed class ShellRecycleBinSession : IRecycleBinSession
             // wide; matching stays exact and order was never guaranteed
             // (same-path duplicates have always been arbitrary).
             var found = new ConcurrentBag<BinRecord>();
-            Parallel.ForEach(indexFiles, indexFile =>
+            // Bounded width (round-14 review): the gain was measured on an
+            // NVMe machine, and an unbounded fan-out of small reads is how
+            // you make a spinning disk slower, not faster.
+            var options = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Min(8, Environment.ProcessorCount),
+            };
+            Parallel.ForEach(indexFiles, options, indexFile =>
             {
                 try
                 {
@@ -217,7 +224,12 @@ public sealed class ShellRecycleBinSession : IRecycleBinSession
                 }
                 catch (Exception) { /* unreadable record — not a match */ }
             });
-            records.AddRange(found);
+            // Completion order is a race; the ORDER records are returned in
+            // must not be (round-14 review). Restore picks the first record
+            // for a path among same-path duplicates — arbitrary by contract
+            // since round 12, but it should stay arbitrary in the SAME way
+            // twice running, or an undo is unreproducible.
+            records.AddRange(found.OrderBy(r => r.Index, StringComparer.OrdinalIgnoreCase));
         }
         return records;
     }

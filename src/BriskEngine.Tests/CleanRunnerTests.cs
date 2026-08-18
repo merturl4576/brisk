@@ -162,8 +162,7 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Contains("docker system prune -af", _runner.Commands);
     }
 
-    /// ROOT-CAUSE REGRESSION (round 10): one shell call per file cost
-    /// ROUND 14, from the 2026-08-18 live run (332 items, 53 SECONDS): the
+    /// ROUND 14 — the 2026-08-18 live run: 332 items took 53 SECONDS. The
     /// shell aborts a batch at the first path it cannot take, and the old
     /// fallback then retried EVERY survivor with its own ~200 ms call — so
     /// one locked file put the whole rest of its batch back on the per-file
@@ -194,9 +193,11 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Equal(new[] { 40, 19 }, _recycler.BatchCalls);
     }
 
-    /// The pathological end of the same fix: when EVERY path is locked the
-    /// split cannot help, so it must still terminate and still attribute
-    /// each failure to the path that earned it.
+    /// The pathological end of the same fix: when EVERY path is locked no
+    /// split can help, so it must still terminate, still attribute each
+    /// failure to the path that earned it, and — since head-splitting alone
+    /// would cost 2n-1 against the old fallback's n+1 — bail out to
+    /// item-by-item after two calls that harvest nothing.
     [Fact]
     public void EveryFileLocked_StillTerminates_AndNamesEveryFailure()
     {
@@ -212,11 +213,13 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Equal(0, report.RecycledBytes);
         foreach (var f in files)
             Assert.True(File.Exists(Path.Combine(dir, f)), $"{f} must survive");
-        // Bounded: at worst one failed span plus one single per path.
-        Assert.True(_recycler.ShellCalls <= 2 * files.Length,
-            $"all-locked cost {_recycler.ShellCalls} shell calls");
+        // n + 2: the two barren spans that prove the locks are dense, then
+        // one call per path — within one call of the old fallback's n + 1,
+        // where head-splitting alone would have spent 2n - 1.
+        Assert.Equal(files.Length + 2, _recycler.ShellCalls);
     }
 
+    /// ROOT-CAUSE REGRESSION (round 10): one shell call per file cost
     /// ~200 ms each and turned ~1900 small temp items into a six-minute
     /// silent grind on 2026-08-17. Many items must reach the shell as
     /// ⌈n / BatchSize⌉ batch operations, never one call per file.

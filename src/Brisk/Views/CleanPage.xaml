@@ -189,10 +189,26 @@
                                        Style="{StaticResource Faint}"
                                        VerticalAlignment="Center"
                                        Text="{Binding ProgressText}" />
-                            <ProgressBar Style="{StaticResource ThinProgress}"
-                                         Minimum="0" Maximum="1"
+                            <ProgressBar Minimum="0" Maximum="1"
                                          VerticalAlignment="Center"
-                                         Value="{Binding ProgressFraction, Mode=OneWay}" />
+                                         Value="{Binding ProgressFraction, Mode=OneWay}">
+                                <ProgressBar.Style>
+                                    <Style TargetType="ProgressBar"
+                                           BasedOn="{StaticResource ThinProgress}">
+                                        <Style.Triggers>
+                                            <!-- Round-14 review: a determinate
+                                                 bar parked at 0 through the
+                                                 preparing phase IS the frozen
+                                                 screen the 2026-08-18 report
+                                                 photographed. -->
+                                            <DataTrigger Binding="{Binding IsProgressIndeterminate}"
+                                                         Value="True">
+                                                <Setter Property="IsIndeterminate" Value="True" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ProgressBar.Style>
+                            </ProgressBar>
                         </DockPanel>
                         <ItemsControl ItemsSource="{Binding SimpleGroups}">
                             <ItemsControl.ItemTemplate>

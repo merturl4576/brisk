@@ -140,34 +140,54 @@ public sealed class CleanRunner
         // it, and the per-item attribution is unchanged.
         void RecycleSpan(List<ResolvedItem> span)
         {
-            if (span.Count == 0) return;
-            if (span.Count == 1) { RecycleSingle(span[0]); return; }
-            var spanOk = true;
-            try { _recycler.Recycle(span.Select(i => i.Path).ToList()); }
-            catch (Exception) { spanOk = false; }
-            if (spanOk)
+            // Consecutive spans whose failed call took NOTHING. A loop, not
+            // recursion (round-14 review): the tail call would have made
+            // BatchSize double as a stack-depth constant.
+            var barren = 0;
+            while (span.Count > 0)
             {
+                if (span.Count == 1) { RecycleSingle(span[0]); return; }
+                var spanOk = true;
+                try { _recycler.Recycle(span.Select(i => i.Path).ToList()); }
+                catch (Exception) { spanOk = false; }
+                if (spanOk)
+                {
+                    foreach (var item in span)
+                    {
+                        if (Exists(item.Path))
+                            Record(item.Path, 0, "error", "the shell skipped this path");
+                        else
+                            Record(item.Path, item.Bytes, "recycled");
+                    }
+                    return;
+                }
+                // Harvest the partial work before retrying anything: a path
+                // that was there when the span began and is gone now WAS
+                // recycled by the failed call, and must never be sent to the
+                // shell twice.
+                var left = new List<ResolvedItem>(span.Count);
                 foreach (var item in span)
                 {
-                    if (Exists(item.Path))
-                        Record(item.Path, 0, "error", "the shell skipped this path");
-                    else
-                        Record(item.Path, item.Bytes, "recycled");
+                    if (Exists(item.Path)) left.Add(item);
+                    else Record(item.Path, item.Bytes, "recycled");
                 }
-                return;
+                if (left.Count == 0) return;
+                barren = left.Count == span.Count ? barren + 1 : 0;
+                RecycleSingle(left[0]);
+                if (left.Count == 1) return;
+                // Two failed calls in a row that took nothing means the locks
+                // are DENSE, not sparse, and re-sending the tail as a batch is
+                // pure overhead — the old per-survivor fallback cost n+1 here,
+                // and head-splitting alone would have cost 2n-1. Finishing
+                // item by item keeps the worst case at n+2 while sparse locks
+                // still settle in three calls.
+                if (barren >= 2)
+                {
+                    for (var i = 1; i < left.Count; i++) RecycleSingle(left[i]);
+                    return;
+                }
+                span = left.GetRange(1, left.Count - 1);
             }
-            // Harvest the partial work before retrying anything: a path that
-            // was there when the span began and is gone now WAS recycled by
-            // the failed call, and must never be sent to the shell twice.
-            var left = new List<ResolvedItem>(span.Count);
-            foreach (var item in span)
-            {
-                if (Exists(item.Path)) left.Add(item);
-                else Record(item.Path, item.Bytes, "recycled");
-            }
-            if (left.Count == 0) return;
-            RecycleSingle(left[0]);
-            if (left.Count > 1) RecycleSpan(left.GetRange(1, left.Count - 1));
         }
         void Flush()
         {

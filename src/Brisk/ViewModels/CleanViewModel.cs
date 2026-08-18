@@ -144,6 +144,7 @@ public sealed class CleanViewModel : ViewModelBase
     private bool _isBusy;
     private bool _isSimpleCleanBusy;
     private double _progressFraction;
+    private bool _isProgressIndeterminate;
     private string _progressText = "";
     private bool _hasReport;
     private bool _hasLockedNotes;
@@ -239,6 +240,14 @@ public sealed class CleanViewModel : ViewModelBase
         get => _progressFraction;
         private set => Set(ref _progressFraction, value);
     }
+    /// True while the run is in a phase the item counter cannot measure —
+    /// the bin snapshot before the engine, the purge after it. The bar
+    /// sweeps instead of sitting at a determinate figure it isn't earning.
+    public bool IsProgressIndeterminate
+    {
+        get => _isProgressIndeterminate;
+        private set => Set(ref _isProgressIndeterminate, value);
+    }
     public string ProgressText
     {
         get => _progressText;
@@ -326,7 +335,6 @@ public sealed class CleanViewModel : ViewModelBase
             _lastProgressPush = 0;
             _lastTotalPush = 0;
             ProgressFraction = 0;
-            ProgressText = _loc.F("clean.progress", 0, _plannedItems);
             HasReport = false;
             // Captured BEFORE the clean: the app-held survivors' story
             // ("WhatsApp is open, its 310 MB cache was skipped") belongs to
@@ -344,8 +352,8 @@ public sealed class CleanViewModel : ViewModelBase
             // re-measures free space so the hero's disk pod and the report's
             // delta show the real gain.
             var result = await _safeClean.RunAsync(lease, snapshot.Cleaner, OnCleanEntry,
-                () => ProgressText = _loc["clean.purging"],
-                () => ProgressText = _loc["clean.preparing"]);
+                () => Phase(_loc["clean.purging"]),
+                () => Phase(_loc["clean.preparing"]));
             if (result.Outcome.WasDryRun)
             {
                 ProblemsText = _loc["dryrun.blocked"];
@@ -362,7 +370,21 @@ public sealed class CleanViewModel : ViewModelBase
             _busy = false;
             IsBusy = false;
             IsSimpleCleanBusy = false;
+            // The purge phase leaves the sweep on; the run ending takes it
+            // off, so the next press never opens on a stale animation.
+            IsProgressIndeterminate = false;
         }
+    }
+
+    /// A named phase the item counter cannot measure — the bin snapshot
+    /// before the engine, the purge after it. Round-14 review: leaving the
+    /// bar sitting at a determinate 0 through the preparing phase was the
+    /// last frozen element on the card, and the frozen bar is what the
+    /// 2026-08-18 report was a photograph of.
+    private void Phase(string text)
+    {
+        ProgressText = text;
+        IsProgressIndeterminate = true;
     }
 
     /// Runs on the engine's worker thread for every recorded entry. Scalar
@@ -380,6 +402,7 @@ public sealed class CleanViewModel : ViewModelBase
         if (final || now - _lastProgressPush >= ProgressPushMs)
         {
             _lastProgressPush = now;
+            IsProgressIndeterminate = false;   // there is something to count now
             ProgressFraction = _plannedItems == 0
                 ? 1 : (double)processed / _plannedItems;
             ProgressText = _loc.F("clean.progress", processed, _plannedItems);

@@ -717,13 +717,20 @@ public class CleanViewModelTests
         // Fired synchronously, before RunAsync's first await: a fact, not a
         // timing assumption. Without it the card would read "0 / 3" here.
         Assert.Equal(loc["clean.preparing"], vm.ProgressText);
+        // Round-14 review: and the bar sweeps rather than sitting at a
+        // determinate 0 — the parked bar IS what the report photographed.
+        Assert.True(vm.IsProgressIndeterminate);
         Assert.False(run.IsCompleted);
 
         gate.Set();
         await run;
 
-        // And the phase name gives way to the real count once entries land.
+        // Entries landed, so the phase name gave way to the real figure —
+        // and the run ending takes the sweep off, so the next press cannot
+        // open on a stale animation.
         Assert.DoesNotContain(loc["clean.preparing"], vm.ProgressText);
+        Assert.False(vm.IsProgressIndeterminate);
+        Assert.False(vm.IsSimpleCleanBusy);
     }
 
     /// ROUND 13 re-review (minors 14 + 15): a press that loses the runner's
