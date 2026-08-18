@@ -108,14 +108,26 @@ public sealed class FakeDisplays : IDisplayProbe
     public List<DisplayInfo> Attached = new();
     public List<(string Device, int Hz)> SetCalls = new();
 
+    /// Counts the writes to the registry, so a test can prove the mode change
+    /// stayed session-only until something actually confirmed it.
+    public int PersistCalls;
+
+    /// Rates the driver will refuse, as a real one refuses a mode the cable
+    /// cannot carry (DISP_CHANGE_BADMODE).
+    public HashSet<int> RefusedRates = new();
+
     public IReadOnlyList<DisplayInfo> Displays() => Attached;
 
     public void SetRefreshRate(string deviceName, int hz)
     {
+        if (RefusedRates.Contains(hz))
+            throw new DisplayChangeException($"{deviceName}: refused {hz} Hz");
         SetCalls.Add((deviceName, hz));
         var i = Attached.FindIndex(d => d.DeviceName == deviceName);
         if (i >= 0) Attached[i] = Attached[i] with { CurrentHz = hz };
     }
+
+    public void PersistCurrentModes() => PersistCalls++;
 }
 
 public static class TestContext

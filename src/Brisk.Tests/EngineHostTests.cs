@@ -51,8 +51,10 @@ file sealed class NullSensors : ISensorProbe
 
 file sealed class NullDisplays : IDisplayProbe
 {
+    public int PersistCalls { get; private set; }
     public IReadOnlyList<DisplayInfo> Displays() => System.Array.Empty<DisplayInfo>();
     public void SetRefreshRate(string deviceName, int hz) { }
+    public void PersistCurrentModes() => PersistCalls++;
 }
 
 file sealed class NullDisk : IDiskInfoProbe

@@ -8,6 +8,7 @@ using BriskEngine;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.RealProbes;
+using BriskEngine.Diagnostics.Rules;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 using BriskEngine.Safety;
@@ -144,6 +145,29 @@ public static class Program
 
     public static int Fix(CliCommand cmd, DiagnosticContext ctx, FixRunner fixRunner)
     {
+        // --keep is the console's answer to the GUI's "is the picture back?".
+        // It runs before any detect below on purpose: by the time a person can
+        // answer, the display is already at its best rate, so there is no
+        // finding left and the branches further down would decline to act.
+        if (cmd.Keep)
+        {
+            if (cmd.RuleId != DisplayRefreshRule.RuleId)
+            {
+                Console.Error.WriteLine(
+                    $"brisk: --keep applies to --rule {DisplayRefreshRule.RuleId}");
+                return 2;
+            }
+            if (!cmd.Yes)
+            {
+                Console.WriteLine("would keep: the display mode now on screen (add --yes)");
+                return 0;
+            }
+            ctx.Displays.PersistCurrentModes();
+            Console.WriteLine($"{DisplayRefreshRule.RuleId}: kept — the mode now on " +
+                              "screen will survive a restart");
+            return 0;
+        }
+
         if (cmd.Undo)
         {
             if (cmd.RuleId is null)
@@ -182,6 +206,7 @@ public static class Program
                 }
                 var outcome = fixRunner.Apply(rule, ctx);
                 Console.WriteLine(outcome.Message);
+                if (outcome.Ok) NoteIfProvisional(rule);
                 if (!outcome.Ok) anyFailed = true;
             }
             return anyFailed ? 1 : 0;
@@ -210,11 +235,26 @@ public static class Program
             }
             var applyOutcome = fixRunner.Apply(rule, ctx);
             Console.WriteLine(applyOutcome.Message);
+            if (applyOutcome.Ok) NoteIfProvisional(rule);
             return applyOutcome.Ok ? 0 : 1;
         }
 
         Console.Error.WriteLine("brisk: fix requires --all or --rule <id>");
         return 2;
+    }
+
+    /// The display fix is applied for this session only, because the mode that
+    /// blanks a screen must not also be the mode the machine boots into. The
+    /// GUI makes it permanent when the user confirms the picture is back; the
+    /// console has no such prompt, so it says which of the two this was rather
+    /// than let a change the next restart undoes read as finished.
+    private static void NoteIfProvisional(IDiagnosticRule rule)
+    {
+        if (rule.Id != DisplayRefreshRule.RuleId) return;
+        Console.WriteLine("    this session only — a restart brings the previous " +
+                          "refresh rate back");
+        Console.WriteLine($"    to keep it: brisk fix --rule {DisplayRefreshRule.RuleId} " +
+                          "--keep --yes");
     }
 
     private static int Clean(CliCommand cmd, Scanner scanner, CleanRunner cleanRunner)
@@ -324,6 +364,7 @@ public static class Program
         Console.WriteLine("    --all                    apply every Auto rule with a finding");
         Console.WriteLine("    --rule <id>               apply/undo a single rule");
         Console.WriteLine("    --undo                   undo the named rule's last fix");
+        Console.WriteLine("    --keep                   make the display refresh fix permanent");
         Console.WriteLine("    --yes                    actually mutate (otherwise dry-run)");
         Console.WriteLine("  clean                      reclaim disk space");
         Console.WriteLine("    --level <safe|developer|deep>  which cleanup level to run");

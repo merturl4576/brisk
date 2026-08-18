@@ -11,7 +11,11 @@ public sealed class DisplayRefreshRule : IDiagnosticRule
     /// nominal 60 — rather than a display parked on the wrong mode.
     public const int MinimumGapHz = 10;
 
-    public string Id => "display-refresh";
+    /// Shared with the surfaces that have to recognise this one rule by name:
+    /// the CLI's --keep, and the app state that raises the confirmation.
+    public const string RuleId = "display-refresh";
+
+    public string Id => RuleId;
     public RuleCategory Category => RuleCategory.Auto;
 
     private static List<DisplayInfo> Behind(DiagnosticContext ctx) =>
@@ -36,13 +40,35 @@ public sealed class DisplayRefreshRule : IDiagnosticRule
             EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings });
     }
 
+    /// The mode is applied for this session only — the probe never touches the
+    /// registry here. It becomes permanent when the user confirms the picture
+    /// is back (IDisplayProbe.PersistCurrentModes), and not one moment sooner.
     public string Fix(DiagnosticContext ctx)
     {
         var prior = new Dictionary<string, int>();
-        foreach (var display in Behind(ctx))
+        try
         {
-            prior[display.DeviceName] = display.CurrentHz;
-            ctx.Displays.SetRefreshRate(display.DeviceName, display.MaxHz);
+            foreach (var display in Behind(ctx))
+            {
+                ctx.Displays.SetRefreshRate(display.DeviceName, display.MaxHz);
+                // Recorded only once the driver has accepted the rate: a
+                // prior state for a display that never moved would send the
+                // undo chasing a change that did not happen.
+                prior[display.DeviceName] = display.CurrentHz;
+            }
+        }
+        catch (DisplayChangeException)
+        {
+            // Half a fix is not a fix. FixRunner journals nothing when Fix
+            // throws, so anything already raised would be a change with no
+            // undo behind it — put those displays back before the failure is
+            // reported, and report it rather than swallow it.
+            foreach (var (device, hz) in prior)
+            {
+                try { ctx.Displays.SetRefreshRate(device, hz); }
+                catch (DisplayChangeException) { /* nothing better is available */ }
+            }
+            throw;
         }
         return JsonSerializer.Serialize(prior);
     }
@@ -50,6 +76,11 @@ public sealed class DisplayRefreshRule : IDiagnosticRule
     public void Undo(DiagnosticContext ctx, string priorStateJson)
     {
         var prior = JsonSerializer.Deserialize<Dictionary<string, int>>(priorStateJson)!;
+        if (prior.Count == 0) return;
         foreach (var (device, hz) in prior) ctx.Displays.SetRefreshRate(device, hz);
+        // An undo has to reach the registry: if the raise was confirmed, the
+        // registry is carrying it, and a session-only restore would hand the
+        // rejected mode straight back at the next reboot.
+        ctx.Displays.PersistCurrentModes();
     }
 }
