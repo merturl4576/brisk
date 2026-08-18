@@ -209,6 +209,33 @@ public class LocTests
         Assert.DoesNotContain("Geri Dönüşüm", loc["overview.actions.hint"]);
     }
 
+    /// The boot rule ships three readings, and a template that quietly dropped
+    /// {2} would print a sentence naming nobody — in the one language the
+    /// maintainer actually reads the app in. Both templates are rendered here,
+    /// including the one for a slow boot Windows blamed nobody for.
+    [Theory]
+    [InlineData("en")]
+    [InlineData("tr")]
+    public void BootDegradationEvidence_RendersEveryReading(string language)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+        const string blamedNames = "Microsoft Edge WebView2 37 s, brisk-app.exe 26 s";
+
+        var blamed = loc.F("rule.boot-degradation.evidence", "57 s", "8", blamedNames);
+        Assert.Contains("57 s", blamed);
+        Assert.Contains("8", blamed);
+        Assert.Contains(blamedNames, blamed);
+        Assert.DoesNotContain("{", blamed);
+
+        var nobody = loc.F("rule.boot-degradation.evidence.nobody", "57 s", "8");
+        Assert.Contains("57 s", nobody);
+        Assert.DoesNotContain("{", nobody);
+
+        Assert.NotEqual("rule.boot-degradation.title", loc["rule.boot-degradation.title"]);
+        Assert.NotEqual("rule.boot-degradation.advice", loc["rule.boot-degradation.advice"]);
+    }
+
     [Fact]
     public void SetLanguage_RaisesIndexerChange()
     {

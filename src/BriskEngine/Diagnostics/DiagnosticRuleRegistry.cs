@@ -12,5 +12,6 @@ public static class DiagnosticRuleRegistry
         new DiskBreakdownRule(), new DiskForecastRule(), new OrphanedDataRule(),
         new StaleDevCachesRule(), new VisualEffectsRule(), new StorageSenseRule(),
         new DisplayRefreshRule(), new SearchWebResultsRule(),
+        new BootDegradationRule(),
     };
 }

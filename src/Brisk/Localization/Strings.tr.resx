@@ -139,12 +139,14 @@
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Depolama Alanı Algılayıcısı kapalı</value></data>
   <data name="rule.display-refresh.title" xml:space="preserve"><value>Ekran, desteklediği yenileme hızının altında çalışıyor</value></data>
   <data name="rule.search-web-results.title" xml:space="preserve"><value>Başlat menüsü araması interneti bekliyor</value></data>
+  <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows açılışı uzun sürüyor</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>Disk doluyor — şimdi yapacağın güvenli bir temizlik alan bitmeden vakit kazandırır</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Kaldırılmış uygulamalar geride veri bırakmış — gözden geçirip güvenle temizleyebilirsin</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
+  <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows kendi açılışını ölçüyor ve beklediğinden yavaş başlayan programları adıyla yazıyor — bunlardan senin olanları Başlangıç sayfasından kapatabilirsin</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Güç planı yüksek performansa alındı</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Tarayıcılar artık hızlı GPU'yu kullanıyor</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Tarayıcı donanım hızlandırması açıldı</value></data>
@@ -164,6 +166,8 @@
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Boş alan azalıyor; bu hızla disk yaklaşık {0} gün içinde dolacak.</value></data>
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows ekranı desteklediğinden yavaş bir hızda bırakmış; bu yüzden ekrandaki her şey daha düşük hızda akıyor.</value></data>
+  <data name="rule.boot-degradation.evidence" xml:space="preserve"><value>Açılış yaklaşık {0} sürüyor; bu, Windows'un ölçtüğü son {1} açılışın ortancası. Windows şunları beklediğinden yavaş başladıkları için işaret etti: {2} — bu süreler her birinin ne kadar geciktiğini gösterir, açılışına ne kadar eklediğini değil. Listenin başında genelde Windows'un kendi bileşenleri olur ve brisk onlara dokunmaz; geri kalanına Başlangıç sayfasından bak.</value></data>
+  <data name="rule.boot-degradation.evidence.nobody" xml:space="preserve"><value>Açılış yaklaşık {0} sürüyor; bu, Windows'un ölçtüğü son {1} açılışın ortancası. Bu açılışlarda hiçbir program öne çıkmadı — Windows'un izlediği her program beklendiği kadar hızlı başladı. Bu normal bir sonuç, eksik bir cevap değil: açılış yavaş ama işaret edilecek tek bir program yok.</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
