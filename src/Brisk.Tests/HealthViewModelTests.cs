@@ -305,6 +305,53 @@ public class HealthViewModelTests
         Assert.Equal(2, host.ScanCalls);
     }
 
+    // A display change can blank the screen, so it is applied provisionally.
+    [Fact]
+    public async Task FixingDisplayRefresh_RaisesAConfirmation()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+
+        Assert.NotNull(vm.PendingConfirmation);
+    }
+
+    [Fact]
+    public async Task FixingAnotherRule_RaisesNoConfirmation()
+    {
+        var (vm, _, state) = Build();
+        await state.ScanAsync();
+
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "power-plan"));
+
+        Assert.Null(vm.PendingConfirmation);
+    }
+
+    [Fact]
+    public async Task ConfirmationWindowElapsing_UndoesTheDisplayFix()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+
+        // Zero-length window: the same path a user takes by not answering.
+        vm.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+
+        Assert.Equal(new[] { "display-refresh" }, host.Undone);
+        Assert.Null(vm.PendingConfirmation);
+    }
+
     [Fact]
     public async Task FixAll_DryRun_NeverCallsHost_ShowsMessage()
     {

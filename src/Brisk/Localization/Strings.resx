@@ -162,6 +162,9 @@
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Free space has been shrinking; disk full in ~{0} days at the current rate.</value></data>
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows left the display slower than it supports, so everything on screen moves at the lower rate.</value></data>
+  <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
+  <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
+  <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
   <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Every keystroke in Start is sent to Bing, and local results for your apps and files wait for that round-trip. Turning web results off makes Start answer immediately. Takes effect after you sign in again.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} is running — close it to include this</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} free · {1}</value></data>

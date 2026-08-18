@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
+    <Grid>
     <DockPanel Margin="18,16">
         <!-- Every docked band and the scroll content share the app's one
              content column (see ContentMaxWidth in Shared.xaml). -->
@@ -187,4 +188,28 @@
             </StackPanel>
         </ScrollViewer>
     </DockPanel>
+        <!-- A display mode change can blank the screen; this covers the page
+             until the user confirms the picture is back, or the countdown
+             restores the previous setting on its own. -->
+        <Border Background="#CC000000" Panel.ZIndex="10"
+                Visibility="{Binding PendingConfirmation,
+                    Converter={x:Static Brisk:NullToVis.Instance}}">
+            <Border Style="{StaticResource HeroStrip}" MaxWidth="420" Padding="24"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold"
+                               Margin="0,0,0,8" TextWrapping="Wrap"
+                               Text="{Binding [display-confirm.title],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,16"
+                               Text="{Binding [display-confirm.body],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <Button HorizontalAlignment="Right"
+                            Command="{Binding KeepDisplayCommand}"
+                            Content="{Binding [display-confirm.keep],
+                                Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
 </UserControl>

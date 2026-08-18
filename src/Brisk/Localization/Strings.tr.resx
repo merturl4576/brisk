@@ -162,6 +162,9 @@
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Boş alan azalıyor; bu hızla disk yaklaşık {0} gün içinde dolacak.</value></data>
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows ekranı desteklediğinden yavaş bir hızda bırakmış; bu yüzden ekrandaki her şey daha düşük hızda akıyor.</value></data>
+  <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
+  <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
+  <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
   <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Başlat'a yazdığın her harf Bing'e gönderiliyor; uygulamalarına ve dosyalarına ait yerel sonuçlar bu gidiş dönüşü bekliyor. Web sonuçlarını kapatmak Başlat'ın anında cevap vermesini sağlar. Yeniden oturum açtığında etkili olur.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} açık — dahil etmek için önce kapat</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} boş · {1}</value></data>
