@@ -77,6 +77,85 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.True(vm.ToggleFailed);
     }
 
+    /// WAVE B, B4. "brisk" was a CONTAINS-match in the known-apps table, so
+    /// BriskBard — a real browser — would have been described to its owner as
+    /// "brisk itself, turn this off to stop it starting with Windows": a false
+    /// statement about their machine, inside the feature built to prove brisk
+    /// is honest about itself. brisk's own row is the synthetic one and is
+    /// recognised by its Task hive.
+    [Fact]
+    public async Task Startup_DoesNotClaimSomeoneElsesProgramIsBrisk()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.Startup.Add(new StartupEntry("HKCU", "BriskBard", true, false));
+        var state = new AppState(host);
+        var vm = new StartupViewModel(state, host, loc, () => false,
+            new StartupLauncher(new TaskStateRunner { TaskExists = true },
+                new FakeRegistry(), @"C:\x\brisk-app.exe"));
+        await state.ScanAsync();
+
+        Assert.Equal("", vm.Items.Single(i => i.Name == "BriskBard").Description);
+        // ...while brisk's own row, which comes from the task, still says so.
+        Assert.Equal(loc["startup.app.brisk"],
+            vm.Items.Single(i => i.Hive == StartupItemRow.TaskHive).Description);
+    }
+
+    /// WAVE B, B3. StartupViewModel hardcoded ToggleFailed = false after
+    /// Apply, which made brisk's own row the ONE row in this list that could
+    /// never report a failed toggle — in the feature whose whole point is that
+    /// brisk holds itself to the standard it preaches.
+    [Fact]
+    public async Task StartupList_BriskToggle_ReportsAFailedToggleLikeAnyOtherRow()
+    {
+        var runner = new TaskStateRunner { TaskExists = true, DeleteSucceeds = false };
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"));
+        await state.ScanAsync();
+
+        var briskRow = vm.Items.Single(i => i.Hive == StartupItemRow.TaskHive);
+        briskRow.IsEnabled = false;
+
+        Assert.True(vm.ToggleFailed);
+        Assert.True(briskRow.IsEnabled);   // reverted, like every other row
+    }
+
+    /// WAVE B, B3. Two owners that never reconciled: this checkbox read
+    /// settings.json while the Startup page's brisk row read the real task, so
+    /// turning brisk off there left the checkbox still showing "on".
+    [Fact]
+    public void Settings_StartWithWindows_ReadsTheTask_NotTheStoredFlag()
+    {
+        var settings = new Settings { StartWithWindows = true };   // stale record
+        var runner = new TaskStateRunner { TaskExists = false };    // the truth
+        var vm = new SettingsViewModel(settings, Path.Combine(_root, "s.json"),
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"),
+            _ => { }, _ => { });
+
+        Assert.False(vm.StartWithWindows);
+    }
+
+    /// ...and a schtasks that refuses must not leave settings.json claiming an
+    /// autostart that does not exist.
+    [Fact]
+    public void Settings_StartWithWindows_RefusedByWindows_IsReported()
+    {
+        var path = Path.Combine(_root, "refused.json");
+        var settings = new Settings();
+        var runner = new TaskStateRunner { CreateSucceeds = false };
+        var vm = new SettingsViewModel(settings, path,
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"),
+            _ => { }, _ => { });
+
+        vm.StartWithWindows = true;
+
+        Assert.True(vm.StartupFailed);
+        Assert.False(vm.StartWithWindows);        // the checkbox tells the truth
+        Assert.False(settings.StartWithWindows);  // and nothing was persisted
+    }
+
     [Fact]
     public async Task Startup_DescribesKnownApps_AndFlagsSystemEntries()
     {
@@ -183,7 +262,9 @@ public sealed class SecondaryViewModelTests : IDisposable
     {
         var path = Path.Combine(_root, "settings.json");
         var settings = new Settings();
-        var runner = new FakeProcessRunner();
+        // The checkbox reads the real task now (B3), so the fake has to
+        // behave like schtasks: /Query answers 0 only after a /Create.
+        var runner = new TaskStateRunner();
         var applied = new List<string>();
         var vm = new SettingsViewModel(settings, path,
             new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"),

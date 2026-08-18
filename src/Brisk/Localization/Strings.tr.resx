@@ -119,6 +119,7 @@
   <data name="settings.dryrun" xml:space="preserve"><value>Kuru çalıştırma (yalnızca raporla, hiçbir şeyi değiştirme)</value></data>
   <data name="settings.startwithwindows" xml:space="preserve"><value>Windows ile başlat</value></data>
   <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Varsayılan olarak kapalı — brisk, açılış şişkinliği öğüdünü kendine de uygular.</value></data>
+  <data name="settings.startwithwindows.failed" xml:space="preserve"><value>Windows değişikliği reddetti — oturum açma görevi oluşturulamadı ya da silinemedi. Bunu genellikle bir ilke ya da bir güvenlik yazılımı engeller.</value></data>
   <data name="settings.value.system" xml:space="preserve"><value>Sistem</value></data>
   <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
   <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
@@ -166,6 +167,8 @@
   <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
+  <data name="banner.dismiss" xml:space="preserve"><value>Kapat</value></data>
+  <data name="identity.otheraccount" xml:space="preserve"><value>brisk {0} olarak çalışıyor ama oturumu {1} açmış. Windows yönetici sordu ve brisk’e o hesabın profilini verdi — yani brisk’in raporladığı ve temizlediği ayarlar, açılış öğeleri, geçici dosyalar ve tarayıcı önbellekleri {1} kullanıcısına değil {0} kullanıcısına ait.</value></data>
   <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk ekranı en yüksek yenileme hızına aldı ve 15 saniye boyunca yanıt gelmediği için önceki ayarı geri yükledi. Bu genellikle kablonun ya da adaptörün bu hızı taşıyamadığı anlamına gelir.</value></data>
   <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk önceki ekran ayarını geri yükleyemedi: {0}. Değişiklik kaydedilmediği için Windows’u yeniden başlatmak önceki ayarı geri getirir.</value></data>
   <data name="display-confirm.notkept" xml:space="preserve"><value>Ekran daha yüksek yenileme hızında çalışıyor ama brisk bunu kaydedemedi — yeniden başlatıldığında önceki ayar geri gelecek.</value></data>

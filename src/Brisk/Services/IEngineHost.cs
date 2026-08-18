@@ -41,4 +41,9 @@ public interface IEngineHost
     long FreeDiskBytes();
     long LifetimeReclaimedBytes();
     bool IsElevated();
+    /// Who brisk is running as versus who is signed in. On a standard account
+    /// UAC hands brisk an ADMINISTRATOR's token, and every per-user path —
+    /// HKCU, %LOCALAPPDATA%, the Recycle Bin — then follows that token instead
+    /// of the person at the keyboard.
+    SessionIdentity Session();
 }

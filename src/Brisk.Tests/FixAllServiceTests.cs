@@ -190,6 +190,7 @@ public class FixAllServiceTests
         public long FreeDiskBytes() => _inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
         public FixOutcome KeepDisplayFix() => _inner.KeepDisplayFix();
+        public SessionIdentity Session() => _inner.Session();
         public bool IsElevated() => _inner.IsElevated();
     }
 }

@@ -50,7 +50,8 @@ public static class AppServices
                     .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator),
                 new DeleteLockProbe()),
             journal, new StartupManager(registry, log), logPath,
-            Path.Combine(AppContext.BaseDirectory, "Brisk.Cli.exe"));
+            Path.Combine(AppContext.BaseDirectory, "Brisk.Cli.exe"),
+            new RealSessionProbe());
 
         var settingsPath = Path.Combine(dataDir, "settings.json");
         return new AppComposition

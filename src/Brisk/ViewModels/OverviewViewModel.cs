@@ -104,13 +104,6 @@ public sealed class OverviewViewModel : ViewModelBase
         _liveTempCaption = loc["overview.live.temp"];
         _cleanSafeText = loc["overview.cleanspace.none"];
         _state.Changed += Refresh;
-        // Finding 4 re-review: DisplayNotice reached only Health and
-        // Performance, but ShowMain() surfaces the window on whichever page is
-        // selected — Overview by default. So the likeliest user watched the
-        // screen flick back and was told nothing at all. It lands in the
-        // run-scoped report, dotless: a rollback is not a green ✓.
-        _state.DisplayNotice += msg =>
-            ReportLines.Add(new ReportLine(msg, IsDone: false));
         // The report block's two faces share one visibility contract; any
         // mutation of either collection re-evaluates it (and the lead line).
         ReportLines.CollectionChanged += (_, _) => RaiseReportState();

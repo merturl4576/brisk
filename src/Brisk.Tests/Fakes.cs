@@ -23,6 +23,34 @@ public sealed class FakeProcessRunner : BriskEngine.Cleaning.IProcessRunner
     }
 }
 
+/// Models schtasks closely enough for brisk's own autostart: /Query answers 0
+/// only once a /Create has actually succeeded, so the two surfaces that read
+/// the task (the Settings checkbox and the Startup page's brisk row) can be
+/// tested against the same machine state.
+public sealed class TaskStateRunner : BriskEngine.Cleaning.IProcessRunner
+{
+    public System.Collections.Generic.List<(string Exe, string Args)> Calls { get; } = new();
+    public bool CreateSucceeds { get; set; } = true;
+    public bool DeleteSucceeds { get; set; } = true;
+    public bool TaskExists { get; set; }
+
+    public (int ExitCode, string StdOut) Run(string exe, string args)
+    {
+        Calls.Add((exe, args));
+        if (args.Contains("/Create"))
+        {
+            if (CreateSucceeds) TaskExists = true;
+            return (CreateSucceeds ? 0 : 1, "");
+        }
+        if (args.Contains("/Delete"))
+        {
+            if (DeleteSucceeds) TaskExists = false;
+            return (DeleteSucceeds ? 0 : 1, "");
+        }
+        return (TaskExists ? 0 : 1, "");                       // /Query
+    }
+}
+
 /// An in-memory registry, enough for the one thing the app layer reads and
 /// writes directly: brisk's own legacy HKCU\\Run autostart value.
 public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
@@ -168,4 +196,9 @@ public sealed class FakeEngineHost : IEngineHost
     public long Lifetime { get; set; }
     public long LifetimeReclaimedBytes() => Lifetime;
     public bool IsElevated() => Elevated;
+
+    /// Same account by default — the ordinary case, and on an administrator
+    /// account the only one. Set it to model over-the-shoulder elevation.
+    public SessionIdentity SessionIdentity { get; set; } = new("PC\alice", "PC\alice");
+    public SessionIdentity Session() => SessionIdentity;
 }

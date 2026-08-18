@@ -195,11 +195,6 @@ public sealed class HealthViewModel : ViewModelBase
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CrossNavigateCommand = new RelayCommand(
             () => CrossNavigateRequested?.Invoke());
-        // A failed rescue must never look identical to a successful one:
-        // both Health and Performance subscribe (the same AppState is
-        // shared by both instances), so whichever page the user lands on
-        // after a failed rollback still explains what happened.
-        _state.DisplayNotice += msg => Message = msg;
     }
 
     public ObservableCollection<FindingRow> Rows { get; } = new();

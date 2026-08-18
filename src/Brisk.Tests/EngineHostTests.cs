@@ -49,6 +49,13 @@ file sealed class NullSensors : ISensorProbe
     public int GpuCount() => 0;
 }
 
+/// The ordinary case, and the only one on an administrator account: the
+/// process token and the signed-in user are the same account.
+file sealed class SameUserSession : ISessionProbe
+{
+    public SessionIdentity Current() => new("PC\alice", "PC\alice");
+}
+
 file sealed class NullDisplays : IDisplayProbe
 {
     public int PersistCalls { get; private set; }
@@ -121,7 +128,7 @@ public sealed class EngineHostTests : IDisposable
             new CleanRunner(new SafetyValidator(), new NullRecycler(), log,
                 new RealProcessRunner(), () => false),
             journal, new StartupManager(new NullRegistry(), log), logPath,
-            Path.Combine(_root, "Brisk.Cli.exe"));
+            Path.Combine(_root, "Brisk.Cli.exe"), new SameUserSession());
     }
 
     private sealed class NullRecycler : IRecycler

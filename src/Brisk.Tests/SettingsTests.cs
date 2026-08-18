@@ -106,27 +106,6 @@ public sealed class SettingsTests : IDisposable
         Assert.False(launcher.IsOn());
     }
 
-    /// Models schtasks closely enough for the migration: /Query answers 0 only
-    /// once a /Create has actually succeeded.
-    private sealed class TaskRunner : BriskEngine.Cleaning.IProcessRunner
-    {
-        public List<(string Exe, string Args)> Calls { get; } = new();
-        public bool CreateSucceeds { get; set; } = true;
-        public bool TaskExists { get; set; }
-
-        public (int ExitCode, string StdOut) Run(string exe, string args)
-        {
-            Calls.Add((exe, args));
-            if (args.Contains("/Create"))
-            {
-                if (CreateSucceeds) TaskExists = true;
-                return (CreateSucceeds ? 0 : 1, "");
-            }
-            if (args.Contains("/Delete")) { TaskExists = false; return (0, ""); }
-            return (TaskExists ? 0 : 1, "");                     // /Query
-        }
-    }
-
     private static FakeRegistry RegistryWithLegacyValue()
     {
         var registry = new FakeRegistry();
@@ -143,7 +122,7 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void Migrate_MovesTheLegacyRunValueOntoTheTask()
     {
-        var runner = new TaskRunner();
+        var runner = new TaskStateRunner();
         var registry = RegistryWithLegacyValue();
 
         new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
@@ -163,7 +142,7 @@ public sealed class SettingsTests : IDisposable
     {
         var registry = RegistryWithLegacyValue();
         var startup = new BriskEngine.Diagnostics.StartupManager(registry, null);
-        var runner = new TaskRunner { TaskExists = true };
+        var runner = new TaskStateRunner { TaskExists = true };
         Assert.Contains(startup.List(), e => e.Name == "brisk");   // the second row
 
         new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
@@ -181,7 +160,7 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void Migrate_DoesNotPutBriskBackIntoStartup_AgainstANewerChoice()
     {
-        var runner = new TaskRunner();                  // no task on this machine
+        var runner = new TaskStateRunner();                  // no task on this machine
         var registry = RegistryWithLegacyValue();
 
         new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
@@ -200,7 +179,7 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void Migrate_RemovesTheValue_EvenWhenTheTaskCannotBeCreated()
     {
-        var runner = new TaskRunner { CreateSucceeds = false };
+        var runner = new TaskStateRunner { CreateSucceeds = false };
         var registry = RegistryWithLegacyValue();
 
         new StartupLauncher(runner, registry, @"C:\Apps\brisk-app.exe")
@@ -215,7 +194,7 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void Migrate_WithoutTheLegacyValue_ChangesNothing()
     {
-        var runner = new TaskRunner();
+        var runner = new TaskStateRunner();
 
         new StartupLauncher(runner, new FakeRegistry(), @"C:\Apps\brisk-app.exe")
             .Migrate(autostartWanted: true);
@@ -230,7 +209,7 @@ public sealed class SettingsTests : IDisposable
     {
         var registry = RegistryWithLegacyValue();
 
-        new StartupLauncher(new TaskRunner(), registry, @"C:\Apps\brisk-app.exe")
+        new StartupLauncher(new TaskStateRunner(), registry, @"C:\Apps\brisk-app.exe")
             .Apply(false);
 
         Assert.Null(registry.GetString(StartupLauncher.LegacyRunKey,

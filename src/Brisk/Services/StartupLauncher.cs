@@ -36,14 +36,19 @@ public sealed class StartupLauncher
     public bool IsOn() =>
         _runner.Run("schtasks.exe", $"/Query /TN {TaskName}").ExitCode == 0;
 
-    public void Apply(bool on)
+    /// False when schtasks refused — Group Policy, an AV product, a
+    /// locked-down task store. Discarding that exit code is what let
+    /// settings.json and the Settings checkbox both say "on" for a task that
+    /// was never created, with brisk simply not starting with Windows.
+    public bool Apply(bool on)
     {
-        if (on) CreateTask(); else DeleteTask();
+        var ok = on ? CreateTask() : DeleteTask();
         // Either direction is a fresh decision about brisk's autostart, and
         // the old Run value is part of the answer — left behind after "off" it
         // would have brisk claiming to have left startup while still sitting
         // in it. Migrate() does the same for users who never touch the toggle.
         RemoveLegacyValue();
+        return ok;
     }
 
     /// Called once at startup, with the user's CURRENT autostart setting.
@@ -66,13 +71,13 @@ public sealed class StartupLauncher
         RemoveLegacyValue();
     }
 
-    private void CreateTask() =>
+    private bool CreateTask() =>
         _runner.Run("schtasks.exe",
             $"/Create /F /TN {TaskName} /SC ONLOGON /RL HIGHEST " +
-            $"/TR \"\\\"{_exePath}\\\" --tray\"");
+            $"/TR \"\\\"{_exePath}\\\" --tray\"").ExitCode == 0;
 
-    private void DeleteTask() =>
-        _runner.Run("schtasks.exe", $"/Delete /F /TN {TaskName}");
+    private bool DeleteTask() =>
+        _runner.Run("schtasks.exe", $"/Delete /F /TN {TaskName}").ExitCode == 0;
 
     private void RemoveLegacyValue() =>
         _registry.DeleteValue(LegacyRunKey, LegacyValueName);

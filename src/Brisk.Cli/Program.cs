@@ -46,7 +46,7 @@ public static class Program
         {
             return cmd.Verb switch
             {
-                "scan" => Scan(cmd, ctx, scanner),
+                "scan" => Scan(cmd, ctx, scanner, IsElevated()),
                 "fix" => Fix(cmd, ctx, fixRunner),
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
@@ -86,8 +86,28 @@ public static class Program
         return (new List<TargetScanResult> { match }, null);
     }
 
-    private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner)
+    /// The sentence to print when no sensor answered, or null when they did.
+    ///
+    /// The GUI ships an elevation manifest; the CLI deliberately does not — a
+    /// command-line tool that raises UAC on every invocation is worse than one
+    /// that cannot read a temperature. But silently omitting the thermals
+    /// finding makes "brisk scan" look like it checked and found nothing
+    /// wrong, which is the same lie the manifest was added to stop in the GUI.
+    /// So the CLI says which of the two it is.
+    public static string? SensorNotice(ISensorProbe sensors, bool elevated)
     {
+        if (sensors.CpuTempC() is not null || sensors.GpuTempC() is not null)
+            return null;
+        return elevated
+            ? "temperature: no readable sensor on this machine — thermals not checked"
+            : "temperature: not checked — sensor access needs administrator. "
+              + "Run this from an elevated prompt, or open the brisk app.";
+    }
+
+    private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner,
+        bool elevated)
+    {
+        var sensorNotice = SensorNotice(ctx.Sensors, elevated);
         var findings = DiagnosticRuleRegistry.All
             .Select(r => Safe(() => r.Detect(ctx)))
             .Where(f => f != null)
@@ -112,6 +132,10 @@ public static class Program
                     totalBytes = scan.TotalBytes,
                     reclaimableBytes = scan.ReclaimableBytes,
                 },
+                // Absent thermals must be distinguishable from healthy
+                // thermals by anything parsing this, not just by a human
+                // reading the text output.
+                sensors = new { available = sensorNotice is null, notice = sensorNotice },
             };
             Console.WriteLine(JsonSerializer.Serialize(payload));
             return 0;
@@ -128,6 +152,8 @@ public static class Program
             Console.WriteLine($"[{marker}] {f.Title} (impact {new string('*', f.ImpactStars)})");
             Console.WriteLine($"    {f.Evidence}");
         }
+
+        if (sensorNotice is not null) Console.WriteLine($"[i ] {sensorNotice}");
 
         // ReclaimableBytes, not TotalBytes: the printed promise counts only
         // what 'brisk clean' can actually take right now (running-app and

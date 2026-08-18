@@ -36,6 +36,7 @@ public sealed class AppState : ViewModelBase
     private bool _isCleaning;
     private string _progressText = "";
     private RefreshConfirmation? _pendingConfirmation;
+    private string _displayNotice = "";
     private Task _scan = Task.CompletedTask;
 
     /// toUiThread is how Changed and DisplayNotice get back to the dispatcher.
@@ -56,6 +57,27 @@ public sealed class AppState : ViewModelBase
         _loc = loc ?? Loc.Instance;
         _toUi = toUiThread ?? (action => action());
         KeepDisplayCommand = new RelayCommand(() => PendingConfirmation?.Keep());
+        DismissDisplayNoticeCommand = new RelayCommand(() => DisplayNotice = "");
+        IdentityWarning = IdentityWarningFor(host, _loc);
+    }
+
+    /// Asked once, at composition. A probe that cannot answer reports the
+    /// interactive user as unknown, and an unknown answer must never become a
+    /// confident claim about whose files these are — so it stays silent.
+    private static string IdentityWarningFor(IEngineHost host, Loc loc)
+    {
+        try
+        {
+            var session = host.Session();
+            return session.DiffersFromInteractiveUser
+                ? loc.F("identity.otheraccount", session.ProcessUser,
+                    session.InteractiveUser ?? "")
+                : "";
+        }
+        catch (Exception)
+        {
+            return "";
+        }
     }
 
     public ScanSnapshot? Snapshot { get => _snapshot; private set => Set(ref _snapshot, value); }
@@ -120,16 +142,49 @@ public sealed class AppState : ViewModelBase
 
     public RelayCommand KeepDisplayCommand { get; }
 
-    /// Everything the display rescue owes the user, on one channel because it
-    /// all lands in the same place — the findings page's message line:
+    /// Everything the display rescue owes the user, in ONE place: a banner on
+    /// the window itself, where the confirmation overlay already lives.
+    /// Subscribing individual pages left Storage and Settings silent — brisk
+    /// could put a display back and say nothing at all on two of five pages —
+    /// and the Overview version had to live in that page's ReportLines, where
+    /// it hid the journal panel until the next scan. The window outlives every
+    /// page, so it is the honest home. Empty when there is nothing to say.
+    ///
+    /// It carries:
     ///   * the ordinary outcome, where nobody answered and the previous mode
     ///     went back on. The spec requires brisk to say so and to name cable
     ///     or adapter as the likely reason the rate did not carry;
     ///   * a rollback that could not restore the previous mode;
     ///   * a confirmed mode that could not be written to the registry, and so
     ///     will not survive a restart.
-    /// Raised on the rescue's own background thread.
-    public event Action<string>? DisplayNotice;
+    ///
+    /// It goes away two ways, because a sentence that never leaves stops being
+    /// read: the banner's own Dismiss button, and a new display attempt, which
+    /// supersedes whatever the last one had to say. Deliberately NOT cleared by
+    /// a scan — a scan re-detects the display running slow, so the sentence
+    /// explaining why the raise did not stick belongs right beside it.
+    public string DisplayNotice
+    {
+        get => _displayNotice;
+        private set
+        {
+            if (Set(ref _displayNotice, value)) Raise(nameof(HasDisplayNotice));
+        }
+    }
+
+    public bool HasDisplayNotice => _displayNotice.Length > 0;
+
+    public RelayCommand DismissDisplayNoticeCommand { get; }
+
+    /// Non-empty only when brisk's process token belongs to a DIFFERENT
+    /// account than the one signed in — over-the-shoulder elevation from a
+    /// standard account. Then HKCU, %LOCALAPPDATA% and the Recycle Bin all
+    /// follow the token, so the profile brisk scans and cleans is not the
+    /// profile of the person reading the screen. Fixed for the life of the
+    /// process: it is a fact about this run, not a state that changes.
+    public string IdentityWarning { get; }
+
+    public bool HasIdentityWarning => IdentityWarning.Length > 0;
 
     /// Raised right after PendingConfirmation is set. The flyout — not
     /// MainWindow — is the app's default startup surface (App.xaml.cs shows
@@ -213,6 +268,8 @@ public sealed class AppState : ViewModelBase
             // window still counting down. See IsAwaitingDisplayConfirmation
             // for the worse half of the same race.
             if (_pendingConfirmation is not null) return;
+            // A new attempt supersedes whatever the last one had to say.
+            DisplayNotice = "";
             // Set synchronously, on the caller's thread — so a caller that
             // awaits the method that called this (FixAsync, FixAllAsync, …)
             // observes PendingConfirmation already set the moment control
@@ -275,7 +332,7 @@ public sealed class AppState : ViewModelBase
             if (!kept) await RescanAsync();
             // Marshalled for the same reason Changed is: OverviewViewModel
             // puts this straight into an ObservableCollection.
-            if (notice is not null) _toUi(() => DisplayNotice?.Invoke(notice));
+            if (notice is not null) _toUi(() => DisplayNotice = notice);
         });
 
         try

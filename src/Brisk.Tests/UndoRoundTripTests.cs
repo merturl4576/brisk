@@ -123,6 +123,7 @@ public class UndoRoundTripTests
         public long FreeDiskBytes() => Inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
         public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
+        public SessionIdentity Session() => Inner.Session();
         public bool IsElevated() => Inner.IsElevated();
     }
 }

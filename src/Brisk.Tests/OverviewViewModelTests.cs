@@ -274,13 +274,13 @@ public class OverviewViewModelTests
         await state.PendingConfirmTask!;
     }
 
-    /// FIX WAVE re-review, Finding 4. DisplayNotice reached only Health and
-    /// Performance, but ShowMain() surfaces the window on whichever page is
-    /// selected — Overview by default — so the likeliest user watched the
-    /// screen flick back and was told nothing at all. The spec sentence is
-    /// unconditional, so this page has to carry it too.
+    /// WAVE B, B1. The rollback sentence now lives on ONE window-level
+    /// banner instead of three page subscriptions — which also keeps it OUT
+    /// of this page's ReportLines, where appending it flipped ShowDoneReport
+    /// to false and hid the journal panel until the next scan. A notice is
+    /// not a run report.
     [Fact]
-    public async Task RollbackNotice_LandsInTheOverviewReport()
+    public async Task RollbackNotice_GoesToTheBanner_NotThisPagesReport()
     {
         var loc = EnglishLoc();
         var host = new FakeEngineHost();
@@ -301,7 +301,8 @@ public class OverviewViewModelTests
         await vm.FixAllAsync();
         await state.PendingConfirmTask!;
 
-        Assert.Contains(vm.ReportLines,
+        Assert.Equal(loc["display-confirm.rolledback"], state.DisplayNotice);
+        Assert.DoesNotContain(vm.ReportLines,
             line => line.Text == loc["display-confirm.rolledback"]);
     }
 
@@ -750,6 +751,7 @@ public class OverviewViewModelTests
         public long FreeDiskBytes() => Inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
         public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
+        public SessionIdentity Session() => Inner.Session();
         public bool IsElevated() => Inner.IsElevated();
     }
 }

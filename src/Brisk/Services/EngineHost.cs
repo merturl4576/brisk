@@ -24,12 +24,14 @@ public sealed class EngineHost : IEngineHost
     private readonly CleanRunner _cleaner;
     private readonly FixJournal _journal;
     private readonly StartupManager _startup;
+    private readonly ISessionProbe _session;
     private readonly string _actionLogPath;
     private readonly string _cliExePath;
 
     public EngineHost(DiagnosticContext ctx, IReadOnlyList<IDiagnosticRule> rules,
         Scanner scanner, FixRunner fixes, CleanRunner cleaner, FixJournal journal,
-        StartupManager startup, string actionLogPath, string cliExePath)
+        StartupManager startup, string actionLogPath, string cliExePath,
+        ISessionProbe session)
     {
         _ctx = ctx;
         _rules = rules;
@@ -38,6 +40,7 @@ public sealed class EngineHost : IEngineHost
         _cleaner = cleaner;
         _journal = journal;
         _startup = startup;
+        _session = session;
         _actionLogPath = actionLogPath;
         _cliExePath = cliExePath;
     }
@@ -143,4 +146,6 @@ public sealed class EngineHost : IEngineHost
 
     public bool IsElevated() => new WindowsPrincipal(WindowsIdentity.GetCurrent())
         .IsInRole(WindowsBuiltInRole.Administrator);
+
+    public SessionIdentity Session() => _session.Current();
 }

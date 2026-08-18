@@ -23,8 +23,16 @@ public sealed class StartupItemRow : ViewModelBase
         ("EpicGamesLauncher", "epicgameslauncher"), ("Skype", "skype"),
         ("Cortana", "cortana"), ("Docker Desktop", "dockerdesktop"),
         ("WhatsApp", "whatsapp"), ("BlueStacks", "bluestacks"),
-        ("WallpaperEngine", "wallpaperengine"), ("brisk", "brisk"),
+        ("WallpaperEngine", "wallpaperengine"),
     };
+
+    /// brisk's own row is the synthetic one — it comes from the Scheduled
+    /// Task, not from a registry hive. It is recognised by that, never by its
+    /// name: "brisk" as a contains-match also matches BriskBard, a real
+    /// browser, and describing someone else's program as "brisk itself" would
+    /// be a false statement about the user's machine inside the very feature
+    /// built to prove brisk is honest about itself.
+    public const string TaskHive = "Task";
 
     /// Names that are Windows/driver plumbing even in HKCU.
     private static readonly string[] SystemTokens =
@@ -50,6 +58,8 @@ public sealed class StartupItemRow : ViewModelBase
     /// nothing — an invented description would be a lie.
     private static string DescriptionFor(StartupEntry entry, Loc loc)
     {
+        if (string.Equals(entry.Hive, TaskHive, StringComparison.Ordinal))
+            return loc["startup.app.brisk"];
         foreach (var (token, key) in KnownApps)
             if (entry.Name.Contains(token, StringComparison.OrdinalIgnoreCase))
                 return loc[$"startup.app.{key}"];
@@ -109,13 +119,18 @@ public sealed class StartupViewModel : ViewModelBase
         // unmissable, not buried under three heavy apps. Not a sort bug.
         if (_launcher.IsOn())
             Items.Add(new StartupItemRow(
-                new StartupEntry("Task", "brisk", true, false), _loc,
+                new StartupEntry(StartupItemRow.TaskHive, "brisk", true, false), _loc,
                 (_, enabled) =>
                 {
                     if (_isDryRun()) { ToggleFailed = true; return false; }
-                    _launcher.Apply(enabled);
-                    ToggleFailed = false;
-                    return true;
+                    // schtasks can be refused — Group Policy, an AV product,
+                    // a locked-down task store. brisk's own row was the ONE
+                    // row in this list that could never report a failed
+                    // toggle, in the feature whose whole point is that brisk
+                    // holds itself to the standard it preaches.
+                    var ok = _launcher.Apply(enabled);
+                    ToggleFailed = !ok;
+                    return ok;
                 }));
 
         foreach (var entry in _host.ListStartup()

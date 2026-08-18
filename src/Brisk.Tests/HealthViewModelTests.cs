@@ -527,7 +527,7 @@ public class HealthViewModelTests
         await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
         await state.PendingConfirmTask!;   // must complete, not fault
 
-        Assert.Contains("the journal is gone", vm.Message);
+        Assert.Contains("the journal is gone", state.DisplayNotice);
         Assert.Null(state.PendingConfirmation);
     }
 
@@ -557,8 +557,8 @@ public class HealthViewModelTests
         await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
         await state.PendingConfirmTask!;
 
-        Assert.Equal(loc["display-confirm.rolledback"], vm.Message);
-        Assert.Contains("cable", vm.Message);
+        Assert.Equal(loc["display-confirm.rolledback"], state.DisplayNotice);
+        Assert.Contains("cable", state.DisplayNotice);
     }
 
     /// FIX WAVE, Finding 5. The confirmation used to be raised from a loop
@@ -671,23 +671,21 @@ public class HealthViewModelTests
         var host = new FakeEngineHost();
         var state = new AppState(host, EnglishLoc(), toUiThread: queued.Add);
         var changed = 0;
-        var notices = 0;
         state.Changed += () => changed++;
-        state.DisplayNotice += _ => notices++;
 
         state.ConfirmationWindow = TimeSpan.Zero;
         state.ConfirmDisplayFix("display-refresh");
         await state.PendingConfirmTask!;
 
-        // Nothing has reached a subscriber yet: the "dispatcher" has not run.
+        // Nothing has landed yet: the "dispatcher" has not run.
         Assert.Equal(0, changed);
-        Assert.Equal(0, notices);
+        Assert.Equal("", state.DisplayNotice);
         Assert.NotEmpty(queued);
 
         foreach (var action in queued) action();
 
         Assert.True(changed > 0, "the rollback's rescan never raised Changed");
-        Assert.Equal(1, notices);
+        Assert.NotEqual("", state.DisplayNotice);
     }
 
     /// FIX WAVE re-review, N4(b). ConfirmationRaised reaches a window
@@ -712,6 +710,87 @@ public class HealthViewModelTests
         Assert.Equal(new[] { "display-refresh" }, host.Undone);
     }
 
+    /// WAVE B, B1. The banner is the one home for the rollback sentence, so it
+    /// must not become furniture: the Dismiss button clears it, and the next
+    /// display attempt supersedes it. A scan deliberately does NOT — the scan
+    /// after a rollback re-detects the display running slow, and the sentence
+    /// explaining why the raise did not stick belongs beside that finding.
+    [Fact]
+    public async Task DisplayNotice_IsDismissible_AndSupersededByTheNextAttempt()
+    {
+        var host = new FakeEngineHost();
+        var state = new AppState(host, EnglishLoc());
+        state.ConfirmationWindow = TimeSpan.Zero;
+
+        state.ConfirmDisplayFix("display-refresh");
+        await state.PendingConfirmTask!;
+        Assert.True(state.HasDisplayNotice);
+
+        state.DismissDisplayNoticeCommand.Execute(null);
+        Assert.False(state.HasDisplayNotice);
+        Assert.Equal("", state.DisplayNotice);
+
+        state.ConfirmDisplayFix("display-refresh");
+        await state.PendingConfirmTask!;
+        Assert.True(state.HasDisplayNotice);
+
+        await state.ScanAsync();
+        Assert.True(state.HasDisplayNotice);   // the finding is back; so is the reason
+
+        // A new attempt is a new story: the old sentence goes as it is raised.
+        state.ConfirmationWindow = TimeSpan.FromSeconds(15);
+        state.ConfirmDisplayFix("display-refresh");
+        Assert.False(state.HasDisplayNotice);
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
+    /// WAVE B, B2. requireAdministrator on a machine whose interactive user is
+    /// a STANDARD account means over-the-shoulder elevation: the user types a
+    /// different administrator's credentials and brisk's token belongs to that
+    /// administrator. HKCU, %LOCALAPPDATA% and the Recycle Bin then all follow
+    /// the token — so brisk would scan and recycle a profile nobody is sitting
+    /// in front of while the report says "your temp files". brisk does not
+    /// refuse; it says whose profile this actually is.
+    [Fact]
+    public void DifferentInteractiveUser_IsDisclosed_NamingBothAccounts()
+    {
+        var host = new FakeEngineHost
+        {
+            SessionIdentity = new SessionIdentity(@"PC\Admin", @"PC\alice"),
+        };
+
+        var state = new AppState(host, EnglishLoc());
+
+        Assert.True(state.HasIdentityWarning);
+        Assert.Contains(@"PC\Admin", state.IdentityWarning);
+        Assert.Contains(@"PC\alice", state.IdentityWarning);
+    }
+
+    /// The ordinary case — an administrator account, where UAC preserves the
+    /// SID — says nothing at all. A banner on every machine is noise, and
+    /// noise is what gets ignored on the machine that needs it.
+    [Fact]
+    public void SameUser_SaysNothing()
+    {
+        var state = new AppState(new FakeEngineHost(), EnglishLoc());
+        Assert.False(state.HasIdentityWarning);
+    }
+
+    /// An unknown interactive user is NOT a mismatch. A probe that cannot
+    /// answer must not be turned into a confident claim about whose files
+    /// these are.
+    [Fact]
+    public void UnknownInteractiveUser_ClaimsNothing()
+    {
+        var host = new FakeEngineHost
+        {
+            SessionIdentity = new SessionIdentity(@"PC\Admin", null),
+        };
+
+        Assert.False(new AppState(host, EnglishLoc()).HasIdentityWarning);
+    }
+
     /// Fix round 1 (Important, Finding 3): a rollback that could not
     /// actually restore the previous mode must not look identical to one
     /// that did. FakeEngineHost.Undo always succeeds, so a thin override
@@ -719,7 +798,7 @@ public class HealthViewModelTests
     /// returns, and asserts the failure surfaces on the page's Message
     /// instead of vanishing silently.
     [Fact]
-    public async Task FailedRollback_SurfacesOnTheMessage_InsteadOfLookingLikeSuccess()
+    public async Task FailedRollback_SurfacesOnTheBanner_InsteadOfLookingLikeSuccess()
     {
         var inner = new FakeEngineHost();
         inner.NextSnapshot = TestData.Snapshot(new[]
@@ -737,7 +816,9 @@ public class HealthViewModelTests
         await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
         await state.PendingConfirmTask!;
 
-        Assert.Equal("display-refresh: nothing to undo", vm.Message);
+        // Wave B (B1): the banner lives on the window, so it says this on
+        // whichever of the five pages the user is looking at.
+        Assert.Equal("display-refresh: nothing to undo", state.DisplayNotice);
     }
 
     [Fact]
@@ -1097,6 +1178,7 @@ public class HealthViewModelTests
         public long FreeDiskBytes() => _inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
         public FixOutcome KeepDisplayFix() => _inner.KeepDisplayFix();
+        public SessionIdentity Session() => _inner.Session();
         public bool IsElevated() => _inner.IsElevated();
     }
 
@@ -1132,6 +1214,7 @@ public class HealthViewModelTests
         public long FreeDiskBytes() => _inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
         public FixOutcome KeepDisplayFix() => _inner.KeepDisplayFix();
+        public SessionIdentity Session() => _inner.Session();
         public bool IsElevated() => _inner.IsElevated();
     }
 }
