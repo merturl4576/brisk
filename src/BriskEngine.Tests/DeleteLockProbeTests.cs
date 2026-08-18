@@ -167,14 +167,18 @@ public sealed class DeleteLockProbeTests : IDisposable
     /// deep, and at MaxPerItem = 64 both stopped at their 64th and reported
     /// free — the exact 2026-08-17 shape the probe exists to catch, which
     /// rounds 11-14 caught because such a tree fits the shared allowance.
+    ///
+    /// The filler is sized ABOVE the larger of those two (re-review minor
+    /// 9): at 600 this pin still passed with a cap of ~700, while the
+    /// 985-entry profile re-truncated in silence. It pins the cap's EDGE.
     [Fact]
     public void AHeldFile_DeepInAProfileSizedTree_IsStillFound()
     {
         var profile = Path.Combine(_root, "EBWebView");
         Directory.CreateDirectory(profile);
         // Filler that sorts BEFORE the held file, so the walk must get past
-        // several hundred entries to reach it.
-        for (var i = 0; i < 600; i++)
+        // more entries than the largest real profile that produced I1.
+        for (var i = 0; i < 1000; i++)
             File.WriteAllBytes(Path.Combine(profile, $"a{i:D5}.dat"), new byte[1]);
         var held = Path.Combine(profile, "zzz-LOCK");
         File.WriteAllBytes(held, new byte[8]);
@@ -182,6 +186,16 @@ public sealed class DeleteLockProbeTests : IDisposable
         using (File.Open(held, FileMode.Open, FileAccess.Read, FileShare.Read))
             Assert.True(_probe.IsLockedForDelete(profile, Budget()));
         Assert.False(_probe.IsLockedForDelete(profile, Budget()));
+    }
+
+    /// Re-review minor 12: the two constants bound different things — time
+    /// per target, and verification depth per tree — but if the per-item
+    /// share ever exceeded the target's whole allowance the cap would stop
+    /// binding and I1 would evaporate without a test noticing.
+    [Fact]
+    public void ThePerItemShare_NeverExceedsTheTargetAllowance()
+    {
+        Assert.True(LockProbeBudget.MaxPerItem <= LockProbeBudget.DefaultPerTarget);
     }
 
     [Fact]

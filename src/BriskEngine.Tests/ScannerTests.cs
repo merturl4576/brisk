@@ -97,6 +97,26 @@ public sealed class ScannerTests : IDisposable
             probe.Calls.Select(c => Path.GetFileName(c.Path)).ToArray());
     }
 
+    /// Re-review minor 10: the "a skipped target is never probed" guard
+    /// moved into the largest-first pass, and the round-11 test that looks
+    /// like it covers this builds its Scanner WITHOUT a probe — so it tests
+    /// the ScanModels short-circuit, not the guard. This tests the guard.
+    [Fact]
+    public void ASkippedTarget_IsNeverProbedAtAll()
+    {
+        var dir = Path.Combine(_root, "skipped-probe");
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "held.bin"), new byte[64]);
+        _processes.Running.Add("chrome");
+        var probe = new FakeLockProbe();
+
+        var result = new Scanner(
+            new[] { Target("t-skip", dir, app: "chrome") }, _processes, probe).Scan();
+
+        Assert.NotNull(result.Targets.Single().SkippedReason);
+        Assert.Empty(probe.Calls);   // the whole target is already outside the promise
+    }
+
     /// Round 11 honest total: a delete-locked item stays on the shelf (the
     /// clean still attempts it) but leaves the promise.
     [Fact]
