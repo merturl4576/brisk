@@ -21,6 +21,11 @@ public sealed class SecondaryViewModelTests : IDisposable
         return loc;
     }
 
+    // Autostart off (schtasks /Query exits non-zero) — these existing tests
+    // predate brisk's own startup row and don't want it in the mix.
+    private static StartupLauncher OffLauncher() =>
+        new(new FakeProcessRunner { NextExitCode = 1 }, @"C:\x\brisk-app.exe");
+
     [Fact]
     public async Task Startup_ListsHeavyFirst_TogglesThroughHost()
     {
@@ -28,7 +33,8 @@ public sealed class SecondaryViewModelTests : IDisposable
         host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         host.Startup.Add(new StartupEntry("HKCU", "Discord", true, true));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
+            OffLauncher());
         await state.ScanAsync();
 
         Assert.Equal(new[] { "Discord", "MyTool" },
@@ -45,7 +51,8 @@ public sealed class SecondaryViewModelTests : IDisposable
         var host = new FakeEngineHost { StartupToggleResult = false };
         host.Startup.Add(new StartupEntry("HKLM", "Svc", true, false));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
+            OffLauncher());
         await state.ScanAsync();
 
         vm.Items[0].IsEnabled = false;
@@ -59,7 +66,8 @@ public sealed class SecondaryViewModelTests : IDisposable
         var host = new FakeEngineHost();
         host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, EnglishLoc(), () => true);
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => true,
+            OffLauncher());
         await state.ScanAsync();
 
         vm.Items[0].IsEnabled = false;
@@ -80,7 +88,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         host.Startup.Add(new StartupEntry("HKLM", "RandomOemService", true, false));
         host.Startup.Add(new StartupEntry("HKCU", "MyTool", true, false));
         var state = new AppState(host);
-        var vm = new StartupViewModel(state, host, loc, () => false);
+        var vm = new StartupViewModel(state, host, loc, () => false, OffLauncher());
         await state.ScanAsync();
 
         string Desc(string name) => vm.Items.Single(i => i.Name == name).Description;
@@ -92,6 +100,34 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.Equal(loc["startup.system.hint"], Desc("RandomOemService"));
         // unknown user apps get no invented description
         Assert.Equal("", Desc("MyTool"));
+    }
+
+    [Fact]
+    public async Task StartupList_IncludesBriskItself_WhenAutostartIsOn()
+    {
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var runner = new FakeProcessRunner { NextExitCode = 0 };   // task exists
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
+            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+
+        await state.ScanAsync();
+
+        Assert.Contains(vm.Items, i => i.Name == "brisk");
+    }
+
+    [Fact]
+    public async Task StartupList_OmitsBrisk_WhenAutostartIsOff()
+    {
+        var host = new FakeEngineHost();
+        var state = new AppState(host);
+        var runner = new FakeProcessRunner { NextExitCode = 1 };   // no task
+        var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
+            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+
+        await state.ScanAsync();
+
+        Assert.DoesNotContain(vm.Items, i => i.Name == "brisk");
     }
 
     [Fact]

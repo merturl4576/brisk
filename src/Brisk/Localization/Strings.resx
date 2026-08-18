@@ -74,6 +74,7 @@
   <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — messaging app, opens fine on demand</value></data>
   <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emulator, very heavy at startup</value></data>
   <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — animated wallpapers, uses the GPU constantly</value></data>
+  <data name="startup.app.brisk" xml:space="preserve"><value>brisk itself — turn this off to stop it starting with Windows.</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} selected</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Clean</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Safe</value></data>

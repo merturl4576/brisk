@@ -23,7 +23,7 @@ public sealed class StartupItemRow : ViewModelBase
         ("EpicGamesLauncher", "epicgameslauncher"), ("Skype", "skype"),
         ("Cortana", "cortana"), ("Docker Desktop", "dockerdesktop"),
         ("WhatsApp", "whatsapp"), ("BlueStacks", "bluestacks"),
-        ("WallpaperEngine", "wallpaperengine"),
+        ("WallpaperEngine", "wallpaperengine"), ("brisk", "brisk"),
     };
 
     /// Names that are Windows/driver plumbing even in HKCU.
@@ -82,14 +82,16 @@ public sealed class StartupViewModel : ViewModelBase
     private readonly IEngineHost _host;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
+    private readonly StartupLauncher _launcher;
     private bool _toggleFailed;
 
     public StartupViewModel(AppState state, IEngineHost host, Loc loc,
-        Func<bool> isDryRun)
+        Func<bool> isDryRun, StartupLauncher launcher)
     {
         _host = host;
         _loc = loc;
         _isDryRun = isDryRun;
+        _launcher = launcher;
         state.Changed += Refresh;
     }
 
@@ -99,6 +101,19 @@ public sealed class StartupViewModel : ViewModelBase
     private void Refresh()
     {
         Items.Clear();
+
+        // brisk criticizes startup bloat, so when it joins startup it shows up
+        // in the same list, switchable by the same toggle.
+        if (_launcher.IsOn())
+            Items.Add(new StartupItemRow(
+                new StartupEntry("Task", "brisk", true, false), _loc,
+                (_, enabled) =>
+                {
+                    if (_isDryRun()) { ToggleFailed = true; return false; }
+                    _launcher.Apply(enabled);
+                    return true;
+                }));
+
         foreach (var entry in _host.ListStartup()
                      .OrderByDescending(e => e.KnownHeavy).ThenBy(e => e.Name,
                          StringComparer.OrdinalIgnoreCase))

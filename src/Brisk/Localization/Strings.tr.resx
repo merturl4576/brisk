@@ -74,6 +74,7 @@
   <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — mesajlaşma uygulaması, gerektiğinde açmak yeterli</value></data>
   <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emülatörü, açılışta çok ağırdır</value></data>
   <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — hareketli duvar kağıdı, GPU'yu sürekli kullanır</value></data>
+  <data name="startup.app.brisk" xml:space="preserve"><value>brisk'in kendisi — Windows ile başlamasını istemiyorsan kapat.</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} seçili</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Temizle</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Güvenli</value></data>

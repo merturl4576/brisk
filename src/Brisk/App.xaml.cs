@@ -72,7 +72,7 @@ public partial class App : Application
                 doneFilter: FindingSections.IsPerformance,
                 crossLinkKey: "performance.crosslink");
             var startupVm = new StartupViewModel(state, composition.Host,
-                Loc.Instance, isDryRun);
+                Loc.Instance, isDryRun, composition.Launcher);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 safeClean, bin, Loc.Instance, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,
