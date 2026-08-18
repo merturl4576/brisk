@@ -489,110 +489,78 @@ git commit -m "feat: the engine can read what windows measured about your last b
   Task 2; `StartupManager` including the Store entries from Task 1.
 - Produces: rule id `"boot-degradation"`, `Advise`, `Warning`, 4 stars.
 
-**Design, from the spec and from real data:**
-
-- Require at least **3** boot records; report the **median** `BootMs`. One bad boot
-  after an update is normal and must not raise a finding.
-- Only report at all when the median exceeds a threshold worth a user's attention.
-  Use **40 seconds** — the maintainer's machine sits at 57 s and is genuinely slow;
-  a 20 s boot is not a finding.
-- Aggregate offenders by `Name`, summing nothing — take each one's **worst**
-  `DegradationMs` across the sampled boots, and report the top three.
-- The evidence names the cost and, for each offender, whether brisk can act on it.
-  **Do not claim to fix what you cannot.** An offender is actionable only when its
-  name maps to a `StartupManager` entry; Defender, `TiWorker.exe` and the other
-  Windows components are not, and the evidence says so plainly rather than omitting
-  them — they are usually the largest number on the screen and hiding them would
-  misrepresent where the time goes.
-
-This rule stays `Advise` in this wave: it names what is actionable and the Startup
-page carries the switches. Wiring a fix button through the rule is deliberately not
-in scope, because the mapping from an executable name to a startup entry is fuzzy
-and a wrong match would disable the wrong program.
-
-- [ ] **Step 1: Write the failing test**
-
-Create `src/BriskEngine.Tests/Rules/BootDegradationRuleTests.cs`:
+**The shapes this rule consumes, as they actually exist after Task 2:**
 
 ```csharp
-using System;
-using System.Linq;
-using BriskEngine.Diagnostics;
-using BriskEngine.Diagnostics.Rules;
-using BriskEngine.Models;
-using Xunit;
-
-namespace BriskEngine.Tests.Rules;
-
-public class BootDegradationRuleTests
-{
-    private static DiagnosticContext Context(FakeEventLog log) =>
-        TestContext.Empty() with { EventLog = log };
-
-    private static FakeEventLog SlowBoots(params int[] bootMs)
-    {
-        var log = new FakeEventLog();
-        for (var i = 0; i < bootMs.Length; i++)
-            log.Boots.Add(new BootRecord(new DateTime(2026, 8, 18).AddDays(-i), bootMs[i], 24000));
-        return log;
-    }
-
-    [Fact]
-    public void SlowBootWithNamedOffenders_IsAFinding()
-    {
-        var log = SlowBoots(51237, 111814, 57089);
-        log.Offenders.Add(new BootOffender(new DateTime(2026, 8, 18), "Spotify.exe",
-            "Spotify", @"C:\x\Spotify.exe", 37141));
-        var finding = new BootDegradationRule().Detect(Context(log));
-
-        Assert.NotNull(finding);
-        Assert.Equal(RuleCategory.Advise, finding!.Category);
-        Assert.False(finding.CanFix);
-        Assert.Contains("Spotify", finding.Evidence);
-        Assert.Contains("57", finding.Evidence);   // the median, in seconds
-    }
-
-    [Fact]
-    public void FewerThanThreeBoots_IsNotEnoughToJudge()
-    {
-        var log = SlowBoots(111814, 94317);
-        log.Offenders.Add(new BootOffender(new DateTime(2026, 8, 18), "Spotify.exe",
-            "Spotify", @"C:\x\Spotify.exe", 37141));
-        Assert.Null(new BootDegradationRule().Detect(Context(log)));
-    }
-
-    // One 112-second boot after an update, among quick ones, is not a slow machine.
-    [Fact]
-    public void OneBadBootAmongFastOnes_IsNotAFinding()
-    {
-        var log = SlowBoots(18000, 111814, 19000);
-        log.Offenders.Add(new BootOffender(new DateTime(2026, 8, 18), "Spotify.exe",
-            "Spotify", @"C:\x\Spotify.exe", 37141));
-        Assert.Null(new BootDegradationRule().Detect(Context(log)));
-    }
-
-    [Fact]
-    public void NoEventLog_NoFinding()
-    {
-        Assert.Null(new BootDegradationRule().Detect(TestContext.Empty()));
-    }
-
-    // The same program appears once per boot; the row must not be duplicated,
-    // and the number shown must be its worst boot, not its most recent.
-    [Fact]
-    public void RepeatedOffender_IsReportedOnce_AtItsWorst()
-    {
-        var log = SlowBoots(51237, 111814, 57089);
-        log.Offenders.Add(new BootOffender(new DateTime(2026, 8, 18), "MsMpEng.exe", "Defender", "p", 7694));
-        log.Offenders.Add(new BootOffender(new DateTime(2026, 8, 17), "MsMpEng.exe", "Defender", "p", 52661));
-        var evidence = new BootDegradationRule().Detect(Context(log))!.Evidence;
-
-        Assert.Equal(1, evidence.Split("MsMpEng").Length - 1);
-        Assert.Contains("52", evidence);
-        Assert.DoesNotContain("7694", evidence);
-    }
-}
+IEventLogProbe.RecentBoots(int count)   // newest first, each boot carrying its own offenders
+BootRecord(DateTime When, int BootMs, int? MainPathMs, IReadOnlyList<BootOffender> Offenders)
+BootOffender(string Name, string FriendlyName, string Path, int DegradationMs)
+FakeEventLog { public List<BootRecord> Boots; }
 ```
+
+Note what changed while Task 2 was built: there is **no** `RecentOffenders` call, offenders
+carry no timestamp, and `MainPathMs` is nullable. Write the tests against these.
+
+**Design — every number below came off real hardware, and three of them overturned what
+this plan originally said:**
+
+- Require at least **3** boot records; report the **median** `BootMs`. One bad boot after
+  an update is normal and must not raise a finding.
+- Report only when the median exceeds **40 seconds**. The maintainer's machine sits at 57 s
+  and is genuinely slow; a 20 s boot is not a finding.
+- Aggregate offenders by `Name` across the sampled boots and take each one's **worst**
+  `DegradationMs`, not a sum. Report the top three.
+- Fall back to `Name` when `FriendlyName` is empty. It genuinely is for some programs —
+  `brisk-app.exe` arrived with none.
+
+**Never join the boot time and the offender list with a sum.** The sentence this plan
+originally specified — *"boot takes 57 s and 37 s of it belongs to these three"* — is false.
+`DegradationTime` means "this program started slower than Windows expected", not "this
+program added that much to your boot". On the maintainer's machine a 51.2 s boot had **no**
+blamed programs while a *faster* 45.3 s boot had two. State the two facts side by side and
+let the user connect them.
+
+The phrasing rule `BootRecord.Offenders` already carries applies to the copy: **"Windows
+blamed these three", never "only these three"**. The list is best effort — an unreadable
+record is dropped rather than guessed at — so a completeness claim would be an
+overstatement of exactly the kind this product refuses.
+
+**Write copy for the boot Windows blamed nobody for.** Three of the maintainer's ten most
+recent boots named no one. A slow boot with an empty list is a normal outcome, not a failure
+to explain, and the rule must not read as though it lost the answer.
+
+**Do not compute `BootMs - MainPathMs`.** It equals `BootPostBootTime`, which Windows
+already publishes by name, and it means main path versus post-boot — not "Windows versus
+your programs". Four of the five programs named on that machine are Microsoft's own.
+
+**Name what brisk cannot act on rather than hiding it.** Defender carried the largest single
+degradation measured, 52 s, and brisk must never offer to touch it. Windows components are
+usually the largest number on the screen; omitting them would misrepresent where the time
+went. Say plainly which entries the Startup page can switch and which it cannot.
+
+This rule stays `Advise`: it names what is actionable and the Startup page carries the
+switches. Wiring a fix button through the rule is deliberately out of scope, because mapping
+an executable name to a startup entry is fuzzy and a wrong match would disable the wrong
+program.
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `src/BriskEngine.Tests/Rules/BootDegradationRuleTests.cs`. Build contexts with
+`TestContext.Empty() with { EventLog = log }` and a `FakeEventLog` whose `Boots` you fill
+directly — the fake has no offender list of its own any more.
+
+Pin at least these, and say in your report if you added more:
+
+| Case | Expectation |
+|---|---|
+| three boots at 51237 / 111814 / 57089 ms, one carrying Spotify at 37141 ms | a finding; `Advise`; `CanFix` false; evidence contains `Spotify` and the median in seconds |
+| two boots only | no finding — not enough to judge |
+| 18000 / 111814 / 19000 ms | no finding — one bad boot among fast ones is not a slow machine |
+| no boots at all | no finding |
+| the same program blamed on two boots at 7694 and 52661 ms | reported once, at 52661; `7694` must not appear |
+| a slow boot whose `Offenders` is empty | a finding that reads as a slow boot nobody was blamed for, not as a missing answer |
+| an offender whose `FriendlyName` is `""` | the evidence shows its `Name`, never a blank |
+| a boot with `MainPathMs` null | no crash, and no arithmetic on it |
 
 - [ ] **Step 2: Run test to verify it fails**
 
