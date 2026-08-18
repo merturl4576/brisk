@@ -31,6 +31,21 @@ public sealed class MemorySpeedRule : AdviseRuleBase
     /// Fire at or below 80% of rated. XMP-off on a 3200 kit lands at 2133
     /// (67%) or 2400 (75%); a platform ceiling like 2933 sits at 92% and stays
     /// quiet. The comparison is inclusive — exactly 80% is a finding.
+    ///
+    /// Known and accepted: this misses part of the case it was written for.
+    /// A DDR5-5600 kit falling back to the JEDEC 4800 base with no profile
+    /// ever enabled sits at 85.7%, above the line, and brisk says nothing.
+    /// Same shape on DDR4 where a board's own default is 2666 under a 3200
+    /// kit (83.3%). The miss is deliberate rather than an oversight, and it
+    /// is not merely conservative: at those ratios the reading is genuinely
+    /// indistinguishable from a platform ceiling, which is exactly what
+    /// 2933/3200 (91.7%) is on the machine that set this number. A ratio high
+    /// enough to catch 4800/5600 would sit around 0.86, which is inside the
+    /// band where real ceilings live — a 3200 kit on a board capped at 2800 is
+    /// 87.5% — so it would buy those findings by reintroducing the false
+    /// alarm this threshold was rewritten to remove. Missing a true case is
+    /// recoverable; telling someone to enable a profile that does not exist
+    /// is the failure this rule is shaped around.
     internal const double SlowRatio = 0.80;
 
     public override string Id => "memory-speed";

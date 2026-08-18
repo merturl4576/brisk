@@ -362,10 +362,10 @@ public class LocTests
     /// this figure MHz would state double the real clock — the correction the
     /// source thread upvoted above every other reply.
     [Theory]
-    [InlineData("en", "does not support", "cannot tell")]
-    [InlineData("tr", "desteklemeyen", "ayırt edemiyor")]
+    [InlineData("en", "does not support", "cannot tell", "out of")]
+    [InlineData("tr", "desteklemeyen", "ayırt edemiyor", "üzerinden")]
     public void MemorySpeedCopy_NamesBothCauses_AndPrescribesNeither(
-        string language, string unsupported, string hedge)
+        string language, string unsupported, string hedge, string relation)
     {
         var loc = new Loc();
         loc.SetLanguage(language);
@@ -381,7 +381,19 @@ public class LocTests
             Assert.Contains(hedge, line);            // and neither is claimed
         }
 
-        Assert.Contains("MT/s", evidence);
+        // The reading is a "configured out of rated" pair, and which of the two
+        // numbers is the shortfall is carried by the template, not by the
+        // argument — a template that flattened the relation into "and" would
+        // still render both figures and still look right.
+        Assert.Contains(relation, evidence);
+
+        // This pins that {0} is rendered whole rather than dropped, reordered
+        // or truncated. It does NOT pin the unit: the MT/s in it was supplied
+        // by this test. The unit is pinned by the DoesNotContain below — a
+        // template that spelled the figure out as MHz beside the argument —
+        // and by MemorySpeedRuleTests and HardwareProbeTests, which pin what
+        // the engine actually emits into {0}.
+        Assert.Contains("ChannelA-DIMM0 2133 MT/s / 3200 MT/s", evidence);
         Assert.DoesNotContain("MHz", evidence);
         Assert.DoesNotContain("MHz", advice);
 
