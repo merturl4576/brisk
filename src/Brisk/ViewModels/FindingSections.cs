@@ -14,7 +14,7 @@ public static class FindingSections
         new[] { "power-plan", "browser-gpu", "hw-acceleration",
                 "visual-effects", "startup-bloat", "ram-pressure",
                 "display-refresh", "search-web-results",
-                "boot-degradation" },
+                "boot-degradation", "memory-speed" },
         StringComparer.OrdinalIgnoreCase);
 
     public static bool IsPerformance(DiagnosticFinding finding) =>

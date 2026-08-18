@@ -42,6 +42,19 @@ public interface IDiskInfoProbe
     long TotalBytes(string driveRoot);
 }
 
+/// What the machine is made of, as opposed to how it is behaving. Read from
+/// Windows' own inventory rather than measured, so the numbers are only as
+/// good as the firmware that filled them in.
+public interface IHardwareProbe
+{
+    /// The physical memory modules Windows knows about, in the order it lists
+    /// them. Empty when the inventory cannot be read at all — a machine with
+    /// no memory is not a thing, so empty always means "brisk could not see",
+    /// never "there is none". Individual modules can also come back with zeroed
+    /// speeds, which means the same thing one module at a time.
+    IReadOnlyList<MemoryModule> MemoryModules();
+}
+
 /// The mode change is split in two on purpose. Applying and persisting in one
 /// call is what turns a black screen into a permanent one: the likeliest thing
 /// a person does when the picture disappears is hold the power button, which

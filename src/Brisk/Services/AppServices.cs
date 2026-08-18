@@ -35,7 +35,7 @@ public static class AppServices
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), registry,
             processInfo, sensors, new RealDisplayProbe(),
-            new RealEventLogProbe(),
+            new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
             new RealProcessLister(), dataDir);
         var logPath = Path.Combine(dataDir, "action-log.jsonl");

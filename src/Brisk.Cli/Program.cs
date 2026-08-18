@@ -31,7 +31,7 @@ public static class Program
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), new RealRegistryProbe(),
             new RealProcessInfoProbe(), sensors, new RealDisplayProbe(),
-            new RealEventLogProbe(),
+            new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
             new RealProcessLister(), dataDir);
         var log = new ActionLog(Path.Combine(dataDir, "action-log.jsonl"));

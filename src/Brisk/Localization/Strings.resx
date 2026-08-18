@@ -140,6 +140,7 @@
   <data name="rule.display-refresh.title" xml:space="preserve"><value>A display is running below its refresh rate</value></data>
   <data name="rule.search-web-results.title" xml:space="preserve"><value>Start menu search waits on the internet</value></data>
   <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows takes a long time to start</value></data>
+  <data name="rule.memory-speed.title" xml:space="preserve"><value>Memory is running below its rated speed</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
@@ -147,6 +148,7 @@
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Uninstalled apps left data behind — you can review and clean it safely</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>
   <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows times its own boot and names the programs that started slower than it expected — the ones that turn up under Startup programs on the Performance page can be switched off there</value></data>
+  <data name="rule.memory-speed.advice" xml:space="preserve"><value>The modules report a higher rated speed than they are set to — that can be a speed profile (XMP/EXPO) that was never switched on, or a board that does not support the rating, and brisk cannot tell which from Windows</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Power plan switched to high performance</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Browsers now use the fast GPU</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Browser hardware acceleration enabled</value></data>
@@ -168,6 +170,7 @@
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows left the display slower than it supports, so everything on screen moves at the lower rate.</value></data>
   <data name="rule.boot-degradation.evidence" xml:space="preserve"><value>Boot takes about {0}, the middle of the {1} most recent boots brisk could read from Windows' own timings. Windows blamed these for starting slower than it expected: {2} — that is how late each one was, not time it added to your boot. Windows' own components often top the list and brisk will not switch those off; look for the rest under Startup programs on the Performance page.</value></data>
   <data name="rule.boot-degradation.evidence.nobody" xml:space="preserve"><value>Boot takes about {0}, the middle of the {1} most recent boots brisk could read from Windows' own timings. No program stood out on those boots — everything Windows watched started about as fast as it expected. That is a normal result rather than a missing answer: the boot is slow without any one program to point at.</value></data>
+  <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — each module's configured speed out of the speed it is rated for. Two things look like this and Windows reports neither: a memory speed profile (XMP/EXPO) that was never switched on, or a board or memory controller that does not support the rated speed. brisk cannot tell those apart from here, so it is not telling you to change anything in the BIOS — only that the gap is there.</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>

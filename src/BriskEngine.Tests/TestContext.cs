@@ -159,6 +159,12 @@ public sealed class FakeEventLog : IEventLogProbe
         Boots.GetRange(0, Math.Min(count, Boots.Count));
 }
 
+public sealed class FakeHardware : IHardwareProbe
+{
+    public List<MemoryModule> Modules = new();
+    public IReadOnlyList<MemoryModule> MemoryModules() => Modules;
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -180,7 +186,8 @@ public static class TestContext
 
     public static DiagnosticContext Empty(string? dataDir = null) => new(
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
-        new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
+        new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeHardware(),
+        new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

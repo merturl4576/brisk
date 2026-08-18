@@ -136,6 +136,8 @@ public class LocTests
     [InlineData("rule.ram-pressure.evidence")]
     [InlineData("rule.thermals.evidence")]
     [InlineData("rule.disk-forecast.evidence")]
+    [InlineData("rule.memory-speed.advice")]
+    [InlineData("rule.memory-speed.evidence")]
     [InlineData("clean.skipped.apprunning")]
     [InlineData("clean.target.user-temp")]
     [InlineData("clean.target.windows-temp")]
@@ -345,6 +347,51 @@ public class LocTests
             loc.F("rule.boot-degradation.evidence", "57 s", "8", "Spotify 37 s"));
         Assert.Contains(phrasing,
             loc.F("rule.boot-degradation.evidence.nobody", "57 s", "8"));
+    }
+
+    /// The memory rule is defined by what it refuses to say. WMI exposes
+    /// neither the memory controller's maximum nor whether an XMP/EXPO profile
+    /// exists, so the gap it measures does not identify its own cause: the copy
+    /// names both explanations and picks neither. A Turkish rewrite into
+    /// "BIOS'tan XMP'yi aç" would render its argument, leave no stray brace and
+    /// pass every other test in this suite — while sending the one reader who
+    /// uses the app in Turkish into a BIOS over a reading that may be his
+    /// platform's ceiling.
+    ///
+    /// The unit is pinned here too. DDR transfers twice per clock, so labelling
+    /// this figure MHz would state double the real clock — the correction the
+    /// source thread upvoted above every other reply.
+    [Theory]
+    [InlineData("en", "does not support", "cannot tell")]
+    [InlineData("tr", "desteklemeyen", "ayırt edemiyor")]
+    public void MemorySpeedCopy_NamesBothCauses_AndPrescribesNeither(
+        string language, string unsupported, string hedge)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var evidence = loc.F("rule.memory-speed.evidence",
+            "ChannelA-DIMM0 2133 MT/s / 3200 MT/s");
+        var advice = loc["rule.memory-speed.advice"];
+
+        foreach (var line in new[] { evidence, advice })
+        {
+            Assert.Contains("XMP", line);            // one explanation
+            Assert.Contains(unsupported, line);      // the other
+            Assert.Contains(hedge, line);            // and neither is claimed
+        }
+
+        Assert.Contains("MT/s", evidence);
+        Assert.DoesNotContain("MHz", evidence);
+        Assert.DoesNotContain("MHz", advice);
+
+        // No imperative into a setting brisk cannot see, verify or undo.
+        foreach (var order in new[] { "enable XMP", "turn on XMP", "enable the profile",
+                                      "XMP'yi aç", "profili aç", "etkinleştir", "BIOS'a gir" })
+        {
+            Assert.DoesNotContain(order, evidence, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(order, advice, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]
