@@ -18,6 +18,11 @@ namespace Brisk.Tests;
 /// the picture. These read the source instead, which is where the mistake
 /// actually lives — and they are the reason the uncountable phases borrow
 /// the stock-template bar the scan rows use.
+///
+/// Source, not render, on purpose: the ABSENCE of a visual is checkable
+/// from shape, the correctness of one is not. A render-level check earns
+/// its place here only if someone gives ThinProgress a real indeterminate
+/// visual — at which point the first test below has to be inverted anyway.
 public sealed class ThinProgressTests
 {
     private static string SrcDir()

@@ -221,12 +221,14 @@ public sealed class CleanRunnerTests : IDisposable
     }
 
     /// The shape the drain CANNOT catch, and the honest cost of it
-    /// (round-14 re-review, N1): every failed call harvests exactly one
-    /// item, so `barren` is reset before it ever reaches two and the span
-    /// keeps paying for a batch attempt it will not finish. This is a
-    /// CHARACTERIZATION pin, not a target — it exists so the real cost of
-    /// the interleaved shape cannot drift silently, and so nobody reads
-    /// the all-locked test's n+2 as a bound on every input.
+    /// (round-14 re-review, N1 and N3): every failed call harvests exactly
+    /// one item, so `barren` is reset before it ever reaches two and the
+    /// span keeps paying for a batch attempt it will not finish. PHASE
+    /// matters and is the whole point — a sweep over every period 2-8 and
+    /// every phase at n=128 peaks at exactly 171 calls for period 3 with
+    /// the free item at index 1, which is this shape. A CHARACTERIZATION
+    /// pin, not a target: it exists so the ~4n/3 regime cannot drift
+    /// silently, and so nobody reads the all-locked test's n+2 as a bound.
     [Fact]
     public void InterleavedLocks_AreTheShapeTheDrainCannotCatch()
     {
@@ -234,29 +236,52 @@ public sealed class CleanRunnerTests : IDisposable
         var files = Enumerable.Range(0, n).Select(i => $"f{i}.tmp").ToArray();
         var dir = Path.Combine(_root, "interleaved");
         var (_, scan) = ScanOver(dir, files);
-        // two locked, one free, repeating: each failed call takes exactly
-        // the one free item ahead of the next lock.
+        // Locked, FREE, locked — repeating. The span never opens on two
+        // adjacent locks, so every failed call harvests exactly one item
+        // and the drain's counter is reset before it can fire.
+        foreach (var f in files.Where((_, i) => i % 3 != 1))
+            _recycler.FailPaths.Add(Path.Combine(dir, f));
+
+        var report = Runner().Clean(scan, dryRun: false);
+
+        // Correctness is untouched, and is phase-invariant: every path gets
+        // exactly one entry, and it is the right one.
+        Assert.Equal(n, report.Entries.Count);
+        Assert.Equal(n, report.Entries.Select(e => e.Path).Distinct().Count());
+        Assert.Equal(8, report.Entries.Count(e => e.Action == "error"));
+        Assert.Equal(4, report.Entries.Count(e => e.Action == "recycled"));
+        foreach (var f in files.Where((_, i) => i % 3 != 1))
+            Assert.True(File.Exists(Path.Combine(dir, f)), $"{f} must survive");
+
+        // The cost: MORE than the old per-survivor fallback, which would
+        // have spent 1 + 12 = 13 here. Sparse locks still settle in three
+        // calls and a dense block is at parity; this is where the heuristic
+        // loses, and it loses by a constant factor, never an order — the
+        // same shape at n=128 costs 171 against the old fallback's 129.
+        Assert.Equal(16, _recycler.ShellCalls);
+    }
+
+    /// The other half of why phase matters (round-14 re-review, N3): shift
+    /// the same period-3 pattern so the span OPENS on two adjacent locks
+    /// and the drain fires on the first two iterations, putting the cost
+    /// back at n+2. This is the case my first interleave pin accidentally
+    /// used while claiming to test the one above.
+    [Fact]
+    public void InterleavedLocks_OpeningOnTwoAdjacentLocks_AreCaught()
+    {
+        const int n = 12;
+        var files = Enumerable.Range(0, n).Select(i => $"f{i}.tmp").ToArray();
+        var dir = Path.Combine(_root, "interleaved-caught");
+        var (_, scan) = ScanOver(dir, files);
         foreach (var f in files.Where((_, i) => i % 3 != 2))
             _recycler.FailPaths.Add(Path.Combine(dir, f));
 
         var report = Runner().Clean(scan, dryRun: false);
 
-        // Correctness is untouched: every path gets exactly one entry, and
-        // it is the right one.
         Assert.Equal(n, report.Entries.Count);
-        Assert.Equal(n, report.Entries.Select(e => e.Path).Distinct().Count());
         Assert.Equal(8, report.Entries.Count(e => e.Action == "error"));
         Assert.Equal(4, report.Entries.Count(e => e.Action == "recycled"));
-        foreach (var f in files.Where((_, i) => i % 3 != 2))
-            Assert.True(File.Exists(Path.Combine(dir, f)), $"{f} must survive");
-
-        // The cost: MORE than the old per-survivor fallback, which would
-        // have spent 1 + 12 = 13 here. Sparse locks still settle in three
-        // calls and a dense block is at parity; this constructed period-3
-        // shape is where the heuristic loses, and it loses by a constant
-        // factor, never an order. The reviewer's n=128 variant reaches 170
-        // against the old 129 — the worst case is ~4n/3, NOT n+2.
-        Assert.Equal(14, _recycler.ShellCalls);
+        Assert.Equal(n + 2, _recycler.ShellCalls);
     }
 
     /// ROOT-CAUSE REGRESSION (round 10): one shell call per file cost

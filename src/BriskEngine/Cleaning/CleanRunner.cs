@@ -184,12 +184,14 @@ public sealed class CleanRunner
                 // This is a heuristic, NOT a bound (round-14 re-review): the
                 // counter resets on any productive call, so an interleaved
                 // shape where every failed call harvests exactly one item
-                // never reaches the threshold and costs ~4n/3 — measured at
-                // 170 calls against the old fallback's 129 at n=128. A
-                // randomised sweep of 400 patterns peaked at 132, and the
-                // reported live run (15 sparse locks in 332 items) settles
-                // near 33 against 332, so the constructed period-3 shape is
-                // the only place this loses. Named rather than hidden.
+                // never reaches the threshold and costs ~4n/3. A sweep over
+                // every period 2-8 and every phase at n=128 peaks at exactly
+                // 171 calls — period 3, free item at index 1 — against the
+                // old fallback's 129; a randomised sweep of 400 patterns
+                // peaked at 132, and the reported live run (15 sparse locks
+                // in 332 items) settles near 33 against 332. So one
+                // constructed shape is the only place this loses, by a
+                // constant factor. Named rather than hidden.
                 if (barren >= 2)
                 {
                     for (var i = 1; i < left.Count; i++) RecycleSingle(left[i]);
