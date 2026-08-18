@@ -3,3 +3,10 @@ obj/
 *.user
 .vs/
 .superpowers/
+
+# Working material that lives beside the project but is not part of it:
+# reference recordings, screenshots and notes. Kept on disk, out of history —
+# a 12 MB video is effectively permanent once it lands in a commit.
+*.mp4
+image*.png
+briskhakkinda.txt
