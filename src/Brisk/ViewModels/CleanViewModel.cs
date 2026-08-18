@@ -556,6 +556,12 @@ public sealed class CleanViewModel : ViewModelBase
                 : await Task.Run(() => _bin.MatchingItemIds(plannedPaths));
             var outcome = await Task.Run(() => _cleanService.CleanTargets(scans));
             problems.AddRange(SkipSentences(outcome.Skipped));
+            // A dry run records no skips and raises no banner, so once the
+            // notice learned to collapse, this flow could answer a press
+            // with NOTHING at all (round-16 review, minor 4) — unless the
+            // elevation branch above already named a specific target.
+            if (outcome.WasDryRun && problems.Count == 0)
+                problems.Add(_loc["dryrun.blocked"]);
             _lastRecycled = outcome.RecycledPaths;
             RestoreFailed = false;
             ProblemsText = string.Join("\n", problems);

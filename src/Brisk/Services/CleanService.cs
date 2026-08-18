@@ -10,9 +10,16 @@ namespace Brisk.Services;
 /// the GUI edge can recompose human-language reasons — the round-9 rule.
 /// Recycled (round 12) carries the per-path recycled entries WITH their
 /// bytes, so the auto-purge can account freed vs left-in-bin precisely.
+/// ROUND 16 review (minor 3): there used to be a Problems list here — one
+/// "path — reason" string per failure, in the engine's English, built on
+/// every run and bound straight to the Depolama page. That binding IS the
+/// 2026-08-18 screenshot. Skipped carries the same entries with structure
+/// instead of prose, the GUI narrates from it, and every path is in the
+/// action log with a timestamp. A field that exists to hold raw paths for
+/// display is one {Binding} away from putting them back on the page.
 public sealed record CleanOutcome(
     IReadOnlyList<string> RecycledPaths, long RecycledBytes,
-    IReadOnlyList<string> Problems, bool WasDryRun,
+    bool WasDryRun,
     IReadOnlyList<CleanEntry> Skipped,
     IReadOnlyList<CleanEntry> Recycled);
 
@@ -71,7 +78,6 @@ public sealed class CleanService
     {
         var paths = new List<string>();
         long bytes = 0;
-        var problems = new List<string>();
         var skipped = new List<CleanEntry>();
         var recycled = new List<CleanEntry>();
         foreach (var scan in scans)
@@ -87,11 +93,10 @@ public sealed class CleanService
                 }
                 else if (entry.Action is "refused" or "error")
                 {
-                    problems.Add($"{entry.Path} — {entry.Reason}");
                     skipped.Add(entry);
                 }
             }
         }
-        return new CleanOutcome(paths, bytes, problems, _settings.DryRun, skipped, recycled);
+        return new CleanOutcome(paths, bytes, _settings.DryRun, skipped, recycled);
     }
 }

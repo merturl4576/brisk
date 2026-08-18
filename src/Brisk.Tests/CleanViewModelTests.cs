@@ -687,6 +687,31 @@ public class CleanViewModelTests
         Assert.False(vm.IsSimpleCleanBusy);
     }
 
+    /// ROUND 16 review (minors 4 + 5): a dry-run level clean records no
+    /// skips and raises no banner, so once the notice learned to collapse
+    /// it answered a press with nothing at all. And the notice's own lines
+    /// — elevation, dry run — must survive alongside the sentences rather
+    /// than being replaced by them.
+    [Fact]
+    public async Task LevelClean_DryRun_StillAnswersThePress()
+    {
+        var loc = EnglishLoc();
+        var host = Host();
+        var state = new AppState(host);
+        var settings = new Settings { DryRun = true };
+        var bin = new FakeBin();
+        var cleanService = new CleanService(host, settings);
+        var vm = new CleanViewModel(state, host, cleanService,
+            new SafeCleanRunner(cleanService, bin), bin, loc, () => settings.DryRun);
+        await state.ScanAsync();
+
+        await vm.CleanLevelAsync(vm.Levels.Single(l => l.Level == CleanupLevel.Safe));
+
+        Assert.Equal(loc["dryrun.blocked"], vm.ProblemsText);
+        Assert.False(vm.HasBanner);     // nothing was recycled to undo
+        Assert.Empty(bin.Purged);
+    }
+
     /// ROUND 16, from the owner's screenshot: a Gelişmiş clean handed the
     /// engine's raw problem list straight to the page — one English line
     /// per failed path, above the hero and outside the scroll viewer — and

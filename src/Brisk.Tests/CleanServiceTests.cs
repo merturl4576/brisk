@@ -22,7 +22,7 @@ public class CleanServiceTests
 
         Assert.Equal(2, outcome.RecycledPaths.Count);
         Assert.Equal(3072, outcome.RecycledBytes);
-        Assert.Empty(outcome.Problems);
+        Assert.Empty(outcome.Skipped);
         Assert.False(outcome.WasDryRun);
         Assert.All(host.Cleans, c => Assert.False(c.DryRun));
     }
@@ -77,7 +77,8 @@ public class CleanServiceTests
             .CleanTargets(new[] { TestData.Target("windows-temp", CleanupLevel.Deep, 512) });
 
         Assert.Single(outcome.RecycledPaths);
-        Assert.Equal(2, outcome.Problems.Count);
-        Assert.Contains(outcome.Problems, p => p.Contains("administrator"));
+        Assert.Equal(2, outcome.Skipped.Count);
+        Assert.Contains(outcome.Skipped,
+            e => e.Action == "refused" && e.Reason!.Contains("administrator"));
     }
 }
