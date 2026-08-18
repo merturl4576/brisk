@@ -33,9 +33,32 @@ public class RefreshConfirmationTests
         var pending = confirmation.AwaitConfirmationAsync();
         confirmation.Keep();
 
+        // Race the pending task against a timeout instead of awaiting it
+        // outright: if Keep() ever regresses to a no-op, the infinite delay
+        // never completes, and without this race the test would hang forever
+        // rather than reporting a failure.
+        var winner = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(pending, winner);
+
         Assert.True(await pending);
         Assert.False(rolledBack);
         Assert.False(confirmation.RolledBack);
+    }
+
+    // The class exists to guard a fix that can blank the screen, so the
+    // rollback must never fire twice off the same instance — not from a
+    // second call, and not from a race between concurrent calls.
+    [Fact]
+    public async Task CalledTwice_RollsBackOnlyOnce()
+    {
+        var rollbackCount = 0;
+        var confirmation = new RefreshConfirmation(
+            () => rollbackCount++, (_, _) => Task.CompletedTask);
+
+        await confirmation.AwaitConfirmationAsync();
+        await confirmation.AwaitConfirmationAsync();
+
+        Assert.Equal(1, rollbackCount);
     }
 
     [Fact]
