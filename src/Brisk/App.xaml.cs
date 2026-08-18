@@ -89,6 +89,13 @@ public partial class App : Application
                 _main?.ShowOverview();
                 ShowMain();
             };
+            // The flyout, not the main window, is what --tray-less startup
+            // shows (below) — so a confirmation raised while only the
+            // flyout is open must bring the window with the overlay on
+            // screen itself, the same way the tray's "Open" item already
+            // does. ShowMain() is the one Show/Activate sequence; reused
+            // here rather than duplicated.
+            state.ConfirmationRaised += ShowMain;
 
             var accent = ThemeResolver.AccentFrom(
                 Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM")

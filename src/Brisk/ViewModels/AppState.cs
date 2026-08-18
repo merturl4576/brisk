@@ -75,11 +75,10 @@ public sealed class AppState : ViewModelBase
         private set => Set(ref _pendingConfirmation, value);
     }
 
-    /// Fixed at 15 seconds in the shipped app — nothing in the composition
-    /// root overrides it, which is what lets the resx body text hardcode
-    /// "15 seconds" instead of formatting this value in. Settable only so
-    /// tests can elapse the window without waiting.
-    public TimeSpan ConfirmationWindow { get; set; } = TimeSpan.FromSeconds(15);
+    /// Fixed at 15 seconds in the shipped app: the setter is internal, so
+    /// only the test project (InternalsVisibleTo) can change it — production
+    /// code cannot make the resx body text's hardcoded "15 seconds" a lie.
+    public TimeSpan ConfirmationWindow { get; internal set; } = TimeSpan.FromSeconds(15);
 
     public RelayCommand KeepDisplayCommand { get; }
 
@@ -87,6 +86,16 @@ public sealed class AppState : ViewModelBase
     /// display mode (e.g. the journal already had no prior state) — so a
     /// failed rescue never reads the same as a successful one.
     public event Action<string>? RollbackFailed;
+
+    /// Raised right after PendingConfirmation is set. The flyout — not
+    /// MainWindow — is the app's default startup surface (App.xaml.cs shows
+    /// it, not the main window, unless "--tray"), and the overlay lives only
+    /// in MainWindow. Without this, a confirmation raised while only the
+    /// flyout is open would set PendingConfirmation on a window nobody ever
+    /// showed: no HWND, no Keep button, a silent revert 15 seconds later —
+    /// the original bug's exact shape, on the app's most common path.
+    /// App.xaml.cs subscribes and calls its existing ShowMain().
+    public event Action? ConfirmationRaised;
 
     /// Non-null while a ConfirmDisplayFix run is in flight. Exposed only so
     /// tests have a real join point — awaiting this, rather than trusting a
@@ -134,6 +143,7 @@ public sealed class AppState : ViewModelBase
         // returns to it, with no dependence on when a background task
         // happens to get scheduled.
         PendingConfirmation = confirmation;
+        ConfirmationRaised?.Invoke();
         // Only the wait-then-maybe-rollback goes on a background thread:
         // ChangeDisplaySettingsEx plus the journal/log writes it triggers
         // must never block the UI thread.

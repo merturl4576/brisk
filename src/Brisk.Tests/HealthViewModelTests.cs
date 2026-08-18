@@ -370,6 +370,33 @@ public class HealthViewModelTests
         Assert.Null(state.PendingConfirmation);
     }
 
+    /// Fix round 2 (Critical, Finding A): the flyout — not MainWindow — is
+    /// the app's default startup surface (App.xaml.cs shows it, not the
+    /// main window, unless launched with "--tray"), and the overlay lives
+    /// only in MainWindow. App.xaml.cs subscribes to this event and calls
+    /// its existing ShowMain() so the window with the overlay actually
+    /// comes on screen. App.xaml.cs itself is not unit-tested — this pins
+    /// the AppState-level contract that layer depends on: raising a
+    /// confirmation fires the event, and a non-matching rule id does not.
+    [Fact]
+    public async Task ConfirmDisplayFix_RaisesConfirmationRaised()
+    {
+        var state = new AppState(new FakeEngineHost());
+        var raisedCount = 0;
+        state.ConfirmationRaised += () => raisedCount++;
+
+        state.ConfirmDisplayFix("power-plan");
+        Assert.Equal(0, raisedCount);
+
+        state.ConfirmDisplayFix("display-refresh");
+        Assert.Equal(1, raisedCount);
+
+        // Resolve rather than leave the real 15-second window's background
+        // timer running past this test's return.
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
     /// Fix round 1 (Critical): FixAllService is unfiltered, so pressing Fix
     /// all on the HEALTH page — which never shows display-refresh as a row,
     /// since Task 2 routes it to Performance — can still fix it. Before the
