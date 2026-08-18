@@ -129,6 +129,46 @@ public sealed class CleanRunner
             else
                 Record(item.Path, item.Bytes, "recycled");
         }
+        // ROUND 14, from the 2026-08-18 live run: 332 items took 53 SECONDS
+        // because 15 of them were locked. The shell aborts the WHOLE call at
+        // the first path it cannot take, so a failure says nothing about the
+        // rest of the span — and retrying every survivor individually put
+        // 171 of the 332 back on the ~200 ms-per-file path that batching was
+        // introduced to escape. Only the HEAD earned the failure, so only it
+        // is retried alone; the remainder goes back as a batch. Each locked
+        // file now costs two extra calls instead of one call per file after
+        // it, and the per-item attribution is unchanged.
+        void RecycleSpan(List<ResolvedItem> span)
+        {
+            if (span.Count == 0) return;
+            if (span.Count == 1) { RecycleSingle(span[0]); return; }
+            var spanOk = true;
+            try { _recycler.Recycle(span.Select(i => i.Path).ToList()); }
+            catch (Exception) { spanOk = false; }
+            if (spanOk)
+            {
+                foreach (var item in span)
+                {
+                    if (Exists(item.Path))
+                        Record(item.Path, 0, "error", "the shell skipped this path");
+                    else
+                        Record(item.Path, item.Bytes, "recycled");
+                }
+                return;
+            }
+            // Harvest the partial work before retrying anything: a path that
+            // was there when the span began and is gone now WAS recycled by
+            // the failed call, and must never be sent to the shell twice.
+            var left = new List<ResolvedItem>(span.Count);
+            foreach (var item in span)
+            {
+                if (Exists(item.Path)) left.Add(item);
+                else Record(item.Path, item.Bytes, "recycled");
+            }
+            if (left.Count == 0) return;
+            RecycleSingle(left[0]);
+            if (left.Count > 1) RecycleSpan(left.GetRange(1, left.Count - 1));
+        }
         void Flush()
         {
             if (batch.Count == 0) return;
@@ -140,24 +180,7 @@ public sealed class CleanRunner
                     "no longer exists (nothing to recycle)");
             }
             batch.Clear();
-            if (present.Count == 0) return;
-            var batchOk = true;
-            try { _recycler.Recycle(present.Select(i => i.Path).ToList()); }
-            catch (Exception) { batchOk = false; }
-            if (batchOk)
-            {
-                foreach (var item in present)
-                {
-                    if (Exists(item.Path))
-                        Record(item.Path, 0, "error", "the shell skipped this path");
-                    else
-                        Record(item.Path, item.Bytes, "recycled");
-                }
-                return;
-            }
-            // The shell reports one failure for the whole batch; retry per
-            // item to attribute the failure to the path that earned it.
-            foreach (var item in present) RecycleSingle(item);
+            RecycleSpan(present);
         }
 
         var blockedByElevation = scan.Target.RequiresElevation && !_isElevated();

@@ -94,6 +94,7 @@
   <data name="clean.group.other" xml:space="preserve"><value>Other</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
   <data name="clean.cleaning" xml:space="preserve"><value>Cleaning…</value></data>
+  <data name="clean.preparing" xml:space="preserve"><value>Getting ready…</value></data>
   <data name="clean.purging" xml:space="preserve"><value>Freeing the space…</value></data>
   <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
   <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} items cleaned — {1} of disk space freed</value></data>

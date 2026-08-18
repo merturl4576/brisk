@@ -344,7 +344,8 @@ public sealed class CleanViewModel : ViewModelBase
             // re-measures free space so the hero's disk pod and the report's
             // delta show the real gain.
             var result = await _safeClean.RunAsync(lease, snapshot.Cleaner, OnCleanEntry,
-                () => ProgressText = _loc["clean.purging"]);
+                () => ProgressText = _loc["clean.purging"],
+                () => ProgressText = _loc["clean.preparing"]);
             if (result.Outcome.WasDryRun)
             {
                 ProblemsText = _loc["dryrun.blocked"];

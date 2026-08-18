@@ -687,6 +687,45 @@ public class CleanViewModelTests
         Assert.False(vm.IsSimpleCleanBusy);
     }
 
+    /// ROUND 14: between the press and the first recorded entry the app has
+    /// real work to do — the bin snapshot reads every $I record in the
+    /// Recycle Bin, and the engine authorizes every path before the first
+    /// batch reaches the shell. Nothing is recorded in that window and
+    /// nothing can be, so the 2026-08-18 live run showed a literal
+    /// "0 / 332" throughout and read as frozen. The phase has a name now.
+    [Fact]
+    public async Task SimpleClean_NamesThePreparingPhase_BeforeTheFirstEntry()
+    {
+        var loc = EnglishLoc();
+        var host = SimpleHost();
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+
+        // OnClean blocks on the background thread, so the run is provably
+        // still ahead of its first recorded entry when we look.
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, _) =>
+        {
+            gate.Wait();
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+
+        var run = vm.CleanSimpleAsync();
+
+        // Fired synchronously, before RunAsync's first await: a fact, not a
+        // timing assumption. Without it the card would read "0 / 3" here.
+        Assert.Equal(loc["clean.preparing"], vm.ProgressText);
+        Assert.False(run.IsCompleted);
+
+        gate.Set();
+        await run;
+
+        // And the phase name gives way to the real count once entries land.
+        Assert.DoesNotContain(loc["clean.preparing"], vm.ProgressText);
+    }
+
     /// ROUND 13 re-review (minors 14 + 15): a press that loses the runner's
     /// lease is a COMPLETE no-op. The banner it would have dismissed and the
     /// undo identities it would have cleared survive, because the lease is

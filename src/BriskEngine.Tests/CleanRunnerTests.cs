@@ -19,22 +19,32 @@ sealed class FakeRecycler : IRecycler
 {
     public List<string> Recycled { get; } = new();
     public List<int> BatchCalls { get; } = new();
+    /// EVERY trip to the shell, batch or single — the thing that costs
+    /// ~200 ms apiece and made the 2026-08-18 run take 53 seconds.
+    public int ShellCalls { get; private set; }
     public HashSet<string> FailPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> SkipPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public void Recycle(string path)
+    {
+        ShellCalls++;
+        RecycleOne(path);
+    }
+
+    public void Recycle(IReadOnlyList<string> paths)
+    {
+        ShellCalls++;
+        BatchCalls.Add(paths.Count);
+        foreach (var path in paths) RecycleOne(path);
+    }
+
+    private void RecycleOne(string path)
     {
         if (FailPaths.Contains(path)) throw new IOException("Fake recycler error");
         if (SkipPaths.Contains(path)) return;   // quiet shell skip
         Recycled.Add(path);
         if (File.Exists(path)) File.Delete(path);
         else if (Directory.Exists(path)) Directory.Delete(path, true);
-    }
-
-    public void Recycle(IReadOnlyList<string> paths)
-    {
-        BatchCalls.Add(paths.Count);
-        foreach (var path in paths) Recycle(path);
     }
 }
 
@@ -153,6 +163,60 @@ public sealed class CleanRunnerTests : IDisposable
     }
 
     /// ROOT-CAUSE REGRESSION (round 10): one shell call per file cost
+    /// ROUND 14, from the 2026-08-18 live run (332 items, 53 SECONDS): the
+    /// shell aborts a batch at the first path it cannot take, and the old
+    /// fallback then retried EVERY survivor with its own ~200 ms call — so
+    /// one locked file put the whole rest of its batch back on the per-file
+    /// path that batching exists to escape. One lock must cost a couple of
+    /// extra calls, never a call per file behind it.
+    [Fact]
+    public void OneLockedFile_CostsTwoExtraShellCalls_NotOnePerSurvivor()
+    {
+        var files = Enumerable.Range(0, 40).Select(i => $"f{i}.tmp").ToArray();
+        var dir = Path.Combine(_root, "locked");
+        var (_, scan) = ScanOver(dir, files);
+        _recycler.FailPaths.Add(Path.Combine(dir, "f20.tmp"));
+
+        var report = Runner().Clean(scan, dryRun: false);
+
+        // The accounting is exactly what it was: the 20 the failed call took
+        // before it aborted, plus the 19 behind the lock, and the lock named.
+        Assert.Equal(39, report.Entries.Count(e => e.Action == "recycled"));
+        var error = Assert.Single(report.Entries, e => e.Action == "error");
+        Assert.Equal(Path.Combine(dir, "f20.tmp"), error.Path);
+        Assert.DoesNotContain(report.Entries,
+            e => e.Action == "recycled" && e.Path == error.Path);
+
+        // The cost is what changed: the failed batch, the head that earned
+        // the failure, and the remainder as ONE batch. The old fallback
+        // spent 21 calls here — one per survivor.
+        Assert.Equal(3, _recycler.ShellCalls);
+        Assert.Equal(new[] { 40, 19 }, _recycler.BatchCalls);
+    }
+
+    /// The pathological end of the same fix: when EVERY path is locked the
+    /// split cannot help, so it must still terminate and still attribute
+    /// each failure to the path that earned it.
+    [Fact]
+    public void EveryFileLocked_StillTerminates_AndNamesEveryFailure()
+    {
+        var files = Enumerable.Range(0, 5).Select(i => $"f{i}.tmp").ToArray();
+        var dir = Path.Combine(_root, "alllocked");
+        var (_, scan) = ScanOver(dir, files);
+        foreach (var f in files) _recycler.FailPaths.Add(Path.Combine(dir, f));
+
+        var report = Runner().Clean(scan, dryRun: false);
+
+        Assert.Equal(5, report.Entries.Count(e => e.Action == "error"));
+        Assert.Empty(report.Entries.Where(e => e.Action == "recycled"));
+        Assert.Equal(0, report.RecycledBytes);
+        foreach (var f in files)
+            Assert.True(File.Exists(Path.Combine(dir, f)), $"{f} must survive");
+        // Bounded: at worst one failed span plus one single per path.
+        Assert.True(_recycler.ShellCalls <= 2 * files.Length,
+            $"all-locked cost {_recycler.ShellCalls} shell calls");
+    }
+
     /// ~200 ms each and turned ~1900 small temp items into a six-minute
     /// silent grind on 2026-08-17. Many items must reach the shell as
     /// ⌈n / BatchSize⌉ batch operations, never one call per file.

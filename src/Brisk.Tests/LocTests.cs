@@ -152,6 +152,7 @@ public class LocTests
     [InlineData("clean.report.skipped.appheld")]
     [InlineData("clean.report.summary.freed")]
     [InlineData("clean.report.binleft")]
+    [InlineData("clean.preparing")]
     [InlineData("clean.purging")]
     [InlineData("overview.cleanspace")]
     [InlineData("overview.cleanspace.none")]

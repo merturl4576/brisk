@@ -102,16 +102,26 @@ public sealed class SafeCleanRunner
     /// onEntry streams every engine entry as it is recorded, on the worker
     /// thread (live progress); onPurging fires once between the recycle and
     /// the purge, for surfaces that show the freeing phase.
+    ///
+    /// onPreparing fires FIRST, before anything slow (round 14): the bin
+    /// snapshot reads every $I record in the Recycle Bin, and the engine
+    /// authorizes each path before the first batch reaches the shell — so
+    /// nothing is recorded, and nothing can be, until well after the press.
+    /// The 2026-08-18 live run sat on a literal "0 / 332" through all of it
+    /// and read as frozen. A phase with a name is the honest answer: the
+    /// count starts moving when there is genuinely something to count.
     /// The lease is the TOKEN, not a flag to check (round-13 re-review,
     /// minor 12): "somebody holds it" would pass exactly the case worth
     /// catching — a second surface running while the first holds the lease.
     public async Task<SafeCleanResult> RunAsync(IDisposable lease, ScanResult scan,
-        Action<CleanEntry>? onEntry = null, Action? onPurging = null)
+        Action<CleanEntry>? onEntry = null, Action? onPurging = null,
+        Action? onPreparing = null)
     {
         if (lease is not Lease held || !held.IsHeldBy(this))
             throw new InvalidOperationException(
                 "SafeCleanRunner.RunAsync requires THIS runner's live lease from "
                 + "TryBegin() — without it two surfaces can purge the bin at once.");
+        onPreparing?.Invoke();
         var plannedPaths = scan.Targets.Where(CleanService.IsSafeDefault)
             .SelectMany(t => t.Items).Select(i => i.Path).ToList();
         var preExisting = plannedPaths.Count == 0

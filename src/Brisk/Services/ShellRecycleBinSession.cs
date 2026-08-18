@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Brisk.Services;
 
@@ -194,18 +196,28 @@ public sealed class ShellRecycleBinSession : IRecycleBinSession
                 indexFiles = Directory.EnumerateFiles(binDir, "$I*").ToList();
             }
             catch (Exception) { continue; }
-            foreach (var indexFile in indexFiles)
+            // Round 14: every clean reads EVERY $I record in the bin, twice
+            // (once for the pre-clean snapshot, once for the purge — they
+            // observe different bin states, so neither can be skipped). At
+            // the 5,732 entries on the 2026-08-18 machine that is ~500 ms of
+            // pure small-file reads per pass, spent inside the window the
+            // user sees as frozen. The reads are independent, so they go
+            // wide; matching stays exact and order was never guaranteed
+            // (same-path duplicates have always been arbitrary).
+            var found = new ConcurrentBag<BinRecord>();
+            Parallel.ForEach(indexFiles, indexFile =>
             {
                 try
                 {
                     var original = ParseIndexFile(File.ReadAllBytes(indexFile));
-                    if (original is null || !wanted.Contains(original)) continue;
+                    if (original is null || !wanted.Contains(original)) return;
                     var payload = Path.Combine(Path.GetDirectoryName(indexFile)!,
                         "$R" + Path.GetFileName(indexFile)[2..]);
-                    records.Add(new BinRecord(original, payload, indexFile));
+                    found.Add(new BinRecord(original, payload, indexFile));
                 }
                 catch (Exception) { /* unreadable record — not a match */ }
-            }
+            });
+            records.AddRange(found);
         }
         return records;
     }

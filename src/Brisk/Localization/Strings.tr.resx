@@ -94,6 +94,7 @@
   <data name="clean.group.other" xml:space="preserve"><value>Diğer</value></data>
   <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
   <data name="clean.cleaning" xml:space="preserve"><value>Temizleniyor…</value></data>
+  <data name="clean.preparing" xml:space="preserve"><value>Hazırlanıyor…</value></data>
   <data name="clean.purging" xml:space="preserve"><value>Boşaltılıyor…</value></data>
   <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
   <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} öğe temizlendi — {1} yer açıldı</value></data>
