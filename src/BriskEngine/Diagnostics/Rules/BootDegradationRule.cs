@@ -34,7 +34,11 @@ public sealed class BootDegradationRule : AdviseRuleBase
     internal const int TopOffenders = 3;
 
     /// Enough boots for one outlier not to decide the median, few enough that
-    /// "recent" still means recent.
+    /// "recent" still means recent. A ceiling on what is asked for, not a
+    /// promise of what arrives: RealEventLogProbe skips an ID 100 record it
+    /// cannot read and keeps walking, so this is the most recent boots brisk
+    /// could *read* rather than the most recent boots that happened — which is
+    /// why the copy says so in those words.
     internal const int SampledBoots = 8;
 
     /// A bound on how many blamed records are worth aggregating. It is applied
@@ -67,19 +71,20 @@ public sealed class BootDegradationRule : AdviseRuleBase
 
         if (blamed.Count == 0)
             return Finding(median, sampled, names: null,
-                $"Boot takes about {median}, the middle of the last {sampled} boots " +
-                "Windows timed. No program stood out on those boots — everything " +
-                "Windows watched started about as fast as it expected. That is a " +
-                "normal result rather than a missing answer: the boot is slow " +
-                "without any one program to point at.");
+                $"Boot takes about {median}, the middle of the {sampled} most recent " +
+                "boots brisk could read from Windows' own timings. No program stood out " +
+                "on those boots — everything Windows watched started about as fast as it " +
+                "expected. That is a normal result rather than a missing answer: the boot " +
+                "is slow without any one program to point at.");
 
         var names = string.Join(", ", blamed.Select(o => $"{Label(o)} {Seconds(o.DegradationMs)}"));
         return Finding(median, sampled, names,
-            $"Boot takes about {median}, the middle of the last {sampled} boots " +
-            $"Windows timed. Windows blamed these for starting slower than it " +
-            $"expected: {names} — that is how late each one was, not time it added " +
-            "to your boot. Windows' own components often top the list and brisk " +
-            "will not switch those off; look for the rest on the Startup page.");
+            $"Boot takes about {median}, the middle of the {sampled} most recent boots " +
+            $"brisk could read from Windows' own timings. Windows blamed these for " +
+            $"starting slower than it expected: {names} — that is how late each one was, " +
+            "not time it added to your boot. Windows' own components often top the " +
+            "list and brisk will not switch those off; look for the rest under " +
+            "Startup programs on the Performance page.");
     }
 
     private DiagnosticFinding Finding(string median, string sampled, string? names, string evidence) =>

@@ -108,12 +108,16 @@ public class BootDegradationRuleTests
             Boot(100288, Blamed("MsMpEng.exe", "Antimalware Service Executable", 52661)),
             Boot(51237));
 
-        var evidence = new BootDegradationRule().Detect(ctx)!.Evidence;
+        var finding = new BootDegradationRule().Detect(ctx)!;
+        var evidence = finding.Evidence;
 
+        // Exact, not Contains: "8 s" would also match "48 s" and "60 s" would
+        // match "160 s", so a substring check could pass for the wrong reason.
+        // This pins the whole row — the worst reading, never the other one and
+        // never their sum.
+        Assert.Equal("Antimalware Service Executable 53 s", finding.EvidenceArgs![2]);
         Assert.Contains("53 s", evidence);              // 52661 ms
         Assert.DoesNotContain("7694", evidence);
-        Assert.DoesNotContain("8 s", evidence);         // 7694 ms rounded
-        Assert.DoesNotContain("60 s", evidence);        // and not their sum
         var first = evidence.IndexOf("Antimalware", StringComparison.Ordinal);
         Assert.Equal(first, evidence.LastIndexOf("Antimalware", StringComparison.Ordinal));
     }
@@ -243,7 +247,72 @@ public class BootDegradationRuleTests
         Assert.NotNull(finding);
         Assert.Contains("45 s", finding!.Evidence);
         Assert.DoesNotContain("Ancient", finding.Evidence);
-        Assert.Contains("8", finding.EvidenceArgs![1]);
+        Assert.Equal("8", finding.EvidenceArgs![1]);   // exact: "18" contains "8"
+    }
+
+    /// Eight DISTINCT boots, so the three candidate definitions disagree and
+    /// only one passes. Lower middle is 47000; the upper middle would be 49000
+    /// and the average of the two 48000. Switching to an average would make
+    /// "the middle of the boots brisk could read" false — it would name a boot
+    /// this machine never had — and with eight identical values nothing would
+    /// have caught it.
+    [Fact]
+    public void EvenSample_ReportsTheLowerMiddle_NotAnAverage()
+    {
+        var ctx = Context(Boot(55000), Boot(41000), Boot(49000), Boot(43000),
+                          Boot(53000), Boot(45000), Boot(51000), Boot(47000));
+
+        var finding = new BootDegradationRule().Detect(ctx)!;
+
+        Assert.Equal("47 s", finding.EvidenceArgs![0]);
+        Assert.Contains("47 s", finding.Evidence);
+    }
+
+    /// The 25-offender bound is applied whole boots at a time. The boot that
+    /// crosses it contributes ALL of its offenders, because cutting inside one
+    /// boot could hand back a smaller "worst" reading for a program than
+    /// Windows actually recorded — the truncation IEventLogProbe was shaped to
+    /// avoid. The boot after it contributes none.
+    [Fact]
+    public void OffenderBound_AdmitsWholeBoots_NeverHalfOfOne()
+    {
+        var crowded = new BootOffender[24];
+        for (var i = 0; i < crowded.Length; i++)
+            crowded[i] = Blamed($"Small{i}.exe", $"Small {i}", 1000);
+
+        var ctx = Context(
+            Boot(51237, crowded),                       // 24 seen, still under 25
+            Boot(57089,                                 // crosses it, all three land
+                Blamed("Straddler.exe", "Straddler", 90000),
+                Blamed("Bee.exe", "Bee", 60000),
+                Blamed("Cee.exe", "Cee", 50000)),
+            Boot(111814,                                // past the bound, dropped
+                Blamed("Beyond.exe", "Beyond", 200000)));
+
+        var evidence = new BootDegradationRule().Detect(ctx)!.Evidence;
+
+        Assert.Contains("Straddler 90 s", evidence);
+        Assert.Contains("Bee 60 s", evidence);
+        Assert.Contains("Cee 50 s", evidence);
+        // Would have been the worst of all if the bound cut per offender
+        // instead of per boot, so its absence is what proves the granularity.
+        Assert.DoesNotContain("Beyond", evidence);
+    }
+
+    /// ...and the newest boot is always read, however many programs Windows
+    /// blamed on it. A bound that could skip it would silently drop the most
+    /// recent evidence there is.
+    [Fact]
+    public void OffenderBound_AlwaysReadsTheNewestBoot()
+    {
+        var crowded = new BootOffender[30];
+        for (var i = 0; i < crowded.Length; i++)
+            crowded[i] = Blamed($"Small{i}.exe", $"Small {i}", 1000 + i);
+        crowded[0] = Blamed("First.exe", "First", 90000);
+
+        var ctx = Context(Boot(51237, crowded), Boot(57089), Boot(111814));
+
+        Assert.Contains("First 90 s", new BootDegradationRule().Detect(ctx)!.Evidence);
     }
 
     /// The evidence args are what the Turkish template renders from, so they

@@ -236,6 +236,117 @@ public class LocTests
         Assert.NotEqual("rule.boot-degradation.advice", loc["rule.boot-degradation.advice"]);
     }
 
+    /// The one claim this rule exists to not make: DegradationTime is how late
+    /// a program was, never what it added to the boot. The engine's English is
+    /// pinned by BootDegradationRuleTests — this pins the templates the GUI
+    /// actually renders, in BOTH languages, because a Turkish template rewritten
+    /// into the false framing would render every argument, leave no stray brace,
+    /// and pass every other test in the suite.
+    ///
+    /// The forbidden strings are shapes of the claim rather than one sentence
+    /// somebody might write: an English share ("of it", "belongs to", "accounts
+    /// for", "share of") and a Turkish one ("kadarı" — that much of it, "ait" —
+    /// belongs to, "payı" — its share).
+    [Theory]
+    [InlineData("en", "not time it added to your boot")]
+    [InlineData("tr", "ne kadar eklediğini değil")]
+    public void BootDegradationEvidence_KeepsTheDisclaimer_AndRefusesTheSum(
+        string language, string disclaimer)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var blamed = loc.F("rule.boot-degradation.evidence",
+            "57 s", "8", "Microsoft Edge WebView2 37 s, brisk-app.exe 26 s");
+        Assert.Contains(disclaimer, blamed);
+
+        var nobody = loc.F("rule.boot-degradation.evidence.nobody", "57 s", "8");
+        foreach (var sum in new[] { "of it", "belongs to", "accounts for", "share of",
+                                    "kadarı", "ait", "payı" })
+        {
+            Assert.DoesNotContain(sum, blamed, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(sum, nobody, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// The advice line is the row body — HealthViewModel folds the hedged
+    /// evidence behind "Details" and shows this instead — so an unhedged promise
+    /// here is the one the user actually reads. A blamed program is often a
+    /// service or a scheduled task (MsMpEng, TiWorker, mscorsvw on the verified
+    /// machine), and brisk deliberately does not map an executable name to a
+    /// startup entry, so the advice may never assert that a blamed program IS
+    /// switchable. It may only say where to look.
+    [Theory]
+    [InlineData("en", "turn up under Startup programs on the Performance page")]
+    [InlineData("tr", "Açılış programları listesinde yer alanları")]
+    public void BootDegradationAdvice_PointsAtTheRealPlace_WithoutPromising(
+        string language, string hedgedPointer)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var advice = loc["rule.boot-degradation.advice"];
+        Assert.Contains(hedgedPointer, advice);
+
+        // brisk has four pages and "Startup" is not one of them: the list is a
+        // section on the Performance page. Naming a page the app does not have
+        // leaves a Turkish reader nothing on screen to match against, and this
+        // is the one clause they are meant to act on.
+        Assert.Contains(loc["nav.performance"], advice);
+        Assert.DoesNotContain("Startup page", advice);
+        Assert.DoesNotContain("Başlangıç sayfas", advice);
+    }
+
+    /// Same pointer, same hedge, in the evidence — which is what the CLI prints
+    /// and what sits behind the GUI's Details fold.
+    [Theory]
+    [InlineData("en", "look for the rest under Startup programs on the Performance page")]
+    [InlineData("tr", "Performans sayfasındaki Açılış programları listesinden bak")]
+    public void BootDegradationEvidence_PointsAtTheRealPlace(
+        string language, string pointer)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var blamed = loc.F("rule.boot-degradation.evidence",
+            "57 s", "8", "Microsoft Edge WebView2 37 s");
+        Assert.Contains(pointer, blamed);
+        Assert.DoesNotContain("Startup page", blamed);
+        Assert.DoesNotContain("Başlangıç sayfas", blamed);
+    }
+
+    /// Offenders under 500 ms are dropped, so "no program stood out" has to hold
+    /// for a boot Windows did name somebody on. The approximation hedge is what
+    /// keeps that sentence true, and the Turkish had lost it.
+    [Theory]
+    [InlineData("en", "about as fast as it expected")]
+    [InlineData("tr", "aşağı yukarı beklendiği kadar hızlı")]
+    public void BootDegradationNobodyCopy_KeepsTheApproximationHedge(
+        string language, string hedge)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+        Assert.Contains(hedge, loc.F("rule.boot-degradation.evidence.nobody", "57 s", "8"));
+    }
+
+    /// "the last 8 boots" claimed a contiguity the probe does not give:
+    /// RealEventLogProbe skips an ID 100 record it cannot read and keeps
+    /// walking, so the sample is the most recent boots brisk could READ.
+    [Theory]
+    [InlineData("en", "most recent boots brisk could read")]
+    [InlineData("tr", "okuyabildiği son")]
+    public void BootDegradationEvidence_ClaimsOnlyWhatItCouldRead(
+        string language, string phrasing)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        Assert.Contains(phrasing,
+            loc.F("rule.boot-degradation.evidence", "57 s", "8", "Spotify 37 s"));
+        Assert.Contains(phrasing,
+            loc.F("rule.boot-degradation.evidence.nobody", "57 s", "8"));
+    }
+
     [Fact]
     public void SetLanguage_RaisesIndexerChange()
     {
