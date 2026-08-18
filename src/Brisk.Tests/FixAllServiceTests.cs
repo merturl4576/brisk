@@ -189,6 +189,7 @@ public class FixAllServiceTests
         public bool CreateRestorePoint() => _inner.CreateRestorePoint();
         public long FreeDiskBytes() => _inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => _inner.KeepDisplayFix();
         public bool IsElevated() => _inner.IsElevated();
     }
 }

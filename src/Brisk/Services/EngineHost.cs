@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 
@@ -73,6 +74,23 @@ public sealed class EngineHost : IEngineHost
 
     public FixOutcome Fix(string ruleId) => WithRule(ruleId, r => _fixes.Apply(r, _ctx));
     public FixOutcome Undo(string ruleId) => WithRule(ruleId, r => _fixes.Undo(r, _ctx));
+
+    /// The one write to the registry in the whole display path. Everything
+    /// before it is session-only, so a machine that was power-cycled through a
+    /// black screen comes back on the mode it booted with.
+    public FixOutcome KeepDisplayFix()
+    {
+        try
+        {
+            _ctx.Displays.PersistCurrentModes();
+            return new FixOutcome(true, $"{DisplayRefreshRule.RuleId}: kept");
+        }
+        catch (DisplayChangeException ex)
+        {
+            return new FixOutcome(false,
+                $"{DisplayRefreshRule.RuleId}: could not be made permanent — {ex.Message}");
+        }
+    }
 
     private FixOutcome WithRule(string ruleId, Func<IDiagnosticRule, FixOutcome> action)
     {

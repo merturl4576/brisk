@@ -63,7 +63,11 @@ public class OverviewViewModelTests
             TestData.Target("user-temp", CleanupLevel.Safe, 2048));
         var state = new AppState(host);
         var bin = new FakeBin();
-        var vm = new OverviewViewModel(state, host, new FixAllService(host),
+        var fixAll = new FixAllService(host);
+        // Wired exactly as App.xaml.cs wires it: the confirmation is raised
+        // as each rule is fixed, not from a loop over the finished batch.
+        state.TrackFixes(fixAll);
+        var vm = new OverviewViewModel(state, host, fixAll,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
             live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false));
         return (vm, host, state, bin);
@@ -714,6 +718,7 @@ public class OverviewViewModelTests
         public bool CreateRestorePoint() => Inner.CreateRestorePoint();
         public long FreeDiskBytes() => Inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
         public bool IsElevated() => Inner.IsElevated();
     }
 }

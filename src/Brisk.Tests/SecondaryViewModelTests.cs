@@ -24,7 +24,7 @@ public sealed class SecondaryViewModelTests : IDisposable
     // Autostart off (schtasks /Query exits non-zero) — these existing tests
     // predate brisk's own startup row and don't want it in the mix.
     private static StartupLauncher OffLauncher() =>
-        new(new FakeProcessRunner { NextExitCode = 1 }, @"C:\x\brisk-app.exe");
+        new(new FakeProcessRunner { NextExitCode = 1 }, new FakeRegistry(), @"C:\x\brisk-app.exe");
 
     [Fact]
     public async Task Startup_ListsHeavyFirst_TogglesThroughHost()
@@ -109,7 +109,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var state = new AppState(host);
         var runner = new FakeProcessRunner { NextExitCode = 0 };   // task exists
         var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
-            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"));
 
         await state.ScanAsync();
 
@@ -123,7 +123,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var state = new AppState(host);
         var runner = new FakeProcessRunner { NextExitCode = 1 };   // no task
         var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
-            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"));
 
         await state.ScanAsync();
 
@@ -142,7 +142,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var state = new AppState(host);
         var runner = new FakeProcessRunner { NextExitCode = 0 };   // task exists
         var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
-            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"));
 
         await state.ScanAsync();
 
@@ -165,7 +165,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var runner = new FakeProcessRunner { NextExitCode = 0 };   // task exists
         var dryRun = true;
         var vm = new StartupViewModel(state, host, EnglishLoc(), () => dryRun,
-            new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"));
 
         await state.ScanAsync();
         var briskRow = vm.Items.Single(i => i.Name == "brisk");
@@ -186,7 +186,7 @@ public sealed class SecondaryViewModelTests : IDisposable
         var runner = new FakeProcessRunner();
         var applied = new List<string>();
         var vm = new SettingsViewModel(settings, path,
-            new StartupLauncher(runner, @"C:\x\brisk-app.exe"),
+            new StartupLauncher(runner, new FakeRegistry(), @"C:\x\brisk-app.exe"),
             theme => applied.Add("theme:" + theme),
             lang => applied.Add("lang:" + lang));
 

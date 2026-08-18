@@ -166,6 +166,9 @@
   <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
+  <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk raised the display to its highest refresh rate and put the previous setting back after 15 seconds with no answer. That usually means the cable or the adapter cannot carry the higher rate.</value></data>
+  <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk could not restore the previous display setting: {0}. The change was never saved, so restarting Windows brings the previous setting back.</value></data>
+  <data name="display-confirm.notkept" xml:space="preserve"><value>The display is running at the higher refresh rate, but brisk could not save it — a restart will bring the previous setting back.</value></data>
   <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Every keystroke in Start is sent to Bing, and local results for your apps and files wait for that round-trip. Turning web results off makes Start answer immediately. Takes effect after you sign in again.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} is running — close it to include this</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} free · {1}</value></data>

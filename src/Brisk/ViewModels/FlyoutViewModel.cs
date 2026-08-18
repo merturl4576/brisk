@@ -77,19 +77,20 @@ public sealed class FlyoutViewModel : ViewModelBase
 
     public async Task FixAllAsync()
     {
-        if (_busy) return;
+        // The flyout is the surface the main window's overlay does NOT cover,
+        // so without this it is exactly the button that can start a second fix
+        // batch on top of an unconfirmed display change.
+        if (_busy || _state.IsAwaitingDisplayConfirmation) return;
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
             var snapshot = _state.Snapshot;
             if (snapshot is null) return;
             if (_isDryRun()) return;   // dry run: report only, nothing to fix here
-            var result = await Task.Run(() => _fixAll.Run(snapshot));
-            // See AppState.ConfirmDisplayFix: the tray's fix-all is one of
-            // the surfaces that can fix display-refresh, so it reports
-            // through the shared state the same as the pages do.
-            foreach (var finding in result.FixedRules)
-                _state.ConfirmDisplayFix(finding.RuleId);
+            await Task.Run(() => _fixAll.Run(snapshot));
+            // See AppState.TrackFixes: the tray's fix-all is one of the
+            // surfaces that can fix display-refresh, and the confirmation is
+            // raised the moment the mode changes rather than here.
             await _state.ScanAsync();
         }
         finally

@@ -166,6 +166,9 @@
   <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
+  <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk ekranı en yüksek yenileme hızına aldı ve 15 saniye boyunca yanıt gelmediği için önceki ayarı geri yükledi. Bu genellikle kablonun ya da adaptörün bu hızı taşıyamadığı anlamına gelir.</value></data>
+  <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk önceki ekran ayarını geri yükleyemedi: {0}. Değişiklik kaydedilmediği için Windows’u yeniden başlatmak önceki ayarı geri getirir.</value></data>
+  <data name="display-confirm.notkept" xml:space="preserve"><value>Ekran daha yüksek yenileme hızında çalışıyor ama brisk bunu kaydedemedi — yeniden başlatıldığında önceki ayar geri gelecek.</value></data>
   <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Başlat'a yazdığın her harf Bing'e gönderiliyor; uygulamalarına ve dosyalarına ait yerel sonuçlar bu gidiş dönüşü bekliyor. Web sonuçlarını kapatmak Başlat'ın anında cevap vermesini sağlar. Yeniden oturum açtığında etkili olur.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} açık — dahil etmek için önce kapat</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} boş · {1}</value></data>

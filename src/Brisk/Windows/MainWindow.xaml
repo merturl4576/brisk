@@ -4,7 +4,9 @@
         xmlns:loc="clr-namespace:Brisk.Localization"
         xmlns:views="clr-namespace:Brisk.Views"
         Title="brisk" Width="900" Height="600"
-        Background="{DynamicResource Bg}">
+        Background="{DynamicResource Bg}"
+        Topmost="{Binding PendingConfirmation,
+            Converter={x:Static views:NullToBool.Instance}}">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="176" />
@@ -42,7 +44,14 @@
             <views:CleanPage x:Name="CleanView" Visibility="Collapsed" />
             <views:SettingsPage x:Name="SettingsView" Visibility="Collapsed" />
         </Grid>
-        <!-- A display mode change can blank the screen. This lives here, not
+        <!-- The window's Topmost is bound to the same PendingConfirmation
+             (see NullToBool): Activate() alone loses to Windows' foreground
+             lock after a long fix batch, and a user who alt-tabbed away would
+             never see this overlay in time to keep a display change that
+             actually worked. It drops again the moment the question is
+             answered — brisk does not park itself above everything else.
+
+             A display mode change can blank the screen. This lives here, not
              on any one page, because Fix all on EITHER findings page (and
              the tray's Fix all) can trigger it — the window's DataContext is
              the shared AppState, so the prompt covers whichever page is

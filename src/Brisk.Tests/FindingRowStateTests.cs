@@ -246,6 +246,7 @@ public class FindingRowStateTests
         public bool CreateRestorePoint() => Inner.CreateRestorePoint();
         public long FreeDiskBytes() => Inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
         public bool IsElevated() => Inner.IsElevated();
     }
 

@@ -23,6 +23,37 @@ public sealed class FakeProcessRunner : BriskEngine.Cleaning.IProcessRunner
     }
 }
 
+/// An in-memory registry, enough for the one thing the app layer reads and
+/// writes directly: brisk's own legacy HKCU\\Run autostart value.
+public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
+{
+    public System.Collections.Generic.Dictionary<string, string> Strings { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static string Key(string keyPath, string valueName) =>
+        keyPath + "\\" + valueName;
+
+    public string? GetString(string keyPath, string valueName) =>
+        Strings.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
+    public void SetString(string keyPath, string valueName, string value) =>
+        Strings[Key(keyPath, valueName)] = value;
+    public void DeleteValue(string keyPath, string valueName) =>
+        Strings.Remove(Key(keyPath, valueName));
+    public byte[]? GetBytes(string keyPath, string valueName) => null;
+    public void SetBytes(string keyPath, string valueName, byte[] value) { }
+    public int? GetInt(string keyPath, string valueName) => null;
+    public void SetInt(string keyPath, string valueName, int value) { }
+    /// Real enough for StartupManager.List(), so a test can watch brisk's own
+    /// stale row disappear from the startup list the GUI actually renders.
+    public System.Collections.Generic.IReadOnlyList<string> GetValueNames(string keyPath) =>
+        Strings.Keys
+            .Where(k => k.StartsWith(keyPath + "\\", StringComparison.OrdinalIgnoreCase))
+            .Select(k => k.Substring(keyPath.Length + 1))
+            .ToList();
+    public System.Collections.Generic.IReadOnlyList<string> GetSubKeyNames(string keyPath) =>
+        Array.Empty<string>();
+}
+
 public static class TestData
 {
     public static DiagnosticFinding Finding(string ruleId, Severity sev = Severity.Warning,
@@ -82,7 +113,28 @@ public sealed class FakeEngineHost : IEngineHost
     }
 
     public FixOutcome Fix(string ruleId) { Fixed.Add(ruleId); return new(true, ruleId); }
-    public FixOutcome Undo(string ruleId) { Undone.Add(ruleId); return new(true, ruleId); }
+    /// Mirrors OnClean: lets a test model the display rescue's unhappy paths —
+    /// an undo that throws, or one whose effect changes what the next scan
+    /// sees — without another whole decorator host. Runs before the record.
+    public Action<string>? OnUndo { get; set; }
+
+    public FixOutcome Undo(string ruleId)
+    {
+        OnUndo?.Invoke(ruleId);
+        Undone.Add(ruleId);
+        return new(true, ruleId);
+    }
+
+    /// Counts the one call that writes a display mode to the registry, so a
+    /// test can prove the raise stayed session-only until a Keep.
+    public int KeepDisplayCalls { get; private set; }
+    public bool KeepDisplayResult { get; set; } = true;
+
+    public FixOutcome KeepDisplayFix()
+    {
+        KeepDisplayCalls++;
+        return new(KeepDisplayResult, "keep");
+    }
 
     public CleanReport Clean(TargetScanResult scan, bool dryRun,
         Action<CleanEntry>? onEntry = null)

@@ -36,8 +36,12 @@ public class HealthViewModelTests
         });
         host.Undoable.Add(new UndoableFix("visual-effects", DateTime.UtcNow));
         var state = new AppState(host);
+        var fixAll = new FixAllService(host);
+        // Wired exactly as App.xaml.cs wires it: the confirmation is raised
+        // as each rule is fixed, not from a loop over the finished batch.
+        state.TrackFixes(fixAll);
         return (new HealthViewModel(state, host, EnglishLoc(), isDryRun ?? (() => false),
-            new FixAllService(host), morphPause: () => Task.CompletedTask), host, state);
+            fixAll, morphPause: () => Task.CompletedTask), host, state);
     }
 
     /// ROUND 11 page hero: the numeric score twin drives the gauge sweep,
@@ -413,8 +417,10 @@ public class HealthViewModelTests
                 stars: 5, canFix: true),
         });
         var state = new AppState(host);
+        var fixAll = new FixAllService(host);
+        state.TrackFixes(fixAll);
         var health = new HealthViewModel(state, host, EnglishLoc(), () => false,
-            new FixAllService(host), FindingSections.IsHealth,
+            fixAll, FindingSections.IsHealth,
             morphPause: () => Task.CompletedTask);
         await state.ScanAsync();
         Assert.Empty(health.Rows);   // display-refresh is not even a row here
@@ -426,6 +432,224 @@ public class HealthViewModelTests
         // window's background timer running past this test's return.
         state.KeepDisplayCommand.Execute(null);
         await state.PendingConfirmTask!;
+    }
+
+    /// FIX WAVE, Finding 1. The registry is the only thing a reboot reads, so
+    /// writing the raised mode there before anyone confirms it is what turns
+    /// "the screen went black and I held the power button" into a machine that
+    /// boots black with no brisk running to undo it. Nothing may be persisted
+    /// while the question is still open; the Keep is what persists it.
+    [Fact]
+    public async Task Keep_IsTheOnlyThingThatWritesTheModeToTheRegistry()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        Assert.Equal(0, host.KeepDisplayCalls);   // still provisional
+
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+
+        Assert.Equal(1, host.KeepDisplayCalls);
+    }
+
+    /// The other half of the same rule: nobody answered, so nothing was ever
+    /// written — a restart would have undone it even if the rollback had not.
+    [Fact]
+    public async Task ConfirmationWindowElapsing_PersistsNothing()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        await state.PendingConfirmTask!;
+
+        Assert.Equal(0, host.KeepDisplayCalls);
+        Assert.Equal(new[] { "display-refresh" }, host.Undone);
+    }
+
+    /// FIX WAVE, Finding 3. The rollback ran on a background task that never
+    /// rescanned, and only a scan repopulates the rows — so both pages went on
+    /// showing "Displays raised to their highest refresh rate" as a live,
+    /// undoable fix for a mode that had gone back minutes earlier. There is no
+    /// periodic scan to save it: the claim stood until something unrelated
+    /// happened to trigger one.
+    [Fact]
+    public async Task ConfirmationWindowElapsing_RescansSoNothingKeepsClaimingTheFix()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+        // The mode going back is exactly what makes the next scan see the
+        // display running slow again — here, a snapshot with nothing in it.
+        host.OnUndo = _ => host.NextSnapshot = TestData.Snapshot();
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        await state.PendingConfirmTask!;
+
+        Assert.Empty(state.Snapshot!.Findings);
+        Assert.Empty(vm.Rows);
+    }
+
+    /// FIX WAVE, Finding 3. A rollback delegate that THROWS left RolledBack
+    /// false and surfaced nothing at all — the app silently forgot that it had
+    /// changed the display and failed to change it back.
+    [Fact]
+    public async Task RollbackThatThrows_IsStillReported()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+        host.OnUndo = _ => throw new InvalidOperationException("the journal is gone");
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        await state.PendingConfirmTask!;   // must complete, not fault
+
+        Assert.Contains("the journal is gone", vm.Message);
+        Assert.Null(state.PendingConfirmation);
+    }
+
+    /// FIX WAVE, Finding 4 (spec gap). The spec requires: "When the countdown
+    /// expires, brisk reports honestly what it tried and that it rolled back,
+    /// naming the likely cause (cable or adapter)." Nothing said anything on
+    /// the ordinary path — only a rollback that itself failed produced a
+    /// message, which is the rarest outcome of the three.
+    [Fact]
+    public async Task OrdinaryRollback_SaysSo_AndNamesTheLikelyCause()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var state = new AppState(host, loc);
+        var fixAll = new FixAllService(host);
+        state.TrackFixes(fixAll);
+        var vm = new HealthViewModel(state, host, loc, () => false, fixAll,
+            morphPause: () => Task.CompletedTask);
+        await state.ScanAsync();
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+        await state.PendingConfirmTask!;
+
+        Assert.Equal(loc["display-confirm.rolledback"], vm.Message);
+        Assert.Contains("cable", vm.Message);
+    }
+
+    /// FIX WAVE, Finding 5. The confirmation used to be raised from a loop
+    /// over the FINISHED batch, so a display raised first sat there — possibly
+    /// black — through every remaining fix with no timer running at all. It
+    /// now starts at the mode change, which means the rules fixed after it in
+    /// the same batch already see a countdown in flight.
+    [Fact]
+    public async Task FixAll_StartsTheCountdownAtTheModeChange_NotAfterTheBatch()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+            TestData.Finding("power-plan", Severity.Warning, RuleCategory.Auto,
+                stars: 4, canFix: true),
+        });
+        var state = new AppState(host, EnglishLoc());
+        var fixAll = new FixAllService(host);
+        state.TrackFixes(fixAll);
+        var pendingWhenFixed = new List<(string Rule, bool Pending)>();
+        // Subscribed AFTER TrackFixes, so this observes the state the batch
+        // was in as each rule landed.
+        fixAll.FixedRule += (finding, _) =>
+            pendingWhenFixed.Add((finding.RuleId, state.PendingConfirmation is not null));
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false, fixAll,
+            morphPause: () => Task.CompletedTask);
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.True(pendingWhenFixed.Single(x => x.Rule == "power-plan").Pending);
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
+    /// FIX WAVE, Finding 5, single-row half: the 400 ms "Fixed" morph used to
+    /// run before the countdown started.
+    [Fact]
+    public async Task SingleFix_StartsTheCountdownBeforeTheMorphPause()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var state = new AppState(host, EnglishLoc());
+        var fixAll = new FixAllService(host);
+        state.TrackFixes(fixAll);
+        var pendingDuringPause = false;
+        var vm = new HealthViewModel(state, host, EnglishLoc(), () => false, fixAll,
+            morphPause: () =>
+            {
+                pendingDuringPause = state.PendingConfirmation is not null;
+                return Task.CompletedTask;
+            });
+        await state.ScanAsync();
+
+        await vm.FixAsync(vm.Rows.First(r => r.RuleId == "display-refresh"));
+
+        Assert.True(pendingDuringPause);
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
+    /// FIX WAVE, Finding 6. Each view model's busy flag guards only its own
+    /// button, so a flyout Fix-all and a page Fix-all can overlap. A second
+    /// confirmation replacing the first meant the first run's exit pulled the
+    /// overlay out from under a window still counting down — and the second
+    /// fix, finding every display already raised, journals an EMPTY prior
+    /// state, so the rollback meant to bring the picture back restores
+    /// nothing. One screen, one rescue.
+    [Fact]
+    public async Task SecondConfirmation_DoesNotReplaceTheOneAlreadyRunning()
+    {
+        var state = new AppState(new FakeEngineHost(), EnglishLoc());
+
+        state.ConfirmDisplayFix("display-refresh");
+        var first = state.PendingConfirmation;
+        var firstRun = state.PendingConfirmTask;
+
+        state.ConfirmDisplayFix("display-refresh");
+
+        Assert.Same(first, state.PendingConfirmation);
+        Assert.Same(firstRun, state.PendingConfirmTask);
+
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+        Assert.Null(state.PendingConfirmation);
     }
 
     /// Fix round 1 (Important, Finding 3): a rollback that could not
@@ -812,6 +1036,7 @@ public class HealthViewModelTests
         public bool CreateRestorePoint() => _inner.CreateRestorePoint();
         public long FreeDiskBytes() => _inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => _inner.KeepDisplayFix();
         public bool IsElevated() => _inner.IsElevated();
     }
 
@@ -846,6 +1071,7 @@ public class HealthViewModelTests
         public bool CreateRestorePoint() => _inner.CreateRestorePoint();
         public long FreeDiskBytes() => _inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => _inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => _inner.KeepDisplayFix();
         public bool IsElevated() => _inner.IsElevated();
     }
 }

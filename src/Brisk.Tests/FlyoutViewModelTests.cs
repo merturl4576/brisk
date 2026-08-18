@@ -44,9 +44,13 @@ public class FlyoutViewModelTests
     {
         var state = new AppState(host);
         var bin = new FakeBin();
+        var fixAll = new FixAllService(host);
+        // Wired exactly as App.xaml.cs wires it: the confirmation is raised
+        // as each rule is fixed, not from a loop over the finished batch.
+        state.TrackFixes(fixAll);
         var vm = new FlyoutViewModel(state,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
-            new FixAllService(host), EnglishLoc(), isDryRun ?? (() => false));
+            fixAll, EnglishLoc(), isDryRun ?? (() => false));
         return (vm, bin);
     }
 
@@ -117,6 +121,33 @@ public class FlyoutViewModelTests
         Assert.NotNull(vm.State.PendingConfirmation);
         // Resolve rather than leave the real 15-second window's background
         // timer running past this test's return.
+        vm.State.KeepDisplayCommand.Execute(null);
+        await vm.State.PendingConfirmTask!;
+    }
+
+    /// FIX WAVE, Finding 6. The flyout is the one fix surface the main
+    /// window's overlay does not cover, so it is exactly the button a user can
+    /// press while brisk is still asking whether the picture came back. A
+    /// second batch there would re-fix display-refresh, find every display
+    /// already raised, and journal an empty prior state over the real one —
+    /// leaving the rollback with nothing to restore.
+    [Fact]
+    public async Task FixAll_IsRefused_WhileADisplayChangeIsStillUnconfirmed()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+        vm.State.ConfirmDisplayFix("display-refresh");   // another surface got there first
+        host.Fixed.Clear();
+
+        await vm.FixAllAsync();
+
+        Assert.Empty(host.Fixed);
         vm.State.KeepDisplayCommand.Execute(null);
         await vm.State.PendingConfirmTask!;
     }

@@ -23,6 +23,11 @@ public interface IEngineHost
         CancellationToken ct = default);
     FixOutcome Fix(string ruleId);
     FixOutcome Undo(string ruleId);
+    /// Makes the display mode that is on screen right now permanent. The
+    /// display fix is applied for the session only (IDisplayProbe), so the
+    /// registry is not told until the user has answered "the picture is back"
+    /// — a mode nobody can see must never be the mode the machine boots into.
+    FixOutcome KeepDisplayFix();
     /// onEntry (additive, round 10): every recorded entry, as it happens,
     /// on the calling thread — the GUI's live cleaning progress.
     CleanReport Clean(TargetScanResult scan, bool dryRun,
