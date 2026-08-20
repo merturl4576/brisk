@@ -87,7 +87,8 @@ public static class Program
         return (new List<TargetScanResult> { match }, null);
     }
 
-    /// The sentence to print when no sensor answered, or null when they did.
+    /// The sentence to print about a temperature brisk did not read, or null
+    /// when both sensors answered.
     ///
     /// The GUI ships an elevation manifest; the CLI deliberately does not — a
     /// command-line tool that raises UAC on every invocation is worse than one
@@ -95,14 +96,33 @@ public static class Program
     /// finding makes "brisk scan" look like it checked and found nothing
     /// wrong, which is the same lie the manifest was added to stop in the GUI.
     /// So the CLI says which of the two it is.
+    ///
+    /// It used to fire only when NOTHING answered, and to promise that
+    /// elevation would fix it. Measuring the thermals rule made both halves
+    /// wrong. GPU temperature reads unelevated, so a GPU-only machine printed
+    /// no notice at all and a scan looked complete when the CPU had gone
+    /// unread. And CPU temperature reads at NO privilege level on a machine
+    /// running memory integrity, because the driver that reads it is on
+    /// Microsoft's vulnerable-driver blocklist — so the elevation advice
+    /// promised a remedy this codebase documents as ineffective. Elevation is
+    /// still worth naming, as one thing that can matter and often will not.
     public static string? SensorNotice(ISensorProbe sensors, bool elevated)
     {
-        if (sensors.CpuTempC() is not null || sensors.GpuTempC() is not null)
-            return null;
+        var cpu = sensors.CpuTempC() is not null;
+        var gpu = sensors.GpuTempC() is not null;
+        if (cpu && gpu) return null;
+        if (cpu) return "temperature: GPU not read — CPU only. brisk cannot tell from here why.";
+        var unread = gpu
+            ? "temperature: CPU not read — GPU only."
+            : "temperature: not checked — neither sensor answered.";
+        // The CPU half of the reason is the same in both, so it is said once.
+        var why = " The driver that reads CPU temperature is on Microsoft's "
+            + "vulnerable-driver blocklist and will not load while memory integrity "
+            + "is on. brisk does not switch that off, and cannot confirm from here "
+            + "that it is the reason on this machine.";
         return elevated
-            ? "temperature: no readable sensor on this machine — thermals not checked"
-            : "temperature: not checked — sensor access needs administrator. "
-              + "Run this from an elevated prompt, or open the brisk app.";
+            ? unread + why
+            : unread + why + " Running as administrator can help other sensors.";
     }
 
     private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner,
@@ -136,7 +156,16 @@ public static class Program
                 // Absent thermals must be distinguishable from healthy
                 // thermals by anything parsing this, not just by a human
                 // reading the text output.
-                sensors = new { available = sensorNotice is null, notice = sensorNotice },
+                // Two nullable numbers instead of one "available" flag, which
+                // said true as soon as EITHER sensor answered — a parser was
+                // being told thermals were checked on a machine where the CPU
+                // never was.
+                sensors = new
+                {
+                    cpuC = ctx.Sensors.CpuTempC(),
+                    gpuC = ctx.Sensors.GpuTempC(),
+                    notice = sensorNotice,
+                },
             };
             Console.WriteLine(JsonSerializer.Serialize(payload));
             return 0;

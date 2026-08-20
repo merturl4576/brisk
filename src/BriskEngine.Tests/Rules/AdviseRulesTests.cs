@@ -178,6 +178,25 @@ public class AdviseRulesTests
             Assert.DoesNotContain(cause, finding.Evidence, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// A present-but-silent sensor reports NaN, which is not a reading: it
+    /// fails every threshold so nothing calls it hot, but it is not null
+    /// either, so it used to print "CPU NaN°C" and take the both-read
+    /// template — a template outrunning what was read, in the one rule whose
+    /// whole subject is that.
+    [Fact]
+    public void Thermals_NaNReading_CountsAsUnread()
+    {
+        var ctx = TestContext.Empty();
+        var sensors = (FakeSensors)ctx.Sensors;
+        sensors.CpuTemp = double.NaN;
+        sensors.GpuTemp = 78;
+        var finding = new ThermalsRule().Detect(ctx);
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence.cpu-unread", finding!.EvidenceKey);
+        Assert.Equal("GPU 78°C", Assert.Single(finding.EvidenceArgs!));
+        Assert.DoesNotContain("NaN", finding.Evidence);
+    }
+
     /// And when both answered, the note must not appear — a permanent "some of
     /// this was not read" would train the reader to skip the sentence on the
     /// machines where it is true.

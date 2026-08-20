@@ -43,10 +43,19 @@ public sealed class ThermalsRule : AdviseRuleBase
 
     public override string Id => "thermals";
 
+    /// NaN is what a present-but-silent sensor reports, and it is not a
+    /// reading: it fails every threshold, so nothing calls it hot, but it is
+    /// not null either, so it would print "CPU NaN°C" and take the both-read
+    /// template — the one case where the template outruns what was read. The
+    /// real probe filters it too; this is here because the rule takes any
+    /// ISensorProbe and cannot assume the one it got did.
+    private static double? Reading(double? temperature) =>
+        temperature is { } value && double.IsFinite(value) ? value : null;
+
     public override DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
-        var cpu = ctx.Sensors.CpuTempC();
-        var gpu = ctx.Sensors.GpuTempC();
+        var cpu = Reading(ctx.Sensors.CpuTempC());
+        var gpu = Reading(ctx.Sensors.GpuTempC());
         var hot = (cpu is not null && cpu >= 75) || (gpu is not null && gpu >= 70);
         if (!hot) return null;
 
