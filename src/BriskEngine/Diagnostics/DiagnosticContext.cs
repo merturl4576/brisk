@@ -13,4 +13,5 @@ public sealed record DiagnosticContext(
     IDiskInfoProbe Disk,
     IFileProbe Files,
     IProcessLister RunningApps,
+    IMemoryIntegrityProbe MemoryIntegrity,
     string DataDirectory);   // %LOCALAPPDATA%\brisk — history store, journals

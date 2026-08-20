@@ -33,7 +33,7 @@ public static class Program
             new RealProcessInfoProbe(), sensors, new RealDisplayProbe(),
             new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
-            new RealProcessLister(), dataDir);
+            new RealProcessLister(), new RealMemoryIntegrityProbe(), dataDir);
         var log = new ActionLog(Path.Combine(dataDir, "action-log.jsonl"));
         var fixRunner = new FixRunner(new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl")), log);
         var scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(),
@@ -106,7 +106,11 @@ public static class Program
     /// Microsoft's vulnerable-driver blocklist — so the elevation advice
     /// promised a remedy this codebase documents as ineffective. Elevation is
     /// still worth naming, as one thing that can matter and often will not.
-    public static string? SensorNotice(ISensorProbe sensors, bool elevated)
+    /// memoryIntegrityOn is required rather than defaulted: the caller that
+    /// forgets it is exactly the caller that would keep printing the hedged
+    /// reason on a machine brisk could have measured.
+    public static string? SensorNotice(ISensorProbe sensors, bool elevated,
+        bool? memoryIntegrityOn)
     {
         var cpu = sensors.CpuTempC() is not null;
         var gpu = sensors.GpuTempC() is not null;
@@ -115,11 +119,25 @@ public static class Program
         var unread = gpu
             ? "temperature: CPU not read — GPU only."
             : "temperature: not checked — neither sensor answered.";
-        // The CPU half of the reason is the same in both, so it is said once.
-        var why = " The driver that reads CPU temperature is on Microsoft's "
-            + "vulnerable-driver blocklist and will not load while memory integrity "
-            + "is on. brisk does not switch that off, and cannot confirm from here "
-            + "that it is the reason on this machine.";
+        // The CPU half of the reason is the same in both, so it is said once
+        // — but WHICH reason is available depends on a setting brisk can read
+        // without a driver, and the rule and this notice must not disagree
+        // about it. null is not folded into off: a Device Guard query that
+        // failed is not a machine with memory integrity switched off.
+        var why = memoryIntegrityOn switch
+        {
+            true => " Memory integrity is on here, and the driver that reads CPU "
+                + "temperature is on Microsoft's vulnerable-driver blocklist, so Windows "
+                + "will not load it at any privilege level. brisk does not switch that "
+                + "off, and cannot prove it is the only reason here.",
+            false => " Memory integrity is off here, so the usual reason — a driver "
+                + "Windows refuses to load — is not what happened, and brisk cannot tell "
+                + "from here what did.",
+            null => " The driver that reads CPU temperature is on Microsoft's "
+                + "vulnerable-driver blocklist and will not load while memory integrity "
+                + "is on. brisk does not switch that off, and cannot confirm from here "
+                + "that it is the reason on this machine.",
+        };
         return elevated
             ? unread + why
             : unread + why + " Running as administrator can help other sensors.";
@@ -128,7 +146,7 @@ public static class Program
     private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner,
         bool elevated)
     {
-        var sensorNotice = SensorNotice(ctx.Sensors, elevated);
+        var sensorNotice = SensorNotice(ctx.Sensors, elevated, ctx.MemoryIntegrity.IsOn());
         var findings = DiagnosticRuleRegistry.All
             .Select(r => Safe(() => r.Detect(ctx)))
             .Where(f => f != null)

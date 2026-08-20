@@ -165,6 +165,14 @@ public sealed class FakeHardware : IHardwareProbe
     public IReadOnlyList<MemoryModule> MemoryModules() => Modules;
 }
 
+/// Unknown by default, so a test that does not speak to memory integrity
+/// exercises the hedged copy rather than silently picking a side.
+public sealed class FakeMemoryIntegrity : IMemoryIntegrityProbe
+{
+    public bool? On;
+    public bool? IsOn() => On;
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -188,6 +196,7 @@ public static class TestContext
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
         new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeHardware(),
         new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
+        new FakeMemoryIntegrity(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

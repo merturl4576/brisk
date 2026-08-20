@@ -26,12 +26,32 @@ public sealed class ThermalsRule : AdviseRuleBase
     private const string Advice =
         "Sustained high temperatures throttle performance; clean fans / renew thermal paste.";
 
+    /// Memory integrity could not be read, so neither story is available and
+    /// the sentence stays exactly as hedged as it was.
     private const string CpuUnread =
         "The CPU temperature is missing from that — brisk could not read it. Usually the " +
         "cause is the driver: the one that reads CPU temperature is on Microsoft's " +
         "vulnerable-driver blocklist, so Windows will not load it while memory integrity " +
         "is on. brisk will not switch that protection off for a reading, and cannot " +
         "confirm from here that this is the reason on your machine.";
+
+    /// Measured on. The hedge moves: brisk no longer wonders whether memory
+    /// integrity is on, and still refuses to call it the proven cause, because
+    /// an unsupported chip and a probe that threw read identically from here.
+    private const string CpuUnreadIntegrityOn =
+        "The CPU temperature is missing from that — brisk could not read it. Memory " +
+        "integrity is on here, and the driver that reads CPU temperature is on Microsoft's " +
+        "vulnerable-driver blocklist, so Windows will not load it at any privilege level. " +
+        "brisk will not switch that protection off for a reading. That is the usual cause " +
+        "and it fits this machine, but brisk cannot prove it is the only one.";
+
+    /// Measured off, which rules the usual cause out rather than confirming
+    /// it. Saying less here is the whole point of reading the setting: this
+    /// machine used to be handed an explanation that could not be true of it.
+    private const string CpuUnreadIntegrityOff =
+        "The CPU temperature is missing from that — brisk could not read it. Memory " +
+        "integrity is off here, so the usual cause — a driver Windows refuses to load — " +
+        "is not what happened, and brisk cannot tell from here what did.";
 
     /// No equivalent known cause exists for a silent GPU sensor, so this one
     /// stops at the fact. Borrowing the sentence above would state a blocked
@@ -49,6 +69,17 @@ public sealed class ThermalsRule : AdviseRuleBase
     /// template — the one case where the template outruns what was read. The
     /// real probe filters it too; this is here because the rule takes any
     /// ISensorProbe and cannot assume the one it got did.
+    /// Three states, three sentences, and null is not folded into either
+    /// answer: a machine whose Device Guard query failed is not a machine with
+    /// memory integrity off.
+    private static (string Variant, string Note) CpuUnreadNote(bool? memoryIntegrityOn) =>
+        memoryIntegrityOn switch
+        {
+            true => (".cpu-unread.integrity-on", $" {CpuUnreadIntegrityOn}"),
+            false => (".cpu-unread.integrity-off", $" {CpuUnreadIntegrityOff}"),
+            null => (".cpu-unread", $" {CpuUnread}"),
+        };
+
     private static double? Reading(double? temperature) =>
         temperature is { } value && double.IsFinite(value) ? value : null;
 
@@ -67,7 +98,7 @@ public sealed class ThermalsRule : AdviseRuleBase
         // A finding requires a reading, so both can never be unread here and
         // the two notes can never both apply.
         var (variant, note) =
-            cpu is null ? (".cpu-unread", $" {CpuUnread}")
+            cpu is null ? CpuUnreadNote(ctx.MemoryIntegrity.IsOn())
             : gpu is null ? (".gpu-unread", $" {GpuUnread}")
             : (string.Empty, string.Empty);
 

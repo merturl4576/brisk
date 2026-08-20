@@ -55,6 +55,29 @@ public interface IHardwareProbe
     IReadOnlyList<MemoryModule> MemoryModules();
 }
 
+/// Whether Windows is currently enforcing memory integrity (HVCI).
+///
+/// Read because the thermals rule was offering one explanation to every
+/// machine that could not read a CPU temperature: that the driver is on
+/// Microsoft's vulnerable-driver blocklist and Windows will not load it while
+/// memory integrity is on. On a machine with memory integrity OFF that
+/// explanation cannot be true, and brisk was handing it out anyway.
+///
+/// Tri-state on purpose, and the third state is the point. null is "brisk
+/// could not determine it" — a machine where the query fails must keep the
+/// hedged sentence rather than be told either story. false is a measurement,
+/// not a default.
+///
+/// The RUNNING state, never the configured one: memory integrity can be
+/// configured and still not running (an incompatible driver stops it), and it
+/// is the running enforcement that refuses to load a blocklisted driver.
+/// Reading the configured value would let brisk state a cause that is switched
+/// off — the exact failure this probe exists to remove.
+public interface IMemoryIntegrityProbe
+{
+    bool? IsOn();
+}
+
 /// The mode change is split in two on purpose. Applying and persisting in one
 /// call is what turns a black screen into a permanent one: the likeliest thing
 /// a person does when the picture disappears is hold the power button, which

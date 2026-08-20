@@ -75,6 +75,11 @@ file sealed class NullHardware : IHardwareProbe
     public IReadOnlyList<MemoryModule> MemoryModules() => System.Array.Empty<MemoryModule>();
 }
 
+file sealed class NullMemoryIntegrity : IMemoryIntegrityProbe
+{
+    public bool? IsOn() => null;
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -126,7 +131,7 @@ public sealed class EngineHostTests : IDisposable
         var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
             new NullProcessInfo(), new NullSensors(), new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
-            new NothingRuns(), _root);
+            new NothingRuns(), new NullMemoryIntegrity(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(_root, "fix-journal.jsonl"));

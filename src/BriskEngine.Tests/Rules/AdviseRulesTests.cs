@@ -213,4 +213,63 @@ public class AdviseRulesTests
         Assert.Equal("CPU 88°C, GPU 78°C", Assert.Single(finding.EvidenceArgs!));
         Assert.DoesNotContain("could not read", finding.Evidence);
     }
+
+    /// Memory integrity is readable without a driver, so the one explanation
+    /// this rule offers can now be checked against the machine it is offered
+    /// to. With memory integrity OFF, a driver Windows refuses to load while
+    /// memory integrity is on is not why the CPU went unread — and brisk was
+    /// handing that sentence to every unread CPU regardless.
+    [Fact]
+    public void Thermals_CpuUnread_MemoryIntegrityOff_DropsTheBlocklistReason()
+    {
+        var ctx = TestContext.Empty();
+        ((FakeSensors)ctx.Sensors).GpuTemp = 78;            // hot; CPU stays unread
+        ((FakeMemoryIntegrity)ctx.MemoryIntegrity).On = false;
+
+        var finding = new ThermalsRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence.cpu-unread.integrity-off", finding!.EvidenceKey);
+        Assert.Contains("could not read", finding.Evidence);
+        foreach (var cause in new[] { "blocklist", "WinRing0" })
+            Assert.DoesNotContain(cause, finding.Evidence, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// Measured on, so the sentence stops hedging about whether memory
+    /// integrity is on — and keeps hedging about whether that is the whole
+    /// reason, because an unsupported chip and a probe that threw look the
+    /// same from here.
+    [Fact]
+    public void Thermals_CpuUnread_MemoryIntegrityOn_StatesItAsMeasuredWithoutClaimingProof()
+    {
+        var ctx = TestContext.Empty();
+        ((FakeSensors)ctx.Sensors).GpuTemp = 78;
+        ((FakeMemoryIntegrity)ctx.MemoryIntegrity).On = true;
+
+        var finding = new ThermalsRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence.cpu-unread.integrity-on", finding!.EvidenceKey);
+        Assert.Contains("memory integrity is on", finding.Evidence, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cannot", finding.Evidence, StringComparison.OrdinalIgnoreCase);
+        foreach (var order in new[] { "turn off", "turn it off", "switch it off",
+                                      "disable", "Windows Security", "you should" })
+            Assert.DoesNotContain(order, finding.Evidence, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// Unknown stays hedged. A machine whose Device Guard query failed must
+    /// not be told either story, and null is the default a test that says
+    /// nothing about memory integrity gets.
+    [Fact]
+    public void Thermals_CpuUnread_MemoryIntegrityUnknown_KeepsTheHedgedReason()
+    {
+        var ctx = TestContext.Empty();
+        ((FakeSensors)ctx.Sensors).GpuTemp = 78;
+
+        var finding = new ThermalsRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence.cpu-unread", finding!.EvidenceKey);
+        Assert.Contains("cannot confirm from here", finding.Evidence);
+    }
 }
