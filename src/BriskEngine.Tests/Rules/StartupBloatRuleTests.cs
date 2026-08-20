@@ -139,6 +139,40 @@ public class StartupBloatRuleTests
         Assert.Equal(4, reg.GetInt(key, "State"));
     }
 
+    /// The undo journal has no expiry — an undoable fix sits in "What brisk
+    /// did" until someone clicks it — so uninstalling between Fix and Undo is
+    /// not a corner case, it is a Tuesday. SetInt goes through CreateSubKey on
+    /// the real registry, so restoring a task whose package is gone RECREATES
+    /// the key, and StoreTasks reads that table back: brisk would grow a
+    /// startup row for an app that cannot start, out of a key brisk itself
+    /// wrote, and offer to disable it.
+    ///
+    /// The assertion is on the value's absence rather than the key's, because
+    /// no registry double in this repo can express "this key does not exist" —
+    /// which is exactly why 645 tests could not see this.
+    [Fact]
+    public void Undo_PackageUninstalledSinceFix_WritesNothingBack()
+    {
+        var (ctx, reg) = Ctx();
+        const string Pfn = "SpotifyAB.SpotifyMusic_zpdnekdrzrea0";
+        StoreRegistry.Task(reg, Pfn, "Spotify", 2);
+        var taskKey = $@"{BriskEngine.Diagnostics.StartupManager.StoreRoot}\{Pfn}\Spotify";
+
+        var rule = new StartupBloatRule();
+        var prior = rule.Fix(ctx);
+        Assert.Equal(0, reg.GetInt(taskKey, "State"));
+
+        // Spotify is uninstalled: Windows takes the whole entry with it.
+        reg.Values.Remove($"{taskKey}::State");
+        reg.SubKeys[BriskEngine.Diagnostics.StartupManager.StoreRoot].Remove(Pfn);
+        reg.SubKeys.Remove($@"{BriskEngine.Diagnostics.StartupManager.StoreRoot}\{Pfn}");
+
+        rule.Undo(ctx, prior);
+
+        Assert.Null(reg.GetInt(taskKey, "State"));
+        Assert.Empty(new BriskEngine.Diagnostics.StartupManager(ctx.Registry, null).List());
+    }
+
     [Fact]
     public void DisabledHeavyStoreApp_IsNotCounted()
     {

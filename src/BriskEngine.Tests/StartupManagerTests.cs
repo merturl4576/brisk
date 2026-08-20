@@ -282,5 +282,33 @@ public sealed class StartupManagerTests : IDisposable
         Assert.Equal(2, reg.GetInt(contoso, "State"));   // the neighbour is untouched
     }
 
+    /// The third level had no test in either direction: collapsing the
+    /// fallback so both rows share one label — the exact bug the publisher
+    /// level exists to prevent — passed all 645 tests. The shape is real, if
+    /// rare: one package name signed twice, Store-signed beside sideloaded, or
+    /// a publisher identity change. And the fallback it replaces leaked the raw
+    /// family name onto the Startup page, and into the finding's prose in both
+    /// languages whenever the name carries a heavy token.
+    [Fact]
+    public void PackagesThatCollideEvenOnPublisher_KeepTheirHash()
+    {
+        var reg = new FakeRegistry();
+        StoreTask(reg, "SpotifyAB.SpotifyMusic_zpdnekdrzrea0", "Spotify", 2);
+        StoreTask(reg, "SpotifyAB.SpotifyMusic_1a2b3c4d5e6f7", "Spotify", 2);
+        var store = $@"{StartupManager.StoreRoot}\SpotifyAB.SpotifyMusic_zpdnekdrzrea0\Spotify";
+        var sideloaded = $@"{StartupManager.StoreRoot}\SpotifyAB.SpotifyMusic_1a2b3c4d5e6f7\Spotify";
+
+        var names = new StartupManager(reg, null).List().Select(i => i.Name).ToArray();
+        Assert.Equal(2, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Contains("SpotifyMusic (zpdnekdrzrea0)", names);
+        Assert.Contains("SpotifyMusic (1a2b3c4d5e6f7)", names);
+        Assert.All(names, n => Assert.DoesNotContain("SpotifyAB.SpotifyMusic_", n));
+
+        Assert.True(new StartupManager(reg, null)
+            .SetEnabled("Store", "SpotifyMusic (zpdnekdrzrea0)", enabled: false));
+        Assert.Equal(0, reg.GetInt(store, "State"));
+        Assert.Equal(2, reg.GetInt(sideloaded, "State"));   // the neighbour is untouched
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }

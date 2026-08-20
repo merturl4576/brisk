@@ -16,6 +16,12 @@ namespace BriskEngine.Diagnostics.RealProbes;
 /// ConfiguredClockSpeed 2933, Capacity 17179869184.
 public sealed class RealHardwareProbe : IHardwareProbe
 {
+    /// Hoisted out of the call so a test can read it without a WMI service.
+    /// Win32_PhysicalMemoryArray is one word away and returns rows the parser
+    /// maps to all-unknowns, which the rule then stays silent about — a swap
+    /// that broke nothing visible and passed the whole suite.
+    internal const string Query = "SELECT * FROM Win32_PhysicalMemory";
+
     public IReadOnlyList<MemoryModule> MemoryModules()
     {
         var modules = new List<MemoryModule>();
@@ -27,8 +33,7 @@ public sealed class RealHardwareProbe : IHardwareProbe
             // rejected wholesale rather than degrading to null — losing the
             // modules and their rated speeds along with it. Reading wide and
             // guarding each property by name loses only the missing one.
-            using var searcher = new ManagementObjectSearcher(
-                "SELECT * FROM Win32_PhysicalMemory");
+            using var searcher = new ManagementObjectSearcher(Query);
             using var results = searcher.Get();
             foreach (ManagementBaseObject row in results)
             {

@@ -393,8 +393,10 @@ public class LocTests
         // or truncated. It does NOT pin the unit: the MT/s in it was supplied
         // by this test. The unit is pinned by the DoesNotContain below — a
         // template that spelled the figure out as MHz beside the argument —
-        // and by MemorySpeedRuleTests and HardwareProbeTests, which pin what
-        // the engine actually emits into {0}.
+        // and by MemorySpeedRuleTests, which pins what the engine actually
+        // emits into {0} — an assertion this comment claimed before it
+        // existed, back when the rule test asserted only that EvidenceArgs
+        // was non-null.
         Assert.Contains("ChannelA-DIMM0 2133 MT/s / 3200 MT/s", evidence);
         Assert.DoesNotContain("MHz", evidence);
         Assert.DoesNotContain("MHz", advice);

@@ -84,6 +84,12 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
     {
         Strings.Remove(Key(keyPath, valueName));
         Blobs.Remove(Key(keyPath, valueName));
+        // DWORDs too. Nothing in this project writes an int through the double
+        // today, so the divergence costs nothing yet — but every rule that
+        // deletes a DWORD on undo is tested against the OTHER double, and the
+        // next app-layer test of that path would go green on behaviour the
+        // real registry does not have.
+        Ints.Remove(Key(keyPath, valueName));
     }
     public byte[]? GetBytes(string keyPath, string valueName) =>
         Blobs.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;

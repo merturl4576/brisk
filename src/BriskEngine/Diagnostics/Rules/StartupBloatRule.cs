@@ -131,8 +131,24 @@ public sealed class StartupBloatRule : IDiagnosticRule
                 if (key.StartsWith(StorePrior, StringComparison.Ordinal))
                 {
                     var taskKey = key[StorePrior.Length..];
-                    if (value is null) ctx.Registry.DeleteValue(taskKey, "State");
-                    else ctx.Registry.SetInt(taskKey, "State",
+                    if (value is null)
+                    {
+                        ctx.Registry.DeleteValue(taskKey, "State");
+                        continue;
+                    }
+                    // Fix wrote State=0 here, so State missing now means the row
+                    // itself is gone: Windows drops the whole SystemAppData entry
+                    // when the package is uninstalled. Restoring the value would
+                    // route through CreateSubKey and rebuild the task key, and
+                    // brisk reads that table back — the recreated State=2 becomes
+                    // a live Startup row, is counted by EnabledItems, and if the
+                    // family name carries a heavy token it gets named in the
+                    // finding as a program to disable. brisk would be reporting a
+                    // startup program that is not installed, out of a key brisk
+                    // itself wrote, which is the shape OrphanedDataRule exists to
+                    // complain about.
+                    if (ctx.Registry.GetInt(taskKey, "State") is null) continue;
+                    ctx.Registry.SetInt(taskKey, "State",
                         int.Parse(value, CultureInfo.InvariantCulture));
                     continue;
                 }

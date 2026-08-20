@@ -114,6 +114,11 @@ public class MemorySpeedRuleTests
         Assert.NotNull(finding);
         Assert.Contains("ChannelA-DIMM0", finding!.Evidence);
         Assert.DoesNotContain("ChannelB-DIMM0", finding.Evidence);
+        // And in the localized arg, not only in the English fallback: the
+        // Turkish sentence is {0} plus prose, so EvidenceArgs[0] is everything
+        // the maintainer reads about which slot and which numbers.
+        Assert.Equal("ChannelA-DIMM0 2133 MT/s / 3200 MT/s",
+            Assert.Single(finding.EvidenceArgs!));
     }
 
     /// Severity, weight and the localization contract, so a later edit cannot
@@ -129,6 +134,11 @@ public class MemorySpeedRuleTests
         Assert.Equal(4, finding.ImpactStars);
         Assert.Equal("rule.memory-speed.title", finding.TitleKey);
         Assert.Equal("rule.memory-speed.evidence", finding.EvidenceKey);
-        Assert.NotNull(finding.EvidenceArgs);
+        // NotNull was the whole assertion here, and swapping the arg for
+        // "MUTANT" passed the suite while the Turkish GUI rendered
+        // "MUTANT — her modülün ayarlı hızı…". The English fallback every
+        // other test reads is a different local.
+        Assert.Equal("DIMM0 2133 MT/s / 3200 MT/s",
+            Assert.Single(finding.EvidenceArgs!));
     }
 }

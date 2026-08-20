@@ -246,13 +246,23 @@ public class HardwareProbeTests
 
     // ---- the live entry point -------------------------------------------------
 
-    /// The one thing pasted rows cannot cover: that the real query comes back
-    /// rather than throwing. It asserts nothing about the contents, because a
-    /// runner may have no WMI at all — an empty inventory is a valid answer
-    /// and an exception out of a probe never is.
+    /// This pins the literal, not the behaviour, and it exists because nothing
+    /// else in the suite does: swapping the class for Win32_PhysicalMemoryArray
+    /// makes every property read throw, the parser maps each to unknown, the
+    /// rule requires both speeds above zero and stays silent — 645 tests green
+    /// on a probe reading the wrong table.
+    ///
+    /// It replaces a live `new RealHardwareProbe().MemoryModules()` call that
+    /// looked like the stronger test and was in fact the weaker one. Its
+    /// Assert.NotNull could not fail: the method catches everything and returns
+    /// an empty array, so every path is non-null by construction. Worse, it was
+    /// the only live probe construction in either test project, it passed no
+    /// EnumerationOptions, and searcher.Get() against a wedged WMI service
+    /// BLOCKS rather than throwing — a hang instead of a failure, on the one
+    /// machine that has the problem, in a suite a stranger runs after cloning.
     [Fact]
-    public void RealProbe_ReturnsWithoutThrowing()
+    public void RealProbe_ReadsPhysicalMemory_NotTheArrayItLivesIn()
     {
-        Assert.NotNull(new RealHardwareProbe().MemoryModules());
+        Assert.Equal("SELECT * FROM Win32_PhysicalMemory", RealHardwareProbe.Query);
     }
 }

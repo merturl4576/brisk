@@ -118,8 +118,14 @@ public sealed class StartupManager
     /// third-party "Contoso.Copilot_…" both give "Copilot". That name is also
     /// the handle SetEnabled resolves, so leaving the duplicate would put two
     /// identical rows on the page and make either one silently toggle both
-    /// packages. Colliding rows keep their publisher instead, and in the
-    /// remaining case where even that collides, the whole family name.
+    /// packages. Colliding rows keep their publisher instead, and where even
+    /// that collides — the same package name signed twice, Store-signed beside
+    /// sideloaded, or a publisher identity change — they keep the short name
+    /// and add the only thing that still differs, the publisher hash.
+    ///
+    /// Not the raw family name: StartupItemRow binds Name straight to the page,
+    /// and a heavy package would carry "SpotifyAB.SpotifyMusic_zpdnekdrzrea0"
+    /// into the finding's prose and into the Turkish sentence with it.
     private static Dictionary<string, string> LabelPackages(IReadOnlyList<string> packages)
     {
         var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -134,10 +140,22 @@ public sealed class StartupManager
             {
                 var unique = byPublisher.Count() == 1;
                 foreach (var package in byPublisher)
-                    labels[package] = unique ? byPublisher.Key : package;
+                    labels[package] = unique ? byPublisher.Key : Hashed(byShort.Key, package);
             }
         }
         return labels;
+    }
+
+    /// "SpotifyMusic (zpdnekdrzrea0)". Uniqueness rides on the hash, which is
+    /// what distinguishes two packages that agree this far. A family name with
+    /// no hash at all is not a shape Windows produces, and falls back to itself
+    /// rather than to a label that would collide.
+    private static string Hashed(string shortName, string packageFamilyName)
+    {
+        var underscore = packageFamilyName.LastIndexOf('_');
+        return underscore >= 0 && underscore < packageFamilyName.Length - 1
+            ? $"{shortName} ({packageFamilyName[(underscore + 1)..]})"
+            : packageFamilyName;
     }
 
     private static IEnumerable<(string Package, string Task, int State)> StoreTasks(
