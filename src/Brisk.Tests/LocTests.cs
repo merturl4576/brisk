@@ -485,4 +485,22 @@ public class LocTests
                                       "Core Isolation", "driver", "sürücü" })
             Assert.DoesNotContain(cause, evidence, StringComparison.OrdinalIgnoreCase);
     }
+
+    /// The engine's English explains the bracketed count. The resx sentences
+    /// are what the GUI actually renders, and the count arrives inside an arg
+    /// — so a template that never mentions it leaves "(1/8)" sitting beside a
+    /// program name with nothing saying what it counts.
+    [Theory]
+    [InlineData("en", "bracketed figure is how many of those boots")]
+    [InlineData("tr", "Parantez içindeki sayı")]
+    public void BootDegradation_Evidence_ExplainsTheBracketedCount(string lang, string phrase)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(lang);
+
+        var evidence = loc.F("rule.boot-degradation.evidence",
+            "57 s", "8", "Spotify 37 s (1/8)");
+
+        Assert.Contains(phrase, evidence);
+    }
 }

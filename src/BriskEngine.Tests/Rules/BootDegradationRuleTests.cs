@@ -115,7 +115,7 @@ public class BootDegradationRuleTests
         // match "160 s", so a substring check could pass for the wrong reason.
         // This pins the whole row — the worst reading, never the other one and
         // never their sum.
-        Assert.Equal("Antimalware Service Executable 53 s", finding.EvidenceArgs![2]);
+        Assert.Equal("Antimalware Service Executable 53 s (2/3)", finding.EvidenceArgs![2]);
         Assert.Contains("53 s", evidence);              // 52661 ms
         Assert.DoesNotContain("7694", evidence);
         var first = evidence.IndexOf("Antimalware", StringComparison.Ordinal);
@@ -317,6 +317,9 @@ public class BootDegradationRuleTests
 
     /// The evidence args are what the Turkish template renders from, so they
     /// carry readings only — no English connective prose may hide in them.
+    /// The bracketed count is a reading and stays language-neutral for the
+    /// same reason "37 s" does: the words explaining it live in the resx
+    /// sentence around it, in whichever language rendered it.
     [Fact]
     public void EvidenceArgs_CarryReadingsNotSentences()
     {
@@ -330,7 +333,7 @@ public class BootDegradationRuleTests
         Assert.Equal(3, args.Count);
         Assert.Equal("57 s", args[0]);
         Assert.Equal("3", args[1]);
-        Assert.Equal("Spotify 37 s", args[2]);
+        Assert.Equal("Spotify 37 s (1/3)", args[2]);
     }
 
     /// A rule must never throw out of Detect, whatever the probe hands back.
@@ -344,5 +347,91 @@ public class BootDegradationRuleTests
 
         var error = Record.Exception(() => new BootDegradationRule().Detect(ctx));
         Assert.Null(error);
+    }
+
+    /// The defect this pins came off the maintainer's machine on 2026-08-20.
+    /// The top-ranked offender was brisk-app.exe at 26 s — blamed on exactly
+    /// one of the eight sampled boots, three days earlier, while wave 1's
+    /// autostart was being tested, and no longer starting with Windows at all.
+    /// It sat in the list looking exactly like TiWorker, which Windows blamed
+    /// on four of those eight, above a sentence telling the reader to go find
+    /// the rest under Startup programs. There was nothing to find.
+    ///
+    /// One reading out of eight boots is an anecdote and four is a pattern,
+    /// and the rule already keeps them apart internally — WorstPerProgram
+    /// holds the worst reading per program precisely so a program blamed twice
+    /// is not summed into a bigger one. The copy threw that away.
+    [Fact]
+    public void Evidence_SaysHowManyOfTheSampledBootsBlamedEachProgram()
+    {
+        var ctx = Context(
+            Boot(51237, Blamed("TiWorker.exe", "Windows Modules Installer Worker", 9244)),
+            Boot(111814, Blamed("brisk-app.exe", "", 26081),
+                         Blamed("TiWorker.exe", "Windows Modules Installer Worker", 1998)),
+            Boot(57089, Blamed("TiWorker.exe", "Windows Modules Installer Worker", 511)));
+
+        var finding = new BootDegradationRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Contains("brisk-app.exe 26 s (1/3)", finding!.Evidence);
+        Assert.Contains("Windows Modules Installer Worker 9 s (3/3)", finding.Evidence);
+    }
+
+    /// A bare "(1/3)" beside a program name is not self-explanatory, and an
+    /// unexplained number in a sentence about two other numbers is worse than
+    /// no number: this rule's whole discipline is that no two figures in it
+    /// may be read as arithmetic on each other.
+    [Fact]
+    public void Evidence_ExplainsWhatTheBracketedFigureCounts()
+    {
+        var ctx = Context(
+            Boot(51237),
+            Boot(111814, Blamed("Spotify.exe", "Spotify", 37141)),
+            Boot(57089));
+
+        var finding = new BootDegradationRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Contains("how many of those boots", finding!.Evidence);
+    }
+
+    /// Windows records one line per program per START, not per boot: on the
+    /// verified machine mscorsvw.exe was blamed twice inside a single boot.
+    /// Counting records would have called that two boots out of three and
+    /// turned the one-off it is into a pattern — the exact misreading the
+    /// count was added to prevent.
+    [Fact]
+    public void ProgramBlamedTwiceInOneBoot_CountsAsOneBoot()
+    {
+        var ctx = Context(
+            Boot(51237),
+            Boot(111814, Blamed("mscorsvw.exe", "", 795),
+                         Blamed("mscorsvw.exe", "", 4902)),
+            Boot(57089));
+
+        var finding = new BootDegradationRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Contains("mscorsvw.exe 5 s (1/3)", finding!.Evidence);
+    }
+
+    /// The bound can stop the walk before the sample ends, and then the count
+    /// and the median describe different sets of boots. The denominator is the
+    /// boots actually counted, so "(1/2)" is never printed as "(1/3)" — a
+    /// ratio of a subset, stated as that subset.
+    [Fact]
+    public void RecordBoundStopsTheWalk_DenominatorIsTheBootsActuallyCounted()
+    {
+        var crowded = new BootOffender[26];
+        for (var i = 0; i < crowded.Length; i++)
+            crowded[i] = Blamed($"Small{i}.exe", $"Small {i}", 1000 + i);
+        crowded[0] = Blamed("First.exe", "First", 90000);
+
+        var ctx = Context(Boot(51237, crowded), Boot(57089), Boot(111814));
+
+        var evidence = new BootDegradationRule().Detect(ctx)!.Evidence;
+
+        Assert.Contains("First 90 s (1/1)", evidence);
+        Assert.Contains("the middle of the 3 most recent boots", evidence);
     }
 }

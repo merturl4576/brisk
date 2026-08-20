@@ -61,7 +61,7 @@ public sealed class BootDegradationRule : AdviseRuleBase
 
         var median = Seconds(medianMs);
         var sampled = boots.Count.ToString(CultureInfo.InvariantCulture);
-        var blamed = WorstPerProgram(boots);
+        var (blamed, bootsCounted) = WorstPerProgram(boots);
 
         // MainPathMs is deliberately untouched. BootMs - MainPathMs equals
         // BootPostBootTime, a field Windows already publishes by name, and it
@@ -77,14 +77,17 @@ public sealed class BootDegradationRule : AdviseRuleBase
                 "expected. That is a normal result rather than a missing answer: the boot " +
                 "is slow without any one program to point at.");
 
-        var names = string.Join(", ", blamed.Select(o => $"{Label(o)} {Seconds(o.DegradationMs)}"));
+        var names = string.Join(", ", blamed.Select(b =>
+            $"{Label(b.Offender)} {Seconds(b.Offender.DegradationMs)} ({b.Boots}/{bootsCounted})"));
         return Finding(median, sampled, names,
             $"Boot takes about {median}, the middle of the {sampled} most recent boots " +
             $"brisk could read from Windows' own timings. Windows blamed these for " +
             $"starting slower than it expected: {names} — that is how late each one was, " +
-            "not time it added to your boot. Windows' own components often top the " +
-            "list and brisk will not switch those off; look for the rest under " +
-            "Startup programs on the Performance page.");
+            "not time it added to your boot. The bracketed figure is how many of those " +
+            "boots blamed it, so something that happens every start reads differently " +
+            "from a one-off, and a program blamed once may not start with Windows any " +
+            "more. Windows' own components often top the list and brisk will not switch " +
+            "those off; look for the rest under Startup programs on the Performance page.");
     }
 
     private DiagnosticFinding Finding(string median, string sampled, string? names, string evidence) =>
@@ -115,13 +118,27 @@ public sealed class BootDegradationRule : AdviseRuleBase
     /// the label and the number always come from the same record, so the row
     /// shown is always true of the program it names. An omission is what
     /// "Windows blamed these three", never "only these three", already covers.
-    private static List<BootOffender> WorstPerProgram(IReadOnlyList<BootRecord> boots)
+    private static (List<(BootOffender Offender, int Boots)> Blamed, int BootsCounted)
+        WorstPerProgram(IReadOnlyList<BootRecord> boots)
     {
         var worst = new Dictionary<string, BootOffender>(StringComparer.OrdinalIgnoreCase);
+        // Boots that blamed each program, never records. Windows writes one
+        // record per program per START: mscorsvw.exe was blamed twice inside
+        // a single boot on the verified machine, and counting records would
+        // have turned that one-off into two boots out of three.
+        var bootsBlaming = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var seen = 0;
+        // The denominator of the bracketed figure, and deliberately not
+        // boots.Count: the record bound below can stop the walk early, and a
+        // count taken over five boots must not be printed as "of eight". The
+        // two are equal on every machine the bound does not bite — which is
+        // every machine seen so far: 8 boots carried 14 records.
+        var bootsCounted = 0;
         foreach (var boot in boots)
         {
             if (seen >= SampledOffenders) break;
+            bootsCounted++;
+            var countedHere = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var offender in boot.Offenders)
             {
                 seen++;
@@ -134,13 +151,18 @@ public sealed class BootDegradationRule : AdviseRuleBase
                 if (!worst.TryGetValue(offender.Name, out var held)
                     || offender.DegradationMs > held.DegradationMs)
                     worst[offender.Name] = offender;
+                if (countedHere.Add(offender.Name))
+                    bootsBlaming[offender.Name] =
+                        bootsBlaming.GetValueOrDefault(offender.Name) + 1;
             }
         }
-        return worst.Values
+        var blamed = worst.Values
             .OrderByDescending(o => o.DegradationMs)
             .ThenBy(Label, StringComparer.OrdinalIgnoreCase)   // ties stay stable
             .Take(TopOffenders)
+            .Select(o => (Offender: o, Boots: bootsBlaming[o.Name]))
             .ToList();
+        return (blamed, bootsCounted);
     }
 
     /// FriendlyName is genuinely empty for some programs — brisk-app.exe
