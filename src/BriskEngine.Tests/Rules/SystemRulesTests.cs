@@ -12,16 +12,6 @@ public class SystemRulesTests
     private const string SenseKey = @"HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy";
 
     [Fact]
-    public void Thermals_Hot_Finds_NullSensors_Silent()
-    {
-        var ctx = TestContext.Empty();
-        var sensors = (FakeSensors)ctx.Sensors;
-        Assert.Null(new ThermalsRule().Detect(ctx));       // null temps
-        sensors.CpuTemp = 88;
-        Assert.NotNull(new ThermalsRule().Detect(ctx));
-    }
-
-    [Fact]
     public void VisualEffects_AppearanceMode_FixesToPerformance_AndUndoes()
     {
         var ctx = TestContext.Empty();

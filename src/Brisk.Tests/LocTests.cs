@@ -428,19 +428,35 @@ public class LocTests
     /// read, render its argument, leave no stray brace, and pass every other
     /// test in this suite.
     [Theory]
-    [InlineData("en", "cannot confirm from here", "will not switch that protection off")]
-    [InlineData("tr", "buradan doğrulayamıyor", "korumayı kapatmaz")]
+    [InlineData("en", "Usually", "cannot confirm from here",
+        "will not switch that protection off",
+        new[] { "turn off", "turn it off", "switch it off", "disable",
+                "Windows Security", "you should" })]
+    [InlineData("tr", "genelde", "buradan doğrulayamıyor", "korumayı kapatmaz",
+        new[] { "kapatıp", "kapatın", "kapatarak", "kapatmayı", "kapatman",
+                "devre dışı", "Windows Güvenlik" })]
     public void ThermalsCpuUnreadEvidence_NamesTheUsualCause_WithoutClaimingIt(
-        string language, string hedge, string refusal)
+        string language, string usually, string hedge, string refusal, string[] forbidden)
     {
         var loc = new Loc();
         loc.SetLanguage(language);
 
         var evidence = loc.F("rule.thermals.evidence.cpu-unread", "GPU 78°C");
         Assert.Contains("GPU 78°C", evidence);
+        Assert.Contains(usually, evidence);     // the usual cause, not this machine's
         Assert.Contains(hedge, evidence);
         Assert.Contains(refusal, evidence);
         Assert.DoesNotContain("{", evidence);
+
+        // The refusal alone is not a guard. Appending "if you want the reading,
+        // turn memory integrity off in Windows Security and try again" leaves
+        // korumayı kapatmaz and buradan doğrulayamıyor both present: the test
+        // passes while the paragraph contradicts itself and orders the reader
+        // into a setting brisk cannot see, verify or undo. So the imperative
+        // stems are forbidden beside the refusal being required — kapatmaz
+        // stays legal, kapatıp / kapatın / kapatarak do not.
+        foreach (var order in forbidden)
+            Assert.DoesNotContain(order, evidence, StringComparison.OrdinalIgnoreCase);
     }
 
     /// The mirror template has no cause to name and must not borrow the one
@@ -458,8 +474,13 @@ public class LocTests
         var evidence = loc.F("rule.thermals.evidence.gpu-unread", "CPU 88°C");
         Assert.Contains("CPU 88°C", evidence);
         Assert.DoesNotContain("{", evidence);
+        // Stems, not sentences. Turkish Windows calls Core Isolation "çekirdek
+        // yalıtımı", and "sürücü listesi" is not "sürücüler listesinde", so a
+        // rewrite borrowing the CPU cause steps around any list spelled as the
+        // phrases actually used above. The bare stems hold the line.
         foreach (var cause in new[] { "blocklist", "WinRing0", "memory integrity",
-                                      "bellek bütünlüğü", "sürücüler listesinde" })
+                                      "bellek bütünlüğü", "çekirdek yalıtımı",
+                                      "Core Isolation", "driver", "sürücü" })
             Assert.DoesNotContain(cause, evidence, StringComparison.OrdinalIgnoreCase);
     }
 }

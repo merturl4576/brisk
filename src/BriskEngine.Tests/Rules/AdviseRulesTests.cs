@@ -122,6 +122,39 @@ public class AdviseRulesTests
         Assert.Equal("GPU 78°C", Assert.Single(finding.EvidenceArgs!));
         Assert.Contains("CPU", finding.Evidence);
         Assert.Contains("could not read", finding.Evidence);
+
+        // The engine's English is not a fallback nobody reads: the CLI prints
+        // Evidence verbatim and the GUI falls back to it whenever a resx key
+        // is missing. Pinning only the key let a rewrite into "Memory integrity
+        // is on, so Windows blocked the driver — turn it off in Windows
+        // Security" pass the whole suite, which is a stated cause brisk never
+        // read plus the one imperative this rule exists to refuse.
+        Assert.Contains("Usually", finding.Evidence);
+        Assert.Contains("cannot confirm from here", finding.Evidence);
+        foreach (var order in new[] { "turn off", "turn it off", "switch it off",
+                                      "disable", "Windows Security", "you should" })
+            Assert.DoesNotContain(order, finding.Evidence, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// The case the three tests around this one lean on never reaching a
+    /// template: nothing read means no finding, so a note has nothing to
+    /// qualify. Thresholds pinned in the same place — one degree under each is
+    /// silence, which is what makes "hot" mean anything. Lived in
+    /// SystemRulesTests until Task 5; ThermalsRule is an AdviseRuleBase and
+    /// its coverage belongs in one file.
+    [Fact]
+    public void Thermals_NothingRead_OrNothingHot_Silent()
+    {
+        var ctx = TestContext.Empty();
+        var sensors = (FakeSensors)ctx.Sensors;
+        Assert.Null(new ThermalsRule().Detect(ctx));        // neither sensor read
+
+        sensors.GpuTemp = 69;                               // GPU fires at 70
+        Assert.Null(new ThermalsRule().Detect(ctx));
+
+        sensors.GpuTemp = null;
+        sensors.CpuTemp = 74;                               // CPU fires at 75
+        Assert.Null(new ThermalsRule().Detect(ctx));
     }
 
     /// The mirror case has the same defect and a different honest answer: a
@@ -140,7 +173,9 @@ public class AdviseRulesTests
         Assert.Equal("CPU 88°C", Assert.Single(finding.EvidenceArgs!));
         Assert.Contains("GPU", finding.Evidence);
         Assert.Contains("could not read", finding.Evidence);
-        Assert.DoesNotContain("blocklist", finding.Evidence);
+        foreach (var cause in new[] { "blocklist", "WinRing0", "driver",
+                                      "memory integrity", "Core Isolation" })
+            Assert.DoesNotContain(cause, finding.Evidence, StringComparison.OrdinalIgnoreCase);
     }
 
     /// And when both answered, the note must not appear — a permanent "some of
