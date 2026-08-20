@@ -102,4 +102,61 @@ public class AdviseRulesTests
         Assert.NotNull(finding);
         Assert.Contains("npm", finding!.Evidence);
     }
+
+    /// TASK 5. Wave 1's elevation manifest was justified by CPU temperature and
+    /// does not deliver it: LibreHardwareMonitor reads CPU temps through the
+    /// WinRing0 kernel driver, which sits on Microsoft's vulnerable-driver
+    /// blocklist, so a machine running memory integrity refuses to load it at
+    /// any privilege level. GPU temperature reads with no elevation at all.
+    /// On a default Windows 11 this finding is therefore permanently GPU-only,
+    /// and one number with nothing beside it reads as the whole machine.
+    [Fact]
+    public void Thermals_CpuUnread_SaysSo_AndStillNamesWhatItRead()
+    {
+        var ctx = TestContext.Empty();
+        var sensors = (FakeSensors)ctx.Sensors;
+        sensors.GpuTemp = 78;                       // hot; CPU stays unread
+        var finding = new ThermalsRule().Detect(ctx);
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence.cpu-unread", finding!.EvidenceKey);
+        Assert.Equal("GPU 78°C", Assert.Single(finding.EvidenceArgs!));
+        Assert.Contains("CPU", finding.Evidence);
+        Assert.Contains("could not read", finding.Evidence);
+    }
+
+    /// The mirror case has the same defect and a different honest answer: a
+    /// missing GPU reading has no cause brisk knows, so the note names none.
+    /// Borrowing the CPU sentence here would assert a blocklisted driver as the
+    /// reason a GPU sensor is silent, which is not a thing that happens.
+    [Fact]
+    public void Thermals_GpuUnread_SaysSo_WithoutInventingAReason()
+    {
+        var ctx = TestContext.Empty();
+        var sensors = (FakeSensors)ctx.Sensors;
+        sensors.CpuTemp = 88;                       // hot; GPU stays unread
+        var finding = new ThermalsRule().Detect(ctx);
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence.gpu-unread", finding!.EvidenceKey);
+        Assert.Equal("CPU 88°C", Assert.Single(finding.EvidenceArgs!));
+        Assert.Contains("GPU", finding.Evidence);
+        Assert.Contains("could not read", finding.Evidence);
+        Assert.DoesNotContain("blocklist", finding.Evidence);
+    }
+
+    /// And when both answered, the note must not appear — a permanent "some of
+    /// this was not read" would train the reader to skip the sentence on the
+    /// machines where it is true.
+    [Fact]
+    public void Thermals_BothSensorsAnswer_NoUnreadNote()
+    {
+        var ctx = TestContext.Empty();
+        var sensors = (FakeSensors)ctx.Sensors;
+        sensors.CpuTemp = 88;
+        sensors.GpuTemp = 78;
+        var finding = new ThermalsRule().Detect(ctx);
+        Assert.NotNull(finding);
+        Assert.Equal("rule.thermals.evidence", finding!.EvidenceKey);
+        Assert.Equal("CPU 88°C, GPU 78°C", Assert.Single(finding.EvidenceArgs!));
+        Assert.DoesNotContain("could not read", finding.Evidence);
+    }
 }

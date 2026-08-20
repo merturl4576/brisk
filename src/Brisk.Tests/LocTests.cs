@@ -135,6 +135,8 @@ public class LocTests
     [InlineData("rule.storage-sense.evidence")]
     [InlineData("rule.ram-pressure.evidence")]
     [InlineData("rule.thermals.evidence")]
+    [InlineData("rule.thermals.evidence.cpu-unread")]
+    [InlineData("rule.thermals.evidence.gpu-unread")]
     [InlineData("rule.disk-forecast.evidence")]
     [InlineData("rule.memory-speed.advice")]
     [InlineData("rule.memory-speed.evidence")]
@@ -414,5 +416,50 @@ public class LocTests
         loc.PropertyChanged += (_, e) => raised = e.PropertyName;
         loc.SetLanguage("tr");
         Assert.Equal("Item[]", raised);
+    }
+
+    /// TASK 5. brisk knows exactly one reason a CPU temperature comes back
+    /// unread — WinRing0 on Microsoft's vulnerable-driver blocklist, which a
+    /// machine running memory integrity will not load — and it does NOT know
+    /// that this is the reason on the machine in front of it. The engine's
+    /// English is pinned by AdviseRulesTests; this pins the templates the GUI
+    /// renders, in both languages, because a Turkish rewrite into a flat "your
+    /// machine has memory integrity on" would assert something brisk never
+    /// read, render its argument, leave no stray brace, and pass every other
+    /// test in this suite.
+    [Theory]
+    [InlineData("en", "cannot confirm from here", "will not switch that protection off")]
+    [InlineData("tr", "buradan doğrulayamıyor", "korumayı kapatmaz")]
+    public void ThermalsCpuUnreadEvidence_NamesTheUsualCause_WithoutClaimingIt(
+        string language, string hedge, string refusal)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var evidence = loc.F("rule.thermals.evidence.cpu-unread", "GPU 78°C");
+        Assert.Contains("GPU 78°C", evidence);
+        Assert.Contains(hedge, evidence);
+        Assert.Contains(refusal, evidence);
+        Assert.DoesNotContain("{", evidence);
+    }
+
+    /// The mirror template has no cause to name and must not borrow the one
+    /// above: a blocked kernel driver is not why a GPU sensor goes quiet, and
+    /// translating the two into one paragraph is the cheapest way to end up
+    /// saying it does.
+    [Theory]
+    [InlineData("en")]
+    [InlineData("tr")]
+    public void ThermalsGpuUnreadEvidence_StopsAtTheFact(string language)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var evidence = loc.F("rule.thermals.evidence.gpu-unread", "CPU 88°C");
+        Assert.Contains("CPU 88°C", evidence);
+        Assert.DoesNotContain("{", evidence);
+        foreach (var cause in new[] { "blocklist", "WinRing0", "memory integrity",
+                                      "bellek bütünlüğü", "sürücüler listesinde" })
+            Assert.DoesNotContain(cause, evidence, StringComparison.OrdinalIgnoreCase);
     }
 }
