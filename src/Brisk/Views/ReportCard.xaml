@@ -72,14 +72,14 @@
                                 <Setter Property="GlowColor"
                                         Value="{StaticResource HeroGoodColor}" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
                                                  Value="SeverityWarning">
                                         <Setter Property="LitBrush"
                                                 Value="{StaticResource HeroWarn}" />
                                         <Setter Property="GlowColor"
                                                 Value="{StaticResource HeroWarnColor}" />
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                    <DataTrigger Binding="{Binding ScoreBrushKey}"
                                                  Value="SeverityCritical">
                                         <Setter Property="LitBrush"
                                                 Value="{StaticResource HeroCrit}" />
@@ -90,14 +90,34 @@
                             </Style>
                         </Brisk:SegmentedGauge.Style>
                     </Brisk:SegmentedGauge>
+                    <!-- Foreground is set here, locally, and that is not
+                         redundant with the style. HeroScore's triggers paint
+                         the numeral in the score's band, which is right in the
+                         app's cockpit and wrong here: on the card the ring
+                         beside it already carries the band, and a red numeral
+                         inside a red ring is the same claim twice. A local
+                         value outranks a style trigger, so the card keeps its
+                         white digits without the style needing a card-shaped
+                         exception — and without leaving a trigger bound to a
+                         property nothing exposes, which is what this element
+                         carried before ScoreBrushKey got its real name. -->
                     <TextBlock Style="{StaticResource HeroScore}" FontSize="52"
+                               Foreground="{StaticResource HeroText}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Text="{Binding Health}" />
                 </Grid>
                 <!-- Right: the three sections. Centred with the gauge: this
                      card is posted as an image, and a top-anchored column
                      leaves the bottom half reading as unfinished. -->
-                <StackPanel Grid.Column="1" Margin="36,0,0,0"
+                <!-- Named so a test can weigh what this column asks for
+                     against the height the Grid actually gives it. Nothing
+                     here scrolls, wraps or shrinks, and WPF's layout clip
+                     cuts whatever does not fit at the Grid's edge — so a
+                     card with one fix row too many loses that row silently,
+                     with no exception and nothing on the picture to say a
+                     row is missing. The fix list is capped in the model;
+                     this name is how the cap is held to the frame. -->
+                <StackPanel x:Name="Body" Grid.Column="1" Margin="36,0,0,0"
                             VerticalAlignment="Center">
                     <TextBlock FontSize="14" Typography.Capitals="AllSmallCaps"
                                Foreground="{StaticResource HeroMuted}"

@@ -162,6 +162,60 @@ public class ReportCardModelTests
         Assert.False(without.HasFixes);
     }
 
+    /// The card's frame is fixed and nothing in it clips, so a fix list long
+    /// enough to outgrow the body used to draw off both ends of the bitmap and
+    /// vanish — no error, no test that could see it, and a shareable picture
+    /// with its top and bottom sheared off. The journal is uncapped and a
+    /// machine that has run fix-all carries eight or ten entries, so the cap
+    /// is here and the remainder is counted rather than dropped.
+    [Theory]
+    [InlineData(9)]      // exactly the budget: every fix keeps its own row
+    [InlineData(10)]     // one over: eight rows plus "and 2 more"
+    [InlineData(16)]     // one per rule in the registry, the realistic worst case
+    public void Fixes_AreCappedAtTheFrame_WithTheRemainderCounted(int count)
+    {
+        var fixes = Enumerable.Range(0, count)
+            .Select(i => new UndoableFix($"rule-{i:00}",
+                new DateTime(2026, 8, 20, 10, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
+            .ToArray();
+        var snapshot = TestData.Snapshot(null, new SensorStatus(true, true, null));
+
+        var card = ReportCardModel.Build(snapshot, fixes, Loc("en"));
+
+        Assert.True(card.Fixes.Count <= ReportCardModel.MaxFixRows,
+            $"{count} fixes produced {card.Fixes.Count} rows");
+        if (count <= ReportCardModel.MaxFixRows)
+        {
+            Assert.Equal(count, card.Fixes.Count);
+            Assert.DoesNotContain(card.Fixes, row => row.Contains("more"));
+            return;
+        }
+        // The last row is the count, and it counts everything the rows above
+        // it did not show — a card that said "and 2 more" while hiding six
+        // would be the same untruth in a smaller font.
+        Assert.Equal(ReportCardModel.MaxFixRows, card.Fixes.Count);
+        var hidden = count - (ReportCardModel.MaxFixRows - 1);
+        Assert.Equal(Loc("en").F("overview.revelation.more", hidden), card.Fixes[^1]);
+    }
+
+    /// Newest first survives the cap: the row that falls off the end is the
+    /// oldest fix, not whichever one the journal happened to list last.
+    [Fact]
+    public void Fixes_KeepTheNewest_WhenTheCapBites()
+    {
+        var fixes = Enumerable.Range(0, 12)
+            .Select(i => new UndoableFix($"rule-{i:00}",
+                new DateTime(2026, 8, 10, 10, 0, 0, DateTimeKind.Utc).AddDays(i)))
+            .ToArray();
+        var snapshot = TestData.Snapshot(null, new SensorStatus(true, true, null));
+
+        var card = ReportCardModel.Build(snapshot, fixes, Loc("en"));
+
+        Assert.Equal("2026-08-21", card.Fixes[0][^10..]);    // rule-11, the newest
+        Assert.Equal("2026-08-14", card.Fixes[7][^10..]);    // rule-04, the last shown
+        Assert.Equal(Loc("en").F("overview.revelation.more", 4), card.Fixes[^1]);
+    }
+
     /// The privacy ban, enforced on output rather than on good intentions:
     /// plant the user's name, the machine name, and a profile path into every
     /// engine-authored string a finding carries, and prove none of them can
@@ -221,7 +275,7 @@ public class ReportCardModelTests
     [InlineData(69, "SeverityCritical")]
     [InlineData(35, "SeverityCritical")]
     [InlineData(0, "SeverityCritical")]
-    public void HealthBrushKey_BandsTheScoreTheWayTheRestOfTheAppDoes(
+    public void ScoreBrushKey_BandsTheScoreTheWayTheRestOfTheAppDoes(
         int health, string expected)
     {
         var snapshot = TestData.Snapshot(null, new SensorStatus(true, true, null))
@@ -229,7 +283,7 @@ public class ReportCardModelTests
 
         var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), Loc("en"));
 
-        Assert.Equal(expected, card.HealthBrushKey);
-        Assert.Equal(HealthBrush.KeyFor(health), card.HealthBrushKey);
+        Assert.Equal(expected, card.ScoreBrushKey);
+        Assert.Equal(HealthBrush.KeyFor(health), card.ScoreBrushKey);
     }
 }

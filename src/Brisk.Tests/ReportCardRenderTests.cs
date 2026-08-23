@@ -1,15 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Brisk.Services;
 using Brisk.ViewModels;
+using Brisk.Views;
 using BriskEngine.Diagnostics;
 using BriskEngine.Models;
 using Xunit;
 // WinForms is on in this project, so bare Color is ambiguous.
 using Color = System.Windows.Media.Color;
+using Size = System.Windows.Size;
 
 namespace Brisk.Tests;
 
@@ -38,6 +43,13 @@ public class ReportCardRenderTests
     /// rendered at 2x. The quiet card writes almost no ink this far left.
     private const int LeadFromX = 384 * 2;
     private const int LeadToX = (384 + 200) * 2;
+
+    /// A box around the numeral in the middle of the gauge, well inside the
+    /// ring's arc and clear of the "brisk" wordmark up in the top strip.
+    private const int NumeralFromX = 140 * 2;
+    private const int NumeralToX = 260 * 2;
+    private const int NumeralFromY = 400 * 2;
+    private const int NumeralToY = 520 * 2;
 
     private static Brisk.Localization.Loc English()
     {
@@ -101,7 +113,7 @@ public class ReportCardRenderTests
     /// file rather than the RenderTargetBitmap, so what is counted is what a
     /// reader would actually see.
     private static int PixelsNear(string path, Color target, int tolerance = 12,
-        int fromX = 0, int toX = int.MaxValue)
+        int fromX = 0, int toX = int.MaxValue, int fromY = 0, int toY = int.MaxValue)
     {
         BitmapSource frame;
         using (var stream = File.OpenRead(path))
@@ -117,7 +129,8 @@ public class ReportCardRenderTests
         for (var i = 0; i < pixels.Length; i += 4)
         {
             var x = i / 4 % width;
-            if (x < fromX || x >= toX) continue;
+            var y = i / 4 / width;
+            if (x < fromX || x >= toX || y < fromY || y >= toY) continue;
             if (Math.Abs(pixels[i + 2] - target.R) <= tolerance
                 && Math.Abs(pixels[i + 1] - target.G) <= tolerance
                 && Math.Abs(pixels[i] - target.B) <= tolerance)
@@ -198,6 +211,148 @@ public class ReportCardRenderTests
         // The tall card is also the one where the centred column could clip,
         // so prove the ring beside it still rendered.
         Assert.True(amber > 3_000, $"the full card's ring is not lit: {amber}");
+    }
+
+    /// The numeral in the middle of the ring stays the card's own ink at every
+    /// band. It wears HeroScore, whose triggers paint the score in its band
+    /// colour — right in the app's cockpit, wrong here, where the ring around
+    /// it already carries the band and a red numeral inside a red ring says
+    /// the same thing twice. Those triggers bound a property the card's model
+    /// did not expose until this round, so the numeral rendered white by
+    /// accident; it is white on purpose now, and this is what says so.
+    [Theory]
+    [InlineData(95)]
+    [InlineData(72)]
+    [InlineData(35)]
+    public void Render_KeepsTheNumeralInTheCardsOwnInk(int health)
+    {
+        var path = Render(Card(health));
+
+        var white = PixelsNear(path, Ink, fromX: NumeralFromX, toX: NumeralToX,
+            fromY: NumeralFromY, toY: NumeralToY);
+        var banded = PixelsNear(path, Good, fromX: NumeralFromX, toX: NumeralToX,
+                fromY: NumeralFromY, toY: NumeralToY)
+            + PixelsNear(path, Warn, fromX: NumeralFromX, toX: NumeralToX,
+                fromY: NumeralFromY, toY: NumeralToY)
+            + PixelsNear(path, Crit, fromX: NumeralFromX, toX: NumeralToX,
+                fromY: NumeralFromY, toY: NumeralToY);
+
+        Assert.True(white > 500, $"the numeral is not written in ink: {white} pixels");
+        Assert.True(banded < 100, $"the numeral is wearing its band: {banded} pixels");
+    }
+
+    /// The worst card brisk can build: five findings (the picker's maximum),
+    /// both sensors silent with a measured reason (the longest unread
+    /// sentence), and far more fixes than the frame holds.
+    ///
+    /// The card is a fixed 1600x900 with nothing in it that scrolls, wraps or
+    /// shrinks. What actually happens to a body column taller than its Grid is
+    /// WPF's layout clip: the column is cut at the Grid's edge and the rows
+    /// past it are simply not drawn. No exception, no warning, and nothing on
+    /// the picture to say a row is missing — a shareable PNG quietly short of
+    /// the truth, and the failure mode no pixel count can see, because a
+    /// clipped card and a card that fits look equally tidy.
+    ///
+    /// So this weighs the column's own appetite against the height it is
+    /// given, on the real control with the real dictionaries. The children of
+    /// a StackPanel are measured with unbounded height in the stacking
+    /// direction, so their DesiredSize is what they WANT — unclamped, unlike
+    /// the panel's own, which layout has already trimmed to the slot.
+    /// Both languages, because the card is rendered in the one the install is
+    /// set to and a Turkish sentence that wrapped onto a third line would be a
+    /// row of fixes off the bottom of a card nobody had tested.
+    [Theory]
+    [InlineData("en")]
+    [InlineData("tr")]
+    public void WorstCaseCard_FitsInsideTheFrameItIsDrawnInto(string language)
+    {
+        var loc = new Brisk.Localization.Loc();
+        loc.SetLanguage(language);
+        var manyFixes = Enumerable.Range(0, 16)
+            .Select(i => new UndoableFix($"rule-{i:00}",
+                new DateTime(2026, 8, 21, 9, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
+            .ToArray();
+        // MemoryIntegrityOn null is the LONGEST unread sentence in both
+        // languages: the measured variants say less, because brisk knows more.
+        var model = ReportCardModel.Build(
+            TestData.Snapshot(LongTitledFindings(), new SensorStatus(false, false, null))
+                with { Health = 35 },
+            manyFixes, loc);
+        Assert.Equal(ReportCardModel.MaxFixRows, model.Fixes.Count);
+
+        var (wanted, given) = MeasureBody(model);
+
+        Assert.True(wanted <= given,
+            $"the body column wants {wanted:F0}px and the frame gives it {given:F0}px "
+            + $"— {ReportCardModel.MaxFixRows} fix rows do not fit and the ones past "
+            + "the edge are clipped away without a word");
+    }
+
+    /// The quiet card at the other end, so the frame check is not passing on
+    /// a layout that happens to be empty.
+    [Fact]
+    public void QuietCard_AlsoFitsInsideTheFrame()
+    {
+        var (wanted, given) = MeasureBody(Card(95));
+
+        Assert.True(wanted > 0, "the body column measured nothing at all");
+        Assert.True(wanted <= given,
+            $"the body column wants {wanted:F0}px, the frame gives {given:F0}px");
+    }
+
+    /// Five findings wearing titles as long as the real registry's longest,
+    /// because the finding text wraps and TestData's "Title aa-fake" does not
+    /// measure what a shipped rule puts on the card.
+    private static List<DiagnosticFinding> LongTitledFindings()
+    {
+        var titles = new[]
+        {
+            "Windows is taking noticeably longer to start than it used to",
+            "The display is running below the refresh rate it supports",
+            "Too many programs are starting with Windows and slowing the login",
+            "Storage Sense is off, so temporary files are never cleared for you",
+            "Memory is running below the speed the installed modules are rated for",
+        };
+        return titles.Select((title, i) => new DiagnosticFinding(
+                $"long-{i}", $"rule.long-{i}.title", title, $"Evidence long-{i}",
+                Severity.Warning, RuleCategory.Advise, 3, CanFix: false,
+                FixDescription: null, Headline: H($"{i}00 ms")))
+            .ToList();
+    }
+
+    /// Lays the real ReportCard out at its real size on an STA thread and
+    /// answers what its body column asked for and what the Grid handed it.
+    private static (double Wanted, double Given) MeasureBody(ReportCardModel model)
+    {
+        var wanted = 0.0;
+        var given = 0.0;
+        OnStaThread(() =>
+        {
+            var card = new ReportCard { DataContext = model };
+            card.Measure(new Size(ReportCardRenderer.Width, ReportCardRenderer.Height));
+            card.Arrange(new Rect(0, 0, ReportCardRenderer.Width, ReportCardRenderer.Height));
+            card.UpdateLayout();
+            foreach (UIElement child in card.Body.Children)
+                wanted += child.DesiredSize.Height;
+            given = ((FrameworkElement)VisualTreeHelper.GetParent(card.Body)).ActualHeight;
+        });
+        return (wanted, given);
+    }
+
+    /// WPF objects demand an STA thread and the test runner does not have one
+    /// — the same reason ReportCardRenderer.RenderOnStaThread exists.
+    private static void OnStaThread(Action work)
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try { work(); }
+            catch (Exception ex) { failure = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (failure is not null) throw failure;
     }
 
     /// `brisk-app.exe report --out card.png`. Path.GetDirectoryName returns an
