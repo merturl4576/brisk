@@ -434,4 +434,25 @@ public class BootDegradationRuleTests
         Assert.Contains("First 90 s (1/1)", evidence);
         Assert.Contains("the middle of the 3 most recent boots", evidence);
     }
+
+    /// The headline is the median (57089 ms of these three -> "57 s"), never
+    /// the worst boot — the same number the evidence sentence leads with.
+    [Fact]
+    public void Headline_CarriesTheMedian_WithBareDigitsForLocalization()
+    {
+        var ctx = Context(
+            Boot(51237),
+            Boot(111814, Blamed("Spotify.exe", "Spotify", 37141)),
+            Boot(57089));
+
+        var h = new BootDegradationRule().Detect(ctx)!.Headline;
+
+        Assert.NotNull(h);
+        Assert.Equal("57 s", h!.Value);
+        Assert.Equal("boot time — the middle of the last 3 boots", h.Caption);
+        Assert.Equal("rule.boot-degradation.headline.value", h.ValueKey);
+        Assert.Equal(new[] { "57" }, h.ValueArgs);
+        Assert.Equal("rule.boot-degradation.headline.caption", h.CaptionKey);
+        Assert.Equal(new[] { "3" }, h.CaptionArgs);
+    }
 }
