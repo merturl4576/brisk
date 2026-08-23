@@ -19,6 +19,15 @@ public static class ReportCardRenderer
 
     public static void RenderToFile(ReportCardModel model, string path)
     {
+        // Before the work, not after it: a relative name resolves here, a
+        // missing folder is made here, and an unwritable one is refused here
+        // rather than at the end of a 23 MB render. GetDirectoryName returns
+        // an empty string — not null — for a bare 'card.png', and
+        // CreateDirectory("") throws, so a plain --out filename used to buy
+        // an ArgumentException instead of a card.
+        var dir = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
         var card = new ReportCard { DataContext = model };
         card.Measure(new Size(Width, Height));
         card.Arrange(new Rect(0, 0, Width, Height));
@@ -32,7 +41,6 @@ public static class ReportCardRenderer
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
 
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var stream = File.Create(path);
         encoder.Save(stream);
     }
