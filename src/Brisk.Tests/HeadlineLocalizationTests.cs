@@ -38,6 +38,8 @@ public class HeadlineLocalizationTests
     [InlineData("rule.display-refresh.headline.caption", "144",
         "the display supports 144 Hz", "ekran 144 Hz destekliyor")]
     [InlineData("rule.startup-bloat.headline.value", "13", "13", "13")]
+    [InlineData("rule.startup-bloat.headline.caption", "x",
+        "programs start with Windows", "program Windows ile başlıyor")]
     [InlineData("rule.disk-breakdown.headline.value", "57.7 GB", "57.7 GB", "57.7 GB")]
     [InlineData("rule.disk-breakdown.headline.caption", "Desktop",
         "Desktop — the largest measured folder", "Desktop — ölçülen en büyük klasör")]
