@@ -9,9 +9,22 @@ $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects'
 # the write would hide its own failure, and the restore would announce a change
 # it never verified. OpenSubKey separates the two - $null only when the key
 # genuinely does not exist, an exception when it exists and cannot be opened.
+#
+# The hive is taken from the path, never assumed. An earlier version stripped
+# the prefix and then opened HKCU whatever the caller passed, so asking it for
+# an HKLM path quietly read the HKCU key of the same name, found nothing, and
+# answered "absent" - the very fail-open shape this read exists to remove, one
+# level up in the thing removing it. HKLM is listed rather than refused because
+# proving this helper works needs a key that exists and cannot be read, and
+# HKLM\SECURITY is the one every Windows has.
 function Read-Value([string] $path, [string] $name) {
+    $root = switch -Wildcard ($path) {
+        'HKCU:\*' { [Microsoft.Win32.Registry]::CurrentUser }
+        'HKLM:\*' { [Microsoft.Win32.Registry]::LocalMachine }
+        default   { throw "Read-Value does not handle this registry root: $path" }
+    }
     $sub = $path.Substring($path.IndexOf('\') + 1)
-    try { $k = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($sub) }
+    try { $k = $root.OpenSubKey($sub) }
     catch { throw "could not read $path to verify the restore ($($_.Exception.Message)) - state file kept" }
     if ($null -eq $k) { return $null }
     try { return $k.GetValue($name, $null) } finally { $k.Close() }
