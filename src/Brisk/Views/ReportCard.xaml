@@ -1,0 +1,139 @@
+<UserControl x:Class="Brisk.Views.ReportCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Brisk.Localization"
+             xmlns:Brisk="clr-namespace:Brisk.Views"
+             Width="1600" Height="900">
+    <!-- Rendered offscreen, possibly with no Application object alive (the
+         console face). The dictionaries are merged HERE so StaticResource
+         and DynamicResource both resolve from the control's own tree. The
+         card is dark by decision, so Dark.xaml is not a theme choice — it
+         is the card.
+
+         The URIs name brisk-app explicitly, unlike ThemeManager's short
+         "pack://application:,,,/Theming/…". The short form resolves against
+         whatever assembly happens to be the ENTRY one, which is brisk-app.exe
+         only when the window is the process. Under the test host — and under
+         any host that loads this assembly as a library — it resolves against
+         the host and throws "cannot locate resource 'theming/dark.xaml'".
+         The ";component" form asks the assembly that owns the card. -->
+    <!-- The order is the contract: Dark.xaml first, because Shared.xaml's
+         Hero* family and its DynamicResource theme keys are built on the
+         base palette Dark.xaml defines. -->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/brisk-app;component/Theming/Dark.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/brisk-app;component/Theming/Shared.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Border Background="{StaticResource HeroSurface}" Padding="48,40">
+        <DockPanel>
+            <!-- Top strip: identity left, scan date + version right. -->
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,26">
+                <TextBlock Text="brisk" FontSize="30" FontWeight="SemiBold"
+                           FontFamily="Segoe UI Variable Display, Segoe UI"
+                           Foreground="{StaticResource HeroText}" />
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock FontSize="14" Foreground="{StaticResource HeroMuted}"
+                               FontFamily="Cascadia Mono, Consolas"
+                               Text="{Binding DateText}" />
+                    <TextBlock FontSize="14" Foreground="{StaticResource HeroMuted}"
+                               FontFamily="Cascadia Mono, Consolas" Margin="18,0,0,0"
+                               Text="{Binding VersionText}" />
+                </StackPanel>
+            </DockPanel>
+            <!-- Bottom strip: the one quiet line. -->
+            <TextBlock DockPanel.Dock="Bottom" Margin="0,24,0,0" FontSize="13"
+                       Foreground="{StaticResource HeroMuted}"
+                       FontFamily="Cascadia Mono, Consolas"
+                       Text="{Binding RepoLine}" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <!-- Left: the health gauge, static. -->
+                <Grid Grid.Column="0" Width="240" Height="240" VerticalAlignment="Top">
+                    <Brisk:SegmentedGauge Width="240" Height="240" Layer="Unlit"
+                                          UnlitBrush="{StaticResource HeroUnlit}"
+                                          Score="{Binding Health}" />
+                    <Brisk:SegmentedGauge Width="240" Height="240" Layer="Lit"
+                                          LitBrush="{StaticResource HeroGood}"
+                                          GlowColor="{StaticResource HeroGoodColor}"
+                                          Score="{Binding Health}" />
+                    <TextBlock Style="{StaticResource HeroScore}" FontSize="52"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Text="{Binding Health}" />
+                </Grid>
+                <!-- Right: the three sections. -->
+                <StackPanel Grid.Column="1" Margin="36,0,0,0">
+                    <TextBlock FontSize="13" Typography.Capitals="AllSmallCaps"
+                               Foreground="{StaticResource HeroMuted}"
+                               Text="{Binding [report.section.findings], Source={x:Static loc:Loc.Instance}}" />
+                    <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Findings}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,9">
+                                    <TextBlock DockPanel.Dock="Left" Width="170"
+                                               FontSize="24" FontWeight="SemiBold"
+                                               FontFamily="Segoe UI Variable Display, Segoe UI"
+                                               Foreground="{StaticResource HeroText}"
+                                               Text="{Binding Lead}" />
+                                    <TextBlock FontSize="16" VerticalAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               Foreground="{StaticResource HeroText}"
+                                               Text="{Binding Text}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock FontSize="15" TextWrapping="Wrap"
+                               Foreground="{StaticResource HeroMuted}"
+                               Text="{Binding FindingsEmptyText}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FindingsEmptyText}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Margin="0,22,0,0" FontSize="13"
+                               Typography.Capitals="AllSmallCaps"
+                               Foreground="{StaticResource HeroMuted}"
+                               Text="{Binding [report.section.unread], Source={x:Static loc:Loc.Instance}}" />
+                    <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Unread}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontSize="15" TextWrapping="Wrap" Margin="0,0,0,4"
+                                           Foreground="{StaticResource HeroText}"
+                                           Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Margin="0,22,0,0"
+                                Visibility="{Binding HasFixes,
+                                    Converter={x:Static Brisk:BoolToVis.Instance}}">
+                        <TextBlock FontSize="13" Typography.Capitals="AllSmallCaps"
+                                   Foreground="{StaticResource HeroMuted}"
+                                   Text="{Binding [report.section.fixes], Source={x:Static loc:Loc.Instance}}" />
+                        <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Fixes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock FontSize="15" Margin="0,0,0,4"
+                                               Foreground="{StaticResource HeroText}"
+                                               Text="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </DockPanel>
+    </Border>
+</UserControl>
