@@ -40,9 +40,9 @@ public sealed class DiskBreakdownRule : AdviseRuleBase
             {
                 line += " (over threshold)";
                 hasOverage = true;
-                if (largest is null || size > largest.Value.Size)
-                    largest = (label, size);
             }
+            if (largest is null || size > largest.Value.Size)
+                largest = (label, size);
             evidence.Add(line);
         }
 

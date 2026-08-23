@@ -293,4 +293,26 @@ public class AdviseRulesTests
         Assert.Equal("rule.disk-breakdown.headline.caption", h.CaptionKey);
         Assert.Equal(new[] { "AppData\\Local" }, h.CaptionArgs);
     }
+
+    /// 45 GB in Local (under its 50 GB threshold) and 12 GB in Downloads
+    /// (over its 10 GB threshold): the finding fires because of Downloads,
+    /// but the caption promises "the largest measured folder" — so the
+    /// headline must be Local, threshold or not.
+    [Fact]
+    public void DiskBreakdown_Headline_IsTheLargestFolder_EvenUnderItsOwnThreshold()
+    {
+        var ctx = TestContext.Empty();
+        var files = (FakeFiles)ctx.Files;
+        files.Sizes[PathExpander.Expand("%LOCALAPPDATA%")!] = 45L << 30;
+        files.Sizes[PathExpander.Expand(@"%USERPROFILE%\Downloads")!] = 12L << 30;
+
+        var finding = new DiskBreakdownRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        var h = finding!.Headline;
+        Assert.NotNull(h);
+        Assert.Equal("45.0 GB", h!.Value);
+        Assert.Equal(new[] { "45.0 GB" }, h.ValueArgs);
+        Assert.Equal(new[] { "AppData\\Local" }, h.CaptionArgs);
+    }
 }
