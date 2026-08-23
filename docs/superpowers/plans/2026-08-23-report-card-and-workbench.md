@@ -749,16 +749,28 @@ Ten scripts, one per direction:
 >   localized output. The draft's `-replace` failed open: on a non-English
 >   Windows the pattern does not match, `-replace` returns the whole line, and
 >   that line went into the state file as the "GUID" to restore;
-> - the power-plan restore verifies the switch actually happened, and keeps the
->   state file when it did not. The draft deleted the file unconditionally, so
->   a restore `powercfg` had refused left no record of the original scheme at
->   all — a genuine no-path-back recipe;
-> - there is no `New-Item -Path <registryKey> -Force` anywhere. On the registry
->   provider that REPLACES the key: at the draft's three call sites it would
->   have taken `Explorer\VisualEffects`'s nineteen subkeys, Storage Sense's
->   sibling values, or a GPO-managed Explorer policy key with it;
-> - every restore reads back what it wrote before it says "put back exactly",
->   and says something else when it cannot see;
+> - the power-plan restore refuses a state file that does not hold a scheme
+>   GUID, and keeps the file when `powercfg` rejects the switch. The draft
+>   deleted it unconditionally, so a restore `powercfg` had refused left no
+>   record of the original scheme at all — a genuine no-path-back recipe;
+> - `New-Item -Path <registryKey> -Force` never runs against a key that is
+>   already there. On this provider `-Force` REPLACES the key, and the drafts
+>   used it unconditionally at three sites, where it would have taken
+>   `Explorer\VisualEffects`'s nineteen subkeys, Storage Sense's sibling
+>   values, or a GPO-managed Explorer policy key with it. Three shipped scripts
+>   still reach for it, because a genuinely absent key has to be created
+>   somehow — but each one first checks that the key is absent, and the plants
+>   record which keys they invented so the restore can remove those, and only
+>   those, and only while they are still as empty as the plant left them;
+> - the four registry restores read the value back and compare it to the record
+>   before they say "put back exactly", through a read that tells absent from
+>   unreadable and keeps the state file when it cannot see. The other two have
+>   nothing to read back that way and do not pretend otherwise:
+>   `restore-power-plan.ps1` checks `powercfg`'s exit code — a native
+>   executable is outside `$ErrorActionPreference` — and
+>   `restore-display-refresh.ps1` checks the `DISP_CHANGE` code; both keep the
+>   state file when the call was refused. Each script's own comment says what
+>   it actually verifies, and that is the phrasing to trust;
 > - `restore-startup-bloat.ps1` removes only values it can confirm are the ones
 >   this workbench planted, rather than any name that turns up in a state file;
 > - and the planted `HKCU\Run` values are not "six inert values", as the
