@@ -41,12 +41,15 @@ public sealed class ReportCardModel
     public bool HasFixes => Fixes.Count > 0;
     public string RepoLine => "github.com/merturl4576/brisk";
 
-    /// The card is a fixed 1600x900 frame and nothing in it clips: the
-    /// right-hand column is vertically centred in a Grid that lets content
-    /// taller than the body draw straight off BOTH ends, where the bitmap
-    /// never sees it. It does not scroll, wrap or shrink — it silently
-    /// disappears, and a picture with its top and bottom sheared off is
-    /// exactly the kind of thing a person posts without noticing.
+    /// The card is a fixed 1600x900 frame, and the right-hand column does not
+    /// scroll, wrap or shrink. What happens to a column taller than its Grid
+    /// is WPF's layout clip: the column is cut at the Grid's edge and the rows
+    /// past it are never drawn. Silently — no exception, no warning, and
+    /// nothing on the picture to say a row is missing, which is exactly the
+    /// kind of thing a person posts without noticing. It is also the failure
+    /// no pixel count can see, because a clipped card and a card that fits
+    /// look equally tidy; the render test weighs the column's desired height
+    /// against the height the Grid gives it instead.
     ///
     /// The findings section is already bounded: the picker takes five at
     /// most, and the render test covers that maximum. The fix list is not —
@@ -82,9 +85,15 @@ public sealed class ReportCardModel
     }
 
     /// Newest first, capped at what the frame holds, and honest about the
-    /// remainder. "overview.revelation.more" is the app's existing "and {0}
-    /// more" — already localized, already used for exactly this job one
-    /// surface over, so the card does not invent a second way to say it.
+    /// remainder — in a sentence about the right things.
+    ///
+    /// This borrowed "overview.revelation.more", which reads "and {0} more" in
+    /// English and looks like the same line. It is not: the Turkish is "ve {0}
+    /// bulgu daha" — and {0} more FINDINGS — because that key belongs to the
+    /// overview's revelation band. Under "Uygulanan düzeltmeler" on a shared
+    /// PNG it counted the wrong things out loud, in the one language the
+    /// maintainer actually reads the app in. English parity is what hid it, so
+    /// the fixes list has its own key and its own Turkish noun.
     private static IReadOnlyList<string> FixRows(
         IReadOnlyList<UndoableFix> undoable, Loc loc)
     {
@@ -100,7 +109,7 @@ public sealed class ReportCardModel
         // own. Truncating to the budget and appending the line would put
         // MaxFixRows + 1 rows on the card — the overflow this exists to stop.
         var shown = rows.Take(MaxFixRows - 1).ToList();
-        shown.Add(loc.F("overview.revelation.more", rows.Count - shown.Count));
+        shown.Add(loc.F("report.fixes.more", rows.Count - shown.Count));
         return shown;
     }
 

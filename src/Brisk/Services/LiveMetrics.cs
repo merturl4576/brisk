@@ -86,8 +86,15 @@ public sealed class LiveMetrics : ILiveMetrics
         // is never at a true 0% load, so 0 renders as "sensor unavailable".
         var ramLoad = _processes.MemoryLoadPercent();
         double? ram = ramLoad > 0 ? ramLoad : null;
-        var cpuTemp = _sensors.CpuTempC();
-        var gpuTemp = _sensors.GpuTempC();
+        // Through the shared predicate, not a bare null check. NaN is what a
+        // present-but-silent sensor reports, and it reports it every tick — so
+        // a NaN CPU beside a quiet GPU took the CPU branch below and the tile
+        // rendered "NaN°C" under the caption "Temperature · CPU", where a null
+        // correctly renders "—". That is a reading claimed rather than a sensor
+        // admitting it has nothing, and this class takes any ISensorProbe: it
+        // cannot assume the one it was handed filters.
+        var cpuTemp = Reading(_sensors.CpuTempC());
+        var gpuTemp = Reading(_sensors.GpuTempC());
         double? temp = null;
         string? source = null;
         if (cpuTemp is not null && (gpuTemp is null || cpuTemp >= gpuTemp))
@@ -106,6 +113,9 @@ public sealed class LiveMetrics : ILiveMetrics
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetSystemTimes(out long idle, out long kernel, out long user);
+
+    private static double? Reading(double? celsius) =>
+        SensorReading.IsReal(celsius) ? celsius : null;
 
     /// Kernel time includes idle time, so Total = kernel + user is the whole
     /// pie and Idle is the slice spent doing nothing.

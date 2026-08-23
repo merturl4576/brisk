@@ -195,7 +195,7 @@ public class ReportCardModelTests
         // would be the same untruth in a smaller font.
         Assert.Equal(ReportCardModel.MaxFixRows, card.Fixes.Count);
         var hidden = count - (ReportCardModel.MaxFixRows - 1);
-        Assert.Equal(Loc("en").F("overview.revelation.more", hidden), card.Fixes[^1]);
+        Assert.Equal(Loc("en").F("report.fixes.more", hidden), card.Fixes[^1]);
     }
 
     /// Newest first survives the cap: the row that falls off the end is the
@@ -213,7 +213,35 @@ public class ReportCardModelTests
 
         Assert.Equal("2026-08-21", card.Fixes[0][^10..]);    // rule-11, the newest
         Assert.Equal("2026-08-14", card.Fixes[7][^10..]);    // rule-04, the last shown
-        Assert.Equal(Loc("en").F("overview.revelation.more", 4), card.Fixes[^1]);
+        Assert.Equal(Loc("en").F("report.fixes.more", 4), card.Fixes[^1]);
+    }
+
+    /// The overflow line counts FIXES, and it has to say so in a language
+    /// where that is a different word. The card borrowed the overview's
+    /// "overview.revelation.more" because in English both read "and {0} more";
+    /// the Turkish is "ve {0} bulgu daha" — and {0} more FINDINGS — so a
+    /// Turkish install with a full journal printed the wrong noun under
+    /// "Uygulanan düzeltmeler" on a picture built to be shared. English parity
+    /// is exactly what hid it, so this asserts the Turkish value and forbids
+    /// the findings noun outright.
+    [Fact]
+    public void FixesOverflow_CountsFixes_NotFindings_InTurkishToo()
+    {
+        var fixes = Enumerable.Range(0, 16)
+            .Select(i => new UndoableFix($"rule-{i:00}",
+                new DateTime(2026, 8, 20, 10, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
+            .ToArray();
+        var snapshot = TestData.Snapshot(null, new SensorStatus(true, true, null));
+
+        var tr = ReportCardModel.Build(snapshot, fixes, Loc("tr"));
+        var en = ReportCardModel.Build(snapshot, fixes, Loc("en"));
+
+        Assert.Equal("ve 8 düzeltme daha", tr.Fixes[^1]);
+        Assert.Equal("and 8 more", en.Fixes[^1]);
+        // "bulgu" is the word the borrowed key put there, and the reason the
+        // two keys can never be merged back together on an English reading.
+        Assert.DoesNotContain("bulgu", tr.Fixes[^1]);
+        Assert.NotEqual(Loc("tr").F("overview.revelation.more", 8), tr.Fixes[^1]);
     }
 
     /// The privacy ban, enforced on output rather than on good intentions:

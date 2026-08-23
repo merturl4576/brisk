@@ -242,6 +242,7 @@
   <data name="report.section.findings" xml:space="preserve"><value>Findings</value></data>
   <data name="report.section.unread" xml:space="preserve"><value>What brisk could not read</value></data>
   <data name="report.section.fixes" xml:space="preserve"><value>Applied fixes</value></data>
+  <data name="report.fixes.more" xml:space="preserve"><value>and {0} more</value></data>
   <data name="report.unread.none" xml:space="preserve"><value>Everything brisk tried to read, answered.</value></data>
   <data name="report.unread.gpu" xml:space="preserve"><value>GPU temperature — not read; brisk cannot tell from here why.</value></data>
   <data name="report.unread.neither" xml:space="preserve"><value>Temperatures — neither sensor answered. The driver that reads CPU temperature will not load while memory integrity is on; brisk could not confirm that is the reason here.</value></data>

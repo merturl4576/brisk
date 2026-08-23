@@ -242,6 +242,7 @@
   <data name="report.section.findings" xml:space="preserve"><value>Bulgular</value></data>
   <data name="report.section.unread" xml:space="preserve"><value>brisk'in okuyamadıkları</value></data>
   <data name="report.section.fixes" xml:space="preserve"><value>Uygulanan düzeltmeler</value></data>
+  <data name="report.fixes.more" xml:space="preserve"><value>ve {0} düzeltme daha</value></data>
   <data name="report.unread.none" xml:space="preserve"><value>brisk'in okumaya çalıştığı her şey cevap verdi.</value></data>
   <data name="report.unread.gpu" xml:space="preserve"><value>GPU sıcaklığı — okunamadı; brisk sebebini buradan söyleyemez.</value></data>
   <data name="report.unread.neither" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. CPU sıcaklığını okuyan sürücü, bellek bütünlüğü açıkken yüklenmiyor; brisk bunun buradaki sebep olduğunu doğrulayamadı.</value></data>
