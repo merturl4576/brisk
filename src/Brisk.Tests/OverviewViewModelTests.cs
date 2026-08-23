@@ -716,6 +716,60 @@ public class OverviewViewModelTests
         Assert.Single(bin.PurgeCalls);
     }
 
+    /// Fake rule ids on purpose: unlisted rules rank by severity, and their
+    /// missing resx keys prove the English fallback carries the band.
+    [Fact]
+    public async Task Revelation_LeadsWithTheTopHeadline_AndCountsTheRest()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[]
+            {
+                TestData.Finding("aa-fake", cat: RuleCategory.Advise, canFix: false,
+                    headline: new Headline("13", "programs start with Windows",
+                        "rule.aa-fake.headline.value", new[] { "13" },
+                        "rule.aa-fake.headline.caption", Array.Empty<string>())),
+                TestData.Finding("zz-fake", sev: Severity.Critical,
+                    cat: RuleCategory.Advise, canFix: false,
+                    headline: new Headline("57 s", "boot time — the middle of the last 8 boots",
+                        "rule.zz-fake.headline.value", new[] { "57" },
+                        "rule.zz-fake.headline.caption", new[] { "8" })),
+            });
+
+        await state.ScanAsync();
+
+        Assert.True(vm.HasRevelation);
+        Assert.Equal("57 s", vm.RevelationValue);
+        Assert.Equal("boot time — the middle of the last 8 boots", vm.RevelationCaption);
+        Assert.Equal("Title zz-fake", vm.RevelationClaim);
+        Assert.Equal("Evidence zz-fake", vm.RevelationEvidence);
+        Assert.Equal("and 1 more", vm.RevelationMoreText);
+    }
+
+    [Fact]
+    public async Task Revelation_NoHeadlines_ShowsTheHonestEmptyLine()
+    {
+        var (vm, host, state) = Build();   // default snapshot carries no headlines
+
+        await state.ScanAsync();
+
+        Assert.False(vm.HasRevelation);
+        Assert.Equal(
+            $"All {DiagnosticRuleRegistry.All.Count} rules looked — nothing on this machine leads with a number.",
+            vm.RevelationEmptyText);
+        Assert.Equal("", vm.RevelationMoreText);
+    }
+
+    [Fact]
+    public void OpenHealth_RaisesTheNavigationEvent()
+    {
+        var (vm, _, _) = Build();
+        var fired = false;
+        vm.OpenHealthRequested += () => fired = true;
+        vm.OpenHealthCommand.Execute(null);
+        Assert.True(fired);
+    }
+
     /// Fakes.cs is locked; startup-disable semantics are simulated with a
     /// decorator whose Fix("startup-bloat") disables the heavy entries,
     /// exactly like the real StartupBloatRule.Fix does.

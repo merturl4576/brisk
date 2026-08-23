@@ -232,4 +232,7 @@
   <data name="tray.open" xml:space="preserve"><value>Open brisk</value></data>
   <data name="tray.scan" xml:space="preserve"><value>Scan now</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="overview.revelation.more" xml:space="preserve"><value>and {0} more</value></data>
+  <data name="overview.revelation.none" xml:space="preserve"><value>All {0} rules looked — nothing on this machine leads with a number.</value></data>
+  <data name="overview.revelation.see" xml:space="preserve"><value>See the evidence</value></data>
 </root>

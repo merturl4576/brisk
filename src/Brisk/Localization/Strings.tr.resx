@@ -232,4 +232,7 @@
   <data name="tray.open" xml:space="preserve"><value>brisk'i aç</value></data>
   <data name="tray.scan" xml:space="preserve"><value>Şimdi tara</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Çıkış</value></data>
+  <data name="overview.revelation.more" xml:space="preserve"><value>ve {0} bulgu daha</value></data>
+  <data name="overview.revelation.none" xml:space="preserve"><value>{0} kuralın hepsi baktı — bu makinede manşete çıkacak bir sayı yok.</value></data>
+  <data name="overview.revelation.see" xml:space="preserve"><value>Kanıtı gör</value></data>
 </root>
