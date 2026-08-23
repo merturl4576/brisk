@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
+using System.Text;
 using System.Text.Json;
 using BriskEngine;
 using BriskEngine.Cleaning;
@@ -19,7 +20,28 @@ public static class Program
 {
     public static int Main(string[] args)
     {
-        var cmd = CliParser.Parse(args);
+        ConfigureConsole();
+        return Run(args);
+    }
+
+    /// A Turkish (or Polish, or Japanese) console defaults to a legacy code
+    /// page, which turns brisk's own help text into mojibake before the user
+    /// has read a single finding.
+    ///
+    /// Kept out of Run because setting this discards Console.Out, which is the
+    /// stream a test hands in to read what brisk printed.
+    private static void ConfigureConsole()
+    {
+        try { Console.OutputEncoding = new UTF8Encoding(false); }
+        catch (IOException) { /* nothing attached to configure */ }
+    }
+
+    public static int Run(string[] args)
+    {
+        // "--help" and "--version" are switches, and the parser knows verbs.
+        // Translating here rather than at the window's entry point is what
+        // makes both executables answer them the same way.
+        var cmd = CliParser.Parse(EntryRouter.Normalize(args));
         if (cmd.Verb == "error") { Console.Error.WriteLine($"brisk: {cmd.Error}"); return 2; }
         if (cmd.Verb is "help") { PrintHelp(); return 0; }
         if (cmd.Verb is "version") { Console.WriteLine(EngineInfo.Version); return 0; }
