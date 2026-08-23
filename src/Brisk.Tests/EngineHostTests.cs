@@ -49,6 +49,44 @@ file sealed class NullSensors : ISensorProbe
     public int GpuCount() => 0;
 }
 
+/// A shared stopwatch with no clock: it only answers "which happened first".
+/// Enough to pin an ordering guarantee, and it cannot go flaky the way a
+/// timestamp comparison can on a machine that scans in under a millisecond.
+file sealed class CallOrder
+{
+    private int _next;
+    public int Next() => System.Threading.Interlocked.Increment(ref _next);
+}
+
+/// Records WHEN the scan asked for a CPU temperature, not what it answered.
+file sealed class SequencedSensors : ISensorProbe
+{
+    private readonly CallOrder _order;
+    public SequencedSensors(CallOrder order) { _order = order; }
+    public int? CpuIndex { get; private set; }
+    public double? CpuTempC() { CpuIndex ??= _order.Next(); return null; }
+    public double? GpuTempC() => null;
+    public int GpuCount() => 0;
+}
+
+/// Records WHEN the rule loop reached it. Detects nothing: the finding is
+/// beside the point, the moment is the point.
+file sealed class SequencedRule : IDiagnosticRule
+{
+    private readonly CallOrder _order;
+    public SequencedRule(CallOrder order) { _order = order; }
+    public string Id => "sequenced";
+    public RuleCategory Category => RuleCategory.Auto;
+    public int? DetectIndex { get; private set; }
+    public DiagnosticFinding? Detect(DiagnosticContext ctx)
+    {
+        DetectIndex ??= _order.Next();
+        return null;
+    }
+    public string Fix(DiagnosticContext ctx) => "{}";
+    public void Undo(DiagnosticContext ctx, string priorStateJson) { }
+}
+
 /// The ordinary case, and the only one on an administrator account: the
 /// process token and the signed-in user are the same account.
 file sealed class SameUserSession : ISessionProbe
@@ -126,10 +164,16 @@ public sealed class EngineHostTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-eh-").FullName;
 
-    private EngineHost Host(params IDiagnosticRule[] rules)
+    private EngineHost Host(params IDiagnosticRule[] rules) =>
+        Host(new NullSensors(), rules);
+
+    /// Same fixture with the sensor probe swapped — the context is built here,
+    /// so a test that needs to watch the probes has to come in through this
+    /// door rather than assemble a second one.
+    private EngineHost Host(ISensorProbe sensors, params IDiagnosticRule[] rules)
     {
         var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
-            new NullProcessInfo(), new NullSensors(), new NullDisplays(), new NullEventLog(),
+            new NullProcessInfo(), sensors, new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
             new NothingRuns(), new NullMemoryIntegrity(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
@@ -204,6 +248,31 @@ public sealed class EngineHostTests : IDisposable
         Assert.False(snapshot.Sensors!.CpuRead);
         Assert.False(snapshot.Sensors.GpuRead);
         Assert.Null(snapshot.Sensors.MemoryIntegrityOn);
+    }
+
+    /// The status must describe the same moment as the findings beside it in
+    /// the snapshot, because the report card prints them together. Reading the
+    /// probes after _scanner.Scan — a filesystem walk that can take seconds —
+    /// let a card say "CPU temperature — not read" directly above a thermals
+    /// finding quoting a CPU temperature.
+    ///
+    /// So this pins the ORDER, not the values: ScanAsync_RecordsSensorStatus
+    /// passes either way, which is exactly why the defect survived a rewrite
+    /// of this method and had to be corrected a second time.
+    [Fact]
+    public async Task ScanAsync_ReadsTheSensors_BeforeTheRulesRun()
+    {
+        var order = new CallOrder();
+        var sensors = new SequencedSensors(order);
+        var rule = new SequencedRule(order);
+
+        await Host(sensors, rule).ScanAsync();
+
+        Assert.NotNull(sensors.CpuIndex);
+        Assert.NotNull(rule.DetectIndex);
+        Assert.True(sensors.CpuIndex < rule.DetectIndex,
+            $"sensors read at #{sensors.CpuIndex}, rules ran at #{rule.DetectIndex} — "
+            + "the probes must be read before the rule loop, not after the disk walk");
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
