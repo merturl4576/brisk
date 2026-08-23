@@ -144,6 +144,8 @@
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
+  <data name="rule.disk-breakdown.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.disk-breakdown.headline.caption" xml:space="preserve"><value>{0} — the largest measured folder</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>The disk is filling up — a safe clean now buys time before space runs out</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Uninstalled apps left data behind — you can review and clean it safely</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>
@@ -181,6 +183,8 @@
   <data name="rule.boot-degradation.headline.value" xml:space="preserve"><value>{0} s</value></data>
   <data name="rule.boot-degradation.headline.caption" xml:space="preserve"><value>boot time — the middle of the last {0} boots</value></data>
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — each module's configured speed out of the speed it is rated for. Two things look like this and Windows reports neither: a memory speed profile (XMP/EXPO) that was never switched on, or a board or memory controller that does not support the rated speed. brisk cannot tell those apart from here, so it is not telling you to change anything in the BIOS — only that the gap is there.</value></data>
+  <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
+  <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>rated for {0} MT/s</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>

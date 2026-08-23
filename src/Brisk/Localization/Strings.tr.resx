@@ -144,6 +144,8 @@
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
+  <data name="rule.disk-breakdown.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.disk-breakdown.headline.caption" xml:space="preserve"><value>{0} — ölçülen en büyük klasör</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>Disk doluyor — şimdi yapacağın güvenli bir temizlik alan bitmeden vakit kazandırır</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Kaldırılmış uygulamalar geride veri bırakmış — gözden geçirip güvenle temizleyebilirsin</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
@@ -181,6 +183,8 @@
   <data name="rule.boot-degradation.headline.value" xml:space="preserve"><value>{0} sn</value></data>
   <data name="rule.boot-degradation.headline.caption" xml:space="preserve"><value>açılış süresi — son {0} açılışın ortası</value></data>
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — her modülün ayarlı hızı, anma hızı üzerinden: soldaki şu an çalıştığı hız, sağdaki ise modülün anma hızı. Buna iki şey yol açabilir ve Windows hangisi olduğunu bildirmiyor: hiç açılmamış bir bellek hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart veya bellek denetleyicisi. brisk buradan ikisini birbirinden ayırt edemiyor; bu yüzden sana BIOS'ta bir şey değiştirmeni söylemiyor — yalnızca bu farkın var olduğunu söylüyor.</value></data>
+  <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
+  <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>anma hızı {0} MT/s</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
