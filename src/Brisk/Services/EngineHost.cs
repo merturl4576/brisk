@@ -51,8 +51,11 @@ public sealed class EngineHost : IEngineHost
         // Read the sensors BEFORE the rules run, not after the cleaner walk.
         // What the card prints must describe the same moment the findings
         // describe, and the filesystem scan below can take seconds.
-        var cpuRead = _ctx.Sensors.CpuTempC() is { } c && double.IsFinite(c);
-        var gpuRead = _ctx.Sensors.GpuTempC() is { } g && double.IsFinite(g);
+        // SensorReading, not a local copy of the rule: the CLI's notice and
+        // this snapshot describe the same machine at the same moment, and
+        // they used to disagree about NaN.
+        var cpuRead = SensorReading.IsReal(_ctx.Sensors.CpuTempC());
+        var gpuRead = SensorReading.IsReal(_ctx.Sensors.GpuTempC());
         var integrityOn = _ctx.MemoryIntegrity.IsOn();
 
         var findings = new List<DiagnosticFinding>();

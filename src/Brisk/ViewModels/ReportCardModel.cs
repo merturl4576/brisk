@@ -44,10 +44,6 @@ public sealed class ReportCardModel
                 loc.Title(f.TitleKey, f.Title)))
             .ToList();
 
-        // Old snapshots (and bare test fixtures) may predate SensorStatus;
-        // "both answered" is the only reading that adds no claim.
-        var sensors = snapshot.Sensors ?? new SensorStatus(true, true, null);
-
         return new ReportCardModel
         {
             DateText = snapshot.CompletedUtc.ToLocalTime()
@@ -58,7 +54,7 @@ public sealed class ReportCardModel
             Findings = findings,
             FindingsEmptyText = findings.Count > 0 ? "" :
                 loc.F("overview.revelation.none", DiagnosticRuleRegistry.All.Count),
-            Unread = new[] { UnreadLine(sensors, loc) },
+            Unread = new[] { UnreadLine(snapshot.Sensors, loc) },
             Fixes = undoable
                 .OrderByDescending(f => f.FixedAtUtc)
                 .Select(f => loc.Title($"rule.{f.RuleId}.title", f.RuleId)

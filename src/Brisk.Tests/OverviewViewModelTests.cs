@@ -115,7 +115,8 @@ public class OverviewViewModelTests
         var (vm, host, state) = Build();
         host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
             new ScanResult(Array.Empty<TargetScanResult>()), 95,
-            new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
+            new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
+            new SensorStatus(false, false, null));
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);

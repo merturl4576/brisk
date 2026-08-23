@@ -49,6 +49,21 @@ file sealed class NullSensors : ISensorProbe
     public int GpuCount() => 0;
 }
 
+/// A probe that answers exactly what a test hands it, including the answers
+/// that are not numbers. NullSensors returns null to everything, so a suite
+/// built only on it can never tell a scan that read two temperatures from one
+/// that read none — the three booleans on SensorStatus drive the whole
+/// signature section of the shareable card.
+file sealed class FixedSensors : ISensorProbe
+{
+    private readonly double? _cpu;
+    private readonly double? _gpu;
+    public FixedSensors(double? cpu, double? gpu) { _cpu = cpu; _gpu = gpu; }
+    public double? CpuTempC() => _cpu;
+    public double? GpuTempC() => _gpu;
+    public int GpuCount() => _gpu is null ? 0 : 1;
+}
+
 /// A shared stopwatch with no clock: it only answers "which happened first".
 /// Enough to pin an ordering guarantee, and it cannot go flaky the way a
 /// timestamp comparison can on a machine that scans in under a millisecond.
@@ -237,6 +252,12 @@ public sealed class EngineHostTests : IDisposable
 
     /// The card's "what brisk could not read" section is built from the
     /// snapshot, so the scan records what the sensors answered at scan time.
+    ///
+    /// This asserted false/false/null against an all-null fixture and nothing
+    /// else, so `new SensorStatus(false, false, null)` hardcoded into ScanAsync
+    /// would have passed it: the test could not fail. The two theories below
+    /// are what make it a measurement — one machine whose sensors answer, one
+    /// whose sensors are present and silent.
     [Fact]
     public async Task ScanAsync_RecordsSensorStatus()
     {
@@ -244,10 +265,54 @@ public sealed class EngineHostTests : IDisposable
 
         var snapshot = await host.ScanAsync();
 
-        Assert.NotNull(snapshot.Sensors);
-        Assert.False(snapshot.Sensors!.CpuRead);
+        Assert.False(snapshot.Sensors.CpuRead);
         Assert.False(snapshot.Sensors.GpuRead);
         Assert.Null(snapshot.Sensors.MemoryIntegrityOn);
+    }
+
+    /// Real temperatures, recorded as read. Without this the whole section is
+    /// pinned only against a machine that answered nothing.
+    [Fact]
+    public async Task ScanAsync_RealTemperatures_AreRecordedAsRead()
+    {
+        var host = Host(new FixedSensors(55, 65), Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.True(snapshot.Sensors.CpuRead);
+        Assert.True(snapshot.Sensors.GpuRead);
+    }
+
+    /// NaN is what a present-but-silent sensor reports, and it is exactly the
+    /// case `is not null` gets wrong: the snapshot would record "answered" and
+    /// the card would print "Everything brisk tried to read, answered." over a
+    /// scan that read no temperature at all. This is the whole reason the
+    /// shared predicate is double.IsFinite and not a null check.
+    [Theory]
+    [InlineData(double.NaN, double.NaN)]
+    [InlineData(double.PositiveInfinity, double.NegativeInfinity)]
+    public async Task ScanAsync_NonFiniteTemperatures_AreNotReadings(
+        double cpu, double gpu)
+    {
+        var host = Host(new FixedSensors(cpu, gpu), Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.False(snapshot.Sensors.CpuRead);
+        Assert.False(snapshot.Sensors.GpuRead);
+    }
+
+    /// One sensor each way, so a scan that simply copied one flag onto both
+    /// cannot pass the three tests above by luck.
+    [Fact]
+    public async Task ScanAsync_OneSensorAnswering_RecordsOnlyThatOne()
+    {
+        var host = Host(new FixedSensors(double.NaN, 65), Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.False(snapshot.Sensors.CpuRead);
+        Assert.True(snapshot.Sensors.GpuRead);
     }
 
     /// The status must describe the same moment as the findings beside it in

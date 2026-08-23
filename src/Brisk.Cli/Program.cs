@@ -148,8 +148,11 @@ public static class Program
     public static string? SensorNotice(ISensorProbe sensors, bool elevated,
         bool? memoryIntegrityOn)
     {
-        var cpu = sensors.CpuTempC() is not null;
-        var gpu = sensors.GpuTempC() is not null;
+        // `is not null` alone counted a NaN as an answer, so this notice
+        // stayed silent about a sensor the report card — same product, same
+        // machine, same second — reported as unread. One predicate decides.
+        var cpu = SensorReading.IsReal(sensors.CpuTempC());
+        var gpu = SensorReading.IsReal(sensors.GpuTempC());
         if (cpu && gpu) return null;
         if (cpu) return "temperature: GPU not read — CPU only. brisk cannot tell from here why.";
         var unread = gpu

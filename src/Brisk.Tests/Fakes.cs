@@ -137,11 +137,19 @@ public static class TestData
         return new TargetScanResult(target, items, skipped);
     }
 
+    /// The fixture's sensors, stated rather than defaulted. ScanSnapshot has
+    /// no optional Sensors any more — the optional one was filled in with
+    /// "both answered", which put a measurement claim on a card built from a
+    /// snapshot that had measured nothing. A fixture whose probes are all
+    /// nulls read no temperature, so this is what it says: nothing answered.
+    /// Every test that cares passes its own.
+    private static readonly SensorStatus NothingAnswered = new(false, false, null);
+
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
-        params TargetScanResult[] targets) => Snapshot(findings, null, targets);
+        params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);
 
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
-        SensorStatus? sensors, params TargetScanResult[] targets) => new(
+        SensorStatus sensors, params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
         sensors);

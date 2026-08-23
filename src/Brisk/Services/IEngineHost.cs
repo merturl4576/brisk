@@ -14,12 +14,18 @@ namespace Brisk.Services;
 /// is rendering rather than about some later moment.
 public sealed record SensorStatus(bool CpuRead, bool GpuRead, bool? MemoryIntegrityOn);
 
+/// Sensors is required, not an optional trailing parameter. It was optional,
+/// and the report card filled the gap with `new SensorStatus(true, true, null)`
+/// — so a snapshot that recorded nothing about the sensors rendered
+/// "Everything brisk tried to read, answered." on a shareable PNG. There is no
+/// default here that adds no claim, so there is no default: a caller that
+/// cannot say what the sensors did cannot build a snapshot.
 public sealed record ScanSnapshot(
     IReadOnlyList<DiagnosticFinding> Findings,
     ScanResult Cleaner,
     int Health,
     DateTime CompletedUtc,
-    SensorStatus? Sensors = null);
+    SensorStatus Sensors);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.
