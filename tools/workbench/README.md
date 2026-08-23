@@ -20,13 +20,23 @@ State files live in `.state/` and never leave your machine.
 `verify.ps1` needs a brisk CLI; pass `-BriskExe <path>` or leave the default
 (`..\..\artifacts\brisk.exe`, the tree's own publish output).
 
+A freshly cloned repo hits execution policy before it hits any of this.
+None of these scripts is signed, so run them the way the build script is
+run — per-process, without changing a machine-wide setting just to read
+a diagnostic tool:
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\plant-power-plan.ps1
+
+None of them needs administrator. They write only under HKCU and the
+current user's own power settings.
+
 | Scenario | Rule it must trigger | Notes |
 |---|---|---|
 | power-plan | `power-plan` | switches the active scheme to Balanced |
 | search-web | `search-web-results` | removes the policy that keeps Start local |
 | storage-sense | `storage-sense` | turns Storage Sense off |
 | visual-effects | `visual-effects` | sets visual effects to best appearance |
-| startup-bloat | `startup-bloat` | adds six inert HKCU\Run entries |
+| startup-bloat | `startup-bloat` | adds six harmless HKCU\Run entries — restore before you reboot |
 | display-refresh | `display-refresh` | INTERACTIVE — visibly changes the screen; asks first |
 
 ## When the last step says FAIL and nothing is wrong
@@ -40,6 +50,10 @@ it, and then it is still true after everything is put back:
   doing its job.
 - **startup-bloat** — the rule fires at six startup entries, or at one
   entry it recognises as heavy. Most real machines are already past that.
+- **display-refresh** — `DisplayRefreshRule` weighs every display, while
+  the plant only ever touches the primary one. A second monitor sitting
+  below its own panel rate keeps the finding alive no matter how exactly
+  the primary is put back.
 
 One rule needs a second condition the workbench cannot plant:
 
@@ -52,6 +66,12 @@ One rule needs a second condition the workbench cannot plant:
 In every one of these cases the restore is still exact. If you want proof
 independent of brisk, compare the registry value the plant printed against
 the one the restore printed.
+
+A word on the six startup entries: they are harmless — each one runs
+`cmd /c rem`, which does nothing — but they are not inert. They are real
+`Run` values, and Windows really will execute them at the next logon, so
+rebooting while the scenario is planted flashes six console windows past
+on the way to the desktop. Restore first.
 
 ## The one that changes what you see
 

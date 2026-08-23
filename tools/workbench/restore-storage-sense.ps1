@@ -6,11 +6,13 @@ $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\
 if ($null -ne $prior.value) { Set-ItemProperty $key -Name '01' -Value $prior.value -Type DWord }
 else {
     Remove-ItemProperty $key -Name '01' -ErrorAction SilentlyContinue
-    # A key the plant invented is not part of "byte-identical" either, so it
-    # goes back too - but only while it is still as empty as the plant left it.
-    if (-not $prior.keyExisted -and (Test-Path $key)) {
-        $k = Get-Item $key
-        if ($k.ValueCount -eq 0 -and $k.SubKeyCount -eq 0) { Remove-Item $key }
+    # Keys the plant invented are not part of "byte-identical" either. Deepest
+    # first, and each only while it is still as empty as the plant left it -
+    # anything that moved in since belongs to somebody else.
+    foreach ($k in @($prior.invented | Where-Object { $_ })) {
+        if (-not (Test-Path $k)) { continue }
+        $item = Get-Item $k
+        if ($item.ValueCount -eq 0 -and $item.SubKeyCount -eq 0) { Remove-Item $k }
     }
 }
 Remove-Item $state

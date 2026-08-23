@@ -8,11 +8,20 @@ if (Test-Path $state) { throw 'state file exists - restore first (double plant w
 New-Item -ItemType Directory -Force (Split-Path $state) | Out-Null
 $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'
 $prior = (Get-ItemProperty $key -Name '01' -ErrorAction SilentlyContinue).'01'
-$keyExisted = Test-Path $key
-@{ value = $prior; keyExisted = $keyExisted } | ConvertTo-Json | Set-Content $state -Encoding ascii
+
+# Which levels of this path are about to be invented? On a machine that never
+# opened Storage Sense the plant creates StorageSense, Parameters AND
+# StoragePolicy, and removing only the leaf would leave two keys behind that
+# the machine never had. Deepest first; the walk stops at the first key that
+# already exists.
+$invented = @()
+$probe = $key
+while ($probe -and -not (Test-Path $probe)) { $invented += $probe; $probe = Split-Path $probe -Parent }
+@{ value = $prior; invented = $invented } | ConvertTo-Json | Set-Content $state -Encoding ascii
+
 # Never New-Item -Force an existing registry key: on this provider -Force
 # replaces the key, and StoragePolicy holds every Storage Sense schedule
 # beside '01'. The key is created only when it is genuinely absent.
-if (-not $keyExisted) { New-Item -Path $key -Force | Out-Null }
+if ($invented.Count -gt 0) { New-Item -Path $key -Force | Out-Null }
 Set-ItemProperty $key -Name '01' -Value 0 -Type DWord
 Write-Host "planted: Storage Sense off (was: $(if ($null -eq $prior) { 'absent' } else { $prior }))"
