@@ -141,4 +141,26 @@ public class MemorySpeedRuleTests
         Assert.Equal("DIMM0 2133 MT/s / 3200 MT/s",
             Assert.Single(finding.EvidenceArgs!));
     }
+
+    /// Two genuinely slow modules (both under the 0.80 ratio): the headline
+    /// belongs to the one furthest below its rating — 2133/3200 (0.67) beats
+    /// 2400/3200 (0.75) for the lead. 2933/3200 would not qualify at all;
+    /// that is the maintainer's machine, where this rule stays silent.
+    [Fact]
+    public void Headline_IsTheWorstModulesConfiguredSpeed()
+    {
+        var ctx = With(
+            new MemoryModule("DIMM0", 3200, 2400, 16L << 30),
+            new MemoryModule("DIMM1", 3200, 2133, 16L << 30));
+
+        var h = new MemorySpeedRule().Detect(ctx)!.Headline;
+
+        Assert.NotNull(h);
+        Assert.Equal("2133 MT/s", h!.Value);
+        Assert.Equal("rated for 3200 MT/s", h.Caption);
+        Assert.Equal("rule.memory-speed.headline.value", h.ValueKey);
+        Assert.Equal(new[] { "2133" }, h.ValueArgs);
+        Assert.Equal("rule.memory-speed.headline.caption", h.CaptionKey);
+        Assert.Equal(new[] { "3200" }, h.CaptionArgs);
+    }
 }

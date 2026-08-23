@@ -29,6 +29,7 @@ public sealed class DiskBreakdownRule : AdviseRuleBase
 
         var evidence = new List<string>();
         var hasOverage = false;
+        (string Label, long Size)? largest = null;
 
         foreach (var (label, path, threshold) in folders)
         {
@@ -40,15 +41,23 @@ public sealed class DiskBreakdownRule : AdviseRuleBase
                 line += " (over threshold)";
                 hasOverage = true;
             }
+            if (largest is null || size > largest.Value.Size)
+                largest = (label, size);
             evidence.Add(line);
         }
 
         if (!hasOverage) return null;
 
+        var (topLabel, topSize) = largest!.Value;
+        var topBytes = Fmt.Bytes(topSize);
         return new DiagnosticFinding(
             Id, "rule.disk-breakdown.title",
             "Disk space fragmented across system folders",
             string.Join("; ", evidence),
-            Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null);
+            Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null,
+            Headline: new Headline(
+                topBytes, $"{topLabel} — the largest measured folder",
+                $"rule.{Id}.headline.value", new[] { topBytes },
+                $"rule.{Id}.headline.caption", new[] { topLabel }));
     }
 }

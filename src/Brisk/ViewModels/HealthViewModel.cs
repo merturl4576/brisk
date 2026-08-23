@@ -34,7 +34,10 @@ public sealed class FindingRow : ViewModelBase
         Title = loc.Title(finding.TitleKey, finding.Title);
         DoneTitle = DoneLabel.For(loc, finding.RuleId, finding.TitleKey,
             finding.Title);
-        Evidence = LocalizedEvidence(finding, loc);
+        Evidence = LocalizedText.Evidence(finding, loc);
+        HasHeadline = finding.Headline is not null;
+        HeadlineValue = finding.Headline is { } headline
+            ? LocalizedText.Headline(headline, loc).Value : "";
         ImpactText = new string('●', finding.ImpactStars)
                    + new string('○', 5 - finding.ImpactStars);
         SeverityKey = finding.Severity switch
@@ -64,20 +67,6 @@ public sealed class FindingRow : ViewModelBase
             () => onOpenStorage?.Invoke(this), () => HasStorageAction);
     }
 
-    /// The evidence sentence in the user's language: the engine ships a
-    /// stable EvidenceKey plus its data, the resx supplies the template.
-    /// A rule without a key (or a key the resx doesn't know) falls back to
-    /// the engine's English prose — informative beats blank.
-    private static string LocalizedEvidence(DiagnosticFinding finding, Loc loc)
-    {
-        if (finding.EvidenceKey is not { } key) return finding.Evidence;
-        var template = loc[key];   // the indexer returns the key itself when missing
-        if (string.Equals(template, key, StringComparison.Ordinal))
-            return finding.Evidence;
-        var args = finding.EvidenceArgs ?? Array.Empty<string>();
-        return loc.F(key, args.Cast<object>().ToArray());
-    }
-
     public string RuleId { get; }
     public string Title { get; }
     /// Past-tense outcome the title crossfades to when the row reaches its
@@ -93,6 +82,10 @@ public sealed class FindingRow : ViewModelBase
     public bool CanUndo { get; }
     public bool HasDetails { get; }
     public bool HasStorageAction { get; }
+    public bool HasHeadline { get; }
+    /// The lead value in the user's language ("57 sn"); "" when the finding
+    /// carries no headline — the card collapses the column then.
+    public string HeadlineValue { get; }
     public bool IsExpanded { get => _isExpanded; set => Set(ref _isExpanded, value); }
     public bool IsDetailsShown
     {

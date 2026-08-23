@@ -60,6 +60,7 @@ public sealed class BootDegradationRule : AdviseRuleBase
         if (medianMs <= SlowBootMs) return null;
 
         var median = Seconds(medianMs);
+        var medianDigits = SecondsDigits(medianMs);
         var sampled = boots.Count.ToString(CultureInfo.InvariantCulture);
         var (blamed, bootsCounted) = WorstPerProgram(boots);
 
@@ -70,7 +71,7 @@ public sealed class BootDegradationRule : AdviseRuleBase
         // are Microsoft's own.
 
         if (blamed.Count == 0)
-            return Finding(median, sampled, names: null,
+            return Finding(median, medianDigits, sampled, names: null,
                 $"Boot takes about {median}, the middle of the {sampled} most recent " +
                 "boots brisk could read from Windows' own timings. No program stood out " +
                 "on those boots — everything Windows watched started about as fast as it " +
@@ -79,7 +80,7 @@ public sealed class BootDegradationRule : AdviseRuleBase
 
         var names = string.Join(", ", blamed.Select(b =>
             $"{Label(b.Offender)} {Seconds(b.Offender.DegradationMs)} ({b.Boots}/{bootsCounted})"));
-        return Finding(median, sampled, names,
+        return Finding(median, medianDigits, sampled, names,
             $"Boot takes about {median}, the middle of the {sampled} most recent boots " +
             $"brisk could read from Windows' own timings. Windows blamed these for " +
             $"starting slower than it expected: {names} — that is how late each one was, " +
@@ -90,14 +91,19 @@ public sealed class BootDegradationRule : AdviseRuleBase
             "those off; look for the rest under Startup programs on the Performance page.");
     }
 
-    private DiagnosticFinding Finding(string median, string sampled, string? names, string evidence) =>
+    private DiagnosticFinding Finding(string median, string medianDigits,
+        string sampled, string? names, string evidence) =>
         new(Id, $"rule.{Id}.title",
             "Windows takes a long time to start", evidence,
             Severity.Warning, Category, ImpactStars: 4, CanFix: false, FixDescription: null,
             EvidenceKey: names is null ? $"rule.{Id}.evidence.nobody" : $"rule.{Id}.evidence",
             EvidenceArgs: names is null
                 ? new[] { median, sampled }
-                : new[] { median, sampled, names });
+                : new[] { median, sampled, names },
+            Headline: new Headline(
+                median, $"boot time — the middle of the last {sampled} boots",
+                $"rule.{Id}.headline.value", new[] { medianDigits },
+                $"rule.{Id}.headline.caption", new[] { sampled }));
 
     /// The middle reading, and on an even sample the lower of the two middles
     /// — a boot this machine actually had, where the average of two would be a
@@ -173,7 +179,9 @@ public sealed class BootDegradationRule : AdviseRuleBase
             ? offender.Name.Trim()
             : offender.FriendlyName.Trim();
 
-    private static string Seconds(int ms) =>
+    private static string SecondsDigits(int ms) =>
         ((int)Math.Round(ms / 1000.0, MidpointRounding.AwayFromZero))
-            .ToString(CultureInfo.InvariantCulture) + " s";
+            .ToString(CultureInfo.InvariantCulture);
+
+    private static string Seconds(int ms) => SecondsDigits(ms) + " s";
 }

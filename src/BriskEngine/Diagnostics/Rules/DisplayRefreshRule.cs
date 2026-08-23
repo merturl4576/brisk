@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using BriskEngine.Models;
@@ -30,6 +31,11 @@ public sealed class DisplayRefreshRule : IDiagnosticRule
 
         var readings = string.Join(", ",
             behind.Select(d => $"{d.FriendlyName} {d.CurrentHz} Hz / {d.MaxHz} Hz"));
+        // The headline belongs to the display furthest behind its panel.
+        // OrderByDescending is stable, so equal gaps keep enumeration order.
+        var worst = behind.OrderByDescending(d => d.MaxHz - d.CurrentHz).First();
+        var current = worst.CurrentHz.ToString(CultureInfo.InvariantCulture);
+        var max = worst.MaxHz.ToString(CultureInfo.InvariantCulture);
         return new DiagnosticFinding(
             Id, "rule.display-refresh.title",
             "A display is running below its refresh rate",
@@ -37,7 +43,11 @@ public sealed class DisplayRefreshRule : IDiagnosticRule
             "so everything on screen moves at the lower rate.",
             Severity.Critical, Category, ImpactStars: 5, CanFix: true,
             FixDescription: "Raise each display to its highest refresh rate (undoable)",
-            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings });
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings },
+            Headline: new Headline(
+                $"{current} Hz", $"the display supports {max} Hz",
+                $"rule.{Id}.headline.value", new[] { current },
+                $"rule.{Id}.headline.caption", new[] { max }));
     }
 
     /// The mode is applied for this session only — the probe never touches the

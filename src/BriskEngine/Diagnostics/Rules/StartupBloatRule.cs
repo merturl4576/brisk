@@ -82,7 +82,11 @@ public sealed class StartupBloatRule : IDiagnosticRule
             EvidenceKey: heavy.Count > 0
                 ? $"rule.{Id}.evidence.heavy" : $"rule.{Id}.evidence",
             EvidenceArgs: heavy.Count > 0
-                ? new[] { totalText, heavyNames } : new[] { totalText });
+                ? new[] { totalText, heavyNames } : new[] { totalText },
+            Headline: new Headline(
+                totalText, "programs start with Windows",
+                $"rule.{Id}.headline.value", new[] { totalText },
+                $"rule.{Id}.headline.caption", Array.Empty<string>()));
     }
 
     public string Fix(DiagnosticContext ctx)

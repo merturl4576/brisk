@@ -87,6 +87,13 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _cleanSafeText;
     private bool _liveBusy;
     private bool _busy;
+    private bool _hasRevelation;
+    private string _revelationValue = "";
+    private string _revelationCaption = "";
+    private string _revelationClaim = "";
+    private string _revelationEvidence = "";
+    private string _revelationMoreText = "";
+    private string _revelationEmptyText = "";
     /// Rule ids seen in the undoable list on the previous refresh; null until
     /// the first population so nothing animates at startup.
     private HashSet<string>? _seenUndoable;
@@ -119,6 +126,7 @@ public sealed class OverviewViewModel : ViewModelBase
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
+        OpenHealthCommand = new RelayCommand(() => OpenHealthRequested?.Invoke());
     }
 
     public ObservableCollection<ReportLine> ReportLines { get; } = new();
@@ -147,6 +155,17 @@ public sealed class OverviewViewModel : ViewModelBase
         private set => Set(ref _scoreBrushKey, value);
     }
     public string StatusText { get => _statusText; private set => Set(ref _statusText, value); }
+    public bool HasRevelation { get => _hasRevelation; private set => Set(ref _hasRevelation, value); }
+    public string RevelationValue { get => _revelationValue; private set => Set(ref _revelationValue, value); }
+    public string RevelationCaption { get => _revelationCaption; private set => Set(ref _revelationCaption, value); }
+    public string RevelationClaim { get => _revelationClaim; private set => Set(ref _revelationClaim, value); }
+    public string RevelationEvidence { get => _revelationEvidence; private set => Set(ref _revelationEvidence, value); }
+    public string RevelationMoreText { get => _revelationMoreText; private set => Set(ref _revelationMoreText, value); }
+    public string RevelationEmptyText { get => _revelationEmptyText; private set => Set(ref _revelationEmptyText, value); }
+    public RelayCommand OpenHealthCommand { get; }
+    /// MainWindow subscribes and flips the nav — the same contract
+    /// HealthViewModel.CrossNavigateRequested already uses.
+    public event Action? OpenHealthRequested;
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
     /// The report's ✓ lead line ("Result: 210 MB freed · 3 fixes applied").
     /// Empty when the last run changed nothing; the pages hide the lead
@@ -363,6 +382,29 @@ public sealed class OverviewViewModel : ViewModelBase
         ScoreText = snapshot.Health.ToString(CultureInfo.InvariantCulture);
         ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
+        // The revelation band: the scan's leading measured number, chosen by
+        // the same picker every other surface will use.
+        var revelations = RevelationPicker.Pick(snapshot.Findings);
+        HasRevelation = revelations.Count > 0;
+        if (revelations.Count > 0)
+        {
+            var top = revelations[0];
+            var (value, caption) = LocalizedText.Headline(top.Headline!, _loc);
+            RevelationValue = value;
+            RevelationCaption = caption;
+            RevelationClaim = _loc.Title(top.TitleKey, top.Title);
+            RevelationEvidence = LocalizedText.Evidence(top, _loc);
+            RevelationMoreText = revelations.Count > 1
+                ? _loc.F("overview.revelation.more", revelations.Count - 1) : "";
+            RevelationEmptyText = "";
+        }
+        else
+        {
+            RevelationValue = ""; RevelationCaption = "";
+            RevelationClaim = ""; RevelationEvidence = ""; RevelationMoreText = "";
+            RevelationEmptyText = _loc.F("overview.revelation.none",
+                DiagnosticRuleRegistry.All.Count);
+        }
         // Three-state headline driven by the same predicate as the fix-all
         // button: work to do → attention; only recommendations left →
         // positive with a count; nothing at all → plain good news.

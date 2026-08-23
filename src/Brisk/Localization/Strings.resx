@@ -144,6 +144,8 @@
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
+  <data name="rule.disk-breakdown.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.disk-breakdown.headline.caption" xml:space="preserve"><value>{0} — the largest measured folder</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>The disk is filling up — a safe clean now buys time before space runs out</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Uninstalled apps left data behind — you can review and clean it safely</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>
@@ -162,6 +164,8 @@
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>{0} programs start with Windows.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>{0} programs start with Windows. Heavy ones that can be started manually instead: {1}.</value></data>
+  <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>programs start with Windows</value></data>
   <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows is configured for "Best appearance", which enables animations and transparency effects that cost CPU/GPU cycles on every window redraw.</value></data>
   <data name="rule.storage-sense.evidence" xml:space="preserve"><value>Only {0}% free on {1}, and Storage Sense automatic cleanup is disabled.</value></data>
   <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>RAM is {0}% full. Biggest consumers: {1}. Closing or un-starting some of these frees memory.</value></data>
@@ -172,9 +176,15 @@
   <data name="rule.thermals.evidence.gpu-unread" xml:space="preserve"><value>{0}. The GPU temperature is missing from that — brisk could not read it, and cannot tell from here why. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Free space has been shrinking; disk full in ~{0} days at the current rate.</value></data>
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows left the display slower than it supports, so everything on screen moves at the lower rate.</value></data>
+  <data name="rule.display-refresh.headline.value" xml:space="preserve"><value>{0} Hz</value></data>
+  <data name="rule.display-refresh.headline.caption" xml:space="preserve"><value>the display supports {0} Hz</value></data>
   <data name="rule.boot-degradation.evidence" xml:space="preserve"><value>Boot takes about {0}, the middle of the {1} most recent boots brisk could read from Windows' own timings. Windows blamed these for starting slower than it expected: {2} — that is how late each one was, not time it added to your boot. The bracketed figure is how many of those boots blamed it, so something that happens every start reads differently from a one-off, and a program blamed once may not start with Windows any more. Windows' own components often top the list and brisk will not switch those off; look for the rest under Startup programs on the Performance page.</value></data>
   <data name="rule.boot-degradation.evidence.nobody" xml:space="preserve"><value>Boot takes about {0}, the middle of the {1} most recent boots brisk could read from Windows' own timings. No program stood out on those boots — everything Windows watched started about as fast as it expected. That is a normal result rather than a missing answer: the boot is slow without any one program to point at.</value></data>
+  <data name="rule.boot-degradation.headline.value" xml:space="preserve"><value>{0} s</value></data>
+  <data name="rule.boot-degradation.headline.caption" xml:space="preserve"><value>boot time — the middle of the last {0} boots</value></data>
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — each module's configured speed out of the speed it is rated for. Two things look like this and Windows reports neither: a memory speed profile (XMP/EXPO) that was never switched on, or a board or memory controller that does not support the rated speed. brisk cannot tell those apart from here, so it is not telling you to change anything in the BIOS — only that the gap is there.</value></data>
+  <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
+  <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>rated for {0} MT/s</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
@@ -222,4 +232,7 @@
   <data name="tray.open" xml:space="preserve"><value>Open brisk</value></data>
   <data name="tray.scan" xml:space="preserve"><value>Scan now</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="overview.revelation.more" xml:space="preserve"><value>and {0} more</value></data>
+  <data name="overview.revelation.none" xml:space="preserve"><value>All {0} rules looked — nothing on this machine leads with a number.</value></data>
+  <data name="overview.revelation.see" xml:space="preserve"><value>See the evidence</value></data>
 </root>

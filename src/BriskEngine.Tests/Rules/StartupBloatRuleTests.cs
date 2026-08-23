@@ -192,4 +192,20 @@ public class StartupBloatRuleTests
         var ex = Assert.Throws<InvalidOperationException>(() => rule.Fix(ctx));
         Assert.Contains("administrator", ex.Message);
     }
+
+    [Fact]
+    public void Headline_IsTheTotalCount()
+    {
+        var (ctx, _) = Ctx("A", "B", "C", "D", "E", "F");
+
+        var h = new StartupBloatRule().Detect(ctx)!.Headline;
+
+        Assert.NotNull(h);
+        Assert.Equal("6", h!.Value);
+        Assert.Equal("programs start with Windows", h.Caption);
+        Assert.Equal("rule.startup-bloat.headline.value", h.ValueKey);
+        Assert.Equal(new[] { "6" }, h.ValueArgs);
+        Assert.Equal("rule.startup-bloat.headline.caption", h.CaptionKey);
+        Assert.Empty(h.CaptionArgs);
+    }
 }

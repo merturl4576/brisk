@@ -56,6 +56,10 @@ public sealed class MemorySpeedRule : AdviseRuleBase
         if (slow.Count == 0) return null;
 
         var readings = string.Join(", ", slow.Select(Reading));
+        // The headline belongs to the module furthest below its rating.
+        var worst = slow.OrderBy(m => (double)m.ConfiguredMts / m.RatedMts).First();
+        var configured = worst.ConfiguredMts.ToString(CultureInfo.InvariantCulture);
+        var rated = worst.RatedMts.ToString(CultureInfo.InvariantCulture);
         return new DiagnosticFinding(
             Id, $"rule.{Id}.title",
             "Memory is running below its rated speed",
@@ -66,7 +70,11 @@ public sealed class MemorySpeedRule : AdviseRuleBase
             "rated speed. brisk cannot tell those apart from here, so it is not " +
             "telling you to change anything in the BIOS — only that the gap is there.",
             Severity.Warning, Category, ImpactStars: 4, CanFix: false, FixDescription: null,
-            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings });
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings },
+            Headline: new Headline(
+                $"{configured} MT/s", $"rated for {rated} MT/s",
+                $"rule.{Id}.headline.value", new[] { configured },
+                $"rule.{Id}.headline.caption", new[] { rated }));
     }
 
     /// A module is only slow if both of its numbers are real. A rated speed

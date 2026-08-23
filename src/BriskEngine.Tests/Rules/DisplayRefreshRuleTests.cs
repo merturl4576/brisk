@@ -136,4 +136,24 @@ public class DisplayRefreshRuleTests
             displays.Attached.Find(d => d.DeviceName == @"\\.\DISPLAY1")!.CurrentHz);
         Assert.Equal(0, displays.PersistCalls);
     }
+
+    /// Two displays behind: the headline belongs to the one furthest behind
+    /// its panel, not to whichever enumerated first.
+    [Fact]
+    public void Headline_NamesTheDisplayFurthestBehind()
+    {
+        var (ctx, _) = Context(
+            new DisplayInfo(@"\\.\DISPLAY1", "Laptop panel", 60, 90),
+            new DisplayInfo(@"\\.\DISPLAY2", "Dell U2720Q", 60, 144));
+
+        var h = new DisplayRefreshRule().Detect(ctx)!.Headline;
+
+        Assert.NotNull(h);
+        Assert.Equal("60 Hz", h!.Value);
+        Assert.Equal("the display supports 144 Hz", h.Caption);
+        Assert.Equal("rule.display-refresh.headline.value", h.ValueKey);
+        Assert.Equal(new[] { "60" }, h.ValueArgs);
+        Assert.Equal("rule.display-refresh.headline.caption", h.CaptionKey);
+        Assert.Equal(new[] { "144" }, h.CaptionArgs);
+    }
 }

@@ -144,6 +144,8 @@
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
+  <data name="rule.disk-breakdown.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.disk-breakdown.headline.caption" xml:space="preserve"><value>{0} — ölçülen en büyük klasör</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>Disk doluyor — şimdi yapacağın güvenli bir temizlik alan bitmeden vakit kazandırır</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Kaldırılmış uygulamalar geride veri bırakmış — gözden geçirip güvenle temizleyebilirsin</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
@@ -162,6 +164,8 @@
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}.</value></data>
+  <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>program Windows ile başlıyor</value></data>
   <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows "En iyi görünüm" ayarında; animasyonlar ve saydamlık efektleri her pencere çiziminde CPU/GPU gücü harcıyor.</value></data>
   <data name="rule.storage-sense.evidence" xml:space="preserve"><value>{1} sürücüsünde yalnızca %{0} boş alan kaldı ve Depolama Alanı Algılayıcısı'nın otomatik temizliği kapalı.</value></data>
   <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>Bellek %{0} dolu. En çok kullananlar: {1}. Bunlardan bazılarını kapatmak ya da açılıştan kaldırmak belleği rahatlatır.</value></data>
@@ -172,9 +176,15 @@
   <data name="rule.thermals.evidence.gpu-unread" xml:space="preserve"><value>{0}. Bunda GPU sıcaklığı yok — brisk onu okuyamadı ve nedenini buradan göremiyor. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Boş alan azalıyor; bu hızla disk yaklaşık {0} gün içinde dolacak.</value></data>
   <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows ekranı desteklediğinden yavaş bir hızda bırakmış; bu yüzden ekrandaki her şey daha düşük hızda akıyor.</value></data>
+  <data name="rule.display-refresh.headline.value" xml:space="preserve"><value>{0} Hz</value></data>
+  <data name="rule.display-refresh.headline.caption" xml:space="preserve"><value>ekran {0} Hz destekliyor</value></data>
   <data name="rule.boot-degradation.evidence" xml:space="preserve"><value>Açılış yaklaşık {0} sürüyor; bu, Windows'un kendi ölçümlerinden brisk'in okuyabildiği son {1} açılışın ortancası. Windows şunları beklediğinden yavaş başladıkları için işaret etti: {2} — bu süreler her birinin ne kadar geciktiğini gösterir, açılışına ne kadar eklediğini değil. Parantez içindeki sayı, o açılışların kaçında suçlandığını gösterir; böylece her açılışta olan bir şey ile tek seferlik bir durum ayrı okunur ve bir kez suçlanan bir program artık Windows ile birlikte başlamıyor olabilir. Listenin başında genelde Windows'un kendi bileşenleri olur ve brisk onlara dokunmaz; geri kalanına Performans sayfasındaki Açılış programları listesinden bak.</value></data>
   <data name="rule.boot-degradation.evidence.nobody" xml:space="preserve"><value>Açılış yaklaşık {0} sürüyor; bu, Windows'un kendi ölçümlerinden brisk'in okuyabildiği son {1} açılışın ortancası. Bu açılışlarda hiçbir program öne çıkmadı — Windows'un izlediği her program aşağı yukarı beklendiği kadar hızlı başladı. Bu normal bir sonuç, eksik bir cevap değil: açılış yavaş ama işaret edilecek tek bir program yok.</value></data>
+  <data name="rule.boot-degradation.headline.value" xml:space="preserve"><value>{0} sn</value></data>
+  <data name="rule.boot-degradation.headline.caption" xml:space="preserve"><value>açılış süresi — son {0} açılışın ortası</value></data>
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — her modülün ayarlı hızı, anma hızı üzerinden: soldaki şu an çalıştığı hız, sağdaki ise modülün anma hızı. Buna iki şey yol açabilir ve Windows hangisi olduğunu bildirmiyor: hiç açılmamış bir bellek hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart veya bellek denetleyicisi. brisk buradan ikisini birbirinden ayırt edemiyor; bu yüzden sana BIOS'ta bir şey değiştirmeni söylemiyor — yalnızca bu farkın var olduğunu söylüyor.</value></data>
+  <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
+  <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>anma hızı {0} MT/s</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
@@ -222,4 +232,7 @@
   <data name="tray.open" xml:space="preserve"><value>brisk'i aç</value></data>
   <data name="tray.scan" xml:space="preserve"><value>Şimdi tara</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Çıkış</value></data>
+  <data name="overview.revelation.more" xml:space="preserve"><value>ve {0} bulgu daha</value></data>
+  <data name="overview.revelation.none" xml:space="preserve"><value>{0} kuralın hepsi baktı — bu makinede manşete çıkacak bir sayı yok.</value></data>
+  <data name="overview.revelation.see" xml:space="preserve"><value>Kanıtı gör</value></data>
 </root>

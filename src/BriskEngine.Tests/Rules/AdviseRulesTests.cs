@@ -272,4 +272,47 @@ public class AdviseRulesTests
         Assert.Equal("rule.thermals.evidence.cpu-unread", finding!.EvidenceKey);
         Assert.Contains("cannot confirm from here", finding.Evidence);
     }
+
+    /// 71 GB in Local, 25 GB in Roaming — the headline is the largest
+    /// over-threshold folder, and Fmt.Bytes keeps its invariant formatting.
+    [Fact]
+    public void DiskBreakdown_Headline_IsTheLargestOverThresholdFolder()
+    {
+        var ctx = TestContext.Empty();
+        var files = (FakeFiles)ctx.Files;
+        files.Sizes[PathExpander.Expand("%LOCALAPPDATA%")!] = 71L << 30;
+        files.Sizes[PathExpander.Expand("%APPDATA%")!] = 25L << 30;
+
+        var h = new DiskBreakdownRule().Detect(ctx)!.Headline;
+
+        Assert.NotNull(h);
+        Assert.Equal("71.0 GB", h!.Value);
+        Assert.Equal("AppData\\Local — the largest measured folder", h.Caption);
+        Assert.Equal("rule.disk-breakdown.headline.value", h.ValueKey);
+        Assert.Equal(new[] { "71.0 GB" }, h.ValueArgs);
+        Assert.Equal("rule.disk-breakdown.headline.caption", h.CaptionKey);
+        Assert.Equal(new[] { "AppData\\Local" }, h.CaptionArgs);
+    }
+
+    /// 45 GB in Local (under its 50 GB threshold) and 12 GB in Downloads
+    /// (over its 10 GB threshold): the finding fires because of Downloads,
+    /// but the caption promises "the largest measured folder" — so the
+    /// headline must be Local, threshold or not.
+    [Fact]
+    public void DiskBreakdown_Headline_IsTheLargestFolder_EvenUnderItsOwnThreshold()
+    {
+        var ctx = TestContext.Empty();
+        var files = (FakeFiles)ctx.Files;
+        files.Sizes[PathExpander.Expand("%LOCALAPPDATA%")!] = 45L << 30;
+        files.Sizes[PathExpander.Expand(@"%USERPROFILE%\Downloads")!] = 12L << 30;
+
+        var finding = new DiskBreakdownRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        var h = finding!.Headline;
+        Assert.NotNull(h);
+        Assert.Equal("45.0 GB", h!.Value);
+        Assert.Equal(new[] { "45.0 GB" }, h.ValueArgs);
+        Assert.Equal(new[] { "AppData\\Local" }, h.CaptionArgs);
+    }
 }

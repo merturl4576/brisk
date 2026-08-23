@@ -35,6 +35,8 @@ public partial class MainWindow : Window
         // quiet "{n} more findings …" row navigates to the sibling page.
         health.CrossNavigateRequested += () => NavPerf.IsChecked = true;
         performance.CrossNavigateRequested += () => NavHealth.IsChecked = true;
+        // The revelation band's "see the evidence" lands on Sağlık.
+        overview.OpenHealthRequested += () => NavHealth.IsChecked = true;
         // Live tiles pulse only while this window is truly on screen: shown
         // starts it; hide/close-to-tray/minimize stops it. The flyout never
         // hosts live tiles, so no other window can start the timer.

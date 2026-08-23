@@ -18,4 +18,8 @@ public sealed record DiagnosticFinding(
     // any consumer without a resource table keep working unchanged; a rule
     // whose evidence is a raw data dump may leave these null.
     string? EvidenceKey = null,
-    IReadOnlyList<string>? EvidenceArgs = null);
+    IReadOnlyList<string>? EvidenceArgs = null,
+    // The measured number this finding leads with on presentation surfaces.
+    // Optional and per-rule: a finding whose honest content is a sentence
+    // (thermals) carries none, and no surface invents one for it.
+    Headline? Headline = null);
