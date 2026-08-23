@@ -33,6 +33,8 @@
   <data name="overview.report.live" xml:space="preserve"><value>{0} improvements made on this PC</value></data>
   <data name="overview.report.card" xml:space="preserve"><value>Save report card</value></data>
   <data name="overview.report.card.saved" xml:space="preserve"><value>Saved: {0} (copied to the clipboard)</value></data>
+  <data name="overview.report.card.saved.fileonly" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="overview.report.card.failed" xml:space="preserve"><value>The card could not be saved: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>

@@ -75,6 +75,33 @@ public class ReportRunnerTests
         }
     }
 
+    /// The flag is spelled correctly; what is missing is what to call the
+    /// file. "bad argument '--out'" blames the one part of that line the
+    /// user got right — the same wrong-reason refusal this whole verb was
+    /// built to avoid.
+    [Fact]
+    public void MissingOutValue_NamesTheMissingValue_NotTheFlag()
+    {
+        var (code, output) = Capture(() => ReportRunner.Run(
+            new[] { "report", "--out" },
+            () => throw new InvalidOperationException("the model was built")));
+
+        Assert.Equal(2, code);
+        Assert.Contains("--out needs a file path", output);
+        Assert.DoesNotContain("bad argument", output);
+    }
+
+    /// Minute resolution meant a second Save inside the same minute aimed at
+    /// the file the first one wrote — and the renderer opens it with
+    /// FileShare.None, so the collision was a sharing violation rather than
+    /// a silent overwrite. Seconds are what stop a double-click failing.
+    [Fact]
+    public void DefaultPath_CarriesSeconds_SoTwoCardsAMinuteApartDoNotCollide()
+    {
+        Assert.Matches(@"^brisk-report-\d{8}-\d{6}\.png$",
+            Path.GetFileName(ReportRunner.DefaultPath()));
+    }
+
     private static (int Code, string Output) Capture(Func<int> run)
     {
         var stdout = Console.Out;

@@ -42,7 +42,7 @@ public class OverviewViewModelTests
 
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State) Build(
         Func<bool>? isDryRun = null, FakeLive? live = null,
-        Action<ReportCardModel, string>? renderReport = null)
+        Func<ReportCardModel, string, bool>? renderReport = null)
     {
         var (vm, host, state, _) = BuildWithBin(isDryRun, live,
             renderReport: renderReport);
@@ -54,7 +54,7 @@ public class OverviewViewModelTests
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State, FakeBin Bin)
         BuildWithBin(Func<bool>? isDryRun = null, FakeLive? live = null,
             Settings? settings = null,
-            Action<ReportCardModel, string>? renderReport = null)
+            Func<ReportCardModel, string, bool>? renderReport = null)
     {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(
@@ -778,7 +778,8 @@ public class OverviewViewModelTests
     public async Task SaveReport_RendersTheCardAndAnnouncesThePath()
     {
         var rendered = new List<(ReportCardModel Model, string Path)>();
-        var (vm, host, state) = Build(renderReport: (m, p) => rendered.Add((m, p)));
+        var (vm, host, state) = Build(
+            renderReport: (m, p) => { rendered.Add((m, p)); return true; });
         host.NextSnapshot = TestData.Snapshot(new[]
         {
             TestData.Finding("zz-fake", cat: RuleCategory.Advise, canFix: false,
@@ -793,7 +794,7 @@ public class OverviewViewModelTests
         var (model, path) = Assert.Single(rendered);
         Assert.Equal("57 s", model.Findings[0].Lead);
         Assert.EndsWith(".png", path);
-        Assert.Contains(path, vm.ReportSavedText);
+        Assert.Equal(EnglishLoc().F("overview.report.card.saved", path), vm.ReportSavedText);
     }
 
     [Fact]
@@ -810,7 +811,7 @@ public class OverviewViewModelTests
     [Fact]
     public async Task SaveReport_ThenAnotherScan_ClearsTheSavedLine()
     {
-        var (vm, _, state) = Build(renderReport: (_, _) => { });
+        var (vm, _, state) = Build(renderReport: (_, _) => true);
         await state.ScanAsync();
         vm.SaveReportCommand.Execute(null);
         Assert.NotEqual("", vm.ReportSavedText);
@@ -818,6 +819,42 @@ public class OverviewViewModelTests
         await state.ScanAsync();
 
         Assert.Equal("", vm.ReportSavedText);
+    }
+
+    /// The clipboard copy is best-effort by design — another process holding
+    /// it must not turn a card that IS on disk into an error. But the line
+    /// that says so used to promise "(copied to the clipboard)" in exactly
+    /// the failure the catch exists to absorb. The surface now says which of
+    /// the two happened.
+    [Fact]
+    public async Task SaveReport_WhenTheClipboardRefuses_ClaimsOnlyTheFile()
+    {
+        string? saved = null;
+        var (vm, _, state) = Build(renderReport: (_, p) => { saved = p; return false; });
+        await state.ScanAsync();
+
+        vm.SaveReportCommand.Execute(null);
+
+        Assert.Equal(EnglishLoc().F("overview.report.card.saved.fileonly", saved!),
+            vm.ReportSavedText);
+        Assert.DoesNotContain("clipboard", vm.ReportSavedText);
+    }
+
+    /// A read-only Pictures folder or a full disk is the console verb's
+    /// "brisk: {message}". The button owes the same answer — not a generic
+    /// unhandled-exception modal over a confirmation line saying nothing.
+    [Fact]
+    public async Task SaveReport_WhenTheRenderFails_SaysSoInsteadOfThrowing()
+    {
+        var (vm, _, state) = Build(renderReport: (_, _) =>
+            throw new UnauthorizedAccessException("Access to the path is denied."));
+        await state.ScanAsync();
+
+        vm.SaveReportCommand.Execute(null);
+
+        Assert.Equal(
+            EnglishLoc().F("overview.report.card.failed", "Access to the path is denied."),
+            vm.ReportSavedText);
     }
 
     /// Fakes.cs is locked; startup-disable semantics are simulated with a

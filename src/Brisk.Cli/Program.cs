@@ -82,6 +82,12 @@ public static class Program
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
                 "rules" => PrintRules(),
+                // Unreachable while the early return above stands, and kept
+                // for the day someone moves it: without this arm 'report'
+                // would fall through to the silent `_ => 2` and refuse with
+                // no message at all — worse than the unknown-command error
+                // that recognizing the verb was meant to replace.
+                "report" => Refuse(),
                 _ => 2,
             };
         }

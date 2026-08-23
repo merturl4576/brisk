@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 using Brisk.Localization;
 using Brisk.Services;
 using BriskEngine;
@@ -70,7 +71,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private readonly ILiveMetrics _live;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
-    private readonly Action<ReportCardModel, string> _renderReport;
+    private readonly Func<ReportCardModel, string, bool> _renderReport;
     private string _scoreText = "—";
     private double _scoreValue;
     private string _scoreBrushKey = "";
@@ -102,7 +103,7 @@ public sealed class OverviewViewModel : ViewModelBase
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
         SafeCleanRunner safeClean, ILiveMetrics live, Loc loc, Func<bool> isDryRun,
-        Action<ReportCardModel, string>? renderReport = null)
+        Func<ReportCardModel, string, bool>? renderReport = null)
     {
         _state = state;
         _host = host;
@@ -370,27 +371,57 @@ public sealed class OverviewViewModel : ViewModelBase
 
     /// The card is built from the snapshot already on screen — no rescan, so
     /// the picture a person shares is the one they were just looking at.
+    ///
+    /// Three outcomes, three sentences. The line used to promise "(copied to
+    /// the clipboard)" unconditionally, including in the one case the copy's
+    /// catch exists to absorb — the page stating something untrue about work
+    /// it had just watched fail.
     private void SaveReport()
     {
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
         var path = ReportRunner.DefaultPath();
-        _renderReport(ReportCardModel.Build(snapshot, _host.ListUndoable(), _loc), path);
-        ReportSavedText = _loc.F("overview.report.card.saved", path);
+        var model = ReportCardModel.Build(snapshot, _host.ListUndoable(), _loc);
+        try
+        {
+            ReportSavedText = _renderReport(model, path)
+                ? _loc.F("overview.report.card.saved", path)
+                : _loc.F("overview.report.card.saved.fileonly", path);
+        }
+        catch (Exception ex)
+        {
+            // A read-only Pictures folder or a full disk is what the console
+            // verb answers with "brisk: {message}". The button owes the same
+            // sentence, not an unhandled-exception dialog over a
+            // confirmation line that says nothing at all.
+            ReportSavedText = _loc.F("overview.report.card.failed", ex.Message);
+        }
     }
 
     /// The default surface behavior: write the PNG, then best-effort copy to
     /// the clipboard — a locked clipboard must not turn a saved card into an
-    /// error.
-    private static void RenderAndCopy(ReportCardModel model, string path)
+    /// error. Returns whether the copy actually happened, because the line
+    /// the page shows has to say which of the two it was.
+    private static bool RenderAndCopy(ReportCardModel model, string path)
     {
         ReportCardRenderer.RenderToFile(model, path);
         try
         {
-            System.Windows.Clipboard.SetImage(
-                new System.Windows.Media.Imaging.BitmapImage(new Uri(path)));
+            // OnLoad rather than the OnDemand default, and frozen: a
+            // BitmapImage left on demand holds the file open until a GC gets
+            // round to it, and the renderer writes the card with File.Create
+            // — FileShare.None. The next Save would meet a sharing violation
+            // on a handle nothing was using any more.
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(path);
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.EndInit();
+            image.Freeze();
+            System.Windows.Clipboard.SetImage(image);
+            return true;
         }
-        catch (Exception) { /* the file on disk is the deliverable */ }
+        catch (Exception) { return false; }
     }
 
     private void ClearReport()

@@ -23,12 +23,20 @@ public static class ReportRunner
         string? outPath = null;
         for (var i = 1; i < args.Length; i++)
         {
-            if (args[i] == "--out" && i + 1 < args.Length) { outPath = args[++i]; }
-            else
+            if (args[i] != "--out")
             {
                 Console.Error.WriteLine($"brisk: bad argument '{args[i]}'");
                 return 2;
             }
+            // The flag is spelled correctly; what is missing is what to call
+            // the file. Answering "bad argument '--out'" blames the one part
+            // of that line the user got right.
+            if (i + 1 >= args.Length)
+            {
+                Console.Error.WriteLine("brisk: --out needs a file path");
+                return 2;
+            }
+            outPath = args[++i];
         }
 
         // The same shape every other console verb has — Brisk.Cli.Program.Run
@@ -61,7 +69,11 @@ public static class ReportRunner
             snapshot, composition.Host.ListUndoable(), Loc.Instance);
     }
 
+    /// Seconds, not minutes: the renderer writes with File.Create
+    /// (FileShare.None), so two Saves inside the same minute used to aim
+    /// at one filename and the second met a sharing violation. A
+    /// double-click on the button was enough.
     public static string DefaultPath() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "brisk",
-        $"brisk-report-{DateTime.Now:yyyyMMdd-HHmm}.png");
+        $"brisk-report-{DateTime.Now:yyyyMMdd-HHmmss}.png");
 }
