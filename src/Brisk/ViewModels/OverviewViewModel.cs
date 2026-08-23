@@ -380,10 +380,15 @@ public sealed class OverviewViewModel : ViewModelBase
     {
         var snapshot = _state.Snapshot;
         if (snapshot is null) return;
-        var path = ReportRunner.DefaultPath();
-        var model = ReportCardModel.Build(snapshot, _host.ListUndoable(), _loc);
+        // The try opens HERE, not after the model is built. Building it reads
+        // the fix journal, and a corrupt fix-journal.jsonl throws in that read
+        // — outside the old try, which left the GUI as the one surface with no
+        // honest answer for a card it could not BUILD, only for one it could
+        // not write. Same failure, same button, same sentence owed.
         try
         {
+            var path = ReportRunner.DefaultPath();
+            var model = ReportCardModel.Build(snapshot, _host.ListUndoable(), _loc);
             ReportSavedText = _renderReport(model, path)
                 ? _loc.F("overview.report.card.saved", path)
                 : _loc.F("overview.report.card.saved.fileonly", path);

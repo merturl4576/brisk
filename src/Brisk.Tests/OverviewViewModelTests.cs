@@ -858,6 +858,66 @@ public class OverviewViewModelTests
             vm.ReportSavedText);
     }
 
+    /// The other half of the same button. Writing the PNG was inside the try;
+    /// BUILDING the model was not, and building it reads the fix journal. A
+    /// corrupt fix-journal.jsonl therefore threw straight past the catch and
+    /// out of a RelayCommand — an unhandled-exception dialog on the one
+    /// surface whose console twin answers the same failure with a sentence.
+    ///
+    /// The throw is armed after the scan on purpose: Refresh reads the journal
+    /// too, and what is under test here is the button's own read.
+    [Fact]
+    public async Task SaveReport_WhenTheJournalReadFails_SaysSoInsteadOfThrowing()
+    {
+        var host = new UnreadableJournalHost();
+        var state = new AppState(host);
+        var vm = new OverviewViewModel(state, host, new FixAllService(host),
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new FakeLive(), EnglishLoc(), () => false, (_, _) => true);
+        await state.ScanAsync();
+        host.Armed = true;
+
+        vm.SaveReportCommand.Execute(null);
+
+        Assert.Equal(
+            EnglishLoc().F("overview.report.card.failed", "fix-journal.jsonl is corrupt"),
+            vm.ReportSavedText);
+    }
+
+    /// Fakes.cs is locked, so a fix journal that cannot be read is simulated
+    /// with a decorator whose ListUndoable throws once the test arms it.
+    private sealed class UnreadableJournalHost : IEngineHost
+    {
+        public FakeEngineHost Inner { get; } = new();
+        public bool Armed { get; set; }
+
+        public System.Collections.Generic.IReadOnlyList<UndoableFix> ListUndoable() =>
+            Armed
+                ? throw new System.Text.Json.JsonException("fix-journal.jsonl is corrupt")
+                : Inner.ListUndoable();
+
+        public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
+            System.Threading.CancellationToken ct = default) => Inner.ScanAsync(progress, ct);
+        public FixOutcome Fix(string ruleId) => Inner.Fix(ruleId);
+        public FixOutcome Undo(string ruleId) => Inner.Undo(ruleId);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun,
+                Action<CleanEntry>? onEntry = null) =>
+            Inner.Clean(scan, dryRun, onEntry);
+        public System.Collections.Generic.IReadOnlyList<BriskEngine.Logging.ActionLogEntry>
+            ReadLog(int max = 200) => Inner.ReadLog(max);
+        public System.Collections.Generic.IReadOnlyList<StartupEntry> ListStartup() =>
+            Inner.ListStartup();
+        public bool SetStartupEnabled(string hive, string name, bool enabled) =>
+            Inner.SetStartupEnabled(hive, name, enabled);
+        public bool RunElevated(string cliArgs) => Inner.RunElevated(cliArgs);
+        public bool CreateRestorePoint() => Inner.CreateRestorePoint();
+        public long FreeDiskBytes() => Inner.FreeDiskBytes();
+        public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
+        public SessionIdentity Session() => Inner.Session();
+        public bool IsElevated() => Inner.IsElevated();
+    }
+
     /// Fakes.cs is locked; startup-disable semantics are simulated with a
     /// decorator whose Fix("startup-bloat") disables the heavy entries,
     /// exactly like the real StartupBloatRule.Fix does.
