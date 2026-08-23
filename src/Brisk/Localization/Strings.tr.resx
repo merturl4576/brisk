@@ -31,6 +31,8 @@
   <data name="overview.live.disk" xml:space="preserve"><value>Boş alan</value></data>
   <data name="overview.recent" xml:space="preserve"><value>Yapılanlar raporu</value></data>
   <data name="overview.report.live" xml:space="preserve"><value>Bu bilgisayarda {0} iyileştirme yapıldı</value></data>
+  <data name="overview.report.card" xml:space="preserve"><value>Rapor kartını kaydet</value></data>
+  <data name="overview.report.card.saved" xml:space="preserve"><value>Kaydedildi: {0} (panoya kopyalandı)</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>

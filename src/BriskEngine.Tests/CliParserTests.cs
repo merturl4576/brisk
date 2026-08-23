@@ -87,4 +87,8 @@ public class CliParserTests
     {
         Assert.False(CliParser.Parse(new[] { "fix", "--all", "--yes" }).Keep);
     }
+
+    [Fact]
+    public void Report_IsAKnownVerb() =>
+        Assert.Equal("report", CliParser.Parse(new[] { "report" }).Verb);
 }

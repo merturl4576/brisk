@@ -70,6 +70,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private readonly ILiveMetrics _live;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
+    private readonly Action<ReportCardModel, string> _renderReport;
     private string _scoreText = "—";
     private double _scoreValue;
     private string _scoreBrushKey = "";
@@ -94,12 +95,14 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _revelationEvidence = "";
     private string _revelationMoreText = "";
     private string _revelationEmptyText = "";
+    private string _reportSavedText = "";
     /// Rule ids seen in the undoable list on the previous refresh; null until
     /// the first population so nothing animates at startup.
     private HashSet<string>? _seenUndoable;
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
-        SafeCleanRunner safeClean, ILiveMetrics live, Loc loc, Func<bool> isDryRun)
+        SafeCleanRunner safeClean, ILiveMetrics live, Loc loc, Func<bool> isDryRun,
+        Action<ReportCardModel, string>? renderReport = null)
     {
         _state = state;
         _host = host;
@@ -108,6 +111,7 @@ public sealed class OverviewViewModel : ViewModelBase
         _live = live;
         _loc = loc;
         _isDryRun = isDryRun;
+        _renderReport = renderReport ?? RenderAndCopy;
         _liveTempCaption = loc["overview.live.temp"];
         _cleanSafeText = loc["overview.cleanspace.none"];
         _state.Changed += Refresh;
@@ -126,6 +130,7 @@ public sealed class OverviewViewModel : ViewModelBase
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
+        SaveReportCommand = new RelayCommand(SaveReport, () => HasSnapshot);
         OpenHealthCommand = new RelayCommand(() => OpenHealthRequested?.Invoke());
     }
 
@@ -203,6 +208,14 @@ public sealed class OverviewViewModel : ViewModelBase
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CleanSafeCommand { get; }
+    /// The quiet confirmation under the buttons — the saved card's path, or
+    /// empty (and hidden) until one has been written this session.
+    public string ReportSavedText
+    {
+        get => _reportSavedText;
+        private set => Set(ref _reportSavedText, value);
+    }
+    public RelayCommand SaveReportCommand { get; }
     /// The clean button wears its benefit (round 11): "Free up 1.2 GB",
     /// using the SAME honest figure the Depolama card promises. Before a
     /// scan, or with nothing to take, it stays the plain generic label.
@@ -355,6 +368,31 @@ public sealed class OverviewViewModel : ViewModelBase
         }
     }
 
+    /// The card is built from the snapshot already on screen — no rescan, so
+    /// the picture a person shares is the one they were just looking at.
+    private void SaveReport()
+    {
+        var snapshot = _state.Snapshot;
+        if (snapshot is null) return;
+        var path = ReportRunner.DefaultPath();
+        _renderReport(ReportCardModel.Build(snapshot, _host.ListUndoable(), _loc), path);
+        ReportSavedText = _loc.F("overview.report.card.saved", path);
+    }
+
+    /// The default surface behavior: write the PNG, then best-effort copy to
+    /// the clipboard — a locked clipboard must not turn a saved card into an
+    /// error.
+    private static void RenderAndCopy(ReportCardModel model, string path)
+    {
+        ReportCardRenderer.RenderToFile(model, path);
+        try
+        {
+            System.Windows.Clipboard.SetImage(
+                new System.Windows.Media.Imaging.BitmapImage(new Uri(path)));
+        }
+        catch (Exception) { /* the file on disk is the deliverable */ }
+    }
+
     private void ClearReport()
     {
         ReportLines.Clear();
@@ -433,5 +471,6 @@ public sealed class OverviewViewModel : ViewModelBase
         Raise(nameof(HasSnapshot));
         FixAllCommand.RaiseCanExecuteChanged();
         CleanSafeCommand.RaiseCanExecuteChanged();
+        SaveReportCommand.RaiseCanExecuteChanged();
     }
 }

@@ -45,6 +45,18 @@ public class CliHelpSwitchTests
         Assert.Equal(2, code);
     }
 
+    /// brisk.exe cannot render the card (no WPF) and says exactly why and
+    /// where to go — an unknown-command error would be a lie about the
+    /// reason for refusing.
+    [Fact]
+    public void Report_InTheStandaloneCli_RefusesWithThePreciseMessage()
+    {
+        var (code, output) = Capture(() => Program.Run(new[] { "report" }));
+
+        Assert.Equal(2, code);
+        Assert.Contains("brisk-app.exe report", output);
+    }
+
     private static (int Code, string Output) Capture(Func<int> run)
     {
         var stdout = Console.Out;

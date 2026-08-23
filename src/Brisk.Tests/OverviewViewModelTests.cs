@@ -41,9 +41,11 @@ public class OverviewViewModelTests
     }
 
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State) Build(
-        Func<bool>? isDryRun = null, FakeLive? live = null)
+        Func<bool>? isDryRun = null, FakeLive? live = null,
+        Action<ReportCardModel, string>? renderReport = null)
     {
-        var (vm, host, state, _) = BuildWithBin(isDryRun, live);
+        var (vm, host, state, _) = BuildWithBin(isDryRun, live,
+            renderReport: renderReport);
         return (vm, host, state);
     }
 
@@ -51,7 +53,8 @@ public class OverviewViewModelTests
     /// flow the Depolama page runs, so its seam needs the bin in view.
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State, FakeBin Bin)
         BuildWithBin(Func<bool>? isDryRun = null, FakeLive? live = null,
-            Settings? settings = null)
+            Settings? settings = null,
+            Action<ReportCardModel, string>? renderReport = null)
     {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(
@@ -69,7 +72,8 @@ public class OverviewViewModelTests
         state.TrackFixes(fixAll);
         var vm = new OverviewViewModel(state, host, fixAll,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
-            live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false));
+            live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false),
+            renderReport);
         return (vm, host, state, bin);
     }
 
@@ -768,6 +772,35 @@ public class OverviewViewModelTests
         vm.OpenHealthRequested += () => fired = true;
         vm.OpenHealthCommand.Execute(null);
         Assert.True(fired);
+    }
+
+    [Fact]
+    public async Task SaveReport_RendersTheCardAndAnnouncesThePath()
+    {
+        var rendered = new List<(ReportCardModel Model, string Path)>();
+        var (vm, host, state) = Build(renderReport: (m, p) => rendered.Add((m, p)));
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("zz-fake", cat: RuleCategory.Advise, canFix: false,
+                headline: new Headline("57 s", "cap",
+                    "rule.zz-fake.headline.value", new[] { "57" },
+                    "rule.zz-fake.headline.caption", Array.Empty<string>())),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        vm.SaveReportCommand.Execute(null);
+
+        var (model, path) = Assert.Single(rendered);
+        Assert.Equal("57 s", model.Findings[0].Lead);
+        Assert.EndsWith(".png", path);
+        Assert.Contains(path, vm.ReportSavedText);
+    }
+
+    [Fact]
+    public void SaveReport_WithoutASnapshot_CannotExecute()
+    {
+        var (vm, _, _) = Build();
+        Assert.False(vm.SaveReportCommand.CanExecute(null));
     }
 
     /// Fakes.cs is locked; startup-disable semantics are simulated with a

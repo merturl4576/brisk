@@ -74,6 +74,7 @@ public static class Program
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
                 "rules" => PrintRules(),
+                "report" => Refuse(),
                 _ => 2,
             };
         }
@@ -447,6 +448,17 @@ public static class Program
     private static string Humanize(string id) =>
         string.Join(' ', id.Split('-').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
+    /// The card needs the visual engine, which ships only in brisk-app.exe.
+    /// The verb is recognized so the refusal can be precise — an
+    /// unknown-command error would lie about why.
+    private static int Refuse()
+    {
+        Console.Error.WriteLine(
+            "brisk: the report card needs the visual engine that ships in "
+            + "brisk-app.exe — run: brisk-app.exe report");
+        return 2;
+    }
+
     private static void PrintHelp()
     {
         Console.WriteLine("brisk — Windows performance diagnostics and cleanup");
@@ -468,6 +480,7 @@ public static class Program
         Console.WriteLine("    --yes                    actually delete (otherwise print plan)");
         Console.WriteLine("  targets                    list cleanup targets");
         Console.WriteLine("  rules                      list diagnostic rules");
+        Console.WriteLine("  report                     save the scan as a shareable PNG (brisk-app.exe only)");
         Console.WriteLine("  version                    print the engine version");
     }
 }

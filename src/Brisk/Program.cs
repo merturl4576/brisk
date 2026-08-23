@@ -20,6 +20,11 @@ public static class Program
         if (EntryRouter.RoutesToConsole(args))
         {
             ParentConsole.Adopt();
+            // The report verb needs WPF, which only this executable carries,
+            // and Brisk.Cli cannot reference this project — so it is answered
+            // here, before the console entry point sees the arguments.
+            if (args.Length > 0 && args[0] == "report")
+                return Services.ReportRunner.Run(args);
             return global::Brisk.Cli.Program.Main(args);
         }
 

@@ -364,7 +364,26 @@
                         </Style>
                     </Button.Style>
                 </Button>
+                <Button Margin="8,0,0,0" Command="{Binding SaveReportCommand}"
+                        Style="{StaticResource GhostButton}"
+                        Content="{Binding [overview.report.card], Source={x:Static loc:Loc.Instance}}" />
             </StackPanel>
+
+            <!-- The scan a person can actually show someone: the path the
+                 card was written to, said once and quietly. -->
+            <TextBlock Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextMuted}"
+                       Text="{Binding ReportSavedText}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ReportSavedText}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
             <!-- The reassurance the old "(güvenli)" parentheses carried, in
                  words a person actually reads. -->

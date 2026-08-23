@@ -10,7 +10,7 @@ public sealed record CliCommand(string Verb, string? RuleId = null, string? Leve
 public static class CliParser
 {
     private static readonly HashSet<string> Verbs =
-        new() { "scan", "fix", "clean", "targets", "rules", "version" };
+        new() { "scan", "fix", "clean", "targets", "rules", "version", "report" };
     private static readonly HashSet<string> Levels = new() { "safe", "developer", "deep" };
 
     public static CliCommand Parse(string[] args)
