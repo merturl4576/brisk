@@ -14,5 +14,14 @@ else {
         if ($item.ValueCount -eq 0 -and $item.SubKeyCount -eq 0) { Remove-Item $k }
     }
 }
+
+# Read the value back before claiming it was put back, and before deleting the
+# only copy of what it is supposed to be.
+$now = (Get-ItemProperty $key -Name VisualFXSetting -ErrorAction SilentlyContinue).VisualFXSetting
+function Show($v) { if ($null -eq $v) { 'absent' } else { "$v" } }
+if ($now -ne $prior.value) {
+    throw "read-back failed: VisualFXSetting is $(Show $now), the record says $(Show $prior.value) - state file kept"
+}
+
 Remove-Item $state
 Write-Host 'restored: VisualFXSetting put back exactly'
