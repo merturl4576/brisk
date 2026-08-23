@@ -28,13 +28,13 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Install .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "8.0.x"
 
@@ -75,34 +75,22 @@ jobs:
           if (-not $parsed) { throw "scan --json produced nothing parseable" }
           Write-Host "scan --json parsed on a machine brisk has never seen"
 
+      # The body lives in .github/release-notes.md rather than in this file.
+      # A PowerShell here-string has to close at column zero, and column zero
+      # ends a YAML block scalar - which is how the first version of this
+      # workflow shipped a file GitHub could not parse at all.
       - name: Create the release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "${{ github.event.inputs.tag || github.ref_name }}"
-          $notes = @"
-### Downloads
-
-| File | What it is |
-|---|---|
-| ``brisk-app.exe`` | The app. Asks for administrator, because reading hardware sensors needs it. |
-| ``brisk.exe`` | The same diagnostics from a terminal, running as you. No elevation prompt. |
-| ``SHA256SUMS.txt`` | Checksums for both files. |
-
-Neither file needs .NET installed and neither needs the other. Nothing is written to your machine until you tell brisk to fix something, and every fix is recorded so it can be undone.
-
-**Not signed yet**, so SmartScreen will warn on first run. Verify the checksum if that matters to you.
-"@
-          gh release create $tag `
-            (Get-ChildItem artifacts | ForEach-Object { $_.FullName }) `
-            --title "brisk $tag" `
-            --notes $notes `
-            --verify-tag
+          $files = Get-ChildItem artifacts | ForEach-Object { $_.FullName }
+          gh release create $tag $files --title "brisk $tag" --notes-file .github/release-notes.md --verify-tag
 
       - name: Upload artifacts to the run as well
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: brisk-${{ github.event.inputs.tag || github.ref_name }}
           path: artifacts/
