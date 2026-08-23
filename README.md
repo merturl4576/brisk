@@ -2,6 +2,8 @@
 
 **A free, open-source CCleaner alternative for Windows that tells you *why* your PC is slow — and refuses to claim anything it did not measure.**
 
+*The tool that tells you the truth about your Windows PC.*
+
 [![CI](https://github.com/merturl4576/brisk/actions/workflows/ci.yml/badge.svg)](https://github.com/merturl4576/brisk/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/merturl4576/brisk?include_prereleases)](https://github.com/merturl4576/brisk/releases)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)

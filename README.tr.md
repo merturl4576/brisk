@@ -2,6 +2,8 @@
 
 **Windows için ücretsiz, açık kaynak CCleaner alternatifi: bilgisayarının *neden* yavaş olduğunu kanıtıyla söyler — ölçmediği hiçbir şeyi iddia etmez.**
 
+*Windows bilgisayarın hakkında sana doğruyu söyleyen araç.*
+
 [![CI](https://github.com/merturl4576/brisk/actions/workflows/ci.yml/badge.svg)](https://github.com/merturl4576/brisk/actions/workflows/ci.yml)
 [![Sürüm](https://img.shields.io/github/v/release/merturl4576/brisk?include_prereleases)](https://github.com/merturl4576/brisk/releases)
 [![Lisans: GPL v3](https://img.shields.io/badge/lisans-GPL--3.0-blue)](LICENSE)
