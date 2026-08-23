@@ -55,34 +55,63 @@
                     <ColumnDefinition Width="300" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <!-- Left: the health gauge, static. -->
-                <Grid Grid.Column="0" Width="240" Height="240" VerticalAlignment="Top">
+                <!-- Left: the health gauge, still. The lit arc is painted by
+                     the score's band and not by hope — the same three keys
+                     HealthPage triggers on, so a 35 leaves here in red. -->
+                <Grid Grid.Column="0" Width="240" Height="240"
+                      VerticalAlignment="Center">
                     <Brisk:SegmentedGauge Width="240" Height="240" Layer="Unlit"
                                           UnlitBrush="{StaticResource HeroUnlit}"
                                           Score="{Binding Health}" />
                     <Brisk:SegmentedGauge Width="240" Height="240" Layer="Lit"
-                                          LitBrush="{StaticResource HeroGood}"
-                                          GlowColor="{StaticResource HeroGoodColor}"
-                                          Score="{Binding Health}" />
+                                          Score="{Binding Health}">
+                        <Brisk:SegmentedGauge.Style>
+                            <Style TargetType="{x:Type Brisk:SegmentedGauge}">
+                                <Setter Property="LitBrush"
+                                        Value="{StaticResource HeroGood}" />
+                                <Setter Property="GlowColor"
+                                        Value="{StaticResource HeroGoodColor}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                                 Value="SeverityWarning">
+                                        <Setter Property="LitBrush"
+                                                Value="{StaticResource HeroWarn}" />
+                                        <Setter Property="GlowColor"
+                                                Value="{StaticResource HeroWarnColor}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HealthBrushKey}"
+                                                 Value="SeverityCritical">
+                                        <Setter Property="LitBrush"
+                                                Value="{StaticResource HeroCrit}" />
+                                        <Setter Property="GlowColor"
+                                                Value="{StaticResource HeroCritColor}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Brisk:SegmentedGauge.Style>
+                    </Brisk:SegmentedGauge>
                     <TextBlock Style="{StaticResource HeroScore}" FontSize="52"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Text="{Binding Health}" />
                 </Grid>
-                <!-- Right: the three sections. -->
-                <StackPanel Grid.Column="1" Margin="36,0,0,0">
-                    <TextBlock FontSize="13" Typography.Capitals="AllSmallCaps"
+                <!-- Right: the three sections. Centred with the gauge: this
+                     card is posted as an image, and a top-anchored column
+                     leaves the bottom half reading as unfinished. -->
+                <StackPanel Grid.Column="1" Margin="36,0,0,0"
+                            VerticalAlignment="Center">
+                    <TextBlock FontSize="14" Typography.Capitals="AllSmallCaps"
                                Foreground="{StaticResource HeroMuted}"
                                Text="{Binding [report.section.findings], Source={x:Static loc:Loc.Instance}}" />
-                    <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Findings}">
+                    <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding Findings}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <DockPanel Margin="0,0,0,9">
-                                    <TextBlock DockPanel.Dock="Left" Width="170"
-                                               FontSize="24" FontWeight="SemiBold"
+                                <DockPanel Margin="0,0,0,12">
+                                    <TextBlock DockPanel.Dock="Left" Width="200"
+                                               FontSize="30" FontWeight="SemiBold"
                                                FontFamily="Segoe UI Variable Display, Segoe UI"
                                                Foreground="{StaticResource HeroText}"
                                                Text="{Binding Lead}" />
-                                    <TextBlock FontSize="16" VerticalAlignment="Center"
+                                    <TextBlock FontSize="19" VerticalAlignment="Center"
                                                TextWrapping="Wrap"
                                                Foreground="{StaticResource HeroText}"
                                                Text="{Binding Text}" />
@@ -90,7 +119,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock FontSize="15" TextWrapping="Wrap"
+                    <TextBlock FontSize="17" TextWrapping="Wrap"
                                Foreground="{StaticResource HeroMuted}"
                                Text="{Binding FindingsEmptyText}">
                         <TextBlock.Style>
@@ -103,29 +132,29 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Margin="0,22,0,0" FontSize="13"
+                    <TextBlock Margin="0,26,0,0" FontSize="14"
                                Typography.Capitals="AllSmallCaps"
                                Foreground="{StaticResource HeroMuted}"
                                Text="{Binding [report.section.unread], Source={x:Static loc:Loc.Instance}}" />
-                    <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Unread}">
+                    <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding Unread}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock FontSize="15" TextWrapping="Wrap" Margin="0,0,0,4"
+                                <TextBlock FontSize="17" TextWrapping="Wrap" Margin="0,0,0,6"
                                            Foreground="{StaticResource HeroText}"
                                            Text="{Binding}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <StackPanel Margin="0,22,0,0"
+                    <StackPanel Margin="0,26,0,0"
                                 Visibility="{Binding HasFixes,
                                     Converter={x:Static Brisk:BoolToVis.Instance}}">
-                        <TextBlock FontSize="13" Typography.Capitals="AllSmallCaps"
+                        <TextBlock FontSize="14" Typography.Capitals="AllSmallCaps"
                                    Foreground="{StaticResource HeroMuted}"
                                    Text="{Binding [report.section.fixes], Source={x:Static loc:Loc.Instance}}" />
-                        <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Fixes}">
+                        <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding Fixes}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock FontSize="15" Margin="0,0,0,4"
+                                    <TextBlock FontSize="17" Margin="0,0,0,6"
                                                Foreground="{StaticResource HeroText}"
                                                Text="{Binding}" />
                                 </DataTemplate>

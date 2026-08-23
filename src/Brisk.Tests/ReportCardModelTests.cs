@@ -207,4 +207,29 @@ public class ReportCardModelTests
         Assert.Equal("github.com/merturl4576/brisk", card.RepoLine);
         Assert.Equal(72, card.Health);
     }
+
+    /// The card paints its ring from this key, so drift between it and the
+    /// app's banding would let a screenshot claim health the machine does
+    /// not have. The boundaries are the assertion: 90 and 70 are where
+    /// HealthBrush turns, and the card must turn on the same numbers.
+    [Theory]
+    [InlineData(100, "Good")]
+    [InlineData(90, "Good")]
+    [InlineData(89, "SeverityWarning")]
+    [InlineData(72, "SeverityWarning")]
+    [InlineData(70, "SeverityWarning")]
+    [InlineData(69, "SeverityCritical")]
+    [InlineData(35, "SeverityCritical")]
+    [InlineData(0, "SeverityCritical")]
+    public void HealthBrushKey_BandsTheScoreTheWayTheRestOfTheAppDoes(
+        int health, string expected)
+    {
+        var snapshot = TestData.Snapshot(null, new SensorStatus(true, true, null))
+            with { Health = health };
+
+        var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), Loc("en"));
+
+        Assert.Equal(expected, card.HealthBrushKey);
+        Assert.Equal(HealthBrush.KeyFor(health), card.HealthBrushKey);
+    }
 }

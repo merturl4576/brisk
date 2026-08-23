@@ -22,6 +22,11 @@ public sealed class ReportCardModel
     public required string DateText { get; init; }
     public required string VersionText { get; init; }
     public required int Health { get; init; }
+    /// Which band the score falls in, as the app's own theme key. The card
+    /// paints its ring from this, so a machine at 35 cannot leave here
+    /// wearing the healthy green — and the banding is the one the overview
+    /// and the health page already use, not a second opinion about health.
+    public required string HealthBrushKey { get; init; }
     public required IReadOnlyList<CardLine> Findings { get; init; }
     public required string FindingsEmptyText { get; init; }
     public required IReadOnlyList<string> Unread { get; init; }
@@ -49,6 +54,7 @@ public sealed class ReportCardModel
                 .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
             VersionText = EngineInfo.Version,
             Health = snapshot.Health,
+            HealthBrushKey = HealthBrush.KeyFor(snapshot.Health),
             Findings = findings,
             FindingsEmptyText = findings.Count > 0 ? "" :
                 loc.F("overview.revelation.none", DiagnosticRuleRegistry.All.Count),
