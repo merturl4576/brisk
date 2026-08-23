@@ -408,6 +408,10 @@ public sealed class OverviewViewModel : ViewModelBase
 
     private void Refresh()
     {
+        // The saved line names a card built from the snapshot being replaced
+        // right now. Left up, it would point at a picture of the machine as
+        // it was — so it goes with the scan it described.
+        ReportSavedText = "";
         DoneRows.Clear();
         var undoable = _host.ListUndoable();
         foreach (var fix in undoable.OrderByDescending(f => f.FixedAtUtc))

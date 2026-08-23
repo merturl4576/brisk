@@ -364,9 +364,25 @@
                         </Style>
                     </Button.Style>
                 </Button>
+                <!-- Held closed by the same two conditions as its neighbours:
+                     a card rendered while the snapshot underneath it is being
+                     replaced would be a picture of a machine nobody is
+                     looking at any more. -->
                 <Button Margin="8,0,0,0" Command="{Binding SaveReportCommand}"
-                        Style="{StaticResource GhostButton}"
-                        Content="{Binding [overview.report.card], Source={x:Static loc:Loc.Instance}}" />
+                        Content="{Binding [overview.report.card], Source={x:Static loc:Loc.Instance}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </StackPanel>
 
             <!-- The scan a person can actually show someone: the path the

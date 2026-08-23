@@ -803,6 +803,23 @@ public class OverviewViewModelTests
         Assert.False(vm.SaveReportCommand.CanExecute(null));
     }
 
+    /// The saved line names a card built from ONE scan. The next scan
+    /// replaces the snapshot underneath it, so a line still reading "Saved:
+    /// …brisk-report-….png" would be pointing at a picture of the machine as
+    /// it WAS — a stale claim on a page whose whole job is the current one.
+    [Fact]
+    public async Task SaveReport_ThenAnotherScan_ClearsTheSavedLine()
+    {
+        var (vm, _, state) = Build(renderReport: (_, _) => { });
+        await state.ScanAsync();
+        vm.SaveReportCommand.Execute(null);
+        Assert.NotEqual("", vm.ReportSavedText);
+
+        await state.ScanAsync();
+
+        Assert.Equal("", vm.ReportSavedText);
+    }
+
     /// Fakes.cs is locked; startup-disable semantics are simulated with a
     /// decorator whose Fix("startup-bloat") disables the heavy entries,
     /// exactly like the real StartupBloatRule.Fix does.

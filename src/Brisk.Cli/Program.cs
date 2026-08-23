@@ -41,7 +41,15 @@ public static class Program
         // "--help" and "--version" are switches, and the parser knows verbs.
         // Translating here rather than at the window's entry point is what
         // makes both executables answer them the same way.
-        var cmd = CliParser.Parse(EntryRouter.Normalize(args));
+        var normalized = EntryRouter.Normalize(args);
+        // Ahead of the parser on purpose. The verb is in CliParser.Verbs so
+        // that 'report' is not an unknown command, but the parser knows none
+        // of report's flags — so 'report --out card.png' answered "bad
+        // argument '--out'", which is true about the flag and the same lie
+        // about why brisk.exe will not draw a card. Every report line, flags
+        // or not, gets the one reason that is actually the reason.
+        if (normalized.Length > 0 && normalized[0] == "report") return Refuse();
+        var cmd = CliParser.Parse(normalized);
         if (cmd.Verb == "error") { Console.Error.WriteLine($"brisk: {cmd.Error}"); return 2; }
         if (cmd.Verb is "help") { PrintHelp(); return 0; }
         if (cmd.Verb is "version") { Console.WriteLine(EngineInfo.Version); return 0; }
@@ -74,7 +82,6 @@ public static class Program
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
                 "rules" => PrintRules(),
-                "report" => Refuse(),
                 _ => 2,
             };
         }
@@ -450,7 +457,8 @@ public static class Program
 
     /// The card needs the visual engine, which ships only in brisk-app.exe.
     /// The verb is recognized so the refusal can be precise — an
-    /// unknown-command error would lie about why.
+    /// unknown-command error, or a complaint about a flag, would both lie
+    /// about why.
     private static int Refuse()
     {
         Console.Error.WriteLine(
