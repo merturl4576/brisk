@@ -692,6 +692,17 @@
                                      Opacity="0" IsHitTestVisible="False"
                                      Fill="{DynamicResource Good}" />
                         </Grid>
+                        <!-- The measured number leads: findings that carry a
+                             headline show it before their title. No headline,
+                             no column — the row reads exactly as before. -->
+                        <TextBlock DockPanel.Dock="Left" Margin="12,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI"
+                                   FontSize="19" FontWeight="SemiBold"
+                                   Style="{StaticResource Body}"
+                                   Text="{Binding HeadlineValue}"
+                                   Visibility="{Binding HasHeadline,
+                                       Converter={x:Static views:BoolToVis.Instance}}" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                                     HorizontalAlignment="Right">
                             <!-- Impact dots read as "how big is the problem" —
