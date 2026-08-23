@@ -36,6 +36,26 @@ public interface ISensorProbe
     int GpuCount();
 }
 
+/// The one answer to "did that sensor actually say something?".
+///
+/// Three shipped surfaces used to decide this for themselves — the scan
+/// snapshot the report card is built from, `brisk scan`'s sensor notice, and
+/// the thermals rule — and two of them agreed. The notice asked `is not null`
+/// alone, so on a machine whose sensor reports NaN the console said the
+/// sensor answered and the card said it did not: one product contradicting
+/// itself about the same reading, in the same second.
+///
+/// null is no answer at all. NaN is the answer a present-but-silent sensor
+/// gives, and it is not a reading either: it fails every threshold, so
+/// nothing calls it hot, and printed it renders "CPU NaN°C" — the one value
+/// that would take the both-read template while carrying nothing to read.
+/// Infinity is the same class of non-number and is refused with it.
+public static class SensorReading
+{
+    public static bool IsReal(double? celsius) =>
+        celsius is { } value && double.IsFinite(value);
+}
+
 public interface IDiskInfoProbe
 {
     long FreeBytes(string driveRoot);   // driveRoot like @"C:\"

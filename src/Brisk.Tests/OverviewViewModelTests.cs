@@ -41,9 +41,11 @@ public class OverviewViewModelTests
     }
 
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State) Build(
-        Func<bool>? isDryRun = null, FakeLive? live = null)
+        Func<bool>? isDryRun = null, FakeLive? live = null,
+        Func<ReportCardModel, string, bool>? renderReport = null)
     {
-        var (vm, host, state, _) = BuildWithBin(isDryRun, live);
+        var (vm, host, state, _) = BuildWithBin(isDryRun, live,
+            renderReport: renderReport);
         return (vm, host, state);
     }
 
@@ -51,7 +53,8 @@ public class OverviewViewModelTests
     /// flow the Depolama page runs, so its seam needs the bin in view.
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State, FakeBin Bin)
         BuildWithBin(Func<bool>? isDryRun = null, FakeLive? live = null,
-            Settings? settings = null)
+            Settings? settings = null,
+            Func<ReportCardModel, string, bool>? renderReport = null)
     {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(
@@ -69,7 +72,8 @@ public class OverviewViewModelTests
         state.TrackFixes(fixAll);
         var vm = new OverviewViewModel(state, host, fixAll,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
-            live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false));
+            live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false),
+            renderReport);
         return (vm, host, state, bin);
     }
 
@@ -111,7 +115,8 @@ public class OverviewViewModelTests
         var (vm, host, state) = Build();
         host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
             new ScanResult(Array.Empty<TargetScanResult>()), 95,
-            new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
+            new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
+            new SensorStatus(false, false, null));
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);
@@ -768,6 +773,149 @@ public class OverviewViewModelTests
         vm.OpenHealthRequested += () => fired = true;
         vm.OpenHealthCommand.Execute(null);
         Assert.True(fired);
+    }
+
+    [Fact]
+    public async Task SaveReport_RendersTheCardAndAnnouncesThePath()
+    {
+        var rendered = new List<(ReportCardModel Model, string Path)>();
+        var (vm, host, state) = Build(
+            renderReport: (m, p) => { rendered.Add((m, p)); return true; });
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("zz-fake", cat: RuleCategory.Advise, canFix: false,
+                headline: new Headline("57 s", "cap",
+                    "rule.zz-fake.headline.value", new[] { "57" },
+                    "rule.zz-fake.headline.caption", Array.Empty<string>())),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        vm.SaveReportCommand.Execute(null);
+
+        var (model, path) = Assert.Single(rendered);
+        Assert.Equal("57 s", model.Findings[0].Lead);
+        Assert.EndsWith(".png", path);
+        Assert.Equal(EnglishLoc().F("overview.report.card.saved", path), vm.ReportSavedText);
+    }
+
+    [Fact]
+    public void SaveReport_WithoutASnapshot_CannotExecute()
+    {
+        var (vm, _, _) = Build();
+        Assert.False(vm.SaveReportCommand.CanExecute(null));
+    }
+
+    /// The saved line names a card built from ONE scan. The next scan
+    /// replaces the snapshot underneath it, so a line still reading "Saved:
+    /// …brisk-report-….png" would be pointing at a picture of the machine as
+    /// it WAS — a stale claim on a page whose whole job is the current one.
+    [Fact]
+    public async Task SaveReport_ThenAnotherScan_ClearsTheSavedLine()
+    {
+        var (vm, _, state) = Build(renderReport: (_, _) => true);
+        await state.ScanAsync();
+        vm.SaveReportCommand.Execute(null);
+        Assert.NotEqual("", vm.ReportSavedText);
+
+        await state.ScanAsync();
+
+        Assert.Equal("", vm.ReportSavedText);
+    }
+
+    /// The clipboard copy is best-effort by design — another process holding
+    /// it must not turn a card that IS on disk into an error. But the line
+    /// that says so used to promise "(copied to the clipboard)" in exactly
+    /// the failure the catch exists to absorb. The surface now says which of
+    /// the two happened.
+    [Fact]
+    public async Task SaveReport_WhenTheClipboardRefuses_ClaimsOnlyTheFile()
+    {
+        string? saved = null;
+        var (vm, _, state) = Build(renderReport: (_, p) => { saved = p; return false; });
+        await state.ScanAsync();
+
+        vm.SaveReportCommand.Execute(null);
+
+        Assert.Equal(EnglishLoc().F("overview.report.card.saved.fileonly", saved!),
+            vm.ReportSavedText);
+        Assert.DoesNotContain("clipboard", vm.ReportSavedText);
+    }
+
+    /// A read-only Pictures folder or a full disk is the console verb's
+    /// "brisk: {message}". The button owes the same answer — not a generic
+    /// unhandled-exception modal over a confirmation line saying nothing.
+    [Fact]
+    public async Task SaveReport_WhenTheRenderFails_SaysSoInsteadOfThrowing()
+    {
+        var (vm, _, state) = Build(renderReport: (_, _) =>
+            throw new UnauthorizedAccessException("Access to the path is denied."));
+        await state.ScanAsync();
+
+        vm.SaveReportCommand.Execute(null);
+
+        Assert.Equal(
+            EnglishLoc().F("overview.report.card.failed", "Access to the path is denied."),
+            vm.ReportSavedText);
+    }
+
+    /// The other half of the same button. Writing the PNG was inside the try;
+    /// BUILDING the model was not, and building it reads the fix journal. A
+    /// corrupt fix-journal.jsonl therefore threw straight past the catch and
+    /// out of a RelayCommand — an unhandled-exception dialog on the one
+    /// surface whose console twin answers the same failure with a sentence.
+    ///
+    /// The throw is armed after the scan on purpose: Refresh reads the journal
+    /// too, and what is under test here is the button's own read.
+    [Fact]
+    public async Task SaveReport_WhenTheJournalReadFails_SaysSoInsteadOfThrowing()
+    {
+        var host = new UnreadableJournalHost();
+        var state = new AppState(host);
+        var vm = new OverviewViewModel(state, host, new FixAllService(host),
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new FakeLive(), EnglishLoc(), () => false, (_, _) => true);
+        await state.ScanAsync();
+        host.Armed = true;
+
+        vm.SaveReportCommand.Execute(null);
+
+        Assert.Equal(
+            EnglishLoc().F("overview.report.card.failed", "fix-journal.jsonl is corrupt"),
+            vm.ReportSavedText);
+    }
+
+    /// Fakes.cs is locked, so a fix journal that cannot be read is simulated
+    /// with a decorator whose ListUndoable throws once the test arms it.
+    private sealed class UnreadableJournalHost : IEngineHost
+    {
+        public FakeEngineHost Inner { get; } = new();
+        public bool Armed { get; set; }
+
+        public System.Collections.Generic.IReadOnlyList<UndoableFix> ListUndoable() =>
+            Armed
+                ? throw new System.Text.Json.JsonException("fix-journal.jsonl is corrupt")
+                : Inner.ListUndoable();
+
+        public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
+            System.Threading.CancellationToken ct = default) => Inner.ScanAsync(progress, ct);
+        public FixOutcome Fix(string ruleId) => Inner.Fix(ruleId);
+        public FixOutcome Undo(string ruleId) => Inner.Undo(ruleId);
+        public CleanReport Clean(TargetScanResult scan, bool dryRun,
+                Action<CleanEntry>? onEntry = null) =>
+            Inner.Clean(scan, dryRun, onEntry);
+        public System.Collections.Generic.IReadOnlyList<BriskEngine.Logging.ActionLogEntry>
+            ReadLog(int max = 200) => Inner.ReadLog(max);
+        public System.Collections.Generic.IReadOnlyList<StartupEntry> ListStartup() =>
+            Inner.ListStartup();
+        public bool SetStartupEnabled(string hive, string name, bool enabled) =>
+            Inner.SetStartupEnabled(hive, name, enabled);
+        public bool RunElevated(string cliArgs) => Inner.RunElevated(cliArgs);
+        public bool CreateRestorePoint() => Inner.CreateRestorePoint();
+        public long FreeDiskBytes() => Inner.FreeDiskBytes();
+        public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
+        public SessionIdentity Session() => Inner.Session();
+        public bool IsElevated() => Inner.IsElevated();
     }
 
     /// Fakes.cs is locked; startup-disable semantics are simulated with a

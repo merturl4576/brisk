@@ -49,6 +49,59 @@ file sealed class NullSensors : ISensorProbe
     public int GpuCount() => 0;
 }
 
+/// A probe that answers exactly what a test hands it, including the answers
+/// that are not numbers. NullSensors returns null to everything, so a suite
+/// built only on it can never tell a scan that read two temperatures from one
+/// that read none — the three booleans on SensorStatus drive the whole
+/// signature section of the shareable card.
+file sealed class FixedSensors : ISensorProbe
+{
+    private readonly double? _cpu;
+    private readonly double? _gpu;
+    public FixedSensors(double? cpu, double? gpu) { _cpu = cpu; _gpu = gpu; }
+    public double? CpuTempC() => _cpu;
+    public double? GpuTempC() => _gpu;
+    public int GpuCount() => _gpu is null ? 0 : 1;
+}
+
+/// A shared stopwatch with no clock: it only answers "which happened first".
+/// Enough to pin an ordering guarantee, and it cannot go flaky the way a
+/// timestamp comparison can on a machine that scans in under a millisecond.
+file sealed class CallOrder
+{
+    private int _next;
+    public int Next() => System.Threading.Interlocked.Increment(ref _next);
+}
+
+/// Records WHEN the scan asked for a CPU temperature, not what it answered.
+file sealed class SequencedSensors : ISensorProbe
+{
+    private readonly CallOrder _order;
+    public SequencedSensors(CallOrder order) { _order = order; }
+    public int? CpuIndex { get; private set; }
+    public double? CpuTempC() { CpuIndex ??= _order.Next(); return null; }
+    public double? GpuTempC() => null;
+    public int GpuCount() => 0;
+}
+
+/// Records WHEN the rule loop reached it. Detects nothing: the finding is
+/// beside the point, the moment is the point.
+file sealed class SequencedRule : IDiagnosticRule
+{
+    private readonly CallOrder _order;
+    public SequencedRule(CallOrder order) { _order = order; }
+    public string Id => "sequenced";
+    public RuleCategory Category => RuleCategory.Auto;
+    public int? DetectIndex { get; private set; }
+    public DiagnosticFinding? Detect(DiagnosticContext ctx)
+    {
+        DetectIndex ??= _order.Next();
+        return null;
+    }
+    public string Fix(DiagnosticContext ctx) => "{}";
+    public void Undo(DiagnosticContext ctx, string priorStateJson) { }
+}
+
 /// The ordinary case, and the only one on an administrator account: the
 /// process token and the signed-in user are the same account.
 file sealed class SameUserSession : ISessionProbe
@@ -126,10 +179,16 @@ public sealed class EngineHostTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-eh-").FullName;
 
-    private EngineHost Host(params IDiagnosticRule[] rules)
+    private EngineHost Host(params IDiagnosticRule[] rules) =>
+        Host(new NullSensors(), rules);
+
+    /// Same fixture with the sensor probe swapped — the context is built here,
+    /// so a test that needs to watch the probes has to come in through this
+    /// door rather than assemble a second one.
+    private EngineHost Host(ISensorProbe sensors, params IDiagnosticRule[] rules)
     {
         var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
-            new NullProcessInfo(), new NullSensors(), new NullDisplays(), new NullEventLog(),
+            new NullProcessInfo(), sensors, new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
             new NothingRuns(), new NullMemoryIntegrity(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
@@ -189,6 +248,96 @@ public sealed class EngineHostTests : IDisposable
         Assert.True(host.Undo("power-plan").Ok);
         Assert.Empty(host.ListUndoable());
         Assert.Equal(2, host.ReadLog().Count);
+    }
+
+    /// The card's "what brisk could not read" section is built from the
+    /// snapshot, so the scan records what the sensors answered at scan time.
+    ///
+    /// This asserted false/false/null against an all-null fixture and nothing
+    /// else, so `new SensorStatus(false, false, null)` hardcoded into ScanAsync
+    /// would have passed it: the test could not fail. The two theories below
+    /// are what make it a measurement — one machine whose sensors answer, one
+    /// whose sensors are present and silent.
+    [Fact]
+    public async Task ScanAsync_RecordsSensorStatus()
+    {
+        var host = Host(Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.False(snapshot.Sensors.CpuRead);
+        Assert.False(snapshot.Sensors.GpuRead);
+        Assert.Null(snapshot.Sensors.MemoryIntegrityOn);
+    }
+
+    /// Real temperatures, recorded as read. Without this the whole section is
+    /// pinned only against a machine that answered nothing.
+    [Fact]
+    public async Task ScanAsync_RealTemperatures_AreRecordedAsRead()
+    {
+        var host = Host(new FixedSensors(55, 65), Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.True(snapshot.Sensors.CpuRead);
+        Assert.True(snapshot.Sensors.GpuRead);
+    }
+
+    /// NaN is what a present-but-silent sensor reports, and it is exactly the
+    /// case `is not null` gets wrong: the snapshot would record "answered" and
+    /// the card would print "Everything brisk tried to read, answered." over a
+    /// scan that read no temperature at all. This is the whole reason the
+    /// shared predicate is double.IsFinite and not a null check.
+    [Theory]
+    [InlineData(double.NaN, double.NaN)]
+    [InlineData(double.PositiveInfinity, double.NegativeInfinity)]
+    public async Task ScanAsync_NonFiniteTemperatures_AreNotReadings(
+        double cpu, double gpu)
+    {
+        var host = Host(new FixedSensors(cpu, gpu), Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.False(snapshot.Sensors.CpuRead);
+        Assert.False(snapshot.Sensors.GpuRead);
+    }
+
+    /// One sensor each way, so a scan that simply copied one flag onto both
+    /// cannot pass the three tests above by luck.
+    [Fact]
+    public async Task ScanAsync_OneSensorAnswering_RecordsOnlyThatOne()
+    {
+        var host = Host(new FixedSensors(double.NaN, 65), Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.False(snapshot.Sensors.CpuRead);
+        Assert.True(snapshot.Sensors.GpuRead);
+    }
+
+    /// The status must describe the same moment as the findings beside it in
+    /// the snapshot, because the report card prints them together. Reading the
+    /// probes after _scanner.Scan — a filesystem walk that can take seconds —
+    /// let a card say "CPU temperature — not read" directly above a thermals
+    /// finding quoting a CPU temperature.
+    ///
+    /// So this pins the ORDER, not the values: ScanAsync_RecordsSensorStatus
+    /// passes either way, which is exactly why the defect survived a rewrite
+    /// of this method and had to be corrected a second time.
+    [Fact]
+    public async Task ScanAsync_ReadsTheSensors_BeforeTheRulesRun()
+    {
+        var order = new CallOrder();
+        var sensors = new SequencedSensors(order);
+        var rule = new SequencedRule(order);
+
+        await Host(sensors, rule).ScanAsync();
+
+        Assert.NotNull(sensors.CpuIndex);
+        Assert.NotNull(rule.DetectIndex);
+        Assert.True(sensors.CpuIndex < rule.DetectIndex,
+            $"sensors read at #{sensors.CpuIndex}, rules ran at #{rule.DetectIndex} — "
+            + "the probes must be read before the rule loop, not after the disk walk");
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }

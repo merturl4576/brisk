@@ -31,6 +31,10 @@
   <data name="overview.live.disk" xml:space="preserve"><value>Boş alan</value></data>
   <data name="overview.recent" xml:space="preserve"><value>Yapılanlar raporu</value></data>
   <data name="overview.report.live" xml:space="preserve"><value>Bu bilgisayarda {0} iyileştirme yapıldı</value></data>
+  <data name="overview.report.card" xml:space="preserve"><value>Rapor kartını kaydet</value></data>
+  <data name="overview.report.card.saved" xml:space="preserve"><value>Kaydedildi: {0} (panoya kopyalandı)</value></data>
+  <data name="overview.report.card.saved.fileonly" xml:space="preserve"><value>Kaydedildi: {0}</value></data>
+  <data name="overview.report.card.failed" xml:space="preserve"><value>Kart kaydedilemedi: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
@@ -235,4 +239,16 @@
   <data name="overview.revelation.more" xml:space="preserve"><value>ve {0} bulgu daha</value></data>
   <data name="overview.revelation.none" xml:space="preserve"><value>{0} kuralın hepsi baktı — bu makinede manşete çıkacak bir sayı yok.</value></data>
   <data name="overview.revelation.see" xml:space="preserve"><value>Kanıtı gör</value></data>
+  <data name="report.section.findings" xml:space="preserve"><value>Bulgular</value></data>
+  <data name="report.section.unread" xml:space="preserve"><value>brisk'in okuyamadıkları</value></data>
+  <data name="report.section.fixes" xml:space="preserve"><value>Uygulanan düzeltmeler</value></data>
+  <data name="report.fixes.more" xml:space="preserve"><value>ve {0} düzeltme daha</value></data>
+  <data name="report.unread.none" xml:space="preserve"><value>brisk'in okumaya çalıştığı her şey cevap verdi.</value></data>
+  <data name="report.unread.gpu" xml:space="preserve"><value>GPU sıcaklığı — okunamadı; brisk sebebini buradan söyleyemez.</value></data>
+  <data name="report.unread.neither" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. CPU sıcaklığını okuyan sürücü, bellek bütünlüğü açıkken yüklenmiyor; brisk bunun buradaki sebep olduğunu doğrulayamadı.</value></data>
+  <data name="report.unread.neither.integrity-on" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. Bellek bütünlüğü açık; CPU sıcaklığını okuyan sürücü Microsoft'un güvenlik açığı listesinde.</value></data>
+  <data name="report.unread.neither.integrity-off" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. Bellek bütünlüğü kapalı, yani bilinen sebep bu değil; brisk sebebini buradan söyleyemez.</value></data>
+  <data name="report.unread.cpu" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Onu okuyan sürücü, bellek bütünlüğü açıkken yüklenmiyor; brisk bunun buradaki sebep olduğunu doğrulayamadı.</value></data>
+  <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü açık; onu okuyan sürücü Microsoft'un güvenlik açığı listesinde.</value></data>
+  <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü kapalı, yani bilinen sebep bu değil; brisk sebebini buradan söyleyemez.</value></data>
 </root>

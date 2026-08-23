@@ -48,6 +48,16 @@ public sealed class EngineHost : IEngineHost
     public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
         CancellationToken ct = default) => Task.Run(() =>
     {
+        // Read the sensors BEFORE the rules run, not after the cleaner walk.
+        // What the card prints must describe the same moment the findings
+        // describe, and the filesystem scan below can take seconds.
+        // SensorReading, not a local copy of the rule: the CLI's notice and
+        // this snapshot describe the same machine at the same moment, and
+        // they used to disagree about NaN.
+        var cpuRead = SensorReading.IsReal(_ctx.Sensors.CpuTempC());
+        var gpuRead = SensorReading.IsReal(_ctx.Sensors.GpuTempC());
+        var integrityOn = _ctx.MemoryIntegrity.IsOn();
+
         var findings = new List<DiagnosticFinding>();
         foreach (var rule in _rules)
         {
@@ -65,7 +75,9 @@ public sealed class EngineHost : IEngineHost
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
-            HealthScore.Compute(findings), DateTime.UtcNow);
+            HealthScore.Compute(findings), DateTime.UtcNow,
+            new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
+                MemoryIntegrityOn: integrityOn));
     }, ct);
 
     private sealed class SyncProgressAdapter : IProgress<ScanProgress>

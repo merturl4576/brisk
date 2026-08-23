@@ -127,4 +127,34 @@ public class SensorNoticeTests
         Assert.Contains("blocklist", notice!);
         Assert.Contains("cannot confirm from here", notice);
     }
+
+    /// NaN is what a present-but-silent sensor reports. The notice asked
+    /// `is not null` and so called that an answer, while the report card —
+    /// rendered from the same machine, in the same product — asked
+    /// double.IsFinite and called it silence. Two shipped surfaces cannot
+    /// disagree about whether a sensor spoke; both now ask SensorReading.
+    [Fact]
+    public void NaNIsNotAnAnswer_TheNoticeSaysNeitherSensorSpoke()
+    {
+        var notice = Program.SensorNotice(
+            new Sensors { Cpu = double.NaN, Gpu = double.NaN },
+            elevated: true, memoryIntegrityOn: null);
+
+        Assert.NotNull(notice);
+        Assert.Contains("neither sensor answered", notice!);
+    }
+
+    /// The half-NaN case, which is the one a bare null check gets exactly
+    /// backwards: a GPU reporting NaN used to make the notice claim the GPU
+    /// answered, so a machine with one real reading printed no notice at all.
+    [Fact]
+    public void NaNFromOneSensor_IsReportedAsUnread()
+    {
+        var notice = Program.SensorNotice(
+            new Sensors { Cpu = 51, Gpu = double.NaN },
+            elevated: true, memoryIntegrityOn: null);
+
+        Assert.NotNull(notice);
+        Assert.Contains("GPU not read", notice!);
+    }
 }

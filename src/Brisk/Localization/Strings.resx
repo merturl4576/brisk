@@ -31,6 +31,10 @@
   <data name="overview.live.disk" xml:space="preserve"><value>Free space</value></data>
   <data name="overview.recent" xml:space="preserve"><value>What brisk did</value></data>
   <data name="overview.report.live" xml:space="preserve"><value>{0} improvements made on this PC</value></data>
+  <data name="overview.report.card" xml:space="preserve"><value>Save report card</value></data>
+  <data name="overview.report.card.saved" xml:space="preserve"><value>Saved: {0} (copied to the clipboard)</value></data>
+  <data name="overview.report.card.saved.fileonly" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="overview.report.card.failed" xml:space="preserve"><value>The card could not be saved: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
@@ -235,4 +239,16 @@
   <data name="overview.revelation.more" xml:space="preserve"><value>and {0} more</value></data>
   <data name="overview.revelation.none" xml:space="preserve"><value>All {0} rules looked — nothing on this machine leads with a number.</value></data>
   <data name="overview.revelation.see" xml:space="preserve"><value>See the evidence</value></data>
+  <data name="report.section.findings" xml:space="preserve"><value>Findings</value></data>
+  <data name="report.section.unread" xml:space="preserve"><value>What brisk could not read</value></data>
+  <data name="report.section.fixes" xml:space="preserve"><value>Applied fixes</value></data>
+  <data name="report.fixes.more" xml:space="preserve"><value>and {0} more</value></data>
+  <data name="report.unread.none" xml:space="preserve"><value>Everything brisk tried to read, answered.</value></data>
+  <data name="report.unread.gpu" xml:space="preserve"><value>GPU temperature — not read; brisk cannot tell from here why.</value></data>
+  <data name="report.unread.neither" xml:space="preserve"><value>Temperatures — neither sensor answered. The driver that reads CPU temperature will not load while memory integrity is on; brisk could not confirm that is the reason here.</value></data>
+  <data name="report.unread.neither.integrity-on" xml:space="preserve"><value>Temperatures — neither sensor answered. Memory integrity is on; the driver that reads CPU temperature is on Microsoft's vulnerable-driver blocklist.</value></data>
+  <data name="report.unread.neither.integrity-off" xml:space="preserve"><value>Temperatures — neither sensor answered. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.</value></data>
+  <data name="report.unread.cpu" xml:space="preserve"><value>CPU temperature — not read. The driver that reads it will not load while memory integrity is on; brisk could not confirm that is the reason here.</value></data>
+  <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is on; the driver that reads it is on Microsoft's vulnerable-driver blocklist.</value></data>
+  <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.</value></data>
 </root>

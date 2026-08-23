@@ -16,3 +16,6 @@ artifacts/
 
 # Generated agent tooling, not part of the project.
 .claude/
+
+# Workbench state files record the machine's true pre-plant state — local only.
+tools/workbench/.state/

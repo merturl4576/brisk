@@ -163,6 +163,29 @@ public class LocTests
     [InlineData("overview.actions.hint")]
     [InlineData("health.fixall")]
     [InlineData("flyout.fixall")]
+    // The report card's own keys. The card is a PNG people post, and Loc's
+    // indexer answers a miss with the key itself — so a typo in ReportCard.xaml
+    // does not fail, it prints "report.section.findings" onto the shareable
+    // picture in place of a heading. The three section headings are read
+    // straight out of the XAML and had nothing holding them at all; the unread
+    // sentences and the button's four lines are pinned by value elsewhere and
+    // are listed here so the whole wave is guarded in one place.
+    [InlineData("report.section.findings")]
+    [InlineData("report.section.unread")]
+    [InlineData("report.section.fixes")]
+    [InlineData("report.fixes.more")]
+    [InlineData("report.unread.none")]
+    [InlineData("report.unread.gpu")]
+    [InlineData("report.unread.cpu")]
+    [InlineData("report.unread.cpu.integrity-on")]
+    [InlineData("report.unread.cpu.integrity-off")]
+    [InlineData("report.unread.neither")]
+    [InlineData("report.unread.neither.integrity-on")]
+    [InlineData("report.unread.neither.integrity-off")]
+    [InlineData("overview.report.card")]
+    [InlineData("overview.report.card.saved")]
+    [InlineData("overview.report.card.saved.fileonly")]
+    [InlineData("overview.report.card.failed")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();
@@ -408,6 +431,27 @@ public class LocTests
             Assert.DoesNotContain(order, evidence, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(order, advice, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    /// The card's fixes list overflows into its own line, and it must not
+    /// borrow the overview's. "overview.revelation.more" is "and {0} more" in
+    /// English and "ve {0} bulgu daha" — and {0} more FINDINGS — in Turkish,
+    /// so borrowing it printed the wrong noun under "Uygulanan düzeltmeler" on
+    /// a shareable PNG. The two keys read identically in English, which is the
+    /// only reason it survived review, so this pins them apart by value.
+    [Fact]
+    public void FixesOverflowLine_CountsFixes_AndTheRevelationLineStillCountsFindings()
+    {
+        var loc = new Loc();
+
+        loc.SetLanguage("en");
+        Assert.Equal("and 3 more", loc.F("report.fixes.more", 3));
+
+        loc.SetLanguage("tr");
+        Assert.Equal("ve 3 düzeltme daha", loc.F("report.fixes.more", 3));
+        Assert.DoesNotContain("bulgu", loc["report.fixes.more"]);
+        // The borrowed key keeps its own noun — it is correct where it belongs.
+        Assert.Contains("bulgu", loc["overview.revelation.more"]);
     }
 
     [Fact]

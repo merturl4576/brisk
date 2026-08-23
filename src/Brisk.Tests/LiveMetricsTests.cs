@@ -72,6 +72,36 @@ public class LiveMetricsTests
         Assert.Equal("CPU", reading.TempSource);
     }
 
+    /// NaN is not a temperature, and the live tile is where that bit the
+    /// hardest: a present-but-silent CPU sensor reports NaN on EVERY tick, and
+    /// `is not null` sent it down the CPU branch — so the overview rendered
+    /// "NaN°C" under "Temperature · CPU" for as long as the window was open,
+    /// while a sensor that answered null correctly rendered "—". Same predicate
+    /// as the scan snapshot, the CLI's notice and the thermals rule.
+    [Theory]
+    [InlineData(double.NaN, null)]
+    [InlineData(double.PositiveInfinity, null)]
+    [InlineData(double.NaN, double.NaN)]
+    public void Temp_NonFiniteReadings_AreNotTemperatures(double cpu, double? gpu)
+    {
+        var reading = Build(new FakeSensors { Cpu = cpu, Gpu = gpu }).Read();
+
+        Assert.Null(reading.TempC);
+        Assert.Null(reading.TempSource);
+    }
+
+    /// The half that must still work: a silent CPU must not hide a GPU that
+    /// answered. Before the fix this reported the NaN; a fix that simply
+    /// dropped both readings whenever either was NaN would be just as wrong.
+    [Fact]
+    public void Temp_NaNCpu_LetsTheGpuReadingThrough()
+    {
+        var reading = Build(new FakeSensors { Cpu = double.NaN, Gpu = 71 }).Read();
+
+        Assert.Equal(71, reading.TempC);
+        Assert.Equal("GPU", reading.TempSource);
+    }
+
     [Fact]
     public void Temp_NoSensors_ReportsNull()
     {

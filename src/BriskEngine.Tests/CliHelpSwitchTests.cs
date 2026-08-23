@@ -45,6 +45,32 @@ public class CliHelpSwitchTests
         Assert.Equal(2, code);
     }
 
+    /// brisk.exe cannot render the card (no WPF) and says exactly why and
+    /// where to go — an unknown-command error would be a lie about the
+    /// reason for refusing.
+    [Fact]
+    public void Report_InTheStandaloneCli_RefusesWithThePreciseMessage()
+    {
+        var (code, output) = Capture(() => Program.Run(new[] { "report" }));
+
+        Assert.Equal(2, code);
+        Assert.Contains("brisk-app.exe report", output);
+    }
+
+    /// The flags do not change the answer. Letting the parser see the line
+    /// first turned 'report --out card.png' into "bad argument '--out'" —
+    /// true about the flag, and the same lie about WHY brisk.exe refuses.
+    [Fact]
+    public void Report_WithFlags_RefusesForTheSameReason()
+    {
+        var (code, output) = Capture(
+            () => Program.Run(new[] { "report", "--out", "card.png" }));
+
+        Assert.Equal(2, code);
+        Assert.Contains("brisk-app.exe report", output);
+        Assert.DoesNotContain("bad argument", output);
+    }
+
     private static (int Code, string Output) Capture(Func<int> run)
     {
         var stdout = Console.Out;

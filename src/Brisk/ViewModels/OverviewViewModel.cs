@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 using Brisk.Localization;
 using Brisk.Services;
 using BriskEngine;
@@ -70,6 +71,7 @@ public sealed class OverviewViewModel : ViewModelBase
     private readonly ILiveMetrics _live;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
+    private readonly Func<ReportCardModel, string, bool> _renderReport;
     private string _scoreText = "—";
     private double _scoreValue;
     private string _scoreBrushKey = "";
@@ -94,12 +96,14 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _revelationEvidence = "";
     private string _revelationMoreText = "";
     private string _revelationEmptyText = "";
+    private string _reportSavedText = "";
     /// Rule ids seen in the undoable list on the previous refresh; null until
     /// the first population so nothing animates at startup.
     private HashSet<string>? _seenUndoable;
 
     public OverviewViewModel(AppState state, IEngineHost host, FixAllService fixAll,
-        SafeCleanRunner safeClean, ILiveMetrics live, Loc loc, Func<bool> isDryRun)
+        SafeCleanRunner safeClean, ILiveMetrics live, Loc loc, Func<bool> isDryRun,
+        Func<ReportCardModel, string, bool>? renderReport = null)
     {
         _state = state;
         _host = host;
@@ -108,6 +112,7 @@ public sealed class OverviewViewModel : ViewModelBase
         _live = live;
         _loc = loc;
         _isDryRun = isDryRun;
+        _renderReport = renderReport ?? RenderAndCopy;
         _liveTempCaption = loc["overview.live.temp"];
         _cleanSafeText = loc["overview.cleanspace.none"];
         _state.Changed += Refresh;
@@ -126,6 +131,7 @@ public sealed class OverviewViewModel : ViewModelBase
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
+        SaveReportCommand = new RelayCommand(SaveReport, () => HasSnapshot);
         OpenHealthCommand = new RelayCommand(() => OpenHealthRequested?.Invoke());
     }
 
@@ -203,6 +209,14 @@ public sealed class OverviewViewModel : ViewModelBase
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CleanSafeCommand { get; }
+    /// The quiet confirmation under the buttons — the saved card's path, or
+    /// empty (and hidden) until one has been written this session.
+    public string ReportSavedText
+    {
+        get => _reportSavedText;
+        private set => Set(ref _reportSavedText, value);
+    }
+    public RelayCommand SaveReportCommand { get; }
     /// The clean button wears its benefit (round 11): "Free up 1.2 GB",
     /// using the SAME honest figure the Depolama card promises. Before a
     /// scan, or with nothing to take, it stays the plain generic label.
@@ -355,6 +369,66 @@ public sealed class OverviewViewModel : ViewModelBase
         }
     }
 
+    /// The card is built from the snapshot already on screen — no rescan, so
+    /// the picture a person shares is the one they were just looking at.
+    ///
+    /// Three outcomes, three sentences. The line used to promise "(copied to
+    /// the clipboard)" unconditionally, including in the one case the copy's
+    /// catch exists to absorb — the page stating something untrue about work
+    /// it had just watched fail.
+    private void SaveReport()
+    {
+        var snapshot = _state.Snapshot;
+        if (snapshot is null) return;
+        // The try opens HERE, not after the model is built. Building it reads
+        // the fix journal, and a corrupt fix-journal.jsonl throws in that read
+        // — outside the old try, which left the GUI as the one surface with no
+        // honest answer for a card it could not BUILD, only for one it could
+        // not write. Same failure, same button, same sentence owed.
+        try
+        {
+            var path = ReportRunner.DefaultPath();
+            var model = ReportCardModel.Build(snapshot, _host.ListUndoable(), _loc);
+            ReportSavedText = _renderReport(model, path)
+                ? _loc.F("overview.report.card.saved", path)
+                : _loc.F("overview.report.card.saved.fileonly", path);
+        }
+        catch (Exception ex)
+        {
+            // A read-only Pictures folder or a full disk is what the console
+            // verb answers with "brisk: {message}". The button owes the same
+            // sentence, not an unhandled-exception dialog over a
+            // confirmation line that says nothing at all.
+            ReportSavedText = _loc.F("overview.report.card.failed", ex.Message);
+        }
+    }
+
+    /// The default surface behavior: write the PNG, then best-effort copy to
+    /// the clipboard — a locked clipboard must not turn a saved card into an
+    /// error. Returns whether the copy actually happened, because the line
+    /// the page shows has to say which of the two it was.
+    private static bool RenderAndCopy(ReportCardModel model, string path)
+    {
+        ReportCardRenderer.RenderToFile(model, path);
+        try
+        {
+            // OnLoad rather than the OnDemand default, and frozen: a
+            // BitmapImage left on demand holds the file open until a GC gets
+            // round to it, and the renderer writes the card with File.Create
+            // — FileShare.None. The next Save would meet a sharing violation
+            // on a handle nothing was using any more.
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(path);
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.EndInit();
+            image.Freeze();
+            System.Windows.Clipboard.SetImage(image);
+            return true;
+        }
+        catch (Exception) { return false; }
+    }
+
     private void ClearReport()
     {
         ReportLines.Clear();
@@ -370,6 +444,10 @@ public sealed class OverviewViewModel : ViewModelBase
 
     private void Refresh()
     {
+        // The saved line names a card built from the snapshot being replaced
+        // right now. Left up, it would point at a picture of the machine as
+        // it was — so it goes with the scan it described.
+        ReportSavedText = "";
         DoneRows.Clear();
         var undoable = _host.ListUndoable();
         foreach (var fix in undoable.OrderByDescending(f => f.FixedAtUtc))
@@ -433,5 +511,6 @@ public sealed class OverviewViewModel : ViewModelBase
         Raise(nameof(HasSnapshot));
         FixAllCommand.RaiseCanExecuteChanged();
         CleanSafeCommand.RaiseCanExecuteChanged();
+        SaveReportCommand.RaiseCanExecuteChanged();
     }
 }

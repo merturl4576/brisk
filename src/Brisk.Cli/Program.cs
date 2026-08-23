@@ -41,7 +41,15 @@ public static class Program
         // "--help" and "--version" are switches, and the parser knows verbs.
         // Translating here rather than at the window's entry point is what
         // makes both executables answer them the same way.
-        var cmd = CliParser.Parse(EntryRouter.Normalize(args));
+        var normalized = EntryRouter.Normalize(args);
+        // Ahead of the parser on purpose. The verb is in CliParser.Verbs so
+        // that 'report' is not an unknown command, but the parser knows none
+        // of report's flags — so 'report --out card.png' answered "bad
+        // argument '--out'", which is true about the flag and the same lie
+        // about why brisk.exe will not draw a card. Every report line, flags
+        // or not, gets the one reason that is actually the reason.
+        if (normalized.Length > 0 && normalized[0] == "report") return Refuse();
+        var cmd = CliParser.Parse(normalized);
         if (cmd.Verb == "error") { Console.Error.WriteLine($"brisk: {cmd.Error}"); return 2; }
         if (cmd.Verb is "help") { PrintHelp(); return 0; }
         if (cmd.Verb is "version") { Console.WriteLine(EngineInfo.Version); return 0; }
@@ -74,6 +82,12 @@ public static class Program
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
                 "rules" => PrintRules(),
+                // Unreachable while the early return above stands, and kept
+                // for the day someone moves it: without this arm 'report'
+                // would fall through to the silent `_ => 2` and refuse with
+                // no message at all — worse than the unknown-command error
+                // that recognizing the verb was meant to replace.
+                "report" => Refuse(),
                 _ => 2,
             };
         }
@@ -134,8 +148,11 @@ public static class Program
     public static string? SensorNotice(ISensorProbe sensors, bool elevated,
         bool? memoryIntegrityOn)
     {
-        var cpu = sensors.CpuTempC() is not null;
-        var gpu = sensors.GpuTempC() is not null;
+        // `is not null` alone counted a NaN as an answer, so this notice
+        // stayed silent about a sensor the report card — same product, same
+        // machine, same second — reported as unread. One predicate decides.
+        var cpu = SensorReading.IsReal(sensors.CpuTempC());
+        var gpu = SensorReading.IsReal(sensors.GpuTempC());
         if (cpu && gpu) return null;
         if (cpu) return "temperature: GPU not read — CPU only. brisk cannot tell from here why.";
         var unread = gpu
@@ -447,6 +464,18 @@ public static class Program
     private static string Humanize(string id) =>
         string.Join(' ', id.Split('-').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
+    /// The card needs the visual engine, which ships only in brisk-app.exe.
+    /// The verb is recognized so the refusal can be precise — an
+    /// unknown-command error, or a complaint about a flag, would both lie
+    /// about why.
+    private static int Refuse()
+    {
+        Console.Error.WriteLine(
+            "brisk: the report card needs the visual engine that ships in "
+            + "brisk-app.exe — run: brisk-app.exe report");
+        return 2;
+    }
+
     private static void PrintHelp()
     {
         Console.WriteLine("brisk — Windows performance diagnostics and cleanup");
@@ -468,6 +497,7 @@ public static class Program
         Console.WriteLine("    --yes                    actually delete (otherwise print plan)");
         Console.WriteLine("  targets                    list cleanup targets");
         Console.WriteLine("  rules                      list diagnostic rules");
+        Console.WriteLine("  report                     save the scan as a shareable PNG (brisk-app.exe only)");
         Console.WriteLine("  version                    print the engine version");
     }
 }

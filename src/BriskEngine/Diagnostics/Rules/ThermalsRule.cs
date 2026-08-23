@@ -63,12 +63,6 @@ public sealed class ThermalsRule : AdviseRuleBase
 
     public override string Id => "thermals";
 
-    /// NaN is what a present-but-silent sensor reports, and it is not a
-    /// reading: it fails every threshold, so nothing calls it hot, but it is
-    /// not null either, so it would print "CPU NaN°C" and take the both-read
-    /// template — the one case where the template outruns what was read. The
-    /// real probe filters it too; this is here because the rule takes any
-    /// ISensorProbe and cannot assume the one it got did.
     /// Three states, three sentences, and null is not folded into either
     /// answer: a machine whose Device Guard query failed is not a machine with
     /// memory integrity off.
@@ -80,8 +74,13 @@ public sealed class ThermalsRule : AdviseRuleBase
             null => (".cpu-unread", $" {CpuUnread}"),
         };
 
+    /// The rule takes any ISensorProbe and cannot assume the one it got
+    /// filters NaN (the real probe does). SensorReading is the shared
+    /// predicate rather than a third private copy of it — the copies had
+    /// already drifted apart once, leaving `brisk scan` calling a NaN an
+    /// answer while the report card called the same reading silence.
     private static double? Reading(double? temperature) =>
-        temperature is { } value && double.IsFinite(value) ? value : null;
+        SensorReading.IsReal(temperature) ? temperature : null;
 
     public override DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
