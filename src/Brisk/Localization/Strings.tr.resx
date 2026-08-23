@@ -235,4 +235,13 @@
   <data name="overview.revelation.more" xml:space="preserve"><value>ve {0} bulgu daha</value></data>
   <data name="overview.revelation.none" xml:space="preserve"><value>{0} kuralın hepsi baktı — bu makinede manşete çıkacak bir sayı yok.</value></data>
   <data name="overview.revelation.see" xml:space="preserve"><value>Kanıtı gör</value></data>
+  <data name="report.section.findings" xml:space="preserve"><value>Bulgular</value></data>
+  <data name="report.section.unread" xml:space="preserve"><value>brisk'in okuyamadıkları</value></data>
+  <data name="report.section.fixes" xml:space="preserve"><value>Uygulanan düzeltmeler</value></data>
+  <data name="report.unread.none" xml:space="preserve"><value>brisk'in okumaya çalıştığı her şey cevap verdi.</value></data>
+  <data name="report.unread.gpu" xml:space="preserve"><value>GPU sıcaklığı — okunamadı; brisk sebebini buradan söyleyemez.</value></data>
+  <data name="report.unread.neither" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi.</value></data>
+  <data name="report.unread.cpu" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. brisk sebebini bu makinede doğrulayamadı.</value></data>
+  <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü açık; onu okuyan sürücü Microsoft'un güvenlik açığı listesinde.</value></data>
+  <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü kapalı, yani bilinen sebep bu değil; brisk sebebini buradan söyleyemez.</value></data>
 </root>

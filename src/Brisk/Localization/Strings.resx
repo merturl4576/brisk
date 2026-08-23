@@ -235,4 +235,13 @@
   <data name="overview.revelation.more" xml:space="preserve"><value>and {0} more</value></data>
   <data name="overview.revelation.none" xml:space="preserve"><value>All {0} rules looked — nothing on this machine leads with a number.</value></data>
   <data name="overview.revelation.see" xml:space="preserve"><value>See the evidence</value></data>
+  <data name="report.section.findings" xml:space="preserve"><value>Findings</value></data>
+  <data name="report.section.unread" xml:space="preserve"><value>What brisk could not read</value></data>
+  <data name="report.section.fixes" xml:space="preserve"><value>Applied fixes</value></data>
+  <data name="report.unread.none" xml:space="preserve"><value>Everything brisk tried to read, answered.</value></data>
+  <data name="report.unread.gpu" xml:space="preserve"><value>GPU temperature — not read; brisk cannot tell from here why.</value></data>
+  <data name="report.unread.neither" xml:space="preserve"><value>Temperatures — neither sensor answered.</value></data>
+  <data name="report.unread.cpu" xml:space="preserve"><value>CPU temperature — not read. brisk could not confirm the reason on this machine.</value></data>
+  <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is on; the driver that reads it is on Microsoft's vulnerable-driver blocklist.</value></data>
+  <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.</value></data>
 </root>
