@@ -21,11 +21,17 @@ foreach ($n in $names) { Remove-ItemProperty $runKey -Name $n -ErrorAction Silen
 # SilentlyContinue swallows more than "already gone" - an ACL or a locked key
 # fails just as quietly. Announcing a removal that did not happen would leave
 # six entries that really do run at the next logon, with the only record of
-# their names deleted. Read the key back and let the record stand if they are
-# still there.
-$still = @($names | Where-Object {
-    $null -ne (Get-ItemProperty $runKey -Name $_ -ErrorAction SilentlyContinue).$_
-})
+# their names deleted.
+#
+# The read-back has to be able to fail too. Registry permissions are per-key,
+# so whatever could stop the delete can equally stop the read, and a read that
+# answers $null for "gone" and for "you may not look" would call those six
+# survivors removed. OpenSubKey throws instead of guessing.
+try { $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($runKey.Substring($runKey.IndexOf('\') + 1)) }
+catch { throw "could not open $runKey to verify the removal ($($_.Exception.Message)) - state file kept" }
+if ($null -eq $key) { throw "could not open $runKey to verify the removal (the key is gone) - state file kept" }
+try { $still = @($names | Where-Object { $null -ne $key.GetValue($_, $null) }) }
+finally { $key.Close() }
 if ($still.Count -gt 0) { throw "could not remove: $($still -join ', ') - state file kept" }
 
 Remove-Item $state
