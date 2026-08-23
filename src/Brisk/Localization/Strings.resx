@@ -240,8 +240,10 @@
   <data name="report.section.fixes" xml:space="preserve"><value>Applied fixes</value></data>
   <data name="report.unread.none" xml:space="preserve"><value>Everything brisk tried to read, answered.</value></data>
   <data name="report.unread.gpu" xml:space="preserve"><value>GPU temperature — not read; brisk cannot tell from here why.</value></data>
-  <data name="report.unread.neither" xml:space="preserve"><value>Temperatures — neither sensor answered.</value></data>
-  <data name="report.unread.cpu" xml:space="preserve"><value>CPU temperature — not read. brisk could not confirm the reason on this machine.</value></data>
+  <data name="report.unread.neither" xml:space="preserve"><value>Temperatures — neither sensor answered. The driver that reads CPU temperature will not load while memory integrity is on; brisk could not confirm that is the reason here.</value></data>
+  <data name="report.unread.neither.integrity-on" xml:space="preserve"><value>Temperatures — neither sensor answered. Memory integrity is on; the driver that reads CPU temperature is on Microsoft's vulnerable-driver blocklist.</value></data>
+  <data name="report.unread.neither.integrity-off" xml:space="preserve"><value>Temperatures — neither sensor answered. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.</value></data>
+  <data name="report.unread.cpu" xml:space="preserve"><value>CPU temperature — not read. The driver that reads it will not load while memory integrity is on; brisk could not confirm that is the reason here.</value></data>
   <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is on; the driver that reads it is on Microsoft's vulnerable-driver blocklist.</value></data>
   <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.</value></data>
 </root>

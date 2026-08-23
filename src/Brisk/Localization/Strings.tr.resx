@@ -240,8 +240,10 @@
   <data name="report.section.fixes" xml:space="preserve"><value>Uygulanan düzeltmeler</value></data>
   <data name="report.unread.none" xml:space="preserve"><value>brisk'in okumaya çalıştığı her şey cevap verdi.</value></data>
   <data name="report.unread.gpu" xml:space="preserve"><value>GPU sıcaklığı — okunamadı; brisk sebebini buradan söyleyemez.</value></data>
-  <data name="report.unread.neither" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi.</value></data>
-  <data name="report.unread.cpu" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. brisk sebebini bu makinede doğrulayamadı.</value></data>
+  <data name="report.unread.neither" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. CPU sıcaklığını okuyan sürücü, bellek bütünlüğü açıkken yüklenmiyor; brisk bunun buradaki sebep olduğunu doğrulayamadı.</value></data>
+  <data name="report.unread.neither.integrity-on" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. Bellek bütünlüğü açık; CPU sıcaklığını okuyan sürücü Microsoft'un güvenlik açığı listesinde.</value></data>
+  <data name="report.unread.neither.integrity-off" xml:space="preserve"><value>Sıcaklıklar — iki sensör de cevap vermedi. Bellek bütünlüğü kapalı, yani bilinen sebep bu değil; brisk sebebini buradan söyleyemez.</value></data>
+  <data name="report.unread.cpu" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Onu okuyan sürücü, bellek bütünlüğü açıkken yüklenmiyor; brisk bunun buradaki sebep olduğunu doğrulayamadı.</value></data>
   <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü açık; onu okuyan sürücü Microsoft'un güvenlik açığı listesinde.</value></data>
   <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü kapalı, yani bilinen sebep bu değil; brisk sebebini buradan söyleyemez.</value></data>
 </root>

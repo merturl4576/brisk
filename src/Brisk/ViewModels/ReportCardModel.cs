@@ -62,19 +62,39 @@ public sealed class ReportCardModel
         };
     }
 
-    /// One line, always. The variant logic mirrors the CLI's SensorNotice —
-    /// the same three-state honesty about memory integrity, in resx form.
+    /// One line, always, naming which sensor stayed silent. Whenever the CPU
+    /// temperature went unread — alone or alongside the GPU — the line also
+    /// carries the measured memory-integrity state, because that is the one
+    /// reason brisk can actually name for a silent CPU sensor. A GPU-only
+    /// silence carries no reason: a blocked kernel driver is not why a GPU
+    /// sensor is quiet, and inventing a cause would be worse than admitting
+    /// there is none.
+    ///
+    /// Narrower than the CLI's SensorNotice, which also weighs elevation. The
+    /// two must not DISAGREE about memory integrity — they read the same three
+    /// states off the same probe, and a scan that explains a blocklisted
+    /// driver beside a card that explains nothing is one product contradicting
+    /// itself — but the card is not a copy of the notice, and the wording
+    /// differs on purpose.
     private static string UnreadLine(SensorStatus sensors, Loc loc) =>
         (sensors.CpuRead, sensors.GpuRead) switch
         {
             (true, true) => loc["report.unread.none"],
             (true, false) => loc["report.unread.gpu"],
-            (false, _) when !sensors.GpuRead => loc["report.unread.neither"],
-            (false, _) => sensors.MemoryIntegrityOn switch
-            {
-                true => loc["report.unread.cpu.integrity-on"],
-                false => loc["report.unread.cpu.integrity-off"],
-                null => loc["report.unread.cpu"],
-            },
+            (false, false) => WithReason("report.unread.neither", sensors, loc),
+            (false, true) => WithReason("report.unread.cpu", sensors, loc),
+        };
+
+    /// The three-state reason, chosen among three whole sentences rather than
+    /// glued on as a clause — Turkish does not take an English sentence with a
+    /// tail bolted to it. null is never folded into off: a Device Guard query
+    /// that failed is not a machine with memory integrity switched off, and
+    /// the hedged sentence says exactly that.
+    private static string WithReason(string baseKey, SensorStatus sensors, Loc loc) =>
+        sensors.MemoryIntegrityOn switch
+        {
+            true => loc[baseKey + ".integrity-on"],
+            false => loc[baseKey + ".integrity-off"],
+            null => loc[baseKey],
         };
 }

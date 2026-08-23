@@ -66,7 +66,9 @@ public class ReportCardModelTests
     [InlineData(true, true, null, "en", "Everything brisk tried to read, answered.")]
     [InlineData(true, true, null, "tr", "brisk'in okumaya çalıştığı her şey cevap verdi.")]
     [InlineData(true, false, null, "en", "GPU temperature — not read; brisk cannot tell from here why.")]
-    [InlineData(false, false, null, "en", "Temperatures — neither sensor answered.")]
+    // A GPU-only silence carries no reason, on purpose: a blocklisted kernel
+    // driver is not why a GPU sensor is quiet, so the card does not say it is.
+    [InlineData(true, false, true, "en", "GPU temperature — not read; brisk cannot tell from here why.")]
     public void UnreadSection_NeverDrops_AndSpeaksTheVariant(
         bool cpu, bool gpu, bool? integrity, string lang, string expected)
     {
@@ -99,7 +101,42 @@ public class ReportCardModelTests
         var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), Loc("en"));
 
         Assert.Equal(
-            new[] { "CPU temperature — not read. brisk could not confirm the reason on this machine." },
+            new[] { "CPU temperature — not read. The driver that reads it will not load "
+                + "while memory integrity is on; brisk could not confirm that is the reason here." },
+            card.Unread);
+    }
+
+    /// The mirror of the test above, and the defect it was written against:
+    /// the neither-answered line used to drop the measured reason entirely, so
+    /// on an HVCI machine with no readable GPU sensor `brisk scan` explained
+    /// the blocklisted driver and the card explained nothing — two surfaces of
+    /// one product disagreeing about the same silent sensor. The CPU went
+    /// unread in both cases, so the CPU's reason belongs on both lines.
+    [Theory]
+    [InlineData(true, "en", "Temperatures — neither sensor answered. Memory integrity is on; the driver that reads CPU temperature is on Microsoft's vulnerable-driver blocklist.")]
+    [InlineData(true, "tr", "Sıcaklıklar — iki sensör de cevap vermedi. Bellek bütünlüğü açık; CPU sıcaklığını okuyan sürücü Microsoft'un güvenlik açığı listesinde.")]
+    [InlineData(false, "en", "Temperatures — neither sensor answered. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.")]
+    public void NeitherAnswered_CarriesTheMeasuredIntegrityVariantToo(
+        bool? integrity, string lang, string expected)
+    {
+        var snapshot = TestData.Snapshot(null, new SensorStatus(false, false, integrity));
+
+        var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), Loc(lang));
+
+        Assert.Equal(new[] { expected }, card.Unread);
+    }
+
+    [Fact]
+    public void NeitherAnswered_UnknownIntegrity_KeepsTheHedge()
+    {
+        var snapshot = TestData.Snapshot(null, new SensorStatus(false, false, null));
+
+        var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), Loc("en"));
+
+        Assert.Equal(
+            new[] { "Temperatures — neither sensor answered. The driver that reads CPU "
+                + "temperature will not load while memory integrity is on; brisk could not "
+                + "confirm that is the reason here." },
             card.Unread);
     }
 
