@@ -59,8 +59,16 @@ reported first; fixes are applied only after explicit approval.
 | Wave | Rules | New infrastructure |
 |---|---|---|
 | 1 | `display-refresh`, `search-web-results` | `IDisplayProbe`, elevation manifest, scheduled-task autostart |
-| 2 | `memory-speed`, `hardware-wall` | `IHardwareProbe`, `FindingKind` |
-| 3 | `boot-degradation`, `update-settling`, change detection | `IEventLogProbe`, `ScanHistory` |
+| 2 | `boot-degradation`, `memory-speed` | `IEventLogProbe`, `IHardwareProbe`, Store-app startup tasks |
+| 3 | `hardware-wall`, `update-settling`, change detection | `FindingKind`, `ScanHistory` |
+
+**Waves 2 and 3 were swapped after wave 1 shipped.** The original order put both
+advisory-only rules in wave 2, so it would have delivered a release where nothing
+could be acted on. Boot attribution and memory speed are the two findings a user
+screenshots and sends to someone — *"your boot takes 31 s and 19 s of it is these
+three"*, *"your RAM has been at half its rated speed"* — and the project's goal is a
+repository people star, which advisory-only work does not serve. The unfixable
+notices and the history store move to wave 3, where they belong together.
 
 Elevation lands in wave 1: thermals are silently dead without it today, and
 wave 3's event log needs it too.
@@ -126,10 +134,24 @@ does not fight Group Policy.
 
 ### 3. `memory-speed` — Advise, Warning, 4 stars
 
-**Detect.** Via WMI `Win32_PhysicalMemory`: `ConfiguredClockSpeed` at least
-200 MT/s below `Speed` means the XMP/EXPO profile was never enabled and the
-modules run at the JEDEC fallback. The margin absorbs vendor rounding; a gap
-smaller than that is noise, not a misconfiguration.
+**Detect.** Via WMI `Win32_PhysicalMemory`, compare `ConfiguredClockSpeed` against
+`Speed`. The original 200 MT/s threshold was wrong and real hardware caught it: the
+maintainer's machine runs two 3200 MT/s modules at 2933, which would have fired the
+rule and sent him into a BIOS to enable a profile that would not have helped — 2933
+is a JEDEC speed and the platform's own ceiling. WMI cannot tell us the memory
+controller's maximum or whether an XMP profile exists, so the gap alone does not
+identify its cause.
+
+Fire only on the signature of a profile that was genuinely never enabled: a
+configured speed at or below **80%** of rated. XMP-off on a 3200 kit lands at the
+2133 or 2400 JEDEC base — a gap of a third. A platform ceiling lands within a few
+hundred MT/s. The first is worth telling someone about; the second is the hardware
+they bought.
+
+**Never claim the cause.** Even above the threshold, brisk cannot see whether the
+board supports the rated speed. The finding states what it measured and names both
+possible explanations. Prescribing a BIOS change brisk cannot verify would be the
+category's characteristic lie.
 
 **Report in MT/s, never MHz.** DDR performs two transfers per clock, so a
 module reported as "2400" is running at 4800 MT/s. The single most-upvoted
@@ -172,13 +194,67 @@ the application, driver and service that delayed it. Read the last five boots
 and report the median, requiring at least three to be present — one bad boot
 after an update is normal and must not raise a finding.
 
-**Report.** Not "you have 43 startup items" but "boot takes 31 s, and 19 s of
-it belongs to these three". Windows measured this itself, which makes it
-stronger than any heuristic.
+**Report the boot cost and the names — and never join them with a sum.** The
+tempting sentence, *"boot takes 57 s and 37 s of it belongs to these three"*, is
+false, and building the probe proved it. Windows' `DegradationTime` means "this
+program started slower than Windows expected", not "this program added that much to
+your boot". On the maintainer's machine a 51.2 s boot had **no** blamed programs at
+all while a *faster* 45.3 s boot had two, and three of his ten most recent boots
+named nobody. The list does not explain the total and must never be presented as if
+it does.
 
-**No fix in this wave.** Mapping an event-log offender to a disableable startup
-entry is fuzzy; `startup-bloat` already owns disabling. Linking the two is
-noted as future work rather than guessed at now.
+So the rule says two true things side by side and lets the user connect them: how
+long boot takes, and which programs Windows recorded starting slower than expected.
+The phrasing rule the probe already carries applies to the copy: **"Windows blamed
+these three", never "only these three"** — the offender list is best effort, and a
+record that cannot be read is dropped rather than guessed at.
+
+It also needs wording for the boot Windows blamed nobody for. That is a third of
+recent boots here, and reporting a slow boot with an empty list is a normal outcome,
+not a failure to explain.
+
+**Read the schema that exists, not the documented one.** On Windows 11 **26200**,
+ID 100 carries `BootTime` and `MainPathBootTime`. The documented `PostBootTime` and
+`BootDegradationTime` are absent — not empty, *absent*: the payload calls them
+`BootPostBootTime` and `BootDegradationDelta`, and both are populated. And
+`BootMs − MainPathMs` is exactly `BootPostBootTime`, verified on two payloads, so
+that subtraction buys nothing Windows does not already publish. It means main path
+versus post-boot, **not** "Windows versus your programs" — four of the five
+offenders named on that machine are Microsoft's own.
+
+Read every value **by field name**. ID 100 carries 44 `Data` elements, `BootTime`
+sits at index 5, and index 3 is `SystemBootInstance` = 392. An index-based read
+would have reported a boot counter as a millisecond count.
+
+`FriendlyName` can be empty — `brisk-app.exe` itself arrived with none — so the copy
+must fall back to the executable name rather than printing a blank.
+
+**Actionable where the evidence lines up — which requires seeing Store apps.** When a
+program Windows named is also a disableable startup entry, the Startup page carries
+the switch, and the finding can point at it.
+
+That link is nearly worthless against `Run` keys alone, and real hardware showed why.
+The programs Windows blamed on the maintainer's machine — Defender, Spotify, Edge
+WebView, TiWorker, Google's updater — overlap his `Run` entries almost not at all,
+because what Windows blames is mostly services, Windows components and **Store apps**.
+Spotify was recorded starting 37 s slower than expected, and `StartupManager` could
+not see it at all.
+
+So this wave extends `StartupManager` to Store-app startup tasks, which live under
+`HKCU\Software\Classes\Local Settings\…\AppModel\SystemAppData\<PFN>\<TaskId>\State`.
+The values mirror the WinRT `StartupTaskState` enum — `0` disabled, `1` disabled by
+user, `2` enabled, `3` disabled by policy, `4` enabled by policy — and only `2` and
+`4` mean the app starts. On that machine only `0` and `2` were ever observed, so the
+rest is read off the enum, not off a measurement. That surfaced **seven enabled
+packages** brisk was blind to, including both of Spotify's tasks.
+
+**Where the program is not disableable, say so and stop.** Defender carried the
+largest single degradation on that machine, 52 s on one boot, and brisk must not
+touch it. Naming it honestly as protection doing its job, and pointing at what *is*
+actionable, is worth more than a button it should never offer. Everything else in the
+category tells you how many programs start with Windows; this tells you which ones
+Windows itself recorded as slow, and is honest about which of them brisk can do
+nothing about — and about the fact that the list does not add up to the total.
 
 ### 6. `update-settling` — Notice, Info, no score impact
 
@@ -212,9 +288,28 @@ how regularly brisk runs, which is why autostart is worth keeping.
 
 ## Elevation and autostart
 
-The app currently ships no manifest, so it runs as a standard user and
-`RealSensorProbe` silently returns null — a user with a genuine heat problem is
-told nothing. That is the bug this fixes.
+The app currently ships no manifest, so it runs as a standard user. The stated
+reason for elevating was `RealSensorProbe` returning nothing, leaving a user with a
+genuine heat problem told nothing.
+
+**That reason turned out to be wrong, and this record corrects it.** Measured on the
+maintainer's machine after wave 1 shipped: GPU temperature reads fine *without*
+elevation, through the vendor API. CPU temperature does not read *with* elevation
+either, because LibreHardwareMonitor gets it through the WinRing0 kernel driver, and
+WinRing0 is on Microsoft's vulnerable-driver blocklist. That machine has
+`VulnerableDriverBlocklistEnable = 1` and Memory Integrity running, so the driver
+cannot load at any privilege level. On a default Windows 11, thermals will be
+GPU-only regardless of what brisk asks for.
+
+There is an exact irony here worth keeping: Memory Integrity is the feature this spec
+deliberately refuses to let brisk switch off. It is also the thing blocking brisk's
+own CPU temperature reading. That was the right call and this is its price.
+
+Elevation is still required — the `admin: true` cleanup targets under
+`%SystemRoot%` need it, and so does wave 2's boot event log, which is only readable
+elevated. So the manifest stays; only its justification changes. `ThermalsRule` must
+also stop reporting GPU-only in silence and say that CPU temperature is unavailable
+and why.
 
 **Manifest.** `requestedExecutionLevel = requireAdministrator`. Every serious
 tool in this category does the same (winutil, Optimizer, System Informer,

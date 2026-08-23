@@ -40,7 +40,11 @@ public sealed class FakeRegistry : IRegistryProbe
         Values[K(k, v)] = value;
     }
     public int? GetInt(string k, string v) => Values.TryGetValue(K(k, v), out var o) ? o as int? : null;
-    public void SetInt(string k, string v, int value) => Values[K(k, v)] = value;
+    public void SetInt(string k, string v, int value)
+    {
+        if (DenyWriteKeys.Contains(k)) throw new UnauthorizedAccessException();
+        Values[K(k, v)] = value;
+    }
     public IReadOnlyList<string> GetValueNames(string keyPath)
     {
         var names = new List<string>();
@@ -51,6 +55,24 @@ public sealed class FakeRegistry : IRegistryProbe
     }
     public IReadOnlyList<string> GetSubKeyNames(string keyPath) =>
         SubKeys.TryGetValue(keyPath, out var s) ? s : new List<string>();
+}
+
+/// Plants a Store startup task the way Windows records one: the package family
+/// name under SystemAppData, the task id under the package, the State value
+/// under the task. Shared so the StartupManager tests and the StartupBloatRule
+/// tests cannot drift into describing two different registries.
+public static class StoreRegistry
+{
+    public static void Task(FakeRegistry reg, string packageFamilyName, string task, int state)
+    {
+        var apps = StartupManager.StoreRoot;
+        if (!reg.SubKeys.TryGetValue(apps, out var pfns)) reg.SubKeys[apps] = pfns = new List<string>();
+        if (!pfns.Contains(packageFamilyName)) pfns.Add(packageFamilyName);
+        var appKey = $@"{apps}\{packageFamilyName}";
+        if (!reg.SubKeys.TryGetValue(appKey, out var tasks)) reg.SubKeys[appKey] = tasks = new List<string>();
+        if (!tasks.Contains(task)) tasks.Add(task);
+        reg.SetInt($@"{appKey}\{task}", "State", state);
+    }
 }
 
 public sealed class FakeProcessInfo : IProcessInfoProbe
@@ -103,6 +125,54 @@ public sealed class FakeRunningApps : IProcessLister
     public bool IsRunning(string processName) => Running.Contains(processName);
 }
 
+public sealed class FakeDisplays : IDisplayProbe
+{
+    public List<DisplayInfo> Attached = new();
+    public List<(string Device, int Hz)> SetCalls = new();
+
+    /// Counts the writes to the registry, so a test can prove the mode change
+    /// stayed session-only until something actually confirmed it.
+    public int PersistCalls;
+
+    /// Rates the driver will refuse, as a real one refuses a mode the cable
+    /// cannot carry (DISP_CHANGE_BADMODE).
+    public HashSet<int> RefusedRates = new();
+
+    public IReadOnlyList<DisplayInfo> Displays() => Attached;
+
+    public void SetRefreshRate(string deviceName, int hz)
+    {
+        if (RefusedRates.Contains(hz))
+            throw new DisplayChangeException($"{deviceName}: refused {hz} Hz");
+        SetCalls.Add((deviceName, hz));
+        var i = Attached.FindIndex(d => d.DeviceName == deviceName);
+        if (i >= 0) Attached[i] = Attached[i] with { CurrentHz = hz };
+    }
+
+    public void PersistCurrentModes() => PersistCalls++;
+}
+
+public sealed class FakeEventLog : IEventLogProbe
+{
+    public List<BootRecord> Boots = new();
+    public IReadOnlyList<BootRecord> RecentBoots(int count) =>
+        Boots.GetRange(0, Math.Min(count, Boots.Count));
+}
+
+public sealed class FakeHardware : IHardwareProbe
+{
+    public List<MemoryModule> Modules = new();
+    public IReadOnlyList<MemoryModule> MemoryModules() => Modules;
+}
+
+/// Unknown by default, so a test that does not speak to memory integrity
+/// exercises the hedged copy rather than silently picking a side.
+public sealed class FakeMemoryIntegrity : IMemoryIntegrityProbe
+{
+    public bool? On;
+    public bool? IsOn() => On;
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -124,7 +194,9 @@ public static class TestContext
 
     public static DiagnosticContext Empty(string? dataDir = null) => new(
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
-        new FakeSensors(), new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
+        new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeHardware(),
+        new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
+        new FakeMemoryIntegrity(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

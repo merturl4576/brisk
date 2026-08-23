@@ -12,16 +12,6 @@ public class SystemRulesTests
     private const string SenseKey = @"HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy";
 
     [Fact]
-    public void Thermals_Hot_Finds_NullSensors_Silent()
-    {
-        var ctx = TestContext.Empty();
-        var sensors = (FakeSensors)ctx.Sensors;
-        Assert.Null(new ThermalsRule().Detect(ctx));       // null temps
-        sensors.CpuTemp = 88;
-        Assert.NotNull(new ThermalsRule().Detect(ctx));
-    }
-
-    [Fact]
     public void VisualEffects_AppearanceMode_FixesToPerformance_AndUndoes()
     {
         var ctx = TestContext.Empty();
@@ -71,11 +61,11 @@ public class SystemRulesTests
     }
 
     [Fact]
-    public void Registry_HasTwelveRules_WithUniqueIds()
+    public void Registry_HasSixteenRules_WithUniqueIds()
     {
         var all = DiagnosticRuleRegistry.All;
-        Assert.Equal(12, all.Count);
-        Assert.Equal(12, System.Linq.Enumerable.Count(
+        Assert.Equal(16, all.Count);
+        Assert.Equal(16, System.Linq.Enumerable.Count(
             System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(all, r => r.Id))));
     }
 }

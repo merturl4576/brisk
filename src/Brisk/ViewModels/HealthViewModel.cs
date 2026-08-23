@@ -272,7 +272,10 @@ public sealed class HealthViewModel : ViewModelBase
 
     public async Task FixAllAsync()
     {
-        if (_busy) return;
+        // A display change still waiting to be confirmed holds every fix
+        // surface, not just this page's button — see
+        // AppState.IsAwaitingDisplayConfirmation.
+        if (_busy || _state.IsAwaitingDisplayConfirmation) return;
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
@@ -300,6 +303,11 @@ public sealed class HealthViewModel : ViewModelBase
                 ReportSummary = FixReport.Populate(_loc, result, ReportLines);
                 if (result.Applied > 0) await _morphPause();
             }
+            // The display confirmation is NOT raised here. FixAllService
+            // raises it as the mode changes (AppState.TrackFixes): reporting
+            // it from this point would leave the screen possibly black through
+            // every remaining fix and the morph pause above before the 15
+            // seconds even started.
             await _state.ScanAsync();
         }
         finally
@@ -310,7 +318,7 @@ public sealed class HealthViewModel : ViewModelBase
 
     public async Task FixAsync(FindingRow row)
     {
-        if (_busy) return;
+        if (_busy || _state.IsAwaitingDisplayConfirmation) return;
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
@@ -322,6 +330,10 @@ public sealed class HealthViewModel : ViewModelBase
             row.BeginFix();              // instant feedback, before any await
             var outcome = await Task.Run(() => _host.Fix(row.RuleId));
             row.CompleteFix(outcome.Ok);
+            // Before the morph pause, not after it: the countdown has to start
+            // when the mode changes, or 400 ms of animation runs in front of a
+            // screen that may already be black with nothing counting down.
+            if (outcome.Ok) _state.ConfirmDisplayFix(row.RuleId);
             if (outcome.Ok)
             {
                 Message = "";

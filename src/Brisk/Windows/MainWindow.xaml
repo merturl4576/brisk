@@ -4,16 +4,56 @@
         xmlns:loc="clr-namespace:Brisk.Localization"
         xmlns:views="clr-namespace:Brisk.Views"
         Title="brisk" Width="900" Height="600"
-        Background="{DynamicResource Bg}">
+        Background="{DynamicResource Bg}"
+        Topmost="{Binding PendingConfirmation,
+            Converter={x:Static views:NullToBool.Instance}}">
     <Grid>
+        <Grid.RowDefinitions>
+            <!-- Two message strips above everything, spanning the rail and the
+                 page. They live on the WINDOW, not on a page, for the same
+                 reason the confirmation overlay does: whatever brisk has to
+                 say about the machine it is running on outlives whichever
+                 page happens to be selected. -->
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="176" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+
+        <!-- Whose machine this actually is. Standing, and deliberately NOT
+             dismissible: it is a fact about the whole run, and the user must
+             meet it before pressing Clean. -->
+        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Padding="16,10"
+                Background="{DynamicResource SeverityCritical}"
+                Visibility="{Binding HasIdentityWarning,
+                    Converter={x:Static views:BoolToVis.Instance}}">
+            <TextBlock TextWrapping="Wrap" Foreground="White"
+                       Text="{Binding IdentityWarning}" />
+        </Border>
+
+        <!-- What the display rescue did. Self-clearing on the next scan, and
+             dismissible here — a sentence that never goes away is furniture. -->
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="16,10"
+                Background="{DynamicResource BgRail}"
+                BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1"
+                Visibility="{Binding HasDisplayNotice,
+                    Converter={x:Static views:BoolToVis.Instance}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" VerticalAlignment="Top" Margin="12,0,0,0"
+                        Command="{Binding DismissDisplayNoticeCommand}"
+                        Content="{Binding [banner.dismiss],
+                            Source={x:Static loc:Loc.Instance}}" />
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Text}"
+                           Text="{Binding DisplayNotice}" />
+            </DockPanel>
+        </Border>
         <!-- Nav rail: recessed a step below the page ground (BgRail), a
              hairline apart. Item glyphs ride the Tag slot of NavRadio —
              Segoe Fluent iconography, not localizable text. -->
-        <Border Grid.Column="0" Background="{DynamicResource BgRail}"
+        <Border Grid.Row="2" Grid.Column="0" Background="{DynamicResource BgRail}"
                 BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,0,1,0">
             <StackPanel Margin="0,12">
@@ -35,12 +75,44 @@
                              Content="{Binding [nav.settings], Source={x:Static loc:Loc.Instance}}" />
             </StackPanel>
         </Border>
-        <Grid Grid.Column="1">
+        <Grid Grid.Row="2" Grid.Column="1">
             <views:OverviewPage x:Name="OverviewView" />
             <views:HealthPage x:Name="HealthView" Visibility="Collapsed" />
             <views:PerfPage x:Name="PerfView" Visibility="Collapsed" />
             <views:CleanPage x:Name="CleanView" Visibility="Collapsed" />
             <views:SettingsPage x:Name="SettingsView" Visibility="Collapsed" />
         </Grid>
+        <!-- The window's Topmost is bound to the same PendingConfirmation
+             (see NullToBool): Activate() alone loses to Windows' foreground
+             lock after a long fix batch, and a user who alt-tabbed away would
+             never see this overlay in time to keep a display change that
+             actually worked. It drops again the moment the question is
+             answered — brisk does not park itself above everything else.
+
+             A display mode change can blank the screen. This lives here, not
+             on any one page, because Fix all on EITHER findings page (and
+             the tray's Fix all) can trigger it — the window's DataContext is
+             the shared AppState, so the prompt covers whichever page is
+             showing no matter which button started the fix. -->
+        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Background="#CC000000"
+                Visibility="{Binding PendingConfirmation,
+                    Converter={x:Static views:NullToVis.Instance}}">
+            <Border Style="{StaticResource HeroStrip}" MaxWidth="420" Padding="24"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="SemiBold"
+                               Margin="0,0,0,8" TextWrapping="Wrap"
+                               Text="{Binding [display-confirm.title],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,16"
+                               Text="{Binding [display-confirm.body],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <Button HorizontalAlignment="Right"
+                            Command="{Binding KeepDisplayCommand}"
+                            Content="{Binding [display-confirm.keep],
+                                Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </Window>

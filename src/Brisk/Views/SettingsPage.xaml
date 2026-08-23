@@ -34,5 +34,12 @@
                   Content="{Binding [settings.startwithwindows], Source={x:Static loc:Loc.Instance}}" />
         <TextBlock Style="{StaticResource Faint}" TextWrapping="Wrap" Margin="22,0,0,0"
                    Text="{Binding [settings.startwithwindows.hint], Source={x:Static loc:Loc.Instance}}" />
+        <!-- schtasks can be refused (policy, AV, a locked-down task store).
+             Without this the checkbox just snapped back with no reason. -->
+        <TextBlock TextWrapping="Wrap" Margin="22,4,0,0"
+                   Foreground="{DynamicResource SeverityCritical}"
+                   Visibility="{Binding StartupFailed,
+                       Converter={x:Static Brisk:BoolToVis.Instance}}"
+                   Text="{Binding [settings.startwithwindows.failed], Source={x:Static loc:Loc.Instance}}" />
     </StackPanel>
 </UserControl>

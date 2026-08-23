@@ -12,7 +12,9 @@ public static class FindingSections
 {
     private static readonly HashSet<string> Performance = new(
         new[] { "power-plan", "browser-gpu", "hw-acceleration",
-                "visual-effects", "startup-bloat", "ram-pressure" },
+                "visual-effects", "startup-bloat", "ram-pressure",
+                "display-refresh", "search-web-results",
+                "boot-degradation", "memory-speed" },
         StringComparer.OrdinalIgnoreCase);
 
     public static bool IsPerformance(DiagnosticFinding finding) =>

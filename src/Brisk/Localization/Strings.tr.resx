@@ -74,6 +74,7 @@
   <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — mesajlaşma uygulaması, gerektiğinde açmak yeterli</value></data>
   <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emülatörü, açılışta çok ağırdır</value></data>
   <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — hareketli duvar kağıdı, GPU'yu sürekli kullanır</value></data>
+  <data name="startup.app.brisk" xml:space="preserve"><value>brisk'in kendisi — Windows ile başlamasını istemiyorsan kapat.</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} seçili</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Temizle</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Güvenli</value></data>
@@ -118,6 +119,7 @@
   <data name="settings.dryrun" xml:space="preserve"><value>Kuru çalıştırma (yalnızca raporla, hiçbir şeyi değiştirme)</value></data>
   <data name="settings.startwithwindows" xml:space="preserve"><value>Windows ile başlat</value></data>
   <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Varsayılan olarak kapalı — brisk, açılış şişkinliği öğüdünü kendine de uygular.</value></data>
+  <data name="settings.startwithwindows.failed" xml:space="preserve"><value>Windows değişikliği reddetti — oturum açma görevi oluşturulamadı ya da silinemedi. Bunu genellikle bir ilke ya da bir güvenlik yazılımı engeller.</value></data>
   <data name="settings.value.system" xml:space="preserve"><value>Sistem</value></data>
   <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
   <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
@@ -135,18 +137,26 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Bayat geliştirici önbellekleri</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Görsel efektler bilgisayarı yavaşlatıyor</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Depolama Alanı Algılayıcısı kapalı</value></data>
+  <data name="rule.display-refresh.title" xml:space="preserve"><value>Ekran, desteklediği yenileme hızının altında çalışıyor</value></data>
+  <data name="rule.search-web-results.title" xml:space="preserve"><value>Başlat menüsü araması interneti bekliyor</value></data>
+  <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows açılışı uzun sürüyor</value></data>
+  <data name="rule.memory-speed.title" xml:space="preserve"><value>Bellek, anma hızının altında çalışıyor</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>Disk doluyor — şimdi yapacağın güvenli bir temizlik alan bitmeden vakit kazandırır</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Kaldırılmış uygulamalar geride veri bırakmış — gözden geçirip güvenle temizleyebilirsin</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
+  <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows kendi açılışını ölçüyor ve beklediğinden yavaş başlayan programları adıyla yazıyor — bunlardan Performans sayfasındaki Açılış programları listesinde yer alanları oradan kapatabilirsin</value></data>
+  <data name="rule.memory-speed.advice" xml:space="preserve"><value>Modüller, ayarlı olduklarından daha yüksek bir anma hızı bildiriyor — bu ya hiç açılmamış bir hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart olabilir; brisk Windows üzerinden hangisi olduğunu ayırt edemiyor</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Güç planı yüksek performansa alındı</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Tarayıcılar artık hızlı GPU'yu kullanıyor</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Tarayıcı donanım hızlandırması açıldı</value></data>
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Ağır açılış programları kapatıldı</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Görsel efektler performansa göre ayarlandı</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Depolama Alanı Algılayıcısı açıldı</value></data>
+  <data name="rule.display-refresh.done" xml:space="preserve"><value>Ekranlar en yüksek yenileme hızına alındı</value></data>
+  <data name="rule.search-web-results.done" xml:space="preserve"><value>Başlat menüsü araması artık web'e sormuyor</value></data>
   <data name="rule.power-plan.evidence" xml:space="preserve"><value>Etkin plan: {0}. Bu plan CPU hızlarını bilerek sınırlar; performans planı işlemcinin tam turbo hızına çıkmasına izin verir.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>Bu bilgisayarda iki GPU var; {0} için yüksek performanslı GPU tercihi tanımlı değil, bu yüzden Windows onu yavaş tümleşik GPU'da çalıştırabilir.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
@@ -156,7 +166,25 @@
   <data name="rule.storage-sense.evidence" xml:space="preserve"><value>{1} sürücüsünde yalnızca %{0} boş alan kaldı ve Depolama Alanı Algılayıcısı'nın otomatik temizliği kapalı.</value></data>
   <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>Bellek %{0} dolu. En çok kullananlar: {1}. Bunlardan bazılarını kapatmak ya da açılıştan kaldırmak belleği rahatlatır.</value></data>
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
+  <data name="rule.thermals.evidence.cpu-unread" xml:space="preserve"><value>{0}. Bunda CPU sıcaklığı yok — brisk onu okuyamadı. Sebebi genelde sürücü: CPU sıcaklığını okuyan sürücü, Microsoft'un güvenlik açığı bulunan sürücüler listesinde; bellek bütünlüğü (memory integrity) açıkken Windows o sürücüyü yüklemiyor. brisk bir ölçüm uğruna o korumayı kapatmaz; senin makinendeki sebebin bu olduğunu da buradan doğrulayamıyor. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
+  <data name="rule.thermals.evidence.cpu-unread.integrity-on" xml:space="preserve"><value>{0}. Bunda CPU sıcaklığı yok — brisk onu okuyamadı. Bu makinede bellek bütünlüğü (memory integrity) açık ve CPU sıcaklığını okuyan sürücü, Microsoft'un güvenlik açığı bulunan sürücüler listesinde; bu yüzden Windows o sürücüyü hiçbir yetki düzeyinde yüklemiyor. brisk bir ölçüm uğruna o korumayı kapatmaz. Sebep genelde budur ve bu makineye uyuyor, ama brisk tek sebep olduğunu kanıtlayamaz. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
+  <data name="rule.thermals.evidence.cpu-unread.integrity-off" xml:space="preserve"><value>{0}. Bunda CPU sıcaklığı yok — brisk onu okuyamadı. Bu makinede bellek bütünlüğü (memory integrity) kapalı; yani her zamanki sebep — Windows'un yüklemeyi reddettiği bir sürücü — burada geçerli değil ve brisk sebebin ne olduğunu buradan göremiyor. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
+  <data name="rule.thermals.evidence.gpu-unread" xml:space="preserve"><value>{0}. Bunda GPU sıcaklığı yok — brisk onu okuyamadı ve nedenini buradan göremiyor. Süreğen yüksek sıcaklık performansı kısar; fan temizliği / termal macun yenileme iyi gelir.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Boş alan azalıyor; bu hızla disk yaklaşık {0} gün içinde dolacak.</value></data>
+  <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows ekranı desteklediğinden yavaş bir hızda bırakmış; bu yüzden ekrandaki her şey daha düşük hızda akıyor.</value></data>
+  <data name="rule.boot-degradation.evidence" xml:space="preserve"><value>Açılış yaklaşık {0} sürüyor; bu, Windows'un kendi ölçümlerinden brisk'in okuyabildiği son {1} açılışın ortancası. Windows şunları beklediğinden yavaş başladıkları için işaret etti: {2} — bu süreler her birinin ne kadar geciktiğini gösterir, açılışına ne kadar eklediğini değil. Parantez içindeki sayı, o açılışların kaçında suçlandığını gösterir; böylece her açılışta olan bir şey ile tek seferlik bir durum ayrı okunur ve bir kez suçlanan bir program artık Windows ile birlikte başlamıyor olabilir. Listenin başında genelde Windows'un kendi bileşenleri olur ve brisk onlara dokunmaz; geri kalanına Performans sayfasındaki Açılış programları listesinden bak.</value></data>
+  <data name="rule.boot-degradation.evidence.nobody" xml:space="preserve"><value>Açılış yaklaşık {0} sürüyor; bu, Windows'un kendi ölçümlerinden brisk'in okuyabildiği son {1} açılışın ortancası. Bu açılışlarda hiçbir program öne çıkmadı — Windows'un izlediği her program aşağı yukarı beklendiği kadar hızlı başladı. Bu normal bir sonuç, eksik bir cevap değil: açılış yavaş ama işaret edilecek tek bir program yok.</value></data>
+  <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — her modülün ayarlı hızı, anma hızı üzerinden: soldaki şu an çalıştığı hız, sağdaki ise modülün anma hızı. Buna iki şey yol açabilir ve Windows hangisi olduğunu bildirmiyor: hiç açılmamış bir bellek hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart veya bellek denetleyicisi. brisk buradan ikisini birbirinden ayırt edemiyor; bu yüzden sana BIOS'ta bir şey değiştirmeni söylemiyor — yalnızca bu farkın var olduğunu söylüyor.</value></data>
+  <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
+  <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
+  <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
+  <data name="banner.dismiss" xml:space="preserve"><value>Kapat</value></data>
+  <data name="identity.otheraccount.short" xml:space="preserve"><value>{1} değil, {0} profili üzerinde çalışıyor.</value></data>
+  <data name="identity.otheraccount" xml:space="preserve"><value>brisk {0} olarak çalışıyor ama oturumu {1} açmış. Windows yönetici sordu ve brisk’e o hesabın profilini verdi — yani brisk’in raporladığı ve temizlediği ayarlar, açılış öğeleri, geçici dosyalar ve tarayıcı önbellekleri {1} kullanıcısına değil {0} kullanıcısına ait.</value></data>
+  <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk ekranı en yüksek yenileme hızına aldı ve 15 saniye boyunca yanıt gelmediği için önceki ayarı geri yükledi. Bu genellikle kablonun ya da adaptörün bu hızı taşıyamadığı anlamına gelir.</value></data>
+  <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk önceki ekran ayarını geri yükleyemedi: {0}. Değişiklik kaydedilmediği için Windows’u yeniden başlatmak önceki ayarı geri getirir.</value></data>
+  <data name="display-confirm.notkept" xml:space="preserve"><value>Ekran daha yüksek yenileme hızında çalışıyor ama brisk bunu kaydedemedi — yeniden başlatıldığında önceki ayar geri gelecek.</value></data>
+  <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Başlat'a yazdığın her harf Bing'e gönderiliyor; uygulamalarına ve dosyalarına ait yerel sonuçlar bu gidiş dönüşü bekliyor. Web sonuçlarını kapatmak Başlat'ın anında cevap vermesini sağlar. Yeniden oturum açtığında etkili olur.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} açık — dahil etmek için önce kapat</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} boş · {1}</value></data>
   <data name="clean.target.user-temp" xml:space="preserve"><value>Kullanıcı geçici dosyaları</value></data>

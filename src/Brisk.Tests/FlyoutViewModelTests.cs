@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
+using BriskEngine.Diagnostics;
 using BriskEngine.Models;
 using Xunit;
 
@@ -44,9 +45,13 @@ public class FlyoutViewModelTests
     {
         var state = new AppState(host);
         var bin = new FakeBin();
+        var fixAll = new FixAllService(host);
+        // Wired exactly as App.xaml.cs wires it: the confirmation is raised
+        // as each rule is fixed, not from a loop over the finished batch.
+        state.TrackFixes(fixAll);
         var vm = new FlyoutViewModel(state,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
-            new FixAllService(host), EnglishLoc(), isDryRun ?? (() => false));
+            fixAll, EnglishLoc(), isDryRun ?? (() => false));
         return (vm, bin);
     }
 
@@ -93,6 +98,80 @@ public class FlyoutViewModelTests
         await vm.FixAllAsync();
 
         Assert.Equal(new[] { "startup-bloat" }, host.Fixed);
+    }
+
+    /// Fix round 1 (Critical): FixAllService is unfiltered, and the tray's
+    /// Fix all is one of the four surfaces that can fix display-refresh — a
+    /// display mode change that can blank the screen. The confirmation must
+    /// reach the shared AppState from here too, not just from the findings
+    /// pages, or the tray would be the one place the rescue never runs.
+    [Fact]
+    public async Task FixAll_RaisesTheDisplayConfirmation_WhenItFixesDisplayRefresh()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.NotNull(vm.State.PendingConfirmation);
+        // Resolve rather than leave the real 15-second window's background
+        // timer running past this test's return.
+        vm.State.KeepDisplayCommand.Execute(null);
+        await vm.State.PendingConfirmTask!;
+    }
+
+    /// WAVE C, C1. The flyout is the app's DEFAULT surface — App.xaml.cs shows
+    /// it, not the main window, unless launched with "--tray" — and it carries
+    /// its own Clean and Fix all. So a standard-account user who lives in the
+    /// tray could recycle another account's browser caches and temp files
+    /// without ever meeting the main window's disclosure bar. The strip binds
+    /// through State, which is what this pins; the markup itself is XAML and
+    /// unreachable from here.
+    [Fact]
+    public void IdentityWarning_IsReadableFromTheFlyoutsOwnState()
+    {
+        var host = new FakeEngineHost
+        {
+            SessionIdentity = new SessionIdentity(@"PC\Admin", @"PC\alice", true),
+        };
+        var vm = Vm(host);
+
+        Assert.True(vm.State.HasIdentityWarning);
+        Assert.Contains(@"PC\Admin", vm.State.IdentityWarningShort);
+        Assert.Contains(@"PC\alice", vm.State.IdentityWarningShort);
+    }
+
+    /// FIX WAVE, Finding 6. The flyout is the one fix surface the main
+    /// window's overlay does not cover, so it is exactly the button a user can
+    /// press while brisk is still asking whether the picture came back. A
+    /// second batch there would re-fix display-refresh, find every display
+    /// already raised, and journal an empty prior state over the real one —
+    /// leaving the rollback with nothing to restore.
+    [Fact]
+    public async Task FixAll_IsRefused_WhileADisplayChangeIsStillUnconfirmed()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+        vm.State.ConfirmDisplayFix("display-refresh");   // another surface got there first
+        host.Fixed.Clear();
+
+        await vm.FixAllAsync();
+
+        Assert.Empty(host.Fixed);
+        vm.State.KeepDisplayCommand.Execute(null);
+        await vm.State.PendingConfirmTask!;
     }
 
     [Fact]

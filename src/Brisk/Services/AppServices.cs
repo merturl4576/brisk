@@ -34,9 +34,10 @@ public static class AppServices
         var sensors = new RealSensorProbe();
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), registry,
-            processInfo, sensors,
+            processInfo, sensors, new RealDisplayProbe(),
+            new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
-            new RealProcessLister(), dataDir);
+            new RealProcessLister(), new RealMemoryIntegrityProbe(), dataDir);
         var logPath = Path.Combine(dataDir, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl"));
@@ -50,7 +51,7 @@ public static class AppServices
                     .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator),
                 new DeleteLockProbe()),
             journal, new StartupManager(registry, log), logPath,
-            Path.Combine(AppContext.BaseDirectory, "Brisk.Cli.exe"));
+            SelfPath, new RealSessionProbe());
 
         var settingsPath = Path.Combine(dataDir, "settings.json");
         return new AppComposition
@@ -59,8 +60,16 @@ public static class AppServices
             LiveMetrics = new LiveMetrics(sensors, processInfo, host.FreeDiskBytes),
             Settings = Settings.Load(settingsPath),
             SettingsPath = settingsPath,
-            Launcher = new StartupLauncher(registry,
-                Path.Combine(AppContext.BaseDirectory, "brisk-app.exe")),
+            Launcher = new StartupLauncher(runner, registry, SelfPath),
         };
     }
+
+    /// Both the elevated re-launch and the autostart task used to be spelled
+    /// as a file name next to the app: "Brisk.Cli.exe" for the first,
+    /// "brisk-app.exe" for the second. Neither name exists beside a
+    /// single-file build — the console tool is inside this executable now, and
+    /// the executable is whatever the user renamed their download to. So both
+    /// point at the running file itself, which is true in every build.
+    private static string SelfPath =>
+        Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "brisk-app.exe");
 }

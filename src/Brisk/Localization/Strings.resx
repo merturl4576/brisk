@@ -74,6 +74,7 @@
   <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — messaging app, opens fine on demand</value></data>
   <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emulator, very heavy at startup</value></data>
   <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — animated wallpapers, uses the GPU constantly</value></data>
+  <data name="startup.app.brisk" xml:space="preserve"><value>brisk itself — turn this off to stop it starting with Windows.</value></data>
   <data name="clean.selected" xml:space="preserve"><value>{0} selected</value></data>
   <data name="clean.clean" xml:space="preserve"><value>Clean</value></data>
   <data name="clean.level.safe" xml:space="preserve"><value>Safe</value></data>
@@ -118,6 +119,7 @@
   <data name="settings.dryrun" xml:space="preserve"><value>Dry run (report only, never change anything)</value></data>
   <data name="settings.startwithwindows" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Off by default — brisk practices what it preaches about startup bloat.</value></data>
+  <data name="settings.startwithwindows.failed" xml:space="preserve"><value>Windows refused the change — the logon task could not be created or removed. A policy or a security product usually blocks this.</value></data>
   <data name="settings.value.system" xml:space="preserve"><value>System</value></data>
   <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
   <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
@@ -135,18 +137,26 @@
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Stale developer caches</value></data>
   <data name="rule.visual-effects.title" xml:space="preserve"><value>Visual effects are slowing this PC</value></data>
   <data name="rule.storage-sense.title" xml:space="preserve"><value>Storage Sense is off</value></data>
+  <data name="rule.display-refresh.title" xml:space="preserve"><value>A display is running below its refresh rate</value></data>
+  <data name="rule.search-web-results.title" xml:space="preserve"><value>Start menu search waits on the internet</value></data>
+  <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows takes a long time to start</value></data>
+  <data name="rule.memory-speed.title" xml:space="preserve"><value>Memory is running below its rated speed</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>The disk is filling up — a safe clean now buys time before space runs out</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Uninstalled apps left data behind — you can review and clean it safely</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>
+  <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows times its own boot and names the programs that started slower than it expected — the ones that turn up under Startup programs on the Performance page can be switched off there</value></data>
+  <data name="rule.memory-speed.advice" xml:space="preserve"><value>The modules report a higher rated speed than they are set to — that can be a speed profile (XMP/EXPO) that was never switched on, or a board that does not support the rating, and brisk cannot tell which from Windows</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Power plan switched to high performance</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Browsers now use the fast GPU</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Browser hardware acceleration enabled</value></data>
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Heavy startup programs disabled</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Visual effects tuned for performance</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
+  <data name="rule.display-refresh.done" xml:space="preserve"><value>Displays raised to their highest refresh rate</value></data>
+  <data name="rule.search-web-results.done" xml:space="preserve"><value>Start menu search no longer queries the web</value></data>
   <data name="rule.power-plan.evidence" xml:space="preserve"><value>Active plan: {0}. This plan deliberately limits CPU boost clocks; a performance plan lets the CPU reach its full turbo frequency.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>This machine has two GPUs, but {0} has no high-performance GPU preference, so Windows may run it on the slow integrated GPU.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
@@ -156,7 +166,25 @@
   <data name="rule.storage-sense.evidence" xml:space="preserve"><value>Only {0}% free on {1}, and Storage Sense automatic cleanup is disabled.</value></data>
   <data name="rule.ram-pressure.evidence" xml:space="preserve"><value>RAM is {0}% full. Biggest consumers: {1}. Closing or un-starting some of these frees memory.</value></data>
   <data name="rule.thermals.evidence" xml:space="preserve"><value>{0}. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
+  <data name="rule.thermals.evidence.cpu-unread" xml:space="preserve"><value>{0}. The CPU temperature is missing from that — brisk could not read it. Usually the cause is the driver: the one that reads CPU temperature is on Microsoft's vulnerable-driver blocklist, so Windows will not load it while memory integrity is on. brisk will not switch that protection off for a reading, and cannot confirm from here that this is the reason on your machine. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
+  <data name="rule.thermals.evidence.cpu-unread.integrity-on" xml:space="preserve"><value>{0}. The CPU temperature is missing from that — brisk could not read it. Memory integrity is on here, and the driver that reads CPU temperature is on Microsoft's vulnerable-driver blocklist, so Windows will not load it at any privilege level. brisk will not switch that protection off for a reading. That is the usual cause and it fits this machine, but brisk cannot prove it is the only one. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
+  <data name="rule.thermals.evidence.cpu-unread.integrity-off" xml:space="preserve"><value>{0}. The CPU temperature is missing from that — brisk could not read it. Memory integrity is off here, so the usual cause — a driver Windows refuses to load — is not what happened, and brisk cannot tell from here what did. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
+  <data name="rule.thermals.evidence.gpu-unread" xml:space="preserve"><value>{0}. The GPU temperature is missing from that — brisk could not read it, and cannot tell from here why. Sustained high temperatures throttle performance; clean fans / renew thermal paste.</value></data>
   <data name="rule.disk-forecast.evidence" xml:space="preserve"><value>Free space has been shrinking; disk full in ~{0} days at the current rate.</value></data>
+  <data name="rule.display-refresh.evidence" xml:space="preserve"><value>{0}. Windows left the display slower than it supports, so everything on screen moves at the lower rate.</value></data>
+  <data name="rule.boot-degradation.evidence" xml:space="preserve"><value>Boot takes about {0}, the middle of the {1} most recent boots brisk could read from Windows' own timings. Windows blamed these for starting slower than it expected: {2} — that is how late each one was, not time it added to your boot. The bracketed figure is how many of those boots blamed it, so something that happens every start reads differently from a one-off, and a program blamed once may not start with Windows any more. Windows' own components often top the list and brisk will not switch those off; look for the rest under Startup programs on the Performance page.</value></data>
+  <data name="rule.boot-degradation.evidence.nobody" xml:space="preserve"><value>Boot takes about {0}, the middle of the {1} most recent boots brisk could read from Windows' own timings. No program stood out on those boots — everything Windows watched started about as fast as it expected. That is a normal result rather than a missing answer: the boot is slow without any one program to point at.</value></data>
+  <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — each module's configured speed out of the speed it is rated for. Two things look like this and Windows reports neither: a memory speed profile (XMP/EXPO) that was never switched on, or a board or memory controller that does not support the rated speed. brisk cannot tell those apart from here, so it is not telling you to change anything in the BIOS — only that the gap is there.</value></data>
+  <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
+  <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
+  <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
+  <data name="banner.dismiss" xml:space="preserve"><value>Dismiss</value></data>
+  <data name="identity.otheraccount.short" xml:space="preserve"><value>Acting on {0}’s profile, not {1}’s.</value></data>
+  <data name="identity.otheraccount" xml:space="preserve"><value>brisk is running as {0}, but {1} is signed in. Windows asked for an administrator and gave brisk that account’s profile — so the settings, startup entries, temp files and browser caches brisk reports and cleans belong to {0}, not to {1}.</value></data>
+  <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk raised the display to its highest refresh rate and put the previous setting back after 15 seconds with no answer. That usually means the cable or the adapter cannot carry the higher rate.</value></data>
+  <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk could not restore the previous display setting: {0}. The change was never saved, so restarting Windows brings the previous setting back.</value></data>
+  <data name="display-confirm.notkept" xml:space="preserve"><value>The display is running at the higher refresh rate, but brisk could not save it — a restart will bring the previous setting back.</value></data>
+  <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Every keystroke in Start is sent to Bing, and local results for your apps and files wait for that round-trip. Turning web results off makes Start answer immediately. Takes effect after you sign in again.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} is running — close it to include this</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} free · {1}</value></data>
   <data name="clean.target.user-temp" xml:space="preserve"><value>User temp files</value></data>

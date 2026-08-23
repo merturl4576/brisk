@@ -46,8 +46,14 @@ breaks `HKCU\Run` autostart, so `StartupLauncher` moves to a Scheduled Task.
 - Modify: `src/BriskEngine/Diagnostics/Probes.cs` (append `IDisplayProbe`)
 - Modify: `src/BriskEngine/Diagnostics/DiagnosticContext.cs`
 - Modify: `src/BriskEngine.Tests/TestContext.cs` (add `FakeDisplays`, extend `Empty`)
-- Modify: `src/Brisk/Services/AppServices.cs:33-37`
 - Test: `src/BriskEngine.Tests/DisplayProbeTests.cs`
+
+`DiagnosticContext` is a positional record, so adding a member breaks every
+construction site. There are exactly three, and all three must be updated in
+this task:
+- Modify: `src/Brisk/Services/AppServices.cs:35`
+- Modify: `src/Brisk.Cli/Program.cs:30`
+- Modify: `src/Brisk.Tests/EngineHostTests.cs:100` (also needs a `NullDisplays`)
 
 **Interfaces:**
 - Produces: `DisplayInfo(string DeviceName, string FriendlyName, int CurrentHz, int MaxHz)`;
@@ -286,17 +292,30 @@ public sealed class RealDisplayProbe : IDisplayProbe
 }
 ```
 
-- [ ] **Step 7: Wire the real probe**
+- [ ] **Step 7: Wire all three construction sites**
 
-In `src/Brisk/Services/AppServices.cs`, inside the `new DiagnosticContext(...)`
-call, add `new RealDisplayProbe(),` immediately after `sensors,` so the
-positional argument order matches the record.
+In `src/Brisk/Services/AppServices.cs:35`, inside the `new DiagnosticContext(...)`
+call, add `new RealDisplayProbe(),` immediately after `sensors,`.
+
+In `src/Brisk.Cli/Program.cs:30`, add `new RealDisplayProbe(),` in the same
+position — after the sensor probe argument.
+
+In `src/Brisk.Tests/EngineHostTests.cs:100`, add `new NullDisplays(),` after
+`new NullSensors(),`, and add the fake beside the other `file sealed class Null*`
+declarations near the top of that file:
+
+```csharp
+file sealed class NullDisplays : IDisplayProbe
+{
+    public IReadOnlyList<DisplayInfo> Displays() => System.Array.Empty<DisplayInfo>();
+    public void SetRefreshRate(string deviceName, int hz) { }
+}
+```
 
 - [ ] **Step 8: Run the full suite**
 
 Run: `dotnet test`
-Expected: PASS. If other call sites of `DiagnosticContext` fail to compile, add
-the probe argument in the same position there too.
+Expected: PASS.
 
 - [ ] **Step 9: Commit**
 
@@ -1187,14 +1206,8 @@ Add to `src/Brisk.Tests/HealthViewModelTests.cs`, following the `Build()` +
     }
 ```
 
-`FakeEngineHost` must record undo calls for the third test. If it has no
-`Undone` list, add one to `src/Brisk.Tests/Fakes.cs`:
-
-```csharp
-    public System.Collections.Generic.List<string> Undone = new();
-```
-
-and append the rule id inside its `Undo` implementation before returning.
+`FakeEngineHost` already records undo calls — `Undone` at
+`src/Brisk.Tests/Fakes.cs:50`, appended by its `Undo` at line 73. Nothing to add.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -1297,8 +1310,16 @@ public sealed class NullToVis : IValueConverter
 
 - [ ] **Step 6: Add the overlay**
 
-In `src/Brisk/Views/PerfPage.xaml`, wrap the existing root panel in a `<Grid>`
-and add this as the Grid's last child, so it paints over the page:
+`src/Brisk/Views/PerfPage.xaml` already declares both
+`xmlns:loc="clr-namespace:Brisk.Localization"` and
+`xmlns:Brisk="clr-namespace:Brisk.Views"` (lines 4-5). Its root element is
+`<DockPanel Margin="18,16">` on line 6, closing on line 189.
+
+Wrap that `DockPanel` in a `<Grid>` and add this as the Grid's last child, so it
+paints over the page.
+
+This file has no `{loc:Str …}` markup extension — every string binds through the
+`Loc` indexer, as at line 24. The overlay uses the same form:
 
 ```xml
         <Border Background="#CC000000" Panel.ZIndex="10"
@@ -1307,22 +1328,21 @@ and add this as the Grid's last child, so it paints over the page:
             <Border Style="{StaticResource HeroStrip}" MaxWidth="420" Padding="24"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
-                    <TextBlock Text="{loc:Str display-confirm.title}" FontSize="16"
-                               FontWeight="SemiBold" Margin="0,0,0,8" TextWrapping="Wrap" />
-                    <TextBlock Text="{loc:Str display-confirm.body}" Opacity="0.8"
-                               TextWrapping="Wrap" Margin="0,0,0,16" />
-                    <Button Content="{loc:Str display-confirm.keep}"
-                            HorizontalAlignment="Right"
-                            Command="{Binding KeepDisplayCommand}" />
+                    <TextBlock FontSize="16" FontWeight="SemiBold"
+                               Margin="0,0,0,8" TextWrapping="Wrap"
+                               Text="{Binding [display-confirm.title],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <TextBlock Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,16"
+                               Text="{Binding [display-confirm.body],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <Button HorizontalAlignment="Right"
+                            Command="{Binding KeepDisplayCommand}"
+                            Content="{Binding [display-confirm.keep],
+                                Source={x:Static loc:Loc.Instance}}" />
                 </StackPanel>
             </Border>
         </Border>
 ```
-
-Confirm `PerfPage.xaml` declares `xmlns:Brisk="clr-namespace:Brisk.Views"` and
-`xmlns:loc="clr-namespace:Brisk.Localization"` as `HealthPage.xaml` does; add
-whichever is missing. Use the same localization markup extension the rest of
-that file uses — if it binds strings a different way, match the file.
 
 - [ ] **Step 7: Add localization strings**
 
@@ -1382,7 +1402,7 @@ Add to `src/Brisk.Tests/SecondaryViewModelTests.cs`:
 
 ```csharp
     [Fact]
-    public void StartupList_IncludesBriskItself_WhenAutostartIsOn()
+    public async Task StartupList_IncludesBriskItself_WhenAutostartIsOn()
     {
         var host = new FakeEngineHost();
         var state = new AppState(host);
@@ -1390,13 +1410,13 @@ Add to `src/Brisk.Tests/SecondaryViewModelTests.cs`:
         var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
             new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
 
-        state.Raise();
+        await state.ScanAsync();
 
         Assert.Contains(vm.Items, i => i.Name == "brisk");
     }
 
     [Fact]
-    public void StartupList_OmitsBrisk_WhenAutostartIsOff()
+    public async Task StartupList_OmitsBrisk_WhenAutostartIsOff()
     {
         var host = new FakeEngineHost();
         var state = new AppState(host);
@@ -1404,17 +1424,16 @@ Add to `src/Brisk.Tests/SecondaryViewModelTests.cs`:
         var vm = new StartupViewModel(state, host, EnglishLoc(), () => false,
             new StartupLauncher(runner, @"C:\x\brisk-app.exe"));
 
-        state.Raise();
+        await state.ScanAsync();
 
         Assert.DoesNotContain(vm.Items, i => i.Name == "brisk");
     }
 ```
 
-`state.Raise()` stands for whatever this file already uses to fire
-`AppState.Changed` (the existing `StartupViewModel` tests in this file refresh
-the list the same way — reuse that call rather than inventing one). Reuse the
-file's existing `EnglishLoc()` helper; if it has none, use the one in
-`HealthViewModelTests`' shape: a `new Loc()` with `SetLanguage("en")`.
+`await state.ScanAsync()` is how the existing `StartupViewModel` tests in this
+file fire `AppState.Changed` and refresh the list (see the test at line 44).
+`AppState` has no public `Raise`. `EnglishLoc()` already exists in this file at
+line 34 — reuse it.
 
 - [ ] **Step 2: Run test to verify it fails**
 

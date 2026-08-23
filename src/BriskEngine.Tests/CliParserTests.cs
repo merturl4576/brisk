@@ -70,4 +70,21 @@ public class CliParserTests
     {
         Assert.Equal("error", CliParser.Parse(new[] { "clean", "--target" }).Verb);
     }
+
+    /// FIX WAVE, Finding 1. The display fix is applied for this session only,
+    /// so the console needs the same answer the GUI's overlay collects.
+    [Fact]
+    public void FixKeep_Parses()
+    {
+        var cmd = CliParser.Parse(
+            new[] { "fix", "--rule", "display-refresh", "--keep", "--yes" });
+        Assert.True(cmd.Keep);
+        Assert.Equal("display-refresh", cmd.RuleId);
+    }
+
+    [Fact]
+    public void Keep_DefaultsToFalse()
+    {
+        Assert.False(CliParser.Parse(new[] { "fix", "--all", "--yes" }).Keep);
+    }
 }

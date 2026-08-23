@@ -63,7 +63,11 @@ public class OverviewViewModelTests
             TestData.Target("user-temp", CleanupLevel.Safe, 2048));
         var state = new AppState(host);
         var bin = new FakeBin();
-        var vm = new OverviewViewModel(state, host, new FixAllService(host),
+        var fixAll = new FixAllService(host);
+        // Wired exactly as App.xaml.cs wires it: the confirmation is raised
+        // as each rule is fixed, not from a loop over the finished batch.
+        state.TrackFixes(fixAll);
+        var vm = new OverviewViewModel(state, host, fixAll,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
             live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false));
         return (vm, host, state, bin);
@@ -243,6 +247,63 @@ public class OverviewViewModelTests
 
         Assert.Equal("Result: 2 programs removed from startup · 1 fixes applied",
             vm.ReportSummary);
+    }
+
+    /// Fix round 1 (Critical): FixAllService is unfiltered, and the
+    /// overview's Fix all is one of the four surfaces that can fix
+    /// display-refresh — a display mode change that can blank the screen.
+    /// The confirmation must reach the shared AppState from here too, not
+    /// just from the findings pages.
+    [Fact]
+    public async Task FixAll_RaisesTheDisplayConfirmation_WhenItFixesDisplayRefresh()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        await state.ScanAsync();
+
+        await vm.FixAllAsync();
+
+        Assert.NotNull(state.PendingConfirmation);
+        // Resolve rather than leave the real 15-second window's background
+        // timer running past this test's return.
+        state.KeepDisplayCommand.Execute(null);
+        await state.PendingConfirmTask!;
+    }
+
+    /// WAVE B, B1. The rollback sentence now lives on ONE window-level
+    /// banner instead of three page subscriptions — which also keeps it OUT
+    /// of this page's ReportLines, where appending it flipped ShowDoneReport
+    /// to false and hid the journal panel until the next scan. A notice is
+    /// not a run report.
+    [Fact]
+    public async Task RollbackNotice_GoesToTheBanner_NotThisPagesReport()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("display-refresh", Severity.Critical, RuleCategory.Auto,
+                stars: 5, canFix: true),
+        });
+        var state = new AppState(host, loc);
+        var fixAll = new FixAllService(host);
+        state.TrackFixes(fixAll);
+        var vm = new OverviewViewModel(state, host, fixAll,
+            new SafeCleanRunner(new CleanService(host, new Settings()), new FakeBin()),
+            new FakeLive(), loc, () => false);
+        await state.ScanAsync();
+
+        state.ConfirmationWindow = TimeSpan.Zero;
+        await vm.FixAllAsync();
+        await state.PendingConfirmTask!;
+
+        Assert.Equal(loc["display-confirm.rolledback"], state.DisplayNotice);
+        Assert.DoesNotContain(vm.ReportLines,
+            line => line.Text == loc["display-confirm.rolledback"]);
     }
 
     [Fact]
@@ -689,6 +750,8 @@ public class OverviewViewModelTests
         public bool CreateRestorePoint() => Inner.CreateRestorePoint();
         public long FreeDiskBytes() => Inner.FreeDiskBytes();
         public long LifetimeReclaimedBytes() => Inner.LifetimeReclaimedBytes();
+        public FixOutcome KeepDisplayFix() => Inner.KeepDisplayFix();
+        public SessionIdentity Session() => Inner.Session();
         public bool IsElevated() => Inner.IsElevated();
     }
 }

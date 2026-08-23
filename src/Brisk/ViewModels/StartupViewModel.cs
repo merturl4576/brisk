@@ -26,6 +26,14 @@ public sealed class StartupItemRow : ViewModelBase
         ("WallpaperEngine", "wallpaperengine"),
     };
 
+    /// brisk's own row is the synthetic one — it comes from the Scheduled
+    /// Task, not from a registry hive. It is recognised by that, never by its
+    /// name: "brisk" as a contains-match also matches BriskBard, a real
+    /// browser, and describing someone else's program as "brisk itself" would
+    /// be a false statement about the user's machine inside the very feature
+    /// built to prove brisk is honest about itself.
+    public const string TaskHive = "Task";
+
     /// Names that are Windows/driver plumbing even in HKCU.
     private static readonly string[] SystemTokens =
         { "SecurityHealth", "RtkAudUService", "IAStorIcon" };
@@ -50,6 +58,8 @@ public sealed class StartupItemRow : ViewModelBase
     /// nothing — an invented description would be a lie.
     private static string DescriptionFor(StartupEntry entry, Loc loc)
     {
+        if (string.Equals(entry.Hive, TaskHive, StringComparison.Ordinal))
+            return loc["startup.app.brisk"];
         foreach (var (token, key) in KnownApps)
             if (entry.Name.Contains(token, StringComparison.OrdinalIgnoreCase))
                 return loc[$"startup.app.{key}"];
@@ -82,15 +92,20 @@ public sealed class StartupViewModel : ViewModelBase
     private readonly IEngineHost _host;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
+    private readonly StartupLauncher _launcher;
     private bool _toggleFailed;
 
     public StartupViewModel(AppState state, IEngineHost host, Loc loc,
-        Func<bool> isDryRun)
+        Func<bool> isDryRun, StartupLauncher launcher)
     {
         _host = host;
         _loc = loc;
         _isDryRun = isDryRun;
+        _launcher = launcher;
         state.Changed += Refresh;
+        // The Settings page owns the same toggle; a change there has to reach
+        // this list too, or brisk's own row would keep its old reading.
+        launcher.Changed += Refresh;
     }
 
     public ObservableCollection<StartupItemRow> Items { get; } = new();
@@ -99,6 +114,28 @@ public sealed class StartupViewModel : ViewModelBase
     private void Refresh()
     {
         Items.Clear();
+
+        // brisk criticizes startup bloat, so when it joins startup it shows up
+        // in the same list, switchable by the same toggle. It is pinned to
+        // the very top, ahead of the heavy-first sort below and regardless
+        // of its own (false) KnownHeavy — self-accountability should be
+        // unmissable, not buried under three heavy apps. Not a sort bug.
+        if (_launcher.IsOn())
+            Items.Add(new StartupItemRow(
+                new StartupEntry(StartupItemRow.TaskHive, "brisk", true, false), _loc,
+                (_, enabled) =>
+                {
+                    if (_isDryRun()) { ToggleFailed = true; return false; }
+                    // schtasks can be refused — Group Policy, an AV product,
+                    // a locked-down task store. brisk's own row was the ONE
+                    // row in this list that could never report a failed
+                    // toggle, in the feature whose whole point is that brisk
+                    // holds itself to the standard it preaches.
+                    var ok = _launcher.Apply(enabled);
+                    ToggleFailed = !ok;
+                    return ok;
+                }));
+
         foreach (var entry in _host.ListStartup()
                      .OrderByDescending(e => e.KnownHeavy).ThenBy(e => e.Name,
                          StringComparer.OrdinalIgnoreCase))

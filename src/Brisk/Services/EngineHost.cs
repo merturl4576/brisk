@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 
@@ -23,12 +24,14 @@ public sealed class EngineHost : IEngineHost
     private readonly CleanRunner _cleaner;
     private readonly FixJournal _journal;
     private readonly StartupManager _startup;
+    private readonly ISessionProbe _session;
     private readonly string _actionLogPath;
     private readonly string _cliExePath;
 
     public EngineHost(DiagnosticContext ctx, IReadOnlyList<IDiagnosticRule> rules,
         Scanner scanner, FixRunner fixes, CleanRunner cleaner, FixJournal journal,
-        StartupManager startup, string actionLogPath, string cliExePath)
+        StartupManager startup, string actionLogPath, string cliExePath,
+        ISessionProbe session)
     {
         _ctx = ctx;
         _rules = rules;
@@ -37,6 +40,7 @@ public sealed class EngineHost : IEngineHost
         _cleaner = cleaner;
         _journal = journal;
         _startup = startup;
+        _session = session;
         _actionLogPath = actionLogPath;
         _cliExePath = cliExePath;
     }
@@ -73,6 +77,23 @@ public sealed class EngineHost : IEngineHost
 
     public FixOutcome Fix(string ruleId) => WithRule(ruleId, r => _fixes.Apply(r, _ctx));
     public FixOutcome Undo(string ruleId) => WithRule(ruleId, r => _fixes.Undo(r, _ctx));
+
+    /// The one write to the registry in the whole display path. Everything
+    /// before it is session-only, so a machine that was power-cycled through a
+    /// black screen comes back on the mode it booted with.
+    public FixOutcome KeepDisplayFix()
+    {
+        try
+        {
+            _ctx.Displays.PersistCurrentModes();
+            return new FixOutcome(true, $"{DisplayRefreshRule.RuleId}: kept");
+        }
+        catch (DisplayChangeException ex)
+        {
+            return new FixOutcome(false,
+                $"{DisplayRefreshRule.RuleId}: could not be made permanent — {ex.Message}");
+        }
+    }
 
     private FixOutcome WithRule(string ruleId, Func<IDiagnosticRule, FixOutcome> action)
     {
@@ -125,4 +146,6 @@ public sealed class EngineHost : IEngineHost
 
     public bool IsElevated() => new WindowsPrincipal(WindowsIdentity.GetCurrent())
         .IsInRole(WindowsBuiltInRole.Administrator);
+
+    public SessionIdentity Session() => _session.Current();
 }

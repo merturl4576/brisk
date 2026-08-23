@@ -1,0 +1,97 @@
+# A tag is a promise that a specific commit is worth downloading. This is what
+# turns the promise into two files someone can actually run.
+#
+# The tests run again here rather than being trusted from the CI run: a release
+# that skipped its own tests is a claim, not a build.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build a release from (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  release:
+    name: publish + release
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore brisk.sln
+
+      - name: Build (Release)
+        run: dotnet build brisk.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test brisk.sln -c Release --no-build
+
+      - name: Publish single-file executables
+        run: pwsh -File scripts/publish.ps1
+
+      # Two proofs in one command. The bundle has to unpack and start on a
+      # machine that is not the maintainer's, and the version it reports has to
+      # be the version the tag claims — otherwise "brisk version" lies to
+      # everyone who downloads it.
+      - name: Verify the built exe agrees with the tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          $expected = $tag -replace '^v', ''
+          $reported = (& .\artifacts\brisk.exe version).Trim()
+          if ($LASTEXITCODE -ne 0) { throw "brisk.exe version exited $LASTEXITCODE" }
+          Write-Host "tag=$tag expected=$expected reported=$reported"
+          if ($reported -ne $expected) {
+            throw "tag says $expected, the built exe says $reported. Update EngineInfo.Version or the tag."
+          }
+
+      - name: Smoke-test the console surface
+        shell: pwsh
+        run: |
+          $json = & .\artifacts\brisk.exe scan --json
+          if ($LASTEXITCODE -ne 0) { throw "brisk.exe scan --json exited $LASTEXITCODE" }
+          $parsed = $json | ConvertFrom-Json
+          if (-not $parsed) { throw "scan --json produced nothing parseable" }
+          Write-Host "scan --json parsed on a machine brisk has never seen"
+
+      # The body lives in .github/release-notes.md rather than in this file.
+      # A PowerShell here-string has to close at column zero, and column zero
+      # ends a YAML block scalar - which is how the first version of this
+      # workflow shipped a file GitHub could not parse at all.
+      - name: Create the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          $files = Get-ChildItem artifacts | ForEach-Object { $_.FullName }
+          gh release create $tag $files --title "brisk $tag" --notes-file .github/release-notes.md --verify-tag
+
+      - name: Upload artifacts to the run as well
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: brisk-${{ github.event.inputs.tag || github.ref_name }}
+          path: artifacts/
+          retention-days: 30

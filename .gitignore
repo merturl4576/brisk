@@ -10,3 +10,9 @@ obj/
 *.mp4
 image*.png
 briskhakkinda.txt
+
+# Built by scripts/publish.ps1 — reproducible from any commit, so never committed.
+artifacts/
+
+# Generated agent tooling, not part of the project.
+.claude/

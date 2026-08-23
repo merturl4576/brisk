@@ -7,7 +7,11 @@ public sealed record DiagnosticContext(
     IRegistryProbe Registry,
     IProcessInfoProbe Processes,
     ISensorProbe Sensors,
+    IDisplayProbe Displays,
+    IEventLogProbe EventLog,
+    IHardwareProbe Hardware,
     IDiskInfoProbe Disk,
     IFileProbe Files,
     IProcessLister RunningApps,
+    IMemoryIntegrityProbe MemoryIntegrity,
     string DataDirectory);   // %LOCALAPPDATA%\brisk — history store, journals

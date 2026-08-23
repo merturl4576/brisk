@@ -85,6 +85,11 @@ public sealed class RealSensorProbe : ISensorProbe, IDisposable
             {
                 if (sensor.SensorType != SensorType.Temperature || sensor.Value is null) continue;
                 var value = (double)sensor.Value.Value;
+                // A sensor that is present but has nothing to say reports NaN.
+                // Passing it on makes it a reading: it fails every threshold,
+                // so nothing calls it hot, but it is not null either — it would
+                // print "CPU NaN°C" and take the both-read template.
+                if (!double.IsFinite(value)) continue;
                 if (max is null || value > max) max = value;
             }
         }

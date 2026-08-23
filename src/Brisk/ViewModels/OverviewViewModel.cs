@@ -242,7 +242,9 @@ public sealed class OverviewViewModel : ViewModelBase
 
     public async Task FixAllAsync()
     {
-        if (_busy) return;
+        // Held while a display change is still unconfirmed — every fix
+        // surface is, not just this one (AppState.IsAwaitingDisplayConfirmation).
+        if (_busy || _state.IsAwaitingDisplayConfirmation) return;
         IsBusy = true;                   // set before the first await — re-entry guard
         try
         {
@@ -256,6 +258,9 @@ public sealed class OverviewViewModel : ViewModelBase
             }
             var result = await Task.Run(() => _fixAll.Run(snapshot));
             ReportSummary = FixReport.Populate(_loc, result, ReportLines);
+            // The display confirmation is raised as the mode changes, from
+            // FixAllService itself (AppState.TrackFixes) — not from this
+            // report-time loop, which only runs once the whole batch is done.
             await _state.ScanAsync();
         }
         finally

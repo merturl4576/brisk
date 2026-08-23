@@ -92,6 +92,96 @@ public class StartupBloatRuleTests
         Assert.False(priorMap.ContainsKey($"{HklmApprovedKey}|Discord"));
     }
 
+    /// The Startup page listed Store apps while this rule did not, so Spotify
+    /// — the entry Windows' own boot log blames for 37 seconds — showed as
+    /// enabled and heavy on one page and was invisible to the finding and to
+    /// Fix All on the other.
+    [Fact]
+    public void HeavyStoreApp_IsAFinding_AndFixMovesEveryTask_AndUndoRestores()
+    {
+        var (ctx, reg) = Ctx();
+        const string Pfn = "SpotifyAB.SpotifyMusic_zpdnekdrzrea0";
+        StoreRegistry.Task(reg, Pfn, "Spotify", 2);
+        StoreRegistry.Task(reg, Pfn, "SpotifyLauncher", 2);
+        var root = BriskEngine.Diagnostics.StartupManager.StoreRoot;
+        var spotify = $@"{root}\{Pfn}\Spotify";
+        var launcher = $@"{root}\{Pfn}\SpotifyLauncher";
+
+        var rule = new StartupBloatRule();
+        var finding = rule.Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Contains("SpotifyMusic", finding!.Evidence);
+        Assert.True(finding.CanFix);
+
+        var prior = rule.Fix(ctx);
+        Assert.Equal(0, reg.GetInt(spotify, "State"));
+        Assert.Equal(0, reg.GetInt(launcher, "State"));
+
+        rule.Undo(ctx, prior);
+        Assert.Equal(2, reg.GetInt(spotify, "State"));
+        Assert.Equal(2, reg.GetInt(launcher, "State"));
+    }
+
+    /// Undo restores the value that was there, not a generic "enabled" — a
+    /// task that was EnabledByPolicy is not the same as one set to Enabled.
+    [Fact]
+    public void Undo_RestoresTheExactPriorState()
+    {
+        var (ctx, reg) = Ctx();
+        const string Pfn = "SpotifyAB.SpotifyMusic_zpdnekdrzrea0";
+        StoreRegistry.Task(reg, Pfn, "Spotify", 4);   // EnabledByPolicy
+        var key = $@"{BriskEngine.Diagnostics.StartupManager.StoreRoot}\{Pfn}\Spotify";
+
+        var rule = new StartupBloatRule();
+        rule.Undo(ctx, rule.Fix(ctx));
+
+        Assert.Equal(4, reg.GetInt(key, "State"));
+    }
+
+    /// The undo journal has no expiry — an undoable fix sits in "What brisk
+    /// did" until someone clicks it — so uninstalling between Fix and Undo is
+    /// not a corner case, it is a Tuesday. SetInt goes through CreateSubKey on
+    /// the real registry, so restoring a task whose package is gone RECREATES
+    /// the key, and StoreTasks reads that table back: brisk would grow a
+    /// startup row for an app that cannot start, out of a key brisk itself
+    /// wrote, and offer to disable it.
+    ///
+    /// The assertion is on the value's absence rather than the key's, because
+    /// no registry double in this repo can express "this key does not exist" —
+    /// which is exactly why 645 tests could not see this.
+    [Fact]
+    public void Undo_PackageUninstalledSinceFix_WritesNothingBack()
+    {
+        var (ctx, reg) = Ctx();
+        const string Pfn = "SpotifyAB.SpotifyMusic_zpdnekdrzrea0";
+        StoreRegistry.Task(reg, Pfn, "Spotify", 2);
+        var taskKey = $@"{BriskEngine.Diagnostics.StartupManager.StoreRoot}\{Pfn}\Spotify";
+
+        var rule = new StartupBloatRule();
+        var prior = rule.Fix(ctx);
+        Assert.Equal(0, reg.GetInt(taskKey, "State"));
+
+        // Spotify is uninstalled: Windows takes the whole entry with it.
+        reg.Values.Remove($"{taskKey}::State");
+        reg.SubKeys[BriskEngine.Diagnostics.StartupManager.StoreRoot].Remove(Pfn);
+        reg.SubKeys.Remove($@"{BriskEngine.Diagnostics.StartupManager.StoreRoot}\{Pfn}");
+
+        rule.Undo(ctx, prior);
+
+        Assert.Null(reg.GetInt(taskKey, "State"));
+        Assert.Empty(new BriskEngine.Diagnostics.StartupManager(ctx.Registry, null).List());
+    }
+
+    [Fact]
+    public void DisabledHeavyStoreApp_IsNotCounted()
+    {
+        var (ctx, reg) = Ctx();
+        StoreRegistry.Task(reg, "SpotifyAB.SpotifyMusic_zpdnekdrzrea0", "Spotify", 0);
+
+        Assert.Null(new StartupBloatRule().Detect(ctx));
+    }
+
     [Fact]
     public void Fix_AllWritesDenied_Throws()
     {

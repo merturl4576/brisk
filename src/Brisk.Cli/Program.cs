@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
+using System.Text;
 using System.Text.Json;
 using BriskEngine;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.RealProbes;
+using BriskEngine.Diagnostics.Rules;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 using BriskEngine.Safety;
@@ -18,7 +20,28 @@ public static class Program
 {
     public static int Main(string[] args)
     {
-        var cmd = CliParser.Parse(args);
+        ConfigureConsole();
+        return Run(args);
+    }
+
+    /// A Turkish (or Polish, or Japanese) console defaults to a legacy code
+    /// page, which turns brisk's own help text into mojibake before the user
+    /// has read a single finding.
+    ///
+    /// Kept out of Run because setting this discards Console.Out, which is the
+    /// stream a test hands in to read what brisk printed.
+    private static void ConfigureConsole()
+    {
+        try { Console.OutputEncoding = new UTF8Encoding(false); }
+        catch (IOException) { /* nothing attached to configure */ }
+    }
+
+    public static int Run(string[] args)
+    {
+        // "--help" and "--version" are switches, and the parser knows verbs.
+        // Translating here rather than at the window's entry point is what
+        // makes both executables answer them the same way.
+        var cmd = CliParser.Parse(EntryRouter.Normalize(args));
         if (cmd.Verb == "error") { Console.Error.WriteLine($"brisk: {cmd.Error}"); return 2; }
         if (cmd.Verb is "help") { PrintHelp(); return 0; }
         if (cmd.Verb is "version") { Console.WriteLine(EngineInfo.Version); return 0; }
@@ -29,9 +52,10 @@ public static class Program
         using var sensors = new RealSensorProbe();
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), new RealRegistryProbe(),
-            new RealProcessInfoProbe(), sensors,
+            new RealProcessInfoProbe(), sensors, new RealDisplayProbe(),
+            new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
-            new RealProcessLister(), dataDir);
+            new RealProcessLister(), new RealMemoryIntegrityProbe(), dataDir);
         var log = new ActionLog(Path.Combine(dataDir, "action-log.jsonl"));
         var fixRunner = new FixRunner(new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl")), log);
         var scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(),
@@ -45,7 +69,7 @@ public static class Program
         {
             return cmd.Verb switch
             {
-                "scan" => Scan(cmd, ctx, scanner),
+                "scan" => Scan(cmd, ctx, scanner, IsElevated()),
                 "fix" => Fix(cmd, ctx, fixRunner),
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
@@ -85,8 +109,66 @@ public static class Program
         return (new List<TargetScanResult> { match }, null);
     }
 
-    private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner)
+    /// The sentence to print about a temperature brisk did not read, or null
+    /// when both sensors answered.
+    ///
+    /// The GUI ships an elevation manifest; the CLI deliberately does not — a
+    /// command-line tool that raises UAC on every invocation is worse than one
+    /// that cannot read a temperature. But silently omitting the thermals
+    /// finding makes "brisk scan" look like it checked and found nothing
+    /// wrong, which is the same lie the manifest was added to stop in the GUI.
+    /// So the CLI says which of the two it is.
+    ///
+    /// It used to fire only when NOTHING answered, and to promise that
+    /// elevation would fix it. Measuring the thermals rule made both halves
+    /// wrong. GPU temperature reads unelevated, so a GPU-only machine printed
+    /// no notice at all and a scan looked complete when the CPU had gone
+    /// unread. And CPU temperature reads at NO privilege level on a machine
+    /// running memory integrity, because the driver that reads it is on
+    /// Microsoft's vulnerable-driver blocklist — so the elevation advice
+    /// promised a remedy this codebase documents as ineffective. Elevation is
+    /// still worth naming, as one thing that can matter and often will not.
+    /// memoryIntegrityOn is required rather than defaulted: the caller that
+    /// forgets it is exactly the caller that would keep printing the hedged
+    /// reason on a machine brisk could have measured.
+    public static string? SensorNotice(ISensorProbe sensors, bool elevated,
+        bool? memoryIntegrityOn)
     {
+        var cpu = sensors.CpuTempC() is not null;
+        var gpu = sensors.GpuTempC() is not null;
+        if (cpu && gpu) return null;
+        if (cpu) return "temperature: GPU not read — CPU only. brisk cannot tell from here why.";
+        var unread = gpu
+            ? "temperature: CPU not read — GPU only."
+            : "temperature: not checked — neither sensor answered.";
+        // The CPU half of the reason is the same in both, so it is said once
+        // — but WHICH reason is available depends on a setting brisk can read
+        // without a driver, and the rule and this notice must not disagree
+        // about it. null is not folded into off: a Device Guard query that
+        // failed is not a machine with memory integrity switched off.
+        var why = memoryIntegrityOn switch
+        {
+            true => " Memory integrity is on here, and the driver that reads CPU "
+                + "temperature is on Microsoft's vulnerable-driver blocklist, so Windows "
+                + "will not load it at any privilege level. brisk does not switch that "
+                + "off, and cannot prove it is the only reason here.",
+            false => " Memory integrity is off here, so the usual reason — a driver "
+                + "Windows refuses to load — is not what happened, and brisk cannot tell "
+                + "from here what did.",
+            null => " The driver that reads CPU temperature is on Microsoft's "
+                + "vulnerable-driver blocklist and will not load while memory integrity "
+                + "is on. brisk does not switch that off, and cannot confirm from here "
+                + "that it is the reason on this machine.",
+        };
+        return elevated
+            ? unread + why
+            : unread + why + " Running as administrator can help other sensors.";
+    }
+
+    private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner,
+        bool elevated)
+    {
+        var sensorNotice = SensorNotice(ctx.Sensors, elevated, ctx.MemoryIntegrity.IsOn());
         var findings = DiagnosticRuleRegistry.All
             .Select(r => Safe(() => r.Detect(ctx)))
             .Where(f => f != null)
@@ -111,6 +193,19 @@ public static class Program
                     totalBytes = scan.TotalBytes,
                     reclaimableBytes = scan.ReclaimableBytes,
                 },
+                // Absent thermals must be distinguishable from healthy
+                // thermals by anything parsing this, not just by a human
+                // reading the text output.
+                // Two nullable numbers instead of one "available" flag, which
+                // said true as soon as EITHER sensor answered — a parser was
+                // being told thermals were checked on a machine where the CPU
+                // never was.
+                sensors = new
+                {
+                    cpuC = ctx.Sensors.CpuTempC(),
+                    gpuC = ctx.Sensors.GpuTempC(),
+                    notice = sensorNotice,
+                },
             };
             Console.WriteLine(JsonSerializer.Serialize(payload));
             return 0;
@@ -128,6 +223,8 @@ public static class Program
             Console.WriteLine($"    {f.Evidence}");
         }
 
+        if (sensorNotice is not null) Console.WriteLine($"[i ] {sensorNotice}");
+
         // ReclaimableBytes, not TotalBytes: the printed promise counts only
         // what 'brisk clean' can actually take right now (running-app and
         // delete-locked content stays out — the round-11 honesty rule).
@@ -144,6 +241,29 @@ public static class Program
 
     public static int Fix(CliCommand cmd, DiagnosticContext ctx, FixRunner fixRunner)
     {
+        // --keep is the console's answer to the GUI's "is the picture back?".
+        // It runs before any detect below on purpose: by the time a person can
+        // answer, the display is already at its best rate, so there is no
+        // finding left and the branches further down would decline to act.
+        if (cmd.Keep)
+        {
+            if (cmd.RuleId != DisplayRefreshRule.RuleId)
+            {
+                Console.Error.WriteLine(
+                    $"brisk: --keep applies to --rule {DisplayRefreshRule.RuleId}");
+                return 2;
+            }
+            if (!cmd.Yes)
+            {
+                Console.WriteLine("would keep: the display mode now on screen (add --yes)");
+                return 0;
+            }
+            ctx.Displays.PersistCurrentModes();
+            Console.WriteLine($"{DisplayRefreshRule.RuleId}: kept — the mode now on " +
+                              "screen will survive a restart");
+            return 0;
+        }
+
         if (cmd.Undo)
         {
             if (cmd.RuleId is null)
@@ -182,6 +302,7 @@ public static class Program
                 }
                 var outcome = fixRunner.Apply(rule, ctx);
                 Console.WriteLine(outcome.Message);
+                if (outcome.Ok) NoteIfProvisional(rule);
                 if (!outcome.Ok) anyFailed = true;
             }
             return anyFailed ? 1 : 0;
@@ -210,11 +331,26 @@ public static class Program
             }
             var applyOutcome = fixRunner.Apply(rule, ctx);
             Console.WriteLine(applyOutcome.Message);
+            if (applyOutcome.Ok) NoteIfProvisional(rule);
             return applyOutcome.Ok ? 0 : 1;
         }
 
         Console.Error.WriteLine("brisk: fix requires --all or --rule <id>");
         return 2;
+    }
+
+    /// The display fix is applied for this session only, because the mode that
+    /// blanks a screen must not also be the mode the machine boots into. The
+    /// GUI makes it permanent when the user confirms the picture is back; the
+    /// console has no such prompt, so it says which of the two this was rather
+    /// than let a change the next restart undoes read as finished.
+    private static void NoteIfProvisional(IDiagnosticRule rule)
+    {
+        if (rule.Id != DisplayRefreshRule.RuleId) return;
+        Console.WriteLine("    this session only — a restart brings the previous " +
+                          "refresh rate back");
+        Console.WriteLine($"    to keep it: brisk fix --rule {DisplayRefreshRule.RuleId} " +
+                          "--keep --yes");
     }
 
     private static int Clean(CliCommand cmd, Scanner scanner, CleanRunner cleanRunner)
@@ -324,6 +460,7 @@ public static class Program
         Console.WriteLine("    --all                    apply every Auto rule with a finding");
         Console.WriteLine("    --rule <id>               apply/undo a single rule");
         Console.WriteLine("    --undo                   undo the named rule's last fix");
+        Console.WriteLine("    --keep                   commit the display mode currently on screen");
         Console.WriteLine("    --yes                    actually mutate (otherwise dry-run)");
         Console.WriteLine("  clean                      reclaim disk space");
         Console.WriteLine("    --level <safe|developer|deep>  which cleanup level to run");

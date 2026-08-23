@@ -49,6 +49,37 @@ file sealed class NullSensors : ISensorProbe
     public int GpuCount() => 0;
 }
 
+/// The ordinary case, and the only one on an administrator account: the
+/// process token and the signed-in user are the same account.
+file sealed class SameUserSession : ISessionProbe
+{
+    public SessionIdentity Current() =>
+        new(@"PC\alice", @"PC\alice", false);
+}
+
+file sealed class NullDisplays : IDisplayProbe
+{
+    public int PersistCalls { get; private set; }
+    public IReadOnlyList<DisplayInfo> Displays() => System.Array.Empty<DisplayInfo>();
+    public void SetRefreshRate(string deviceName, int hz) { }
+    public void PersistCurrentModes() => PersistCalls++;
+}
+
+file sealed class NullEventLog : IEventLogProbe
+{
+    public IReadOnlyList<BootRecord> RecentBoots(int count) => System.Array.Empty<BootRecord>();
+}
+
+file sealed class NullHardware : IHardwareProbe
+{
+    public IReadOnlyList<MemoryModule> MemoryModules() => System.Array.Empty<MemoryModule>();
+}
+
+file sealed class NullMemoryIntegrity : IMemoryIntegrityProbe
+{
+    public bool? IsOn() => null;
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -98,8 +129,9 @@ public sealed class EngineHostTests : IDisposable
     private EngineHost Host(params IDiagnosticRule[] rules)
     {
         var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
-            new NullProcessInfo(), new NullSensors(), new NullDisk(), new NullFiles(),
-            new NothingRuns(), _root);
+            new NullProcessInfo(), new NullSensors(), new NullDisplays(), new NullEventLog(),
+            new NullHardware(), new NullDisk(), new NullFiles(),
+            new NothingRuns(), new NullMemoryIntegrity(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(_root, "fix-journal.jsonl"));
@@ -113,7 +145,7 @@ public sealed class EngineHostTests : IDisposable
             new CleanRunner(new SafetyValidator(), new NullRecycler(), log,
                 new RealProcessRunner(), () => false),
             journal, new StartupManager(new NullRegistry(), log), logPath,
-            Path.Combine(_root, "Brisk.Cli.exe"));
+            Path.Combine(_root, "Brisk.Cli.exe"), new SameUserSession());
     }
 
     private sealed class NullRecycler : IRecycler

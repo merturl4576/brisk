@@ -44,9 +44,34 @@ public partial class App : Application
             var theme = new ThemeManager();
             theme.Apply(composition.Settings.Theme);
 
-            var state = new AppState(composition.Host);
+            // Before the scheduled task, brisk registered itself under HKCU's
+            // Run key. A machine that still carries that value shows a second,
+            // identical "brisk" row in brisk's own startup list whose toggle
+            // changes nothing real — and the value itself is an autostart that
+            // Windows skips anyway, now that brisk requires elevation.
+            // Migrated once, at startup.
+            // Gated on the setting, not on the value alone: the value is
+            // evidence of an OLD intent. A user who upgraded to the
+            // task-based build and then explicitly turned autostart OFF has
+            // exactly this machine state — stale value, no task — and
+            // recreating the task there would let the oldest implicit choice
+            // beat the newest explicit one, silently, before any window
+            // exists. The dead value goes either way.
+            composition.Launcher.Migrate(composition.Settings.StartWithWindows);
+
+            // Dispatcher.Invoke is the third use of the same precedent in
+            // this file (the tray's Changed handler, ShowMain below): the
+            // display rescue resolves on a thread-pool thread, and every
+            // Changed / DisplayNotice subscriber touches UI objects.
+            var state = new AppState(composition.Host, Loc.Instance,
+                action => Dispatcher.Invoke(action));
             var cleanService = new CleanService(composition.Host, composition.Settings);
             var fixAllService = new FixAllService(composition.Host);
+            // The confirmation starts at the mode change, not at the end of
+            // the batch: FixAllService reports each rule as it lands, and a
+            // display raised first would otherwise sit black through every
+            // remaining fix before its 15 seconds even began.
+            state.TrackFixes(fixAllService);
             // ONE bin session and ONE safe-clean runner behind all three
             // clean surfaces (round 13) — the flyout, the overview button
             // and the Depolama card now run the identical recycle→purge
@@ -72,7 +97,7 @@ public partial class App : Application
                 doneFilter: FindingSections.IsPerformance,
                 crossLinkKey: "performance.crosslink");
             var startupVm = new StartupViewModel(state, composition.Host,
-                Loc.Instance, isDryRun);
+                Loc.Instance, isDryRun, composition.Launcher);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 safeClean, bin, Loc.Instance, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,
@@ -81,7 +106,7 @@ public partial class App : Application
                 Loc.Instance.SetLanguage);
 
             _flyout = new FlyoutWindow(flyoutVm);
-            _main = new MainWindow(overviewVm, healthVm, perfVm, startupVm,
+            _main = new MainWindow(state, overviewVm, healthVm, perfVm, startupVm,
                 cleanVm, settingsVm, theme);
             flyoutVm.OpenDetailsRequested += () =>
             {
@@ -89,6 +114,16 @@ public partial class App : Application
                 _main?.ShowOverview();
                 ShowMain();
             };
+            // The flyout, not the main window, is what --tray-less startup
+            // shows (below) — so a confirmation raised while only the
+            // flyout is open must bring the window with the overlay on
+            // screen itself, the same way the tray's "Open" item already
+            // does. ShowMain() is the one Show/Activate sequence; reused
+            // here rather than duplicated — marshalled, because TrackFixes
+            // raises this from the fix batch's worker thread and touching a
+            // window off the dispatcher throws. A confirmation nobody can see
+            // is the exact failure this whole mechanism exists to prevent.
+            state.ConfirmationRaised += () => Dispatcher.Invoke(ShowMain);
 
             var accent = ThemeResolver.AccentFrom(
                 Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM")

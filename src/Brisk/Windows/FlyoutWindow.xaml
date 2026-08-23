@@ -60,6 +60,17 @@
                 <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
                            Text="{Binding ReclaimLine}" />
             </StackPanel>
+            <!-- The flyout is the app's DEFAULT surface and carries its own
+                 Clean and Fix all, so a standard-account user who lives in the
+                 tray has to meet this here — the main window's bar is on a
+                 window they may never open. -->
+            <Border Margin="0,6,0,2" Padding="16,6"
+                    Background="{DynamicResource SeverityCritical}"
+                    Visibility="{Binding State.HasIdentityWarning,
+                        Converter={x:Static Brisk:BoolToVis.Instance}}">
+                <TextBlock TextWrapping="Wrap" Foreground="White"
+                           Text="{Binding State.IdentityWarningShort}" />
+            </Border>
             <StackPanel Orientation="Horizontal" Margin="16,7,16,0"
                         Visibility="{Binding State.IsScanning,
                             Converter={x:Static Brisk:BoolToVis.Instance}}">
@@ -76,6 +87,16 @@
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <!-- The flyout is the one fix surface the main
+                                     window's overlay does not cover, so this is
+                                     the button a user can press while brisk is
+                                     still asking whether the picture came back.
+                                     It is refused for up to 15 seconds; without
+                                     this it just swallowed the click. -->
+                                <DataTrigger Binding="{Binding State.IsAwaitingDisplayConfirmation}"
+                                             Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding IsBusy}" Value="True">
