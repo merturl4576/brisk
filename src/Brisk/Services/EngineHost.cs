@@ -65,7 +65,11 @@ public sealed class EngineHost : IEngineHost
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
-            HealthScore.Compute(findings), DateTime.UtcNow);
+            HealthScore.Compute(findings), DateTime.UtcNow,
+            new SensorStatus(
+                CpuRead: _ctx.Sensors.CpuTempC() is { } c && double.IsFinite(c),
+                GpuRead: _ctx.Sensors.GpuTempC() is { } g && double.IsFinite(g),
+                MemoryIntegrityOn: _ctx.MemoryIntegrity.IsOn()));
     }, ct);
 
     private sealed class SyncProgressAdapter : IProgress<ScanProgress>

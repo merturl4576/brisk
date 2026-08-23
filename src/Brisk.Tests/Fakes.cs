@@ -138,9 +138,13 @@ public static class TestData
     }
 
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
-        params TargetScanResult[] targets) => new(
+        params TargetScanResult[] targets) => Snapshot(findings, null, targets);
+
+    public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
+        SensorStatus? sensors, params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
-        new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
+        new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
+        sensors);
 }
 
 public sealed class FakeEngineHost : IEngineHost

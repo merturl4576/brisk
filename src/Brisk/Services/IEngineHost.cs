@@ -9,11 +9,17 @@ using BriskEngine.Models;
 
 namespace Brisk.Services;
 
+/// What the temperature sensors answered at scan time, recorded into the
+/// snapshot so the report card can say "could not read" about the scan it
+/// is rendering rather than about some later moment.
+public sealed record SensorStatus(bool CpuRead, bool GpuRead, bool? MemoryIntegrityOn);
+
 public sealed record ScanSnapshot(
     IReadOnlyList<DiagnosticFinding> Findings,
     ScanResult Cleaner,
     int Health,
-    DateTime CompletedUtc);
+    DateTime CompletedUtc,
+    SensorStatus? Sensors = null);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

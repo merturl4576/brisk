@@ -191,6 +191,21 @@ public sealed class EngineHostTests : IDisposable
         Assert.Equal(2, host.ReadLog().Count);
     }
 
+    /// The card's "what brisk could not read" section is built from the
+    /// snapshot, so the scan records what the sensors answered at scan time.
+    [Fact]
+    public async Task ScanAsync_RecordsSensorStatus()
+    {
+        var host = Host(Array.Empty<IDiagnosticRule>());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.NotNull(snapshot.Sensors);
+        Assert.False(snapshot.Sensors!.CpuRead);
+        Assert.False(snapshot.Sensors.GpuRead);
+        Assert.Null(snapshot.Sensors.MemoryIntegrityOn);
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }
 
