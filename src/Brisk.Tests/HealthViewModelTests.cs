@@ -231,6 +231,14 @@ public class HealthViewModelTests
 
     /// The overview band's "see the evidence" opens the named card wherever
     /// it sits — the problem list, the advice, or the notice band.
+    ///
+    /// All three bands are asserted positively because all three are real:
+    /// RevelationPicker leads with startup-bloat or display-refresh (problem
+    /// rows) and disk-breakdown (advise) as readily as with a notice, so
+    /// whichever band the link reaches depends on the machine, not on the
+    /// caller. A band lost from the lookup would be navigate-but-don't-expand
+    /// — the defect this method exists to fix, returning silently for
+    /// everyone whose top revelation is not a notice.
     [Fact]
     public async Task ExpandFinding_OpensTheNamedCard_WhereverItLives()
     {
@@ -238,14 +246,21 @@ public class HealthViewModelTests
         host.NextSnapshot = TestData.Snapshot(new[]
         {
             TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("startup-bloat", cat: RuleCategory.Confirm, canFix: true),
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
             TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
                 kind: FindingKind.Notice),
         }, new SensorStatus(true, true, null));
         await state.ScanAsync();
 
-        vm.ExpandFinding("thermals");
+        vm.ExpandFinding("startup-bloat");    // problem list
+        vm.ExpandFinding("disk-breakdown");   // advice
+        vm.ExpandFinding("thermals");         // notice band
 
+        Assert.True(vm.Rows.Single(r => r.RuleId == "startup-bloat").IsExpanded);
+        Assert.True(vm.AdviseRows.Single(r => r.RuleId == "disk-breakdown").IsExpanded);
         Assert.True(vm.NoticeRows.Single(r => r.RuleId == "thermals").IsExpanded);
+        // A card nobody asked for stays shut: the link opens one, not the page.
         Assert.False(vm.Rows.Single(r => r.RuleId == "power-plan").IsExpanded);
     }
 
