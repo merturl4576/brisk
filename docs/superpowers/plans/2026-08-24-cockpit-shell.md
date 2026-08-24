@@ -541,11 +541,80 @@ git commit  # message: the ring for a sensor that never spoke stops being drawn 
 
 ---
 
-### Task 8: 0.5.0
+### Task 8: the hero joins the palette
+
+Added after Task 7 disclosed the gap, and ruled into this wave by the
+maintainer's stand-in: the instrument at the centre of the Overview draws from
+a separate `Hero*` colour family that Task 2's retune never touched, so the
+cockpit's centrepiece is still graphite and Windows blue inside a navy app. It
+is the element every screenshot leads with, and screenshots were the stated
+reason for pinning the signature accent in the first place.
+
+**Scope is binding and narrow: the colour family and its contrast checks only.
+No geometry, no motion, no layout. Any creep and this task is abandoned to a
+follow-up wave rather than allowed to grow.**
+
+**Files:**
+- Modify: the `Hero*` brush definitions in `src/Brisk/Theming/Shared.xaml`
+- Test: a contrast `[Theory]` alongside the satellite checks Task 7 added
+
+- [ ] **Step 1: Write the failing contrast checks**
+
+Pin, with the same computed machinery the atmosphere and satellites use and
+every value read from source rather than copied: the score numerals and the
+caption text against the new hero fill at **≥4.5:1**, and the arcs and ring
+segments at **≥3:1**.
+
+- [ ] **Step 2: Run to verify they fail**
+
+Expected: FAIL against the graphite fill, on the ratios rather than on a
+missing symbol.
+
+- [ ] **Step 3: Retune the family**
+
+The hero's own accent takes the signature turquoise `#5FD4E8` — numerically
+equal to the dark theme's accent, which is what lets the inner arcs speak the
+signature colour without binding a theme key the hero panel cannot use. The
+fills move into the navy family. **The semantic ring colours are untouched.**
+
+The hero panel stays deliberately theme-independent — dark in both themes — so
+the retune must not introduce a light-theme branch here.
+
+- [ ] **Step 4: Verify the budget is untouched**
+
+The hero sits on the instrument panel, not on bare atmosphere, so the spent
+4.5068:1 atmosphere budget must be unaffected. Confirm `ContrastTests` does not
+move. If it fires, something reached the atmosphere that should not have.
+
+- [ ] **Step 5: Render before calling it done**
+
+A dark Overview render showing the retuned instrument. The wave's method is
+renders before commitment, and this task is not exempt.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/Brisk/Theming/Shared.xaml src/Brisk.Tests/
+git commit  # message: the instrument stops wearing the palette the app left behind
+```
+
+---
+
+### Task 9: 0.5.0, and the light theme finally gets photographed
 
 **Files:**
 - Modify: `src/BriskEngine/EngineInfo.cs`
 - Modify: `README.md` if it shows a screenshot or names the version
+
+- [ ] **Step 0: Produce a light-theme Overview render**
+
+**A condition of closing the wave, set by the maintainer's stand-in.** This
+wave's whole method is renders before commitment, yet every light-theme
+decision in it — `#0F6E7E`, `SeverityInfo` left unchanged — was made on
+arithmetic alone, because the harness installs Dark once per AppDomain. The
+tuning gate already proved isolated per-invocation captures work, so a second
+process with Light installed is enough. The maintainer must be able to see the
+deliberately dark hero panel sitting on the white page before 0.5.0 ships.
 
 - [ ] **Step 1: Bump**
 
