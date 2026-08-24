@@ -1,18 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Xml.Linq;
 using Brisk.Views;
 using Xunit;
-// WinForms is on in this project, so bare Color, ColorConverter, Point and
-// Size are ambiguous.
+// WinForms is on in this project, so bare Color, Point and Size are
+// ambiguous.
 using Color = System.Windows.Media.Color;
-using ColorConverter = System.Windows.Media.ColorConverter;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 
@@ -30,12 +27,33 @@ public class AtmosphereLayerTests
     /// the atmosphere is a dark-theme thing. "Flat" has to mean flat — one
     /// colour, not a nearly-flat one with a rain column still in it — because
     /// a light page has no night for the texture to sit on.
+    ///
+    /// And the fill has to BE there. Counting colours alone cannot say so: a
+    /// RenderTargetBitmap starts out transparent, and an untouched buffer is
+    /// also "exactly one colour". Deleting the flat branch's DrawRectangle
+    /// left every one of the suite's 845 tests green — this is the only
+    /// automated statement of the light-theme contract, so it asserts the
+    /// pixel's VALUE, not just that there is one of it.
     [Fact]
-    public void Flat_RendersExactlyOneColour()
+    public void Flat_RendersExactlyOneColour_AndItIsTheGroundFill()
     {
-        var colors = DistinctColors(() => new AtmosphereLayer { IsFlat = true });
+        Color ground = default;
+        var pixels = RenderedPixels(() =>
+        {
+            var layer = new AtmosphereLayer { IsFlat = true };
+            ground = ColorOf(layer.GroundBrush);
+            return layer;
+        });
 
-        Assert.Equal(1, colors);
+        Assert.True(pixels.Count == 1,
+            $"the flat atmosphere rendered {pixels.Count} distinct colours — " +
+            "flat has to mean flat, with no rain column left in it");
+        var only = pixels.Single();
+        Assert.True(only == Pbgra32(ground),
+            $"the flat atmosphere rendered 0x{only:X8}, not the opaque Bg fill " +
+            $"0x{Pbgra32(ground):X8} — and 0x00000000, an empty buffer, is " +
+            "'exactly one colour' too, so a layer that drew nothing at all " +
+            "would satisfy the count on its own");
     }
 
     /// And the other half of the same claim: with the atmosphere on, there is
@@ -44,7 +62,7 @@ public class AtmosphereLayerTests
     [Fact]
     public void NotFlat_RendersTheWholeAtmosphere()
     {
-        var colors = DistinctColors(() => new AtmosphereLayer { IsFlat = false });
+        var colors = RenderedPixels(() => new AtmosphereLayer { IsFlat = false }).Count;
 
         Assert.True(colors > 64,
             $"the atmosphere rendered {colors} distinct colours — gradient, " +
@@ -70,20 +88,22 @@ public class AtmosphereLayerTests
         });
 
         foreach (var (key, color) in painted)
-            Assert.Equal(DarkThemeColor(key), color);
+            Assert.Equal(ThemeSource.ColorOf("Dark.xaml", key), color);
     }
 
     private static Color ColorOf(System.Windows.Media.Brush? brush) =>
         ((SolidColorBrush)brush!).Color;
 
-    /// Renders the layer offscreen and counts what came out. WPF objects
-    /// demand an STA thread and the test runner does not have one — the same
-    /// reason ReportCardRenderer.RenderOnStaThread exists. The layer is built
-    /// on that thread too: a DispatcherObject belongs to whichever thread
-    /// made it, and rendering one from another throws.
-    private static int DistinctColors(Func<AtmosphereLayer> build)
+    /// Renders the layer offscreen and returns the distinct pixel values it
+    /// produced — the values, not their count, because what a flat render
+    /// drew matters as much as how many of it there were. WPF objects demand
+    /// an STA thread and the test runner does not have one — the same reason
+    /// ReportCardRenderer.RenderOnStaThread exists. The layer is built on that
+    /// thread too: a DispatcherObject belongs to whichever thread made it, and
+    /// rendering one from another throws.
+    private static HashSet<int> RenderedPixels(Func<AtmosphereLayer> build)
     {
-        var count = 0;
+        var distinct = new HashSet<int>();
         OnStaThread(() =>
         {
             var layer = build();
@@ -96,27 +116,16 @@ public class AtmosphereLayerTests
             bitmap.Render(layer);
             var pixels = new int[bitmap.PixelWidth * bitmap.PixelHeight];
             bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
-            count = new HashSet<int>(pixels).Count;
+            distinct = new HashSet<int>(pixels);
         });
-        return count;
+        return distinct;
     }
 
-    /// Reads the value straight out of the .xaml source, the way
-    /// ThemeDictionaryTests does — no Application or pack-URI plumbing.
-    private static Color DarkThemeColor(string key)
-    {
-        var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
-        {
-            if (!File.Exists(Path.Combine(dir.FullName, "brisk.sln"))) continue;
-            var hex = XDocument.Load(
-                    Path.Combine(dir.FullName, "src", "Brisk", "Theming", "Dark.xaml")).Root!
-                .Elements().Single(e => (string?)e.Attribute(x + "Key") == key)
-                .Attribute("Color")!.Value;
-            return (Color)ColorConverter.ConvertFromString(hex)!;
-        }
-        throw new InvalidOperationException("brisk.sln not found above test bin");
-    }
+    /// What CopyPixels hands back for one opaque colour: Pbgra32 is B,G,R,A in
+    /// memory, so a little-endian int32 reads as 0xAARRGGBB. At alpha 255 the
+    /// premultiplied channels are the straight ones.
+    private static int Pbgra32(Color color) => unchecked((int)(
+        0xFF000000u | ((uint)color.R << 16) | ((uint)color.G << 8) | color.B));
 
     private static void OnStaThread(Action work)
     {

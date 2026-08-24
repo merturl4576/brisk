@@ -163,10 +163,12 @@ public sealed class AtmosphereLayer : FrameworkElement
     ///
     /// The spec names the worst case as the brightest rain texel over the
     /// brightest gradient stop. This goes one step further and stacks the
-    /// grid line and the glow on top of that, because the geometry genuinely
-    /// allows all three at once: the fan lines converge exactly where the
-    /// glow is brightest, and the rain falls over everything. An upper bound
-    /// that is reachable is the only kind worth asserting.
+    /// grid line and the glow on top of that, because the geometry allows all
+    /// three to meet: the fan lines converge exactly where the glow is
+    /// brightest, and the rain falls over everything. It is an upper bound,
+    /// not a pixel anyone can point at — no single pixel carries every
+    /// maximum at once — which makes the test stricter than the drawing and
+    /// never looser, and that is the direction a legibility guard should err.
     ///
     /// Always opaque — alpha means nothing to a contrast ratio.
     public Color BrightestComposite()

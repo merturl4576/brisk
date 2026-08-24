@@ -51,11 +51,17 @@ public class ContrastTests
     /// The rule from the spec: body text must stay legible on bare atmosphere.
     /// Worst case, not average — an average passes while one glyph sits behind
     /// the brightest column of rain.
+    ///
+    /// TextMuted is READ from the dictionary, never copied. A hex copied into
+    /// a test certifies the value it was copied from forever: retune the
+    /// palette and this keeps passing while describing a colour the app has
+    /// stopped wearing. The layer's own end of the comparison is pinned to
+    /// Dark.xaml the same way, by AtmosphereLayerTests.
     [Fact]
     public void TextMuted_OnTheBrightestAtmosphere_StaysLegible()
     {
         var worst = BrightestComposite(_ => { });          // dark mode default
-        var textMuted = Parse("#7E93A0");                  // Dark.xaml's TextMuted
+        var textMuted = ThemeSource.ColorOf("Dark.xaml", "TextMuted");
 
         Assert.True(Contrast.Ratio(textMuted, worst) >= 4.5,
             $"TextMuted on the brightest atmosphere is " +
@@ -64,15 +70,17 @@ public class ContrastTests
 
     /// The light theme paints one flat fill, so its worst case IS the fill —
     /// no rain to composite, and TextMuted has to survive it just the same.
+    /// Both ends read from Light.xaml, for the reason above: the tuning gate
+    /// that will move these two values is the very next task.
     [Fact]
     public void TextMuted_OnTheFlatAtmosphere_StaysLegible()
     {
         var worst = BrightestComposite(layer =>
         {
             layer.IsFlat = true;
-            layer.GroundBrush = new SolidColorBrush(Parse("#F3F3F3"));   // Light.xaml's Bg
+            layer.GroundBrush = new SolidColorBrush(ThemeSource.ColorOf("Light.xaml", "Bg"));
         });
-        var textMuted = Parse("#616161");                                // and its TextMuted
+        var textMuted = ThemeSource.ColorOf("Light.xaml", "TextMuted");
 
         Assert.True(Contrast.Ratio(textMuted, worst) >= 4.5,
             $"TextMuted on the flat atmosphere is " +
