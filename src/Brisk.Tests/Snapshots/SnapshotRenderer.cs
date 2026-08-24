@@ -24,6 +24,10 @@ public static class SnapshotRenderer
     /// move.
     private const double Dpi = 96;
 
+    /// Far enough left of any real monitor arrangement that a shown window
+    /// cannot appear on one.
+    private const double Offscreen = -10000;
+
     /// One process, one Application, one render at a time. WPF's parse-time
     /// {StaticResource} lookups fall through to Application.Current.Resources
     /// — that is the only place a control's own XAML can reach — so the theme
@@ -43,16 +47,41 @@ public static class SnapshotRenderer
             {
                 InstallTheme();
                 var element = build();
-                OffscreenLayout.LayOut(element, size);
+                // A Window sizes its content from the HWND underneath it, and
+                // a window that was never shown has none: it lays out to
+                // nothing and photographs as a flat fill, WITHOUT throwing.
+                // Showing it is what gives it that handle. It goes far off
+                // any real desktop and never takes the taskbar or the focus,
+                // so a test run does not flash a window or steal the keyboard
+                // out from under whoever is typing.
+                var window = element as Window;
+                try
+                {
+                    if (window is not null)
+                    {
+                        window.Left = Offscreen;
+                        window.Top = Offscreen;
+                        window.ShowInTaskbar = false;
+                        window.ShowActivated = false;
+                        window.Show();
+                    }
+                    OffscreenLayout.LayOut(element, size);
 
-                var bitmap = new RenderTargetBitmap(
-                    (int)size.Width, (int)size.Height, Dpi, Dpi, PixelFormats.Pbgra32);
-                bitmap.Render(element);
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    var bitmap = new RenderTargetBitmap(
+                        (int)size.Width, (int)size.Height, Dpi, Dpi, PixelFormats.Pbgra32);
+                    bitmap.Render(element);
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(bitmap));
 
-                using var stream = File.Create(path);
-                encoder.Save(stream);
+                    using var stream = File.Create(path);
+                    encoder.Save(stream);
+                }
+                finally
+                {
+                    // In the finally so a render that throws cannot leave a
+                    // live window behind on the STA thread.
+                    window?.Close();
+                }
             });
         }
         return path;
