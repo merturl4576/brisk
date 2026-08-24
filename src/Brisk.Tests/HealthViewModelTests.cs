@@ -183,6 +183,39 @@ public class HealthViewModelTests
         Assert.Single(vm.NoticeRows);
     }
 
+    /// Notices cost the score nothing, but they are still worth reading, so
+    /// the hero sentence counts them among the öneri. A page whose only
+    /// findings are notices must not announce good news directly above a
+    /// band that is listing them — that would erase them from the count.
+    [Fact]
+    public async Task StatusLine_CountsNotices_AmongTheAdvice()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+
+        await state.ScanAsync();
+
+        Assert.Empty(vm.Rows);
+        Assert.Empty(vm.AdviseRows);          // the notice band holds it alone
+        Assert.Equal(loc.F("overview.status.advise", 1), vm.StatusLine);
+        Assert.NotEqual(loc["overview.status.good"], vm.StatusLine);
+
+        // advice and notices together: one count spanning both bands
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+        Assert.Equal(loc.F("overview.status.advise", 2), vm.StatusLine);
+    }
+
     [Fact]
     public async Task SectionFilter_SplitsFindingsAcrossPages()
     {

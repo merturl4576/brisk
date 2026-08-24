@@ -483,8 +483,13 @@ public sealed class HealthViewModel : ViewModelBase
         ScoreText = snapshot.Health.ToString();
         ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
+        // Notices cost the score nothing, but they are still worth
+        // reading — so the sentence counts both bands. Counting only
+        // the advice would announce good news over a page still
+        // showing what brisk measured and cannot fix.
+        var advisory = AdviseRows.Count + NoticeRows.Count;
         StatusLine = Rows.Count > 0 ? _loc["overview.status.attention"]
-            : AdviseRows.Count > 0 ? _loc.F("overview.status.advise", AdviseRows.Count)
+            : advisory > 0 ? _loc.F("overview.status.advise", advisory)
             : _loc["overview.status.good"];
         FixAllCommand.RaiseCanExecuteChanged();
     }
