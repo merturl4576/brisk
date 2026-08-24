@@ -200,6 +200,11 @@ public class LocTests
     [InlineData("chrome.maximize")]
     [InlineData("chrome.restore")]
     [InlineData("chrome.close")]
+    // The first nav tile's name. It used to borrow [app.name] and show
+    // "brisk", so the entry could not miss — there was nothing to miss. Now
+    // that it says where it goes, a gap in either language would put
+    // "nav.overview" at the top of the nav, above four tiles that read fine.
+    [InlineData("nav.overview")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

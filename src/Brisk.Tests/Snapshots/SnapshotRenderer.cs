@@ -172,7 +172,20 @@ public static class SnapshotRenderer
         _ = System.IO.Packaging.PackUriHelper.UriSchemePack;
         // The constructor is the registration — Application.Current is what
         // everything downstream reads, so the instance itself is not kept.
-        if (Application.Current is null) _ = new Application();
+        //
+        // OnExplicitShutdown, and that is not a preference. WPF's default is
+        // OnLastWindowClose: the moment a capture closes the last window it
+        // photographed, Shutdown runs on this dispatcher and Application
+        // .Current goes back to null — and the NEXT capture's `new
+        // Application()` then throws, because an AppDomain gets exactly one
+        // Application whether or not the first one is still reachable. It sat
+        // here as a latent fault while there were few enough window captures
+        // that the run ended before another needed a live Application;
+        // photographing Sağlık and Performans as well is what detonated it,
+        // and it took three unrelated tests down with it. This Application is
+        // a resource holder, not a lifetime owner, so nothing shuts it down.
+        if (Application.Current is null)
+            _ = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         if (_themeInstalled) return;
         foreach (var file in new[] { "Dark.xaml", "Shared.xaml" })
             Application.Current!.Resources.MergedDictionaries.Add(new ResourceDictionary

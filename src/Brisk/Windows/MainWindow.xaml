@@ -166,11 +166,18 @@
              iconography, not localizable text. -->
         <StackPanel Grid.Row="3" Grid.Column="0" Margin="16,10,0,0"
                     VerticalAlignment="Top">
-            <RadioButton x:Name="NavOverview" Style="{StaticResource NavBrand}"
+            <!-- Five destinations, five names, five pictures. This tile used
+                 to be the wordmark: it wore [app.name] and carried no glyph,
+                 which put "brisk" on the screen twice — once here and once
+                 in the title bar just above it — and left the first nav
+                 entry as the only one that did not say where it goes. The
+                 divider under it went with it: it was there to
+                 separate identity from navigation, there is no identity here
+                 any more, and the selected tile's glow was swallowing it. -->
+            <RadioButton x:Name="NavOverview" Style="{StaticResource NavRadio}"
                          GroupName="nav" IsChecked="True" Checked="Nav_Checked"
-                         Content="{Binding [app.name], Source={x:Static loc:Loc.Instance}}" />
-            <Border Height="1" Width="88" Margin="0,0,0,12" HorizontalAlignment="Left"
-                    Background="{DynamicResource Divider}" />
+                         Tag="&#xE80F;"
+                         Content="{Binding [nav.overview], Source={x:Static loc:Loc.Instance}}" />
             <RadioButton x:Name="NavHealth" Style="{StaticResource NavRadio}"
                          GroupName="nav" Checked="Nav_Checked" Tag="&#xE95E;"
                          Content="{Binding [nav.health], Source={x:Static loc:Loc.Instance}}" />

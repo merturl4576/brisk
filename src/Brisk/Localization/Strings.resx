@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="app.name" xml:space="preserve"><value>brisk</value></data>
+  <data name="nav.overview" xml:space="preserve"><value>Overview</value></data>
   <data name="nav.health" xml:space="preserve"><value>Health</value></data>
   <data name="nav.performance" xml:space="preserve"><value>Performance</value></data>
   <data name="nav.clean" xml:space="preserve"><value>Storage</value></data>

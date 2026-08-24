@@ -26,11 +26,148 @@
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
     </Style>
+    <!-- The micro-label, and it stays a micro-label. It sits above a combo
+         box on Ayarlar and beside a button on Depolama, where a banded
+         heading would be furniture — PanelHeader below is what opens a
+         SECTION, and the two are deliberately different jobs. -->
     <Style x:Key="SectionLabel" TargetType="TextBlock" BasedOn="{StaticResource Body}">
         <Setter Property="FontSize" Value="10.5" />
         <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
         <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
         <Setter Property="Margin" Value="14,8,14,2" />
+    </Style>
+
+    <!-- ==================================================================
+         THE PANEL LANGUAGE
+
+         One sentence, three keys: a panel is a Surface fill inside a
+         Hairline edge wearing four lit corner brackets, and a section of
+         panels opens with a SurfaceHi header strip.
+
+         They live HERE rather than on the pages on purpose. The cards on
+         Sağlık, Performans and Depolama are FindingCard and CompletionReport
+         further down this same file, so pointing those two at these keys is
+         what let three pages change their look without any of the three
+         being restructured. A page that writes Background and BorderBrush
+         out by hand has left the language and will drift out of it; the ones
+         that still did — Depolama's three cards — name the panel now.
+         ================================================================== -->
+
+    <!-- One corner, drawn once; the other three are this geometry mirrored,
+         so there is a single set of numbers and four corners that cannot
+         drift apart. DRAWN, never lifted: the concept this came from is a
+         picture, and a raster corner in a theme dictionary cannot follow a
+         palette, a DPI or a theme switch.
+
+         14 along each arm with a 3-radius elbow, and the 3 is arithmetic
+         rather than taste. The panel's corner is an 8-radius arc under a 1px
+         edge, so the INSIDE of that corner turns at 7; a mark held 4 in from
+         it stays concentric with it only if it turns at 7 − 4. It is inset
+         by its own Margin for the same reason — a right-angled bracket drawn
+         ON a rounded corner pokes out through it.
+
+         This is also the one thing this round adds that emits light, so it
+         carries its own contrast check (PanelSourceTests) rather than
+         leaning on the atmosphere's, which was spent at the tuning gate. It
+         never touches that budget: a bracket is only ever drawn on the
+         opaque Surface fill of the panel it belongs to, never on bare sky. -->
+    <Style x:Key="PanelBracket" TargetType="Path">
+        <Setter Property="Data" Value="M 0,14 L 0,3 A 3,3 0 0 1 3,0 L 14,0" />
+        <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="StrokeThickness" Value="1.2" />
+        <Setter Property="Stretch" Value="None" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    </Style>
+
+    <!-- The four corners as one line. A Control carrying nothing but a
+         template is how XAML lends a SET of elements to more than one
+         parent: a resource is one instance and an instance has one parent,
+         so a shared Grid of four Paths could be used in exactly one panel. -->
+    <ControlTemplate x:Key="PanelBrackets" TargetType="Control">
+        <Grid>
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Path.RenderTransform>
+                    <ScaleTransform ScaleX="-1" />
+                </Path.RenderTransform>
+            </Path>
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                <Path.RenderTransform>
+                    <ScaleTransform ScaleY="-1" />
+                </Path.RenderTransform>
+            </Path>
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <Path.RenderTransform>
+                    <ScaleTransform ScaleX="-1" ScaleY="-1" />
+                </Path.RenderTransform>
+            </Path>
+        </Grid>
+    </ControlTemplate>
+
+    <!-- A panel: the fill, the edge, the corner and the brackets, as one
+         thing. It is a templated ContentControl rather than a Style on
+         Border because a Style cannot give an element children, and a panel
+         whose brackets had to be remembered separately at every use site
+         would be a panel that arrives without them somewhere.
+
+         Padding sits on the CONTENT, not on the Border, which is what keeps
+         the brackets on the panel's edge: a Border's Padding pushes its
+         whole child in, and the brackets are part of that child.
+
+         Hairline, not BorderBrushKey. The two carry the same value today and
+         different jobs — the dark palette names Hairline as the panel edge
+         and BorderBrushKey as the control edge, and they are expected to
+         part the first time either is tuned. -->
+    <Style x:Key="CockpitPanel" TargetType="ContentControl">
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border CornerRadius="8"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                            <Control Template="{StaticResource PanelBrackets}"
+                                     Focusable="False" IsTabStop="False"
+                                     IsHitTestVisible="False" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The header strip: a SurfaceHi band the width of the content column,
+         in large light type, opening a section of panels.
+
+         It is NOT BasedOn Body, and that is the whole of the wrap guard.
+         Body sets TextTrimming="CharacterEllipsis", so the obvious build of
+         this style would have inherited an ellipsis — and the header carries
+         the widest text in the panel, in the language that runs longest:
+         "brisk'in yalnızca bildirebildikleri" against "What brisk can only
+         report". A trimming header eats the end of that sentence and nothing
+         in the file says so, which is why PanelSourceTests walks the whole
+         BasedOn chain instead of reading one setter. -->
+    <Style x:Key="PanelHeader" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="FontSize" Value="14.5" />
+        <Setter Property="FontWeight" Value="Light" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceHi}" />
+        <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Margin" Value="0,16,0,8" />
+        <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <!-- Round 11: Windows 11-style focus ring in place of WPF's dotted
@@ -624,20 +761,24 @@
         <Setter Property="FontSize" Value="11" />
     </Style>
 
-    <!-- One finding card, shared by the Sağlık and Performans lists. -->
+    <!-- One finding card, shared by the Sağlık and Performans lists — and the
+         reason two pages could change their look without either of them
+         changing. Its STRUCTURE is untouched: marker at the left, headline,
+         expander. What moved is the dress, from three brush attributes
+         written out here to the panel every panel in the app now wears. -->
     <DataTemplate x:Key="FindingCard">
-        <Border CornerRadius="8" Margin="0,0,0,8"
-                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Background" Value="{DynamicResource Surface}" />
+        <ContentControl Margin="0,0,0,8">
+            <ContentControl.Style>
+                <!-- BasedOn, not a copy: the hover fill is the only thing a
+                     card says about itself that the panel does not say. -->
+                <Style TargetType="ContentControl" BasedOn="{StaticResource CockpitPanel}">
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{DynamicResource BgHover}" />
                         </Trigger>
                     </Style.Triggers>
                 </Style>
-            </Border.Style>
+            </ContentControl.Style>
             <StackPanel>
                 <ToggleButton IsChecked="{Binding IsExpanded}" Cursor="Hand" MinHeight="44">
                     <ToggleButton.Template>
@@ -828,7 +969,7 @@
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </ContentControl>
         <DataTemplate.Triggers>
             <!-- Working (fixing or undoing): buttons rest, the severity dot
                  pulses. This is the app's only looping animation and it stops
@@ -949,13 +1090,11 @@
          looking, invisible to everyone else. The whole block collapses
          while both faces are empty, so there is never an empty frame. -->
     <DataTemplate x:Key="CompletionReport">
-        <Border x:Name="ReportChrome" CornerRadius="8" Margin="0,14,0,14"
-                Background="{DynamicResource Surface}"
-                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
-                Padding="16,14">
-            <Border.RenderTransform>
+        <ContentControl x:Name="ReportChrome" Margin="0,14,0,14" Padding="16,14"
+                        Style="{StaticResource CockpitPanel}">
+            <ContentControl.RenderTransform>
                 <TranslateTransform />
-            </Border.RenderTransform>
+            </ContentControl.RenderTransform>
             <!-- A 2px Good rule on the left edge — the same accent-rule
                  vocabulary the hero pods speak, worn in the report's own
                  color. Identity, not ornament. -->
@@ -1090,7 +1229,7 @@
                     </StackPanel>
                 </StackPanel>
             </DockPanel>
-        </Border>
+        </ContentControl>
         <DataTemplate.Triggers>
             <DataTrigger Binding="{Binding ReportLines.Count}" Value="0">
                 <Setter TargetName="SessionBlock" Property="Visibility"
@@ -1154,12 +1293,16 @@
          Surface, and the app spent two commits unable to say which page was
          showing.
 
-         Tag carries an optional Segoe Fluent glyph (iconography, not a
-         localizable string); items without one — the brand — collapse the
-         icon slot. The label sits UNDER the glyph and WRAPS rather than
-         clips: Turkish runs longer than English ("Performans", "Depolama"),
-         and an icon-only nav in an app whose whole point is being
-         understandable would be a regression. -->
+         Tag carries the tile's Segoe Fluent glyph (iconography, not a
+         localizable string), and EVERY tile has one now. There used to be an
+         exception — a wordmark tile with its icon slot collapsed — and it
+         was the one nav entry with no name of its own: it wore [app.name],
+         which put "brisk" on the screen twice. The wordmark kept the title
+         bar, where names live, and the nav is five destinations with five
+         labels and five pictures. The label sits UNDER the glyph and WRAPS
+         rather than clips: Turkish runs longer than English ("Performans",
+         "Depolama"), and an icon-only nav in an app whose whole point is
+         being understandable would be a regression. -->
     <Style x:Key="NavRadio" TargetType="RadioButton">
         <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
@@ -1200,10 +1343,6 @@
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="Tag" Value="{x:Null}">
-                            <Setter TargetName="Glyph" Property="Visibility"
-                                    Value="Collapsed" />
-                        </Trigger>
                         <!-- Hover first, selection second: a trigger declared
                              later wins, so the tile the pointer is over while
                              it is also the selected one still reads selected. -->
@@ -1230,17 +1369,6 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-    </Style>
-
-    <!-- The "brisk" nav tile: the app identity, still clearly a nav entry.
-         It carries no glyph, so its icon slot collapses and the wordmark
-         takes the whole tile — which is the distinction, now that every
-         other tile is a picture over a label. -->
-    <Style x:Key="NavBrand" TargetType="RadioButton" BasedOn="{StaticResource NavRadio}">
-        <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{DynamicResource Text}" />
     </Style>
 
     <!-- The caption controls of brisk's own title bar. Windows no longer

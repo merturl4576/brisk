@@ -14,8 +14,10 @@ using Brisk.Views;
 using Brisk.Windows;
 using BriskEngine.Models;
 using Xunit;
-// WinForms is on in this project, so bare Brushes and Size are ambiguous.
+// WinForms is on in this project, so these four bare names are ambiguous.
+using Application = System.Windows.Application;
 using Brushes = System.Windows.Media.Brushes;
+using RadioButton = System.Windows.Controls.RadioButton;
 using Size = System.Windows.Size;
 
 namespace Brisk.Tests;
@@ -134,13 +136,84 @@ public class SnapshotTests
                 "the readings are in the image but greyed out");
     }
 
-    /// Every TextBlock in the tree that NumeralTick drives.
-    private static IEnumerable<TextBlock> Numerals(DependencyObject root)
+    /// The panel language, on the three pages it was supposed to reach.
+    /// This is where that bet is settled, and the three do not settle it the
+    /// same way. Sağlık and Performans get it for nothing: their cards ARE
+    /// FindingCard and CompletionReport, both of which live in Shared.xaml,
+    /// so the panel reached them without a line moving on either page.
+    /// Depolama writes its own three cards, and had to be pointed at the
+    /// panel by hand — a style attribute each, no structure touched, but not
+    /// free, and this is the image that says which of the two stories a page
+    /// is telling.
+    ///
+    /// The nav TILE is set rather than the page's Visibility, because that is
+    /// the only route the app itself has — Nav_Checked is what shows a page,
+    /// and a test reaching past it into Visibility would photograph a state
+    /// the running app cannot be in.
+    [Theory]
+    [InlineData("NavHealth", "HealthView", "page-health")]
+    [InlineData("NavPerf", "PerfView", "page-performance")]
+    [InlineData("NavClean", "CleanView", "page-storage")]
+    public void APage_PhotographsWearingThePanels(
+        string tile, string page, string name)
     {
-        if (root is TextBlock tb && NumeralTick.GetValue(tb) is not null)
-            yield return tb;
+        var path = SnapshotRenderer.Capture(
+            () =>
+            {
+                var window = CockpitWindow();
+                ((RadioButton)window.FindName(tile)!).IsChecked = true;
+                return window;
+            },
+            new Size(1100, 700), name,
+            inspect: element => AssertThePanelsAreInThePicture(element, page),
+            settled: TheGlassIsLive);
+
+        Assert.True(File.Exists(path));
+        var colors = SnapshotRenderer.DistinctColors(path);
+        Assert.True(colors > 16,
+            $"the page render has {colors} distinct colours — the whole window " +
+            "photographed as a flat fill, which is what a window that never " +
+            "laid out looks like");
+    }
+
+    /// What DistinctColors cannot say about a page of panels: whether any
+    /// panel is actually in it.
+    ///
+    /// The corner bracket is the one mark the panel draws that nothing else
+    /// in the app draws, so counting the Paths carrying the bracket style
+    /// counts panels, four to a panel — and VISIBLE ones, because the
+    /// completion report is a panel too and it sits collapsed until a fix run
+    /// gives it something to say. A page that quietly went back to a plain
+    /// bordered card photographs with none of them.
+    private static void AssertThePanelsAreInThePicture(
+        FrameworkElement element, string page)
+    {
+        Assert.True(((FrameworkElement)((Window)element).FindName(page)!).IsVisible,
+            $"{page} is not the page showing — the nav tile was checked, so " +
+            "either Nav_Checked stopped answering it or the window was " +
+            "photographed before it did");
+
+        var style = (Style)Application.Current.Resources["PanelBracket"];
+        var brackets = Descendants(element)
+            .OfType<System.Windows.Shapes.Path>()
+            .Count(p => p.IsVisible && ReferenceEquals(p.Style, style));
+
+        Assert.True(brackets >= 4,
+            $"the page was photographed with {brackets} bracket strokes showing " +
+            "— a panel wears four, so whatever is in this image, the cards on " +
+            "it are not wearing the panel");
+    }
+
+    /// Every TextBlock in the tree that NumeralTick drives.
+    private static IEnumerable<TextBlock> Numerals(DependencyObject root) =>
+        Descendants(root).OfType<TextBlock>()
+            .Where(numeral => NumeralTick.GetValue(numeral) is not null);
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        yield return root;
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-            foreach (var found in Numerals(VisualTreeHelper.GetChild(root, i)))
+            foreach (var found in Descendants(VisualTreeHelper.GetChild(root, i)))
                 yield return found;
     }
 

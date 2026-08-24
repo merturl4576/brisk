@@ -47,6 +47,20 @@ public sealed class AtmosphereLayer : FrameworkElement
     /// How much of the texture colour a rain column adds to the sky.
     public const double RainOpacity = 0.04;
 
+    /// How much of the sky the rain thins out over as it nears the
+    /// horizon, as a fraction of the sky's height.
+    ///
+    /// Rain used to cross the horizon and fall down the floor, which
+    /// contradicted the one thing the floor is there to establish — weather
+    /// BEHIND a plane means it is not a plane. Cutting it off at the line
+    /// fixed that and bought a straight edge of column-ends in exchange,
+    /// which is precisely the defect the grid above had just been cured of;
+    /// at four percent it is invisible until you raise the gain, and then
+    /// it is a ruled line across the window. So the rain thins into the
+    /// distance instead and reaches nothing exactly AT the horizon, which
+    /// is both the cure and what distance does to weather.
+    private const double RainFadeHeight = 0.25;
+
     /// The grid floor's line opacity. The spec's band was 8-12%, and the top
     /// of that band turns out not to be affordable — anything past 0.107
     /// fails the floor even with rain and glow left alone.
@@ -90,8 +104,37 @@ public sealed class AtmosphereLayer : FrameworkElement
     /// at 1/d up the floor. GridDepthSpread is how far apart the lines are on
     /// the ground compared with how far the nearest one is from the viewer,
     /// and it is the only thing that decides how steeply they compress.
-    private const int GridDepthLines = 16;
+    ///
+    /// 26, not the 16 it opened at — and the count was never the fix. At 16
+    /// the farthest line landed 29px below the horizon on a 700px window
+    /// with a bare band above it, which read as a hard edge across the
+    /// floor at y≈504. No tuning ever moved it and none could have: tuning
+    /// changes how LOUD a line is, and this was about where the lines stop.
+    /// Raising the count does not close it either, it only moves it — the
+    /// remaining gap shrinks as 1/k, so it would take some 248 lines to get
+    /// under two pixels, and by then the far ones are packed several to a
+    /// pixel and the edge has become a bright bar instead. Measured at 26
+    /// with the pen fade alone, the edge was still there at a quarter of
+    /// its old strength, in the same place it always was.
+    ///
+    /// What ends a series is the series ending at nothing, so DepthFadeAt
+    /// below takes line k to zero at k = GridDepthLines. The farthest line
+    /// is then invisible wherever it lands, whatever the count is, and the
+    /// count goes back to being what it always claimed to be: how far the
+    /// floor is drawn. 26 is where the lines are still individually
+    /// resolvable for most of their run.
+    private const int GridDepthLines = 26;
     private const double GridDepthSpread = 0.45;
+
+    /// How far down the floor the pen reaches full strength, as a fraction
+    /// of the floor height. It is atmospheric distance rather than the seam
+    /// fix — DepthFadeAt is what ends the depth series — and it is the only
+    /// thing that reaches the FAN lines, which used to arrive at the
+    /// vanishing point at full weight and meet there in a star.
+    ///
+    /// It costs nothing against the legibility budget and cannot: fading
+    /// is subtraction. See BrightestComposite.
+    private const double GridFadeDepth = 0.35;
 
     /// Lines running away from the viewer, counted out from the centre. The
     /// outer ones leave through the side edges rather than the bottom, which
@@ -189,12 +232,19 @@ public sealed class AtmosphereLayer : FrameworkElement
     ///
     /// The spec names the worst case as the brightest rain texel over the
     /// brightest gradient stop. This goes one step further and stacks the
-    /// grid line and the glow on top of that, because the geometry allows all
-    /// three to meet: the fan lines converge exactly where the glow is
-    /// brightest, and the rain falls over everything. It is an upper bound,
-    /// not a pixel anyone can point at — no single pixel carries every
-    /// maximum at once — which makes the test stricter than the drawing and
-    /// never looser, and that is the direction a legibility guard should err.
+    /// grid line and the glow on top of that. It is an upper bound, not a
+    /// pixel anyone can point at — no single pixel carries every maximum
+    /// at once — which makes the test stricter than the drawing and never
+    /// looser, and that is the direction a legibility guard should err.
+    ///
+    /// The bound got LOOSER when the seams were fixed, and the arithmetic
+    /// was deliberately left alone. Rain now fades out before the horizon
+    /// and the grid fades in after it, so rain and grid never share
+    /// a pixel at all and the grid no longer reaches full strength where
+    /// the glow is brightest. Both changes only SUBTRACT light.
+    /// Re-deriving the stack against the new geometry would buy back a few
+    /// thousandths of headroom nobody has asked for, and would trade a
+    /// bound that is obviously safe for one that has to be argued.
     ///
     /// Always opaque — alpha means nothing to a contrast ratio.
     public Color BrightestComposite()
@@ -234,10 +284,30 @@ public sealed class AtmosphereLayer : FrameworkElement
         dc.DrawRectangle(gradient, null, bounds);
     }
 
+    /// The rain falls in the SKY only, and arrives there rather than being
+    /// cut off — see RainFadeHeight. One mask does both halves: it reaches
+    /// zero at the horizon, and Pad keeps it at zero for the whole floor
+    /// below, so there is nothing left to clip.
     private void DrawRain(DrawingContext dc, Rect bounds)
     {
+        var horizon = HorizonOf(bounds);
+        var mask = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, horizon * (1 - RainFadeHeight)),
+            EndPoint = new Point(0, horizon),
+            MappingMode = BrushMappingMode.Absolute,
+            GradientStops =
+            {
+                new GradientStop(Colors.White, 0),
+                new GradientStop(Color.FromArgb(0x00, 0xFF, 0xFF, 0xFF), 1),
+            },
+        };
+        mask.Freeze();
+
+        dc.PushOpacityMask(mask);
         dc.PushOpacity(RainOpacity);
         dc.DrawRectangle(RainBrush(TextureColor), null, bounds);
+        dc.Pop();
         dc.Pop();
     }
 
@@ -261,25 +331,43 @@ public sealed class AtmosphereLayer : FrameworkElement
                     new Point(vanishing.X + i * bounds.Width / GridFanLines, bounds.Height),
                     isStroked: true, isSmoothJoin: false);
             }
-            // k = 1 is the near edge of the floor, k = GridDepthLines the
-            // farthest line still worth drawing.
-            for (var k = 1; k <= GridDepthLines; k++)
-            {
-                var y = horizon + depth / (1 + (k - 1) * GridDepthSpread);
-                ctx.BeginFigure(new Point(0, y), isFilled: false, isClosed: false);
-                ctx.LineTo(new Point(bounds.Width, y), isStroked: true, isSmoothJoin: false);
-            }
         }
         geometry.Freeze();
 
-        var pen = new Pen(Solid(TextureColor), GridLineThickness);
+        var pen = new Pen(DepthFade(TextureColor, horizon, depth),
+            GridLineThickness);
         pen.Freeze();
         dc.PushOpacity(GridOpacity);
         dc.PushClip(new RectangleGeometry(
             new Rect(0, horizon, bounds.Width, depth)));
         dc.DrawGeometry(null, pen, geometry);
+        // The depth lines are drawn one at a time rather than into the fan's
+        // geometry, because each carries its own place in the series and
+        // the last one has to be drawn at nothing. k = 1 is the near edge
+        // of the floor.
+        for (var k = 1; k <= GridDepthLines; k++)
+        {
+            var y = horizon + depth / (1 + (k - 1) * GridDepthSpread);
+            dc.PushOpacity(DepthFadeAt(k));
+            dc.DrawLine(pen, new Point(0, y), new Point(bounds.Width, y));
+            dc.Pop();
+        }
         dc.Pop();
         dc.Pop();
+    }
+
+    /// How much of the pen the k-th depth line gets: all of it at the near
+    /// edge of the floor, none of it at the far end. Squared rather than
+    /// straight so the near half of the floor keeps the weight it was
+    /// tuned at and the fade is spent where it is needed, on the far lines
+    /// that pack together into a band.
+    ///
+    /// It never exceeds 1, so it cannot brighten anything, which is what
+    /// keeps BrightestComposite an upper bound.
+    private static double DepthFadeAt(int k)
+    {
+        var t = (k - 1) / (double)(GridDepthLines - 1);
+        return 1 - t * t;
     }
 
     private void DrawHorizonGlow(DrawingContext dc, Rect bounds)
@@ -306,6 +394,33 @@ public sealed class AtmosphereLayer : FrameworkElement
         dc.DrawRectangle(brush, null, new Rect(
             bounds.Width / 2 - radiusX, horizon - radiusY, radiusX * 2, radiusY * 2));
         dc.Pop();
+    }
+
+    /// The grid pen: the texture colour at the near edge of the floor,
+    /// faded to nothing at the horizon. Absolute mapping, so the fade is
+    /// anchored to the FLOOR and not to each line's own bounding box — a
+    /// relative gradient on a one-pixel-tall horizontal line would paint
+    /// every line one flat colour, which is no fade at all. The default
+    /// Pad spread is the other half of it: everything below the fade band
+    /// keeps the texture at full strength.
+    private static Brush DepthFade(Color color, double horizon, double depth)
+    {
+        var brush = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, horizon),
+            EndPoint = new Point(0, horizon + depth * GridFadeDepth),
+            MappingMode = BrushMappingMode.Absolute,
+            GradientStops =
+            {
+                // The far stop keeps the texture's own rgb and drops only
+                // its alpha, for the reason the glow does the same: fading
+                // to Colors.Transparent interpolates through black.
+                new GradientStop(Color.FromArgb(0x00, color.R, color.G, color.B), 0),
+                new GradientStop(color, 1),
+            },
+        };
+        brush.Freeze();
+        return brush;
     }
 
     /// One expression, two callers: the glow has to sit on the SAME line the
