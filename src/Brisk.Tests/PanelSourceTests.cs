@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Xml.Linq;
 using Brisk.Localization;
 using Brisk.Tests.Snapshots;
@@ -230,6 +232,53 @@ public sealed class PanelSourceTests
             "nobody can see");
     }
 
+    /// Where the keyboard goes, which is the bill for making CockpitPanel a
+    /// templated ContentControl rather than a Style on Border.
+    ///
+    /// Control overrides Focusable to true and IsTabStop defaults true, so
+    /// the six panels that used to be plain Borders — every finding card,
+    /// the completion report and Depolama's three cards — became keyboard
+    /// tab stops the moment they adopted the panel, each one wearing the
+    /// dotted marching-ants rectangle that round 11 wrote Win11FocusVisual to
+    /// remove. A keyboard user reached six inert plates before reaching a
+    /// control that did anything. Nothing in the suite noticed: a style makes
+    /// no claim a running test watches, and every page still laid out and
+    /// photographed exactly as before. It is the class of change the brief
+    /// said to stop for, and I shipped it as "appearance".
+    ///
+    /// Asserted on a BUILT card rather than on two setters, and in both
+    /// directions: the panel is out of the tab order AND the expander inside
+    /// it is still in it. Reading the setters alone would be satisfied by a
+    /// panel that had taken the card's own controls out of the tab order with
+    /// it, which is a worse defect than the one being fixed.
+    [Fact]
+    public void ThePanel_IsNoKeyboardStop_ButItsExpanderStillIs()
+    {
+        var row = ARow();
+
+        SnapshotRenderer.OnUiThread(() =>
+        {
+            var card = BuildCard(row);
+            var panel = ThePanelIn(card);
+
+            Assert.False(panel.IsTabStop,
+                "the card root is a keyboard tab stop " + Dash +
+                "the panel is an inert plate, and Tab walks the user onto it " +
+                "before it reaches anything that does something");
+            Assert.False(panel.Focusable,
+                "the card root is focusable " + Dash +
+                "which is also what puts WPF's default dotted focus " +
+                "rectangle on it, the one artefact Win11FocusVisual exists " +
+                "to keep off this app");
+
+            var expander = Descendants(card).OfType<ToggleButton>().First();
+            Assert.True(expander.IsTabStop,
+                "the panel took the card's own expander out of the tab order " +
+                "with it " + Dash + "the row can no longer be opened from the " +
+                "keyboard at all");
+        });
+    }
+
     /// The one test here that builds anything, and it is the one thing the
     /// reskin could genuinely have broken.
     ///
@@ -248,20 +297,11 @@ public sealed class PanelSourceTests
     [Fact]
     public void TheFixedMorph_StillReachesTheCardsChildren()
     {
-        var loc = new Loc();
-        loc.SetLanguage("en");
-        var row = new FindingRow(TestData.Finding("power-plan"), loc,
-            canUndo: false, _ => { }, _ => { });
+        var row = ARow();
 
         SnapshotRenderer.OnUiThread(() =>
         {
-            var template = (DataTemplate)Application.Current.Resources["FindingCard"];
-            // A bare ContentPresenter is what an ItemsControl would put the
-            // row in anyway, and it is the FrameworkElement the template's
-            // namescope hangs off — so the lookup below is the same one the
-            // trigger performs, rather than a lookalike.
-            var card = new ContentPresenter { Content = row, ContentTemplate = template };
-            OffscreenLayout.LayOut(card, new Size(720, 200));
+            var card = BuildCard(row);
 
             // Raises IsFixed, which applies the morph's setters and begins its
             // storyboards — all of which have to find their targets first.
@@ -270,9 +310,67 @@ public sealed class PanelSourceTests
 
             // And the setter's own effect, so this is not merely "it did not
             // throw": a card that has been fixed stops offering to fix it.
-            var fix = (Button)template.FindName("FixButton", card);
+            var fix = (Button)CardTemplate().FindName("FixButton", card);
             Assert.False(fix.IsEnabled);
         });
+    }
+
+    /// An em dash, as a constant, because these messages are built by
+    /// concatenation and a bare one inside a string literal reads as a
+    /// hyphen at this width.
+    private const string Dash = "— ";
+
+    /// One finding row, ready to be dressed as a card.
+    private static FindingRow ARow()
+    {
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        return new FindingRow(TestData.Finding("power-plan"), loc,
+            canUndo: false, _ => { }, _ => { });
+    }
+
+    private static DataTemplate CardTemplate() =>
+        (DataTemplate)Application.Current.Resources["FindingCard"];
+
+    /// A bare ContentPresenter is what an ItemsControl would put the row in
+    /// anyway, and it is the FrameworkElement the template's namescope hangs
+    /// off — so a FindName through it is the same lookup a trigger performs,
+    /// rather than a lookalike. Runs on the harness UI thread.
+    private static ContentPresenter BuildCard(FindingRow row)
+    {
+        var card = new ContentPresenter
+        {
+            Content = row,
+            ContentTemplate = CardTemplate(),
+        };
+        OffscreenLayout.LayOut(card, new Size(720, 200));
+        return card;
+    }
+
+    /// The one element in the built card that wears CockpitPanel. Found by
+    /// walking the style's BasedOn chain rather than by type: ButtonBase is a
+    /// ContentControl too, so "the ContentControl in there" would have been
+    /// the expander and both of its buttons as well as the panel.
+    private static ContentControl ThePanelIn(DependencyObject card)
+    {
+        var panel = (Style)Application.Current.Resources["CockpitPanel"];
+        return Descendants(card).OfType<ContentControl>()
+            .Single(c => Wears(c.Style, panel));
+    }
+
+    private static bool Wears(Style? worn, Style panel)
+    {
+        for (var style = worn; style is not null; style = style.BasedOn)
+            if (ReferenceEquals(style, panel)) return true;
+        return false;
+    }
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        yield return root;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            foreach (var found in Descendants(VisualTreeHelper.GetChild(root, i)))
+                yield return found;
     }
 
     // ------------------------------------------------------------------

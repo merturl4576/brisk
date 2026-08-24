@@ -123,8 +123,21 @@
          Hairline, not BorderBrushKey. The two carry the same value today and
          different jobs — the dark palette names Hairline as the panel edge
          and BorderBrushKey as the control edge, and they are expected to
-         part the first time either is tuned. -->
+         part the first time either is tuned.
+
+         Focusable and IsTabStop are the price of the ContentControl, and
+         they are not optional. Control OVERRIDES Focusable to true and
+         IsTabStop defaults true, so every panel below would otherwise be
+         a keyboard tab stop wearing the dotted marching-ants rectangle
+         that round 11 wrote Win11FocusVisual to remove — six of them,
+         each standing between a keyboard user and a control that does
+         something. A plain Border was none of that, so this is behaviour
+         changed by a reskin, and it shipped once already. Nothing here
+         touches the panel CONTENTS: Focusable does not inherit, so the
+         expander, the buttons and the journal rows keep their focus. -->
     <Style x:Key="CockpitPanel" TargetType="ContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
         <Setter Property="BorderThickness" Value="1" />
