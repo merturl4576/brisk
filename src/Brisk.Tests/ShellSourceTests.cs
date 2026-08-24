@@ -144,11 +144,14 @@ public sealed class ShellSourceTests
     }
 
     /// The tile's glow is a DropShadowEffect, and an effect glows by Color —
-    /// it cannot be handed a Brush. So each theme now carries the accent glow
+    /// it cannot be handed a Brush. So each theme carries the accent glow
     /// twice: once as the AccentGlow brush the atmosphere binds, and once as
-    /// the AccentGlowColor the effects are built from. Two copies of one
-    /// value is a drift waiting to happen, and a drifted glow would be a
-    /// second turquoise nobody chose — so they are pinned to each other.
+    /// the AccentGlowColor that Dark.xaml's effects are built from. Two
+    /// copies of one value is a drift waiting to happen, and a drifted glow
+    /// would be a second turquoise nobody chose — so they are pinned to each
+    /// other. Light keeps its copy of the pair even though nothing there
+    /// builds an effect from it any more (see the test below): the pin is
+    /// what stops the two from drifting apart while nobody is looking.
     [Theory]
     [InlineData("Dark.xaml")]
     [InlineData("Light.xaml")]
@@ -156,6 +159,41 @@ public sealed class ShellSourceTests
     {
         Assert.Equal(ThemeValue(theme, "AccentGlow"),
             ThemeValue(theme, "AccentGlowColor"));
+    }
+
+    /// "Whether there is a glow at all is a theme decision, and the light
+    /// dictionary answers no" — Dark.xaml has said that since the round that
+    /// set the nav tiles floating. For that whole round the light dictionary
+    /// could not actually say it, and this is the check that it now can.
+    ///
+    /// A DropShadowEffect CANNOT be switched off by its Color. WPF reads the
+    /// RGB of that Color and ignores its alpha, so the #00000000 that stood
+    /// in those keys was pure BLACK at the effect's own Opacity: the light
+    /// theme wore a soft black halo on the title-bar mark and on the selected
+    /// nav tile, and every render in the round was dark, so nothing here
+    /// could see it. A photograph caught it. This is what stops it coming
+    /// back, since restoring the effect is a two-line edit that breaks
+    /// nothing and looks like a tidy-up.
+    ///
+    /// What is asserted is the DECLARATION and nothing past it: in Light.xaml
+    /// both keys are x:Null, in Dark.xaml both are still DropShadowEffects.
+    /// It makes no claim about rendered pixels — that a null resource leaves
+    /// the Effect property null is WPF's business, and it was settled once,
+    /// by re-rendering the light cockpit and measuring the halo gone rather
+    /// than by asserting it here.
+    ///
+    /// The Dark half is not padding. Nulling BOTH dictionaries would satisfy
+    /// a light-only assertion perfectly while deleting the glow from the
+    /// theme whose whole atmosphere is built on having one.
+    [Fact]
+    public void TheGlowKeys_AreNullInLight_AndStillEffectsInDark()
+    {
+        foreach (var key in new[] { "GlowSoft", "GlowStrong" })
+        {
+            Assert.Equal(X + "Null", ThemeDeclaration("Light.xaml", key).Name);
+            Assert.Equal("DropShadowEffect",
+                ThemeDeclaration("Dark.xaml", key).Name.LocalName);
+        }
     }
 
     /// The signature accent is the PALETTE's, not the desktop's. ThemeManager
@@ -283,12 +321,15 @@ public sealed class ShellSourceTests
 
     /// A theme entry's value, whether it sits on the Color attribute (a
     /// SolidColorBrush) or in the element's content (a bare Color).
-    private static string ThemeValue(string file, string key)
-    {
-        var element = XDocument.Load(Path.Combine(BriskDir(), "Theming", file)).Root!
+    private static string ThemeValue(string file, string key) =>
+        ((string?)ThemeDeclaration(file, key).Attribute("Color")
+            ?? ThemeDeclaration(file, key).Value).Trim();
+
+    /// The dictionary ELEMENT behind a key, rather than the value inside it —
+    /// for the one question that is about what KIND of thing a key holds.
+    private static XElement ThemeDeclaration(string file, string key) =>
+        XDocument.Load(Path.Combine(BriskDir(), "Theming", file)).Root!
             .Elements().Single(e => (string?)e.Attribute(X + "Key") == key);
-        return ((string?)element.Attribute("Color") ?? element.Value).Trim();
-    }
 
     /// The setters a template trigger for `state` applies to the tile border.
     private static XElement[] TileSetters(XElement template, string state) =>

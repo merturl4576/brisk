@@ -52,15 +52,30 @@
     <SolidColorBrush x:Key="AccentDim" Color="#76AAB3" />
     <SolidColorBrush x:Key="AccentGlow" Color="#00000000" />
     <SolidColorBrush x:Key="AccentTextBrush" Color="#FFFFFF" />
-    <!-- Transparent here too, and the two glow objects below inherit that:
-         a glow is light added to a dark room. The keys exist so a style can
-         name one glow in both themes and have it simply vanish in this one,
-         rather than every glowing element carrying a theme branch. -->
+    <!-- Kept, and pinned to the AccentGlow brush above by ShellSourceTests
+         so the pair cannot drift. Nothing in THIS dictionary builds an
+         effect from it any more; the two keys below say why. -->
     <Color x:Key="AccentGlowColor">#00000000</Color>
-    <DropShadowEffect x:Key="GlowSoft" ShadowDepth="0" BlurRadius="14"
-                      Opacity="0.35" Color="{StaticResource AccentGlowColor}" />
-    <DropShadowEffect x:Key="GlowStrong" ShadowDepth="0" BlurRadius="22"
-                      Opacity="0.60" Color="{StaticResource AccentGlowColor}" />
+    <!-- x:Null, and emphatically not a transparent DropShadowEffect. An
+         effect CANNOT be switched off by its Color: WPF reads only the RGB
+         of that Color and ignores its alpha, so #00000000 is BLACK at the
+         effect's own Opacity. These two keys did hold such an effect, from
+         the round that set the nav tiles floating until the round's closing
+         light render finally photographed one — a soft black halo on the
+         title-bar mark and on the selected nav tile, ramping to (174,174,174)
+         over fourteen pixels, that nobody had chosen. The tuning gate's
+         decision was that light has no glow; #00000000 was that decision
+         written in the one place that cannot express it.
+         Painting the shadow the page colour would not do either: it would
+         still be an effect rendering for nothing, and it would come back as
+         a halo the moment its element sat on any ground that is not Bg.
+         The keys REMAIN, because a style names one glow in both themes and
+         must resolve to something here — ResourceKeyTests fails if either
+         key goes missing, and a {DynamicResource} that resolves nothing
+         fails silently. Null is what "no glow" looks like when it is said
+         in a language that has the word. -->
+    <x:Null x:Key="GlowSoft" />
+    <x:Null x:Key="GlowStrong" />
     <!-- Unmoved, and that is the point: Info is blue in every convention
          this app's users have met, so the accent left the neighbourhood
          instead. -->
