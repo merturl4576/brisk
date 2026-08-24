@@ -737,7 +737,13 @@
          hold. Those two figures are arithmetic written down beside the values
          and nothing checks them. What IS checked is the floor:
          InstrumentSourceTests reads these brushes and the ground under them
-         out of source and fails if either arc drops through 3:1. -->
+         out of source and fails if either arc drops through 3:1.
+
+         Lightening the panel is what spends this arc's margin, and the margin
+         is wider than the round that set it advertised: at half strength this
+         turquoise still clears the floor on #12293B (3.29:1) and does not
+         cross it until roughly #183853 (2.95:1). Re-measure before moving the
+         fill; the figure that matters is this arc's, not the CPU arc's. -->
     <SolidColorBrush x:Key="HeroAccentRingDim" Color="#805FD4E8" />
 
     <!-- The ONE permitted gradient: a soft radial vignette, a touch lighter
