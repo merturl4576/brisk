@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Brisk.Views;
@@ -80,7 +81,20 @@ public static class SnapshotRenderer
                 {
                     // In the finally so a render that throws cannot leave a
                     // live window behind on the STA thread.
+                    //
+                    // Close() is a REQUEST, and brisk's own MainWindow refuses
+                    // it: the app lives in the tray, so OnClosing cancels and
+                    // hides instead. That left a live HWND owned by a thread
+                    // about to end, and the OS then tore it down with no
+                    // dispatcher pumping and no WPF shutdown — which crashed
+                    // the test host, intermittently, several tests later.
+                    // Disposing the HwndSource destroys the window properly
+                    // while the thread is still alive; it is a no-op for a
+                    // window that did close, because a closed window has no
+                    // presentation source left to find.
                     window?.Close();
+                    if (window is not null)
+                        (PresentationSource.FromVisual(window) as HwndSource)?.Dispose();
                 }
             });
         }
