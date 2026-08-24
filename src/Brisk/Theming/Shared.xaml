@@ -252,7 +252,7 @@
     </Style>
 
     <!-- Default WPF chrome (Aero2) assumes a light ground; on the cockpit's
-         graphite it would glare. These implicit styles rebuild the three
+         navy it would glare. These implicit styles rebuild the three
          stock controls the app still uses — ComboBox, ScrollBar, ToolTip —
          from the theme brushes, so they follow light AND dark. Flat
          surfaces, hairline borders, no gloss. -->
@@ -260,7 +260,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -295,7 +295,7 @@
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}"
                                Placement="Bottom" AllowsTransparency="True"
                                PopupAnimation="Fade" Focusable="False">
-                            <Border Background="{DynamicResource BgElevated}"
+                            <Border Background="{DynamicResource Surface}"
                                     BorderBrush="{DynamicResource BorderBrushKey}"
                                     BorderThickness="1" CornerRadius="6"
                                     Margin="0,4,0,4" Padding="4"
@@ -441,7 +441,7 @@
          Aero2 menu chrome (gradients, icon gutter) would glare on the
          cockpit and is more furniture than one action needs. -->
     <Style TargetType="ContextMenu">
-        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -486,7 +486,7 @@
     </Style>
 
     <Style TargetType="ToolTip">
-        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -532,9 +532,9 @@
     <!-- The hero is an always-dark instrument panel in BOTH       -->
     <!-- themes — under the explicit light theme these keys are    -->
     <!-- what keep it dark, so they must not follow the theme      -->
-    <!-- dictionaries. Since round 8 the global DARK palette       -->
-    <!-- speaks the same language (Bg/BgElevated = this graphite,  -->
-    <!-- Good/SeverityWarning/SeverityCritical = these brights).   -->
+    <!-- dictionaries. The dark palette still shares the brights   -->
+    <!-- (Good/SeverityWarning/SeverityCritical); its grounds      -->
+    <!-- parted from this graphite when the cockpit turned navy.   -->
     <!-- ======================================================== -->
     <Color x:Key="HeroGoodColor">#4ADE80</Color>
     <Color x:Key="HeroWarnColor">#FBBF24</Color>
@@ -556,8 +556,9 @@
 
     <!-- The ONE permitted gradient: a soft radial vignette, a touch lighter
          behind the ring and settling into deep graphite at the edges (~3–4%
-         luminance shift, not a spotlight). The stops are exactly
-         BgElevated → Bg of the dark palette. -->
+         luminance shift, not a spotlight). The stops are the hero's own
+         graphite — they matched the dark palette's Surface and Bg until
+         that palette turned navy. -->
     <RadialGradientBrush x:Key="HeroSurface" Center="0.25,0.5"
                          GradientOrigin="0.25,0.5" RadiusX="0.75" RadiusY="1.2">
         <GradientStop Color="#151A21" Offset="0" />
@@ -629,7 +630,7 @@
                 BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1">
             <Border.Style>
                 <Style TargetType="Border">
-                    <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+                    <Setter Property="Background" Value="{DynamicResource Surface}" />
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{DynamicResource BgHover}" />
@@ -949,7 +950,7 @@
          while both faces are empty, so there is never an empty frame. -->
     <DataTemplate x:Key="CompletionReport">
         <Border x:Name="ReportChrome" CornerRadius="8" Margin="0,14,0,14"
-                Background="{DynamicResource BgElevated}"
+                Background="{DynamicResource Surface}"
                 BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
                 Padding="16,14">
             <Border.RenderTransform>
@@ -1141,10 +1142,9 @@
 
     <!-- Nav item on the rail. Tag carries an optional Segoe Fluent glyph
          (iconography, not a localizable string); items without one — the
-         brand — collapse the icon slot. Hover and the checked pill both use
-         BgElevated, the one fill that reads on the recessed BgRail in both
-         themes; selection is carried by the accent bar and the text weight,
-         the Win11 nav-view way. -->
+         brand — collapse the icon slot. Hover and the checked pill both
+         fill with Surface; selection is carried by the accent bar and the
+         text weight, the Win11 nav-view way. -->
     <Style x:Key="NavRadio" TargetType="RadioButton">
         <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
@@ -1182,11 +1182,11 @@
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource BgElevated}" />
+                                    Value="{DynamicResource Surface}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource BgElevated}" />
+                                    Value="{DynamicResource Surface}" />
                             <Setter TargetName="Indicator" Property="Visibility"
                                     Value="Visible" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />

@@ -1,27 +1,48 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Round 8: the dark theme IS the cockpit. The hero's graphite world
-         (base #0E1116) is promoted to the whole app, so the overview's
-         instrument panel no longer floats as an island — every page sits on
-         the same ground. Key NAMES are the Task 8 contract; values only. -->
-    <SolidColorBrush x:Key="Bg" Color="#0E1116" />
-    <!-- The nav rail sits one step below the page ground, like the recessed
-         side of an instrument bay; the content area reads as the lit panel. -->
-    <SolidColorBrush x:Key="BgRail" Color="#0B0E12" />
-    <SolidColorBrush x:Key="BgElevated" Color="#151A21" />
-    <SolidColorBrush x:Key="BgHover" Color="#1B2129" />
-    <!-- Hairlines: ~8–10% white over Bg, pre-composed to solid graphite so
-         stacked translucent borders can never double-brighten. -->
-    <SolidColorBrush x:Key="BorderBrushKey" Color="#1E242C" />
-    <SolidColorBrush x:Key="Divider" Color="#1A2027" />
-    <SolidColorBrush x:Key="Text" Color="#E8EAED" />
-    <SolidColorBrush x:Key="TextMuted" Color="#9AA3AD" />
-    <SolidColorBrush x:Key="TextFaint" Color="#5E6772" />
-    <SolidColorBrush x:Key="AccentBrush" Color="#4CC2FF" />
+    <!-- The cockpit palette: navy ground, turquoise signature. The dark theme
+         IS the cockpit — every page sits on the same night sky instead of the
+         graphite the app wore through round 11. Key NAMES are the contract
+         every page binds to; the values are starting points, tuned against
+         rendered images rather than argued about here. -->
+
+    <!-- Bg0 is the floor the atmosphere falls to at the window's edges —
+         deeper than any panel, and never a content fill. Bg is the page
+         ground everything else is measured against. -->
+    <SolidColorBrush x:Key="Bg0" Color="#050B16" />
+    <SolidColorBrush x:Key="Bg" Color="#0A1626" />
+    <!-- Surface is the panel fill, one step up from the ground; SurfaceHi is
+         the step above it, for header strips and the active tile — where a
+         thing must read as lifted without spending the accent on it. -->
+    <SolidColorBrush x:Key="Surface" Color="#0C2434" />
+    <SolidColorBrush x:Key="SurfaceHi" Color="#1B3A4A" />
+    <SolidColorBrush x:Key="BgHover" Color="#123044" />
+    <!-- Hairlines: pre-composed to solid navy so stacked translucent borders
+         can never double-brighten. Two keys, two jobs — Hairline draws panel
+         edges, BorderBrushKey draws control borders — starting at one value
+         and expected to part as they are tuned. -->
+    <SolidColorBrush x:Key="Hairline" Color="#2C4A58" />
+    <SolidColorBrush x:Key="BorderBrushKey" Color="#2C4A58" />
+    <SolidColorBrush x:Key="Divider" Color="#1E3A48" />
+    <SolidColorBrush x:Key="Text" Color="#E8F0F4" />
+    <SolidColorBrush x:Key="TextMuted" Color="#7E93A0" />
+    <SolidColorBrush x:Key="TextFaint" Color="#54707E" />
+    <!-- The signature turquoise and its two quieter voices: AccentDim for
+         decoration that must not compete — passive arcs, grid lines — and
+         AccentGlow for a permitted glow, its own key so the glow can be
+         retuned, or switched off as the light theme does, without dragging
+         the accent with it. AccentTextBrush stays dark: it is the foreground
+         painted ON accent fills, and turquoise wants a dark ink exactly as
+         the old blue did. -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#5FD4E8" />
+    <SolidColorBrush x:Key="AccentDim" Color="#3A8FA3" />
+    <SolidColorBrush x:Key="AccentGlow" Color="#5FD4E8" />
     <SolidColorBrush x:Key="AccentTextBrush" Color="#0B0B0B" />
-    <!-- Severity/Good adopt the hero's bright variants (round 6), so the
-         ring, the finding dots and the score speak one color vocabulary. -->
-    <SolidColorBrush x:Key="SeverityInfo" Color="#4CC2FF" />
+    <!-- In brisk a color carries a claim, so the decorative signature may
+         never enter one. SeverityInfo keeps its own blue instead of following
+         the accent it used to share a value with, and Good/Warning/Critical
+         are the product's vocabulary — not styling, and not retuned. -->
+    <SolidColorBrush x:Key="SeverityInfo" Color="#5B8DEF" />
     <SolidColorBrush x:Key="SeverityWarning" Color="#FBBF24" />
     <SolidColorBrush x:Key="SeverityCritical" Color="#F87171" />
     <SolidColorBrush x:Key="Good" Color="#4ADE80" />

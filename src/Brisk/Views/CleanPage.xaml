@@ -9,7 +9,7 @@
     <DockPanel Margin="18,16">
         <!-- Every docked band and the scroll content share the app's one
              content column (see ContentMaxWidth in Shared.xaml). -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource BgElevated}"
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Surface}"
                 BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
                 MaxWidth="{StaticResource ContentMaxWidth}"
                 CornerRadius="8" Padding="16,12" Margin="0,0,0,10"
@@ -139,7 +139,7 @@
                      three-level list waits behind "Gelişmiş" below.
                      Presentation only — the button runs exactly today's
                      safe-level defaults (CleanService.CleanSafe). -->
-                <Border Background="{DynamicResource BgElevated}"
+                <Border Background="{DynamicResource Surface}"
                         BorderBrush="{DynamicResource BorderBrushKey}"
                         BorderThickness="1" CornerRadius="8" Padding="20,16">
                     <StackPanel>
@@ -368,7 +368,7 @@
                                   Converter={x:Static Brisk:BoolToVis.Instance}}">
                     <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{DynamicResource BgElevated}"
+                        <Border Background="{DynamicResource Surface}"
                                 BorderBrush="{DynamicResource BorderBrushKey}"
                                 BorderThickness="1" CornerRadius="8"
                                 Margin="0,0,0,8" Padding="16,14">
