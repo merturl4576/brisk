@@ -45,6 +45,9 @@ public class BootDegradationRuleTests
         Assert.Equal(4, finding.ImpactStars);
         Assert.False(finding.CanFix);
         Assert.Null(finding.FixDescription);
+        // The rule's own sentence says brisk will not switch these off, so the
+        // score must not charge 12 points for a boot brisk cannot shorten.
+        Assert.Equal(FindingKind.Notice, finding.Kind);
         Assert.Contains("Spotify", finding.Evidence);
         Assert.Contains("57 s", finding.Evidence);       // the median, not the worst
         Assert.Equal("rule.boot-degradation.evidence", finding.EvidenceKey);

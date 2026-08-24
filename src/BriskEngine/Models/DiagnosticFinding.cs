@@ -22,4 +22,8 @@ public sealed record DiagnosticFinding(
     // The measured number this finding leads with on presentation surfaces.
     // Optional and per-rule: a finding whose honest content is a sentence
     // (thermals) carries none, and no surface invents one for it.
-    Headline? Headline = null);
+    Headline? Headline = null,
+    // Problem or Notice. Trailing and defaulted, so a rule that says nothing
+    // here keeps the judgement it always made; the four rules that report a
+    // fact brisk cannot act on opt in explicitly.
+    FindingKind Kind = FindingKind.Problem);

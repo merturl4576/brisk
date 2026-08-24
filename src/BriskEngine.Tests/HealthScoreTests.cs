@@ -36,4 +36,46 @@ public class HealthScoreTests
         var findings = Enumerable.Repeat(F(Severity.Critical, 5), 30).ToList();
         Assert.Equal(5, HealthScore.Compute(findings));
     }
+
+    /// A notice is a fact brisk can only report — 47 USB devices, memory
+    /// below its rating on a board that will not change. Charging the score
+    /// for it tells the user to fix hardware brisk itself says it cannot.
+    [Fact]
+    public void Notices_DoNotLowerTheScore()
+    {
+        var problem = new DiagnosticFinding("a", "rule.a.title", "A", "ev",
+            Severity.Warning, RuleCategory.Advise, 4, false, null);
+        var notice = new DiagnosticFinding("b", "rule.b.title", "B", "ev",
+            Severity.Warning, RuleCategory.Advise, 4, false, null,
+            Kind: FindingKind.Notice);
+
+        Assert.Equal(
+            HealthScore.Compute(new[] { problem }),
+            HealthScore.Compute(new[] { problem, notice }));
+    }
+
+    /// The spec's stated reason for the enum: 100 stays reachable, so a
+    /// user is never permanently penalised for what they cannot change.
+    [Fact]
+    public void AllNotices_ScoreIsAHundred()
+    {
+        var notices = new[]
+        {
+            new DiagnosticFinding("a", "rule.a.title", "A", "ev",
+                Severity.Critical, RuleCategory.Advise, 5, false, null,
+                Kind: FindingKind.Notice),
+            new DiagnosticFinding("b", "rule.b.title", "B", "ev",
+                Severity.Warning, RuleCategory.Advise, 4, false, null,
+                Kind: FindingKind.Notice),
+        };
+        Assert.Equal(100, HealthScore.Compute(notices));
+    }
+
+    /// Nothing opts in by accident: every rule that says nothing about Kind
+    /// keeps costing the score exactly what it did before.
+    [Fact]
+    public void TheDefaultKind_IsProblem() =>
+        Assert.Equal(FindingKind.Problem,
+            new DiagnosticFinding("a", "rule.a.title", "A", "ev",
+                Severity.Info, RuleCategory.Auto, 1, false, null).Kind);
 }

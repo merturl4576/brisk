@@ -18,6 +18,10 @@ public sealed class RamPressureRule : AdviseRuleBase
             $"RAM is {load:F0}% full. Biggest consumers: {top}. " +
             "Closing or un-starting some of these frees memory.",
             Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null,
-            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { $"{load:F0}", top });
+            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { $"{load:F0}", top },
+            // A notice: what memory happened to be doing at the instant of the
+            // scan, with no fix behind it — Fix() throws. Closing a browser and
+            // rescanning would move the number, which is not health.
+            Kind: FindingKind.Notice);
     }
 }

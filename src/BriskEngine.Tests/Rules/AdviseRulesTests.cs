@@ -1,5 +1,6 @@
 using System;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Models;
 using BriskEngine.Paths;
 using Xunit;
 
@@ -18,6 +19,9 @@ public class AdviseRulesTests
         var finding = rule.Detect(ctx);
         Assert.NotNull(finding);
         Assert.False(finding!.CanFix);
+        // A measured fact about what is running right now, with nothing brisk
+        // can do about it — so it reports, and does not charge for it.
+        Assert.Equal(FindingKind.Notice, finding.Kind);
         Assert.Throws<InvalidOperationException>(() => rule.Fix(ctx));
     }
 
@@ -212,6 +216,9 @@ public class AdviseRulesTests
         Assert.Equal("rule.thermals.evidence", finding!.EvidenceKey);
         Assert.Equal("CPU 88°C, GPU 78°C", Assert.Single(finding.EvidenceArgs!));
         Assert.DoesNotContain("could not read", finding.Evidence);
+        // A temperature reading, not a fault brisk found: the advice is fans
+        // and thermal paste, which is not something a score should demand.
+        Assert.Equal(FindingKind.Notice, finding.Kind);
     }
 
     /// Memory integrity is readable without a driver, so the one explanation

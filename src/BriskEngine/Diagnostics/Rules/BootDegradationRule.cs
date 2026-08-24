@@ -103,7 +103,11 @@ public sealed class BootDegradationRule : AdviseRuleBase
             Headline: new Headline(
                 median, $"boot time — the middle of the last {sampled} boots",
                 $"rule.{Id}.headline.value", new[] { medianDigits },
-                $"rule.{Id}.headline.caption", new[] { sampled }));
+                $"rule.{Id}.headline.caption", new[] { sampled }),
+            // A notice: the evidence above says in as many words that brisk
+            // will not switch these programs off. A rule cannot spend a
+            // sentence refusing to act and 12 points insisting it should.
+            Kind: FindingKind.Notice);
 
     /// The middle reading, and on an even sample the lower of the two middles
     /// — a boot this machine actually had, where the average of two would be a
