@@ -19,3 +19,6 @@ artifacts/
 
 # Workbench state files record the machine's true pre-plant state — local only.
 tools/workbench/.state/
+
+# Design snapshots — evidence for human eyes, never committed
+.snapshots/
