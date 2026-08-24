@@ -80,7 +80,10 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _reportSummary = "";
     private string _liveCpuText = "—";
     private double _liveCpuPercent;
+    private bool _hasCpuArc;
     private string _liveRamText = "—";
+    private double _liveRamPercent;
+    private bool _hasRamArc;
     private string _liveTempText = "—";
     private string _liveTempBadgeText = "";
     private string _liveTempCaption;
@@ -189,15 +192,29 @@ public sealed class OverviewViewModel : ViewModelBase
         private set => Set(ref _reportSummary, value);
     }
     public string LiveCpuText { get => _liveCpuText; private set => Set(ref _liveCpuText, value); }
-    /// Numeric twin of LiveCpuText for the hero's inner CPU ring — real data
-    /// driving visible motion every tick. 0 (an empty arc) until the CPU
-    /// sensor has a delta to report.
+    /// Numeric twin of LiveCpuText for the hero's inner CPU arc — real data
+    /// driving visible motion every tick. Meaningful only while HasCpuArc is
+    /// true: a machine whose CPU counter has not spoken has no percentage,
+    /// and the arc is absent rather than resting at zero.
     public double LiveCpuPercent
     {
         get => _liveCpuPercent;
         private set => Set(ref _liveCpuPercent, value);
     }
+    /// Whether the CPU sensor spoke at all. The arc's Visibility, and the
+    /// whole of decision 4 on this page: an empty arc is a picture of a
+    /// measurement that does not exist, so there is no arc to draw.
+    public bool HasCpuArc { get => _hasCpuArc; private set => Set(ref _hasCpuArc, value); }
     public string LiveRamText { get => _liveRamText; private set => Set(ref _liveRamText, value); }
+    /// Numeric twin of LiveRamText for the hero's inner RAM arc, under
+    /// exactly the rule LiveCpuPercent obeys — see HasRamArc.
+    public double LiveRamPercent
+    {
+        get => _liveRamPercent;
+        private set => Set(ref _liveRamPercent, value);
+    }
+    /// Whether the RAM sensor spoke at all; the RAM arc's Visibility.
+    public bool HasRamArc { get => _hasRamArc; private set => Set(ref _hasRamArc, value); }
     public string LiveTempText { get => _liveTempText; private set => Set(ref _liveTempText, value); }
     /// The gauge's compact center readout ("GPU 78°C"). Empty (and hidden)
     /// until a real sensor speaks — the cockpit never renders a dash there.
@@ -252,8 +269,14 @@ public sealed class OverviewViewModel : ViewModelBase
         {
             var reading = await Task.Run(_live.Read);
             LiveCpuText = Percent(reading.CpuPercent);
+            // The arc flag goes UP with the reading and DOWN with a null, so
+            // a sensor that stops answering takes its arc off the glass
+            // rather than leaving the last sweep on it as if it were current.
             LiveCpuPercent = reading.CpuPercent ?? 0;
+            HasCpuArc = reading.CpuPercent is not null;
             LiveRamText = Percent(reading.RamPercent);
+            LiveRamPercent = reading.RamPercent ?? 0;
+            HasRamArc = reading.RamPercent is not null;
             LiveTempText = reading.TempC is { } t
                 ? Math.Round(t).ToString(CultureInfo.InvariantCulture) + "°C"
                 : "—";

@@ -8,8 +8,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Brisk.Views;
-// WinForms is on in this project, so bare Application and Size are ambiguous.
+// WinForms is on in this project, so these four bare names are ambiguous.
 using Application = System.Windows.Application;
+using Color = System.Windows.Media.Color;
+using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 
 namespace Brisk.Tests.Snapshots;
@@ -153,6 +155,43 @@ public static class SnapshotRenderer
         var pixels = new int[frame.PixelWidth * frame.PixelHeight];
         frame.CopyPixels(pixels, frame.PixelWidth * 4, 0);
         return new HashSet<int>(pixels).Count;
+    }
+
+    /// How many pixels of a captured PNG lie in an annulus around `centre`
+    /// AND satisfy `ink`. DistinctColors asks whether the image is alive;
+    /// this asks what is in one particular place in it.
+    ///
+    /// It exists for the one claim in this repo that a view-model flag
+    /// cannot settle: that a sensor which said nothing draws no arc. An arc
+    /// is a band at a known radius, so the question "is there an arc here?"
+    /// is literally "is there ink between these two radii?" — and zero is
+    /// answerable, where "the ring looks empty" is not.
+    ///
+    /// Pixel centres, not corners: a band 5 px wide would otherwise sample
+    /// half a pixel off, which matters when the whole point is that two
+    /// concentric arcs 7 px apart are counted separately.
+    public static int InkInBand(string path, Point centre, double inner, double outer,
+        Func<Color, bool> ink)
+    {
+        using var stream = File.OpenRead(path);
+        var frame = BitmapFrame.Create(stream, BitmapCreateOptions.None,
+            BitmapCacheOption.OnLoad);
+        var pixels = new int[frame.PixelWidth * frame.PixelHeight];
+        frame.CopyPixels(pixels, frame.PixelWidth * 4, 0);
+
+        var found = 0;
+        for (var y = 0; y < frame.PixelHeight; y++)
+        for (var x = 0; x < frame.PixelWidth; x++)
+        {
+            var dx = x + 0.5 - centre.X;
+            var dy = y + 0.5 - centre.Y;
+            var radius = Math.Sqrt(dx * dx + dy * dy);
+            if (radius < inner || radius > outer) continue;
+            var argb = pixels[y * frame.PixelWidth + x];
+            if (ink(Color.FromRgb((byte)(argb >> 16), (byte)(argb >> 8), (byte)argb)))
+                found++;
+        }
+        return found;
     }
 
     /// The theme dictionaries, in the order ReportCard.xaml documents as the

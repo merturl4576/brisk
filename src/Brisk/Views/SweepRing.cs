@@ -5,12 +5,18 @@ using System.Windows.Media.Animation;
 
 namespace Brisk.Views;
 
-/// The hero's live CPU ring: a thin round-capped arc just inside the
-/// segmented gauge's ticks, sweeping the same 270° span. Pure data-driven
-/// motion — every LiveMetrics tick slews the arc to the new CPU% with a
-/// short ease-out (the same Value→animated-render-DP pattern as the gauge's
-/// LitCount sweep), so it stays alive even under reduce-motion, where only
-/// the perpetual ambient layer is skipped.
+/// One of the hero's live inner arcs — CPU and RAM each ride an instance —
+/// a thin round-capped arc just inside the segmented gauge's ticks, sweeping
+/// the same 270° span. Pure data-driven motion: every LiveMetrics tick slews
+/// the arc to the new percentage with a short ease-out (the same
+/// Value→animated-render-DP pattern as the gauge's LitCount sweep), so it
+/// stays alive even under reduce-motion, where only the perpetual ambient
+/// layer is skipped.
+///
+/// Whether an arc is drawn AT ALL is not this control's business: the page
+/// binds Visibility to the view model's Has…Arc flag, because a sensor that
+/// cannot be read gets no arc rather than an empty one. This control is
+/// what draws a reading; it is never asked to draw the absence of one.
 public sealed class SweepRing : FrameworkElement
 {
     /// Spec band 3–4 px, round caps.
@@ -23,7 +29,12 @@ public sealed class SweepRing : FrameworkElement
     /// Edge → arc-centerline distance, derived from the gauge's geometry:
     /// its ticks end at side/2 − 18.5 (half the 5 px tick thickness + 16 px
     /// length); a 6 px gap puts this ring at side/2 − 24.5.
-    private const double Inset = 24.5;
+    ///
+    /// One constant for both arcs, and the second arc is moved by giving it
+    /// a smaller BOX rather than a second inset — so a test that has to know
+    /// where an arc lands measures the same number this control draws with,
+    /// instead of a copy of it.
+    public const double Inset = 24.5;
 
     public static readonly DependencyProperty ValueProperty =
         DependencyProperty.Register(nameof(Value), typeof(double), typeof(SweepRing),
@@ -41,7 +52,8 @@ public sealed class SweepRing : FrameworkElement
             new FrameworkPropertyMetadata(null,
                 FrameworkPropertyMetadataOptions.AffectsRender));
 
-    /// Live CPU percentage (0–100), bound by the page.
+    /// The live percentage (0–100) this arc sweeps — CPU on one instance,
+    /// RAM on the other — bound by the page.
     public double Value
     {
         get => (double)GetValue(ValueProperty);

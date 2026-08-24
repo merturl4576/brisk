@@ -6,9 +6,10 @@
     <!-- The cockpit hero vocabulary (Hero* colors, brushes, HeroScore,
          HeroPod*) moved to Shared.xaml in round 11 — the page heroes on
          Sağlık, Performans and Depolama speak the same language. The ONE
-         permitted glow still lives on the lit arc only; the gauge builds
-         its DropShadowEffect in code (a shared XAML effect resource gets
-         frozen, and a frozen Freezable cannot be animated). -->
+         permitted glow, on this page, lives on the lit arc and on the
+         satellites' floor pools and nowhere else; the gauge builds its
+         DropShadowEffect in code (a shared XAML effect resource gets frozen, and a frozen
+         Freezable cannot be animated). -->
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,26,28,24" MaxWidth="{StaticResource ContentMaxWidth}">
             <!-- Cockpit hero: segmented ring + instrument pods + status
@@ -27,105 +28,163 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid Grid.Column="0" Width="260" Height="260">
-                        <!-- Ambient orbit: ~90 faint hairline dashes on a
-                             ring 6 px outside the gauge, revolving once per
-                             30 s. Dash 3.2 + gap 5.56 at 1 px thickness
-                             gives a 8.76 px period over the 2π·125.5 ≈
-                             788.5 px circumference → 90 dashes. -->
-                        <Ellipse Width="252" Height="252" IsHitTestVisible="False"
-                                 Stroke="{StaticResource HeroOrbit}"
-                                 StrokeThickness="1" StrokeDashArray="3.2 5.56"
-                                 RenderTransformOrigin="0.5,0.5">
-                            <Ellipse.RenderTransform>
-                                <RotateTransform x:Name="OrbitSpin" />
-                            </Ellipse.RenderTransform>
-                        </Ellipse>
-                        <!-- The comet on the same orbit, one revolution per
-                             10 s. Hidden while ambient motion is off — a
-                             parked comet would read as a stray arc. -->
-                        <Brisk:CometTail x:Name="CometLayer" Width="252" Height="252"
-                                         Opacity="0" IsHitTestVisible="False"
-                                         TailColor="{StaticResource HeroAccentColor}"
-                                         RenderTransformOrigin="0.5,0.5">
-                            <Brisk:CometTail.RenderTransform>
-                                <RotateTransform x:Name="CometSpin" />
-                            </Brisk:CometTail.RenderTransform>
-                        </Brisk:CometTail>
-                        <!-- Two stacked layers of one control: the unlit
-                             track, then the lit arc wearing the glow. Both
-                             bind Score, so their sweeps stay in step. -->
-                        <Brisk:SegmentedGauge Width="240" Height="240" Layer="Unlit"
-                                              UnlitBrush="{StaticResource HeroUnlit}"
-                                              Score="{Binding ScoreValue}" />
-                        <Brisk:SegmentedGauge x:Name="LitGauge" Width="240" Height="240"
-                                              Layer="Lit" Score="{Binding ScoreValue}">
-                            <Brisk:SegmentedGauge.Style>
-                                <Style TargetType="{x:Type Brisk:SegmentedGauge}">
-                                    <Setter Property="LitBrush"
-                                            Value="{StaticResource HeroGood}" />
-                                    <Setter Property="GlowColor"
-                                            Value="{StaticResource HeroGoodColor}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ScoreBrushKey}"
-                                                     Value="SeverityWarning">
-                                            <Setter Property="LitBrush"
-                                                    Value="{StaticResource HeroWarn}" />
-                                            <Setter Property="GlowColor"
-                                                    Value="{StaticResource HeroWarnColor}" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding ScoreBrushKey}"
-                                                     Value="SeverityCritical">
-                                            <Setter Property="LitBrush"
-                                                    Value="{StaticResource HeroCrit}" />
-                                            <Setter Property="GlowColor"
-                                                    Value="{StaticResource HeroCritColor}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Brisk:SegmentedGauge.Style>
-                        </Brisk:SegmentedGauge>
-                        <!-- Live CPU ring just inside the ticks: pure
-                             data-driven motion (every ~2 s tick slews it),
-                             so it keeps running under reduce-motion. -->
-                        <Brisk:SweepRing Width="240" Height="240"
-                                         IsHitTestVisible="False"
-                                         RingBrush="{StaticResource HeroAccentRing}"
-                                         Value="{Binding LiveCpuPercent}" />
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock Style="{StaticResource HeroScore}"
-                                       TextAlignment="Center" Text="{Binding ScoreText}" />
-                            <TextBlock TextAlignment="Center" Margin="0,2,0,0"
-                                       FontFamily="Segoe UI Variable Text, Segoe UI"
-                                       FontSize="11" Foreground="{StaticResource HeroMuted}"
-                                       Text="{Binding [overview.gauge.label], Source={x:Static loc:Loc.Instance}}" />
-                            <!-- Compact temperature readout ("GPU 78°C"),
-                                 only when a real sensor spoke. -->
-                            <TextBlock TextAlignment="Center" Margin="0,6,0,0"
-                                       FontFamily="Cascadia Mono, Consolas" FontSize="13"
-                                       Foreground="{StaticResource HeroMuted}"
-                                       Brisk:NumeralTick.Value="{Binding LiveTempBadgeText}">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
+                    <StackPanel Grid.Column="0">
+                        <Grid x:Name="InstrumentDial" Width="260" Height="260">
+                            <!-- Ambient orbit: ~90 faint hairline dashes on a
+                                 ring 6 px outside the gauge, revolving once per
+                                 30 s. Dash 3.2 + gap 5.56 at 1 px thickness
+                                 gives a 8.76 px period over the 2π·125.5 ≈
+                                 788.5 px circumference → 90 dashes. -->
+                            <Ellipse Width="252" Height="252" IsHitTestVisible="False"
+                                     Stroke="{StaticResource HeroOrbit}"
+                                     StrokeThickness="1" StrokeDashArray="3.2 5.56"
+                                     RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform x:Name="OrbitSpin" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- The comet on the same orbit, one revolution per
+                                 10 s. Hidden while ambient motion is off — a
+                                 parked comet would read as a stray arc. -->
+                            <Brisk:CometTail x:Name="CometLayer" Width="252" Height="252"
+                                             Opacity="0" IsHitTestVisible="False"
+                                             TailColor="{StaticResource HeroAccentColor}"
+                                             RenderTransformOrigin="0.5,0.5">
+                                <Brisk:CometTail.RenderTransform>
+                                    <RotateTransform x:Name="CometSpin" />
+                                </Brisk:CometTail.RenderTransform>
+                            </Brisk:CometTail>
+                            <!-- Two stacked layers of one control: the unlit
+                                 track, then the lit arc wearing the glow. Both
+                                 bind Score, so their sweeps stay in step. -->
+                            <Brisk:SegmentedGauge Width="240" Height="240" Layer="Unlit"
+                                                  UnlitBrush="{StaticResource HeroUnlit}"
+                                                  Score="{Binding ScoreValue}" />
+                            <Brisk:SegmentedGauge x:Name="LitGauge" Width="240" Height="240"
+                                                  Layer="Lit" Score="{Binding ScoreValue}">
+                                <Brisk:SegmentedGauge.Style>
+                                    <Style TargetType="{x:Type Brisk:SegmentedGauge}">
+                                        <Setter Property="LitBrush"
+                                                Value="{StaticResource HeroGood}" />
+                                        <Setter Property="GlowColor"
+                                                Value="{StaticResource HeroGoodColor}" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding LiveTempBadgeText}"
-                                                         Value="">
-                                                <Setter Property="Visibility"
-                                                        Value="Collapsed" />
+                                            <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                         Value="SeverityWarning">
+                                                <Setter Property="LitBrush"
+                                                        Value="{StaticResource HeroWarn}" />
+                                                <Setter Property="GlowColor"
+                                                        Value="{StaticResource HeroWarnColor}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                         Value="SeverityCritical">
+                                                <Setter Property="LitBrush"
+                                                        Value="{StaticResource HeroCrit}" />
+                                                <Setter Property="GlowColor"
+                                                        Value="{StaticResource HeroCritColor}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
-                    </Grid>
+                                </Brisk:SegmentedGauge.Style>
+                            </Brisk:SegmentedGauge>
+                            <!-- The two live arcs, just inside the ticks: pure
+                                 data-driven motion (every ~2 s tick slews them),
+                                 so they keep running under reduce-motion.
+                                 The hero accent in its ring voice and in its
+                                 quieter echo, never a semantic colour — the
+                                 outer health ring is the instrument's only
+                                 claim-carrier.
+
+                                 Visibility, not a zero. A sensor that cannot be
+                                 read gets NO arc: an empty arc is a picture of a
+                                 measurement that does not exist, and this page
+                                 drew one until this round. RAM rides a 226 box
+                                 rather than a second Inset constant, which puts
+                                 its centreline 7 px inside CPU's — 3.5 px of
+                                 clear panel between two 3.5 px strokes. -->
+                            <Brisk:SweepRing x:Name="CpuArc" Width="240" Height="240"
+                                             IsHitTestVisible="False"
+                                             Visibility="{Binding HasCpuArc,
+                                                 Converter={x:Static Brisk:BoolToVis.Instance}}"
+                                             RingBrush="{StaticResource HeroAccentRing}"
+                                             Value="{Binding LiveCpuPercent}" />
+                            <Brisk:SweepRing x:Name="RamArc" Width="226" Height="226"
+                                             IsHitTestVisible="False"
+                                             Visibility="{Binding HasRamArc,
+                                                 Converter={x:Static Brisk:BoolToVis.Instance}}"
+                                             RingBrush="{StaticResource HeroAccentRingDim}"
+                                             Value="{Binding LiveRamPercent}" />
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Style="{StaticResource HeroScore}"
+                                           TextAlignment="Center" Text="{Binding ScoreText}" />
+                                <TextBlock TextAlignment="Center" Margin="0,2,0,0"
+                                           FontFamily="Segoe UI Variable Text, Segoe UI"
+                                           FontSize="11" Foreground="{StaticResource HeroMuted}"
+                                           Text="{Binding [overview.gauge.label], Source={x:Static loc:Loc.Instance}}" />
+                                <!-- Compact temperature readout ("GPU 78°C"),
+                                     only when a real sensor spoke. -->
+                                <TextBlock TextAlignment="Center" Margin="0,6,0,0"
+                                           FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                           Foreground="{StaticResource HeroMuted}"
+                                           Brisk:NumeralTick.Value="{Binding LiveTempBadgeText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding LiveTempBadgeText}"
+                                                             Value="">
+                                                    <Setter Property="Visibility"
+                                                            Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                        <!-- The satellites. Temperature and free space are part
+                             of the instrument by composition rather than by
+                             being forced into rings: neither has a natural
+                             0–100 range, so a full sweep would have to be
+                             invented, and every candidate makes a claim brisk
+                             does not make. They keep the dash convention — the
+                             number and its source when a sensor spoke, "—" when
+                             none did. A dash STATES that nothing was read; an
+                             empty arc would draw a measurement that does not
+                             exist, which is the difference this whole round is
+                             about. -->
+                        <UniformGrid Rows="1" Columns="2" Width="260" Margin="0,6,0,0">
+                            <Grid Margin="0,0,4,0">
+                                <Ellipse Height="54" VerticalAlignment="Center"
+                                         Style="{StaticResource SatelliteFloor}" />
+                                <StackPanel Margin="6,0" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource SatelliteValue}"
+                                               Brisk:NumeralTick.Value="{Binding LiveTempText}" />
+                                    <!-- VM-composed: "Temperature · GPU" names the sensor. -->
+                                    <TextBlock Style="{StaticResource SatelliteCaption}"
+                                               Text="{Binding LiveTempCaption}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="4,0,0,0">
+                                <Ellipse Height="54" VerticalAlignment="Center"
+                                         Style="{StaticResource SatelliteFloor}" />
+                                <StackPanel Margin="6,0" VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource SatelliteValue}"
+                                               Brisk:NumeralTick.Value="{Binding LiveDiskText}" />
+                                    <TextBlock Style="{StaticResource SatelliteCaption}"
+                                               Text="{Binding [overview.live.disk], Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
+                            </Grid>
+                        </UniformGrid>
+                    </StackPanel>
                     <Grid Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
+                            <!-- Two pods, then the two status lines. The
+                                 temperature and free-space pods left this
+                                 grid for the satellites under the ring. -->
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -164,45 +223,14 @@
                                 </StackPanel>
                             </DockPanel>
                         </Border>
-                        <Border Grid.Row="1" Grid.Column="0" Margin="0,0,10,0"
-                                Style="{StaticResource HeroPod}">
-                            <DockPanel>
-                                <Rectangle DockPanel.Dock="Left" Width="2"
-                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
-                                           Fill="{StaticResource HeroAccent}" />
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource HeroPodValue}"
-                                               Brisk:NumeralTick.Value="{Binding LiveTempText}" />
-                                    <!-- VM-composed: "Temperature · GPU" names the sensor. -->
-                                    <TextBlock Style="{StaticResource HeroPodCaption}"
-                                               Margin="0,2,0,0"
-                                               Text="{Binding LiveTempCaption}" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-                        <Border Grid.Row="1" Grid.Column="1"
-                                Style="{StaticResource HeroPod}">
-                            <DockPanel>
-                                <Rectangle DockPanel.Dock="Left" Width="2"
-                                           RadiusX="1" RadiusY="1" Margin="0,2,10,2"
-                                           Fill="{StaticResource HeroAccent}" />
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource HeroPodValue}"
-                                               Brisk:NumeralTick.Value="{Binding LiveDiskText}" />
-                                    <TextBlock Style="{StaticResource HeroPodCaption}"
-                                               Margin="0,2,0,0"
-                                               Text="{Binding [overview.live.disk], Source={x:Static loc:Loc.Instance}}" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
                         <!-- Status readout stays part of the instrument
                              panel; the action buttons live below the hero
                              on the page's normal surface. -->
-                        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Margin="2,12,0,0"
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="2,12,0,0"
                                    FontFamily="Segoe UI Variable Text, Segoe UI"
                                    FontSize="13" Foreground="{StaticResource HeroText}"
                                    TextWrapping="Wrap" Text="{Binding StatusText}" />
-                        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="2,4,0,0"
+                        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Margin="2,4,0,0"
                                    FontFamily="Segoe UI Variable Text, Segoe UI"
                                    FontSize="11" Foreground="{StaticResource HeroMuted}"
                                    TextWrapping="Wrap" Text="{Binding SummaryText}" />

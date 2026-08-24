@@ -703,6 +703,17 @@
          dashes (13% white) and the inner CPU ring's 70%-opacity accent. -->
     <SolidColorBrush x:Key="HeroOrbit" Color="#21FFFFFF" />
     <SolidColorBrush x:Key="HeroAccentRing" Color="#B34CC2FF" />
+    <!-- The inner RAM arc: the SAME hero accent at half strength, so the two
+         live arcs read as one voice and its quieter echo. It is deliberately
+         not a second hue and emphatically not a semantic colour — the outer
+         health ring is the instrument's only claim-carrying element, and a
+         RAM arc that turned amber at 80% would be a threshold judgment no
+         rule in this app has made. At 50% it measures 3.13:1 on the panel's
+         brightest ground against the CPU arc's 4.92:1 — clearly the second
+         arc, and still clear of the 3:1 floor a graphical object has to
+         hold. Both figures are measured by InstrumentSourceTests off these
+         very values, not copied in beside them. -->
+    <SolidColorBrush x:Key="HeroAccentRingDim" Color="#804CC2FF" />
 
     <!-- The ONE permitted gradient: a soft radial vignette, a touch lighter
          behind the ring and settling into deep graphite at the edges (~3–4%
@@ -772,6 +783,52 @@
     <Style x:Key="HeroStripCaption" TargetType="TextBlock"
            BasedOn="{StaticResource HeroPodCaption}">
         <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <!-- The satellites: temperature and free space, standing on their own
+         pools of light beneath the instrument. Neither value has a natural
+         0–100 range, so neither gets an arc — a full sweep would have to be
+         invented, and every candidate makes a claim brisk does not make.
+         They are readouts, and they keep the product's dash convention.
+
+         The floor is the one LIT element this page adds after the tuning
+         gate, and it obeys the gate's rule by construction: the pool is
+         drawn INSIDE the instrument panel, on that panel's own opaque fill,
+         so no atmosphere pixel is ever brightened by it. What it still owes
+         is its own contrast check, and InstrumentSourceTests reads the fill
+         key, the peak opacity and the panel underneath out of source rather
+         than being told them.
+
+         AccentGlow, so a theme decides whether there is a glow at all: the
+         light dictionary holds that key fully transparent and the pool
+         simply is not there. The fade is an OpacityMask rather than a
+         gradient of the colour itself, because a colour gradient running to
+         Transparent interpolates through black and would ring each
+         satellite with a dark halo — the same trap AtmosphereLayer's
+         horizon glow documents. -->
+    <Style x:Key="SatelliteFloor" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{DynamicResource AccentGlow}" />
+        <Setter Property="Opacity" Value="0.16" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="OpacityMask">
+            <Setter.Value>
+                <RadialGradientBrush>
+                    <GradientStop Color="#FFFFFFFF" Offset="0" />
+                    <GradientStop Color="#66FFFFFF" Offset="0.6" />
+                    <GradientStop Color="#00FFFFFF" Offset="1" />
+                </RadialGradientBrush>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SatelliteValue" TargetType="TextBlock"
+           BasedOn="{StaticResource HeroPodValue}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="SatelliteCaption" TargetType="TextBlock"
+           BasedOn="{StaticResource HeroPodCaption}">
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
     </Style>
 
     <!-- One finding card, shared by the Sağlık and Performans lists — and the

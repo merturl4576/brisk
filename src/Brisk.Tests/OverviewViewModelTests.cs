@@ -648,7 +648,7 @@ public class OverviewViewModelTests
         await vm.LiveTickAsync();
 
         Assert.Equal("—", vm.LiveCpuText);
-        Assert.Equal(0.0, vm.LiveCpuPercent);   // CPU ring rests as an empty arc
+        Assert.False(vm.HasCpuArc);   // the CPU arc is ABSENT, not drawn empty
         Assert.Equal("—", vm.LiveRamText);
         Assert.Equal("—", vm.LiveTempText);
         Assert.Equal("Temperature", vm.LiveTempCaption);   // no source suffix
@@ -667,6 +667,37 @@ public class OverviewViewModelTests
 
         Assert.Equal("55°C", vm.LiveTempText);
         Assert.Equal("", vm.LiveTempBadgeText);
+    }
+
+    /// Decision 4, and a correction to shipped behaviour: LiveCpuPercent
+    /// documents itself today as "0 (an empty arc) until the CPU sensor has a
+    /// delta to report". An empty arc is a picture of a measurement that does
+    /// not exist. Absent is the honest state.
+    [Fact]
+    public async Task NoCpuReading_DrawsNoCpuArc()
+    {
+        var live = new FakeLive { Next = new LiveReading(null, 42.0, null, null, 0) };
+        var (vm, _, _) = Build(live: live);
+
+        await vm.LiveTickAsync();
+
+        Assert.False(vm.HasCpuArc);
+        Assert.True(vm.HasRamArc);
+        Assert.Equal(42.0, vm.LiveRamPercent);
+    }
+
+    /// Satellites keep the product's dash convention — the no-empty-ring rule
+    /// governs rings, not readouts. A dash states that nothing was read; an
+    /// empty arc is a picture of a measurement that does not exist.
+    [Fact]
+    public async Task NoTemperatureReading_StillShowsTheDash()
+    {
+        var live = new FakeLive { Next = new LiveReading(12.0, 42.0, null, null, 0) };
+        var (vm, _, _) = Build(live: live);
+
+        await vm.LiveTickAsync();
+
+        Assert.Equal("—", vm.LiveTempText);
     }
 
     /// ROUND 13 review (I1): one runner sits behind three buttons, so the

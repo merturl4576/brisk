@@ -45,6 +45,20 @@ public static class OffscreenLayout
             gauge.BeginAnimation(SegmentedGauge.LitCountProperty, null);
             gauge.LitCount = SegmentedGauge.LitCountFor(gauge.Score);
         }
+        // The inner CPU and RAM arcs are the same problem a third time, and
+        // they were the one DATA-DRIVEN animation this method did not park.
+        // (The perpetual ambient layer is not here and does not belong here:
+        // orbit, comet and sheen have no resting value to be parked at.) Each
+        // tick slews Shown toward the new percentage over 480 ms, so a still
+        // frame taken as the first reading lands catches the arc barely off
+        // zero — which photographs EXACTLY like the empty arc this round
+        // exists to abolish, and no assertion in the repo could tell the two
+        // apart. Parked at the reading, the picture is of what was measured.
+        if (root is SweepRing arc)
+        {
+            arc.BeginAnimation(SweepRing.ShownProperty, null);
+            arc.Shown = arc.Value;
+        }
         // Scoped to the TextBlocks NumeralTick actually drives, so a still
         // frame cannot quietly strip an opacity that something else set.
         if (root is TextBlock numeral && NumeralTick.GetValue(numeral) is not null)

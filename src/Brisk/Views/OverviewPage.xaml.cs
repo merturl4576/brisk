@@ -40,8 +40,9 @@ public partial class OverviewPage : UserControl
     /// MainWindow calls this from the SAME IsVisibleChanged/StateChanged
     /// path that gates LiveMetrics — one visibility signal, so the ambient
     /// clocks and the data ticker can never drift apart. Data-driven motion
-    /// (CPU ring, numeral ticks) needs no handling here: it only moves when
-    /// the ticker delivers a value, and the ticker already stops.
+    /// (the CPU and RAM arcs, the numeral ticks) needs no handling here: it
+    /// only moves when the ticker delivers a value, and the ticker already
+    /// stops.
     public void SetMotionActive(bool active) => _ambient.SetActive(active);
 
     private void StartAmbient()
