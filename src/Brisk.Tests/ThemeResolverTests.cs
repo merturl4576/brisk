@@ -1,4 +1,4 @@
-﻿using Brisk.Theming;
+using Brisk.Theming;
 using Xunit;
 
 namespace Brisk.Tests;
