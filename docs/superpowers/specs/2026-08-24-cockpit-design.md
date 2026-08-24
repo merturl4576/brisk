@@ -102,7 +102,7 @@ forgotten in the other, which is what keeps decision 1 honest.
 | Key | Today | Cockpit |
 |---|---|---|
 | `Bg` | `#0E1116` | `#0A1626` |
-| `BgElevated` | `#151A21` | `#0C2434` |
+| `BgElevated` → **renamed `Surface`** | `#151A21` | `#0C2434` |
 | `BgHover` | `#1B2129` | `#123044` |
 | `BorderBrushKey` | `#1E242C` | `#2C4A58` |
 | `Divider` | `#1A2027` | `#1E3A48` |
@@ -129,10 +129,21 @@ old blue did.
 **`SeverityInfo` must not become the signature turquoise.** It is `#4CC2FF`
 today, which is the same value the accent has today — so retuning the accent to
 `#5FD4E8` while leaving `SeverityInfo` alone would silently split what is
-currently one color into two near-identical blues. It gets its own retune into
-the navy family, deliberately **distinct** from `Accent`, because of the rule
-below: an info finding carries a claim, and no claim-carrying surface may wear
-the decorative signature color.
+currently one color into two near-identical blues. It gets its own starting
+value, **`#5B8DEF`**: hue ~220° against the accent's ~187°, clearly separable,
+still reading as "info" on navy. Tunable at the variant step like the rest, but
+never toward the accent — an info finding carries a claim, and no
+claim-carrying surface may wear the decorative signature color.
+
+**`Hairline` and `BorderBrushKey` deliberately start at the same value**
+(`#2C4A58`). They are separate keys serving different jobs — panel bracket edges
+versus general control borders — and are expected to diverge during tuning.
+Neither may be "simplified" into the other.
+
+**Light theme values.** The parity test will force all six new keys into
+`Light.xaml`. Their light values are chosen at the variant step, where a light
+render is part of the variant set rather than an afterthought; `AccentGlow` is
+near-transparent there, per settled decision 1.
 
 **Untouched, and this is a product claim, not a style choice:** `Good`
 `#4ADE80`, `SeverityWarning` `#FBBF24`, `SeverityCritical` `#F87171`. In brisk,
@@ -148,6 +159,22 @@ the key, never the consumer:
   the rail and must be remapped to `Surface`.
 - `Shared.xaml:1145` — a comment explaining a fill choice "on the recessed
   BgRail", which becomes false and must be rewritten.
+
+**Renamed: `BgElevated` → `Surface`.** The panel language is written in terms of
+`Surface` and `SurfaceHi`; leaving the old key beside a new `SurfaceHi` invites
+an implementer to add a duplicate and split one fill into two. This is a
+mechanical rename, but it is **not small — 11 binding sites**, not the three a
+quick look at the pages suggests:
+
+- `Shared.xaml` — eight `DynamicResource` bindings (lines 263, 298, 444, 489,
+  632, 952, 1185, 1189) and three explanatory comments (536, 560, 1145) that
+  name the key in prose.
+- `CleanPage.xaml` — three bindings (12, 142, 371).
+- `Dark.xaml` / `Light.xaml` — the declarations themselves, plus a comment in
+  `Light.xaml`.
+
+The comments are part of the rename, not decoration: a comment that names a key
+which no longer exists is how the next reader learns the wrong vocabulary.
 
 ## Shell
 
@@ -224,9 +251,12 @@ claim brisk does not make:
   the product.
 
 Temperature therefore stays a **satellite readout** with its number and source
-badge — `LiveTempText`, `LiveTempBadgeText` and `LiveTempCaption` already exist
-and already render nothing rather than a dash when no sensor speaks. Free disk
-joins it as a satellite, since it is not a percentage. Satellites sit on glowing
+badge — `LiveTempText`, `LiveTempBadgeText` and `LiveTempCaption` already exist.
+**Satellites keep the existing convention: number and source when read, `"—"`
+when not.** Decision 4's no-empty-ring rule governs rings, not readouts — a dash
+is a statement that nothing was read, while an empty arc is a picture of a
+measurement that does not exist. Free disk joins temperature as a satellite,
+since it is not a percentage. Satellites sit on glowing
 floor ellipses beneath the instrument and are part of it: decision 4's "the
 Overview reads as one instrument" is satisfied by the composition, not by
 forcing every value into a ring.
@@ -287,8 +317,17 @@ test written from a wrong explanation passed on the defect it was written to
 catch. So the automated tests pin things that can be *stated*:
 
 - theme key-set parity across `Dark.xaml` and `Light.xaml` (exists today);
+- **every brush key referenced by `DynamicResource` in any XAML file exists in
+  both theme dictionaries** — a new source-parsing test in the
+  `ThemeDictionaryTests` style. This one is required by this wave specifically:
+  `DynamicResource` lookups fail **silently**, so a consumer missed by the
+  `BgRail` deletion or the `Surface` rename renders transparent with no
+  exception and no failing test. Parity proves the two dictionaries agree with
+  each other; this proves they agree with the app.
 - a computed contrast ratio for `TextMuted` over the composited worst-case
-  background, asserting ≥4.5:1;
+  background — the brightest rain texel over the brightest gradient stop, not
+  an average, because an average passes while one glyph sits behind a bright
+  column — asserting ≥4.5:1;
 - **no reading, no arc** — a null `CpuPercent` produces no CPU arc, asserted
   against the visual tree, not against pixels.
 
