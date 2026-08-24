@@ -277,6 +277,24 @@ public class HealthViewModelTests
         Assert.Equal(new[] { "thermals" }, health.AdviseRows.Select(r => r.RuleId));
     }
 
+    /// The notice rules are the ones the revelation band leads with, and
+    /// "see the evidence" routes off THIS predicate — so the id-to-page
+    /// mapping is pinned directly, not just through a view model's filter.
+    /// boot-degradation is the one live use caught: its card is on
+    /// Performans and the link went to Sağlık. Moving an id between the two
+    /// sets is a routing change, and it has to fail a test to happen.
+    [Theory]
+    [InlineData("boot-degradation", true)]
+    [InlineData("memory-speed", true)]
+    [InlineData("ram-pressure", true)]
+    [InlineData("thermals", false)]     // machine condition, not a speed lever
+    public void NoticeRules_ClassifyToThePageThatHoldsTheirCard(
+        string ruleId, bool onPerformance)
+    {
+        Assert.Equal(onPerformance, FindingSections.IsPerformance(ruleId));
+        Assert.Equal(!onPerformance, FindingSections.IsHealth(ruleId));
+    }
+
     [Fact]
     public async Task DoneRows_ComeFromTheJournal_SlicedPerPage_NewestFirst()
     {
