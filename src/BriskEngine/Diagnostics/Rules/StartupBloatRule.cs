@@ -76,10 +76,15 @@ public sealed class StartupBloatRule : IDiagnosticRule
         // threshold. Read as a demand it would say the fix achieved nothing,
         // so with nothing left that brisk would touch it names the remaining
         // programs as the reader's judgement rather than a problem.
+        //
+        // It points by name, not by "below": the CLI prints this same
+        // sentence into a terminal that has no list below it and no startup
+        // verb at all. Naming the surface — as the boot rule already does —
+        // is true wherever the sentence is read.
         else
             evidence += " None of them is on brisk's heavy list, so which ones "
-                + "you actually need is your call — review them in the startup "
-                + "list below.";
+                + "you actually need is your call — review them under Startup "
+                + "programs on the Performance page.";
         var totalText = total.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return new DiagnosticFinding(Id, "rule.startup-bloat.title",
             "Too many programs start with Windows", evidence,

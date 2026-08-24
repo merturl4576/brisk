@@ -40,7 +40,9 @@ public class EvidenceLocalizationTests
     /// The engine composes this sentence in English and both resx files
     /// restate it — three sources for one claim. Pinned in both languages so
     /// a later edit to one of them cannot quietly tell the Turkish reader
-    /// something the English reader is not told.
+    /// something the English reader is not told. Both name the surface the
+    /// startup list actually sits on, because the CLI prints the engine's
+    /// version verbatim and a terminal has no list below it.
     [Fact]
     public void Evidence_StartupCountWithoutHeavyOnes_SaysWhoseCallItIsInBothLanguages()
     {
@@ -49,12 +51,13 @@ public class EvidenceLocalizationTests
 
         Assert.Equal("Windows ile birlikte 6 program başlıyor. Hiçbiri brisk'in " +
             "ağır listesinde değil; hangilerinin sana gerçekten gerekli olduğu " +
-            "senin kararın — aşağıdaki açılış listesinden gözden geçir.",
+            "senin kararın — Performans sayfasındaki Açılış programları " +
+            "listesinden gözden geçir.",
             Row(finding, Loc("tr")).Evidence);
 
         Assert.Equal("6 programs start with Windows. None of them is on brisk's " +
             "heavy list, so which ones you actually need is your call — review " +
-            "them in the startup list below.",
+            "them under Startup programs on the Performance page.",
             Row(finding, Loc("en")).Evidence);
     }
 

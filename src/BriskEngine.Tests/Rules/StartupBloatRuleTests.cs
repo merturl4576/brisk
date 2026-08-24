@@ -66,9 +66,13 @@ public class StartupBloatRuleTests
         // the same literal. Two full pins on one sentence are what keeps the
         // terminal reader and the GUI reader from being told different
         // things; a sampled assert would let a reworded tail through.
+        //
+        // Note where it points: at a named surface, not "below". The CLI
+        // prints this into a terminal with nothing below it, so deixis that
+        // reads fine on the Performance page would be a lie in the shell.
         Assert.Equal("6 programs start with Windows. None of them is on brisk's " +
             "heavy list, so which ones you actually need is your call — review " +
-            "them in the startup list below.", finding.Evidence);
+            "them under Startup programs on the Performance page.", finding.Evidence);
     }
 
     [Fact]
