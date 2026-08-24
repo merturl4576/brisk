@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Brisk.Tests.Snapshots;
+using Brisk.Views;
 using Xunit;
 // WinForms is on in this project, so bare Brushes and Size are ambiguous.
 using Brushes = System.Windows.Media.Brushes;
@@ -21,7 +22,7 @@ public class SnapshotTests
     public void OverviewPage_LaysOutAndRendersSomething()
     {
         var path = SnapshotRenderer.Capture(
-            () => new Brisk.Views.OverviewPage(),
+            () => OnAtmosphere(new OverviewPage()),
             new Size(1100, 700),
             "overview");
 
@@ -65,5 +66,27 @@ public class SnapshotTests
             $"window render has {colors} distinct colours — an unshown window " +
             "lays out against an HWND it does not have, so it photographs " +
             "blank rather than failing");
+    }
+
+    /// A page is photographed the way the window shows it: standing on the
+    /// atmosphere. The layer belongs to the WINDOW, so a page rendered by
+    /// itself has nothing underneath it and comes out floating on the void —
+    /// and the ground is exactly what this round gets judged on. The brushes
+    /// are pulled by resource reference rather than left on the layer's own
+    /// defaults, which is what MainWindow's {DynamicResource} does, so the
+    /// image is of the real thing and not of a lookalike.
+    private static FrameworkElement OnAtmosphere(UIElement page)
+    {
+        var layer = new AtmosphereLayer();
+        layer.SetResourceReference(AtmosphereLayer.IsFlatProperty, "FlatAtmosphere");
+        layer.SetResourceReference(AtmosphereLayer.SkyBrushProperty, "Bg0");
+        layer.SetResourceReference(AtmosphereLayer.GroundBrushProperty, "Bg");
+        layer.SetResourceReference(AtmosphereLayer.TextureBrushProperty, "AccentDim");
+        layer.SetResourceReference(AtmosphereLayer.GlowBrushProperty, "AccentGlow");
+
+        var grid = new Grid();
+        grid.Children.Add(layer);
+        grid.Children.Add(page);
+        return grid;
     }
 }

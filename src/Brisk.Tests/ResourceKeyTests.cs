@@ -15,6 +15,10 @@ namespace Brisk.Tests;
 /// ships as an invisible panel. This reads the XAML sources the way
 /// ThemeDictionaryTests does and refuses that state: every key the app binds
 /// to must exist in BOTH themes, because either one can be the live theme.
+///
+/// "Key", not "brush key": a theme dictionary may hold something that is not
+/// a colour when the thing genuinely differs BY theme — FlatAtmosphere is a
+/// bool, and it decides whether the atmosphere is drawn at all.
 public sealed class ResourceKeyTests
 {
     private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -26,12 +30,12 @@ public sealed class ResourceKeyTests
         new(@"x:Key=""([A-Za-z0-9_]+)""", RegexOptions.Compiled);
 
     [Fact]
-    public void EveryDynamicResourceBrushKey_ExistsInBothThemes()
+    public void EveryDynamicResourceKey_ExistsInBothThemes()
     {
         var referenced = ReferencedKeys();
         var shared = SharedOwnKeys();
-        var dark = BrushKeys("Dark.xaml");
-        var light = BrushKeys("Light.xaml");
+        var dark = ThemeKeys("Dark.xaml");
+        var light = ThemeKeys("Light.xaml");
 
         var missing = referenced
             .Except(shared, StringComparer.Ordinal)
@@ -62,11 +66,13 @@ public sealed class ResourceKeyTests
             .Select(m => m.Groups[1].Value)
             .ToHashSet(StringComparer.Ordinal);
 
-    private static HashSet<string> BrushKeys(string file) =>
+    /// Everything the dictionary declares, whatever its type — what makes a
+    /// {DynamicResource} resolve is the key being there, not it being a brush.
+    private static HashSet<string> ThemeKeys(string file) =>
         XDocument.Load(Path.Combine(BriskDir(), "Theming", file)).Root!
-            .Elements().Where(e => e.Name.LocalName == "SolidColorBrush")
-            .Select(e => (string)e.Attribute(X + "Key")!)
-            .ToHashSet(StringComparer.Ordinal);
+            .Elements().Select(e => (string?)e.Attribute(X + "Key"))
+            .Where(k => k is not null)
+            .ToHashSet(StringComparer.Ordinal)!;
 
     private static string BriskDir()
     {

@@ -1,5 +1,12 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- True here, and this is the whole of settled decision 1 in one value:
+         the atmosphere is a dark-theme thing, so AtmosphereLayer renders one
+         flat Bg fill instead of gradient, rain, grid and glow. One property
+         on one control — not a second code path. -->
+    <sys:Boolean x:Key="FlatAtmosphere">True</sys:Boolean>
+
     <!-- The light theme keeps the cockpit's STRUCTURE — same keys, same
          steps, same jobs — while the atmosphere is a dark-theme thing. So
          Bg0, the floor the dark window's gradient falls to, is simply white

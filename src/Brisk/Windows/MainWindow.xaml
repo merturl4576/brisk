@@ -23,6 +23,23 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <!-- The ground the window stands on: gradient, digital rain, grid
+             floor and horizon glow, spanning every row and column. It lives
+             on the WINDOW, not on a page, so navigating never restarts or
+             jumps it and each page costs nothing to place on top. ZIndex
+             keeps it beneath every sibling however the rows are rearranged
+             later; BitmapCache rasterizes the texture once instead of
+             recompositing it every frame. IsFlat follows the theme — in
+             light there is no night for rain to fall through. -->
+        <views:AtmosphereLayer Grid.Row="0" Grid.RowSpan="3"
+                               Grid.Column="0" Grid.ColumnSpan="2"
+                               Panel.ZIndex="-1" CacheMode="BitmapCache"
+                               IsFlat="{DynamicResource FlatAtmosphere}"
+                               SkyBrush="{DynamicResource Bg0}"
+                               GroundBrush="{DynamicResource Bg}"
+                               TextureBrush="{DynamicResource AccentDim}"
+                               GlowBrush="{DynamicResource AccentGlow}" />
+
         <!-- Whose machine this actually is. Standing, and deliberately NOT
              dismissible: it is a fact about the whole run, and the user must
              meet it before pressing Clean. -->
@@ -75,7 +92,10 @@
                              Content="{Binding [nav.settings], Source={x:Static loc:Loc.Instance}}" />
             </StackPanel>
         </Border>
-        <Grid Grid.Row="2" Grid.Column="1">
+        <!-- Transparent, not unset: the page host is the one container the
+             atmosphere has to show through, and saying so keeps a later
+             hand from reaching for a Bg fill here out of habit. -->
+        <Grid Grid.Row="2" Grid.Column="1" Background="Transparent">
             <views:OverviewPage x:Name="OverviewView" />
             <views:HealthPage x:Name="HealthView" Visibility="Collapsed" />
             <views:PerfPage x:Name="PerfView" Visibility="Collapsed" />
