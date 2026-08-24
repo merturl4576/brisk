@@ -280,6 +280,15 @@ public sealed class OverviewViewModel : ViewModelBase
         ? Math.Round(v).ToString(CultureInfo.InvariantCulture) + "%"
         : "—";
 
+    /// The band is a glance surface: one sentence of evidence, with the full
+    /// text one click away behind "see the evidence". Nothing is lost —
+    /// it moves to the layer built for reading.
+    private static string FirstSentence(string text)
+    {
+        var cut = text.IndexOf(". ", StringComparison.Ordinal);
+        return cut < 0 ? text : text[..(cut + 1)];
+    }
+
     public async Task FixAllAsync()
     {
         // Held while a display change is still unconfirmed — every fix
@@ -478,7 +487,7 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationValue = value;
             RevelationCaption = caption;
             RevelationClaim = _loc.Title(top.TitleKey, top.Title);
-            RevelationEvidence = LocalizedText.Evidence(top, _loc);
+            RevelationEvidence = FirstSentence(LocalizedText.Evidence(top, _loc));
             RevelationMoreText = revelations.Count > 1
                 ? _loc.F("overview.revelation.more", revelations.Count - 1) : "";
             RevelationEmptyText = "";

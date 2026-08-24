@@ -37,6 +37,27 @@ public class EvidenceLocalizationTests
             en.Evidence);
     }
 
+    /// The engine composes this sentence in English and both resx files
+    /// restate it — three sources for one claim. Pinned in both languages so
+    /// a later edit to one of them cannot quietly tell the Turkish reader
+    /// something the English reader is not told.
+    [Fact]
+    public void Evidence_StartupCountWithoutHeavyOnes_SaysWhoseCallItIsInBothLanguages()
+    {
+        var finding = TestData.Finding("startup-bloat", cat: RuleCategory.Confirm,
+            evidenceKey: "rule.startup-bloat.evidence", evidenceArgs: new[] { "6" });
+
+        Assert.Equal("Windows ile birlikte 6 program başlıyor. Hiçbiri brisk'in " +
+            "ağır listesinde değil; hangilerinin sana gerçekten gerekli olduğu " +
+            "senin kararın — aşağıdaki açılış listesinden gözden geçir.",
+            Row(finding, Loc("tr")).Evidence);
+
+        Assert.Equal("6 programs start with Windows. None of them is on brisk's " +
+            "heavy list, so which ones you actually need is your call — review " +
+            "them in the startup list below.",
+            Row(finding, Loc("en")).Evidence);
+    }
+
     [Fact]
     public void Evidence_UnknownKey_FallsBackToEngineProse()
     {

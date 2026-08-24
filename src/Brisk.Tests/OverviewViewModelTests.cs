@@ -765,6 +765,45 @@ public class OverviewViewModelTests
         Assert.Equal("", vm.RevelationMoreText);
     }
 
+    /// A headline-carrying finding whose English evidence is the subject of
+    /// the test: an unlisted rule id with no resx keys leaves the engine's
+    /// own prose on the band, which is what the trimming acts on.
+    private static DiagnosticFinding RevelationFinding(string evidence) =>
+        new("zz-fake", "rule.zz-fake.title", "Title zz-fake", evidence,
+            Severity.Warning, RuleCategory.Advise, ImpactStars: 3, CanFix: false,
+            FixDescription: null, EvidenceKey: null, EvidenceArgs: null,
+            Headline: new Headline("57 s", "cap",
+                "rule.zz-fake.headline.value", new[] { "57" },
+                "rule.zz-fake.headline.caption", Array.Empty<string>()));
+
+    /// The band is a glance surface: one sentence. The rest of the evidence
+    /// is not lost — "see the evidence" opens the finding that holds it.
+    [Fact]
+    public async Task Revelation_LongEvidence_ShowsOnlyItsFirstSentence()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { RevelationFinding("First claim. Second claim.") });
+
+        await state.ScanAsync();
+
+        Assert.Equal("First claim.", vm.RevelationEvidence);
+    }
+
+    /// Several rules state their evidence in a single sentence; that one
+    /// must reach the band whole rather than being trimmed away.
+    [Fact]
+    public async Task Revelation_SingleSentenceEvidence_ReachesTheBandWhole()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { RevelationFinding("The only claim there is.") });
+
+        await state.ScanAsync();
+
+        Assert.Equal("The only claim there is.", vm.RevelationEvidence);
+    }
+
     [Fact]
     public async Task OpenFinding_CarriesTheTopRevelationsRuleId()
     {

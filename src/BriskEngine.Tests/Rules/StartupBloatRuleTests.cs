@@ -55,6 +55,11 @@ public class StartupBloatRuleTests
         // No heavy tail → the shorter evidence template, count only.
         Assert.Equal("rule.startup-bloat.evidence", finding!.EvidenceKey);
         Assert.Equal(new[] { "6" }, finding.EvidenceArgs);
+        // This branch also fires just AFTER a successful fix has taken the
+        // heavy programs out, so it must not read like the fix did nothing:
+        // with nothing left that brisk would touch, the remaining programs
+        // are the reader's judgement to make.
+        Assert.Contains("your call", finding.Evidence);
     }
 
     [Fact]

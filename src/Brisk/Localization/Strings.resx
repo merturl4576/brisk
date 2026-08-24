@@ -167,7 +167,7 @@
   <data name="rule.power-plan.evidence" xml:space="preserve"><value>Active plan: {0}. This plan deliberately limits CPU boost clocks; a performance plan lets the CPU reach its full turbo frequency.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>This machine has two GPUs, but {0} has no high-performance GPU preference, so Windows may run it on the slow integrated GPU.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
-  <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>{0} programs start with Windows.</value></data>
+  <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>{0} programs start with Windows. None of them is on brisk's heavy list, so which ones you actually need is your call — review them in the startup list below.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>{0} programs start with Windows. Heavy ones that can be started manually instead: {1}.</value></data>
   <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>programs start with Windows</value></data>

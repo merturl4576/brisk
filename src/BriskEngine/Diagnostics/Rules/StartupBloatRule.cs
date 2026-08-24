@@ -71,6 +71,15 @@ public sealed class StartupBloatRule : IDiagnosticRule
         var evidence = $"{total} programs start with Windows.";
         if (heavy.Count > 0)
             evidence += $" Heavy ones that can be started manually instead: {heavyNames}.";
+        // This tail is what the reader sees just after a successful fix has
+        // taken every heavy program out — the count alone still trips the
+        // threshold. Read as a demand it would say the fix achieved nothing,
+        // so with nothing left that brisk would touch it names the remaining
+        // programs as the reader's judgement rather than a problem.
+        else
+            evidence += " None of them is on brisk's heavy list, so which ones "
+                + "you actually need is your call — review them in the startup "
+                + "list below.";
         var totalText = total.ToString(System.Globalization.CultureInfo.InvariantCulture);
         return new DiagnosticFinding(Id, "rule.startup-bloat.title",
             "Too many programs start with Windows", evidence,
