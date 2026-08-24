@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.Tests.Snapshots;
@@ -91,7 +92,8 @@ public class SnapshotTests
     public void MainWindow_LaysOutAndRendersTheWholeCockpit()
     {
         var path = SnapshotRenderer.Capture(
-            CockpitWindow, new Size(1100, 700), "window", AssertTheGlassIsLive);
+            CockpitWindow, new Size(1100, 700), "window",
+            inspect: AssertTheGlassIsLive, settled: TheGlassIsLive);
 
         Assert.True(File.Exists(path));
         var colors = SnapshotRenderer.DistinctColors(path);
@@ -113,14 +115,43 @@ public class SnapshotTests
     /// continuation; this is what notices if it ever stops.
     private static void AssertTheGlassIsLive(FrameworkElement element)
     {
-        var page = (FrameworkElement)((Window)element).FindName("OverviewView")!;
-        var overview = (OverviewViewModel)page.DataContext;
-
-        Assert.False(overview.LiveCpuText == "—",
+        Assert.True(TheGlassIsLive(element),
             "the cockpit was photographed with an em dash where the CPU " +
             "reading should be — the window was rendered before its first " +
             "live tick came back, so the image is a picture of a machine " +
             "with no sensors rather than of the canned reading");
+
+        // Present and correct is not the same as photographable. The reading
+        // replaces a startup em dash, and NumeralTick fades that change in
+        // over 170 ms — so a capture taken just after the value lands gets
+        // the right numbers at a quarter opacity, with every other assertion
+        // in this file green. OffscreenLayout.Settle parks the tick; this is
+        // what notices if it stops.
+        foreach (var numeral in Numerals(element))
+            Assert.True(numeral.Opacity >= 0.999,
+                $"a live numeral was photographed at opacity {numeral.Opacity:F2} " +
+                "— the shutter caught NumeralTick's fade part-way through, so " +
+                "the readings are in the image but greyed out");
+    }
+
+    /// Every TextBlock in the tree that NumeralTick drives.
+    private static IEnumerable<TextBlock> Numerals(DependencyObject root)
+    {
+        if (root is TextBlock tb && NumeralTick.GetValue(tb) is not null)
+            yield return tb;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            foreach (var found in Numerals(VisualTreeHelper.GetChild(root, i)))
+                yield return found;
+    }
+
+    /// ONE statement of what live means, used twice: as the condition the
+    /// capture waits for, and as the claim it is asserted against afterwards.
+    /// Two copies would be two chances to drift, and the pair only works if
+    /// the thing waited on is the thing checked.
+    private static bool TheGlassIsLive(FrameworkElement element)
+    {
+        var page = (FrameworkElement)((Window)element).FindName("OverviewView")!;
+        return ((OverviewViewModel)page.DataContext).LiveCpuText != "—";
     }
 
     /// The real window with fake machinery behind it: the same composition

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -51,8 +51,13 @@ public static class SnapshotRenderer
     /// thing to assert about a picture of a cockpit: a caller that cares
     /// whether a particular reading made it onto the glass can look, in the
     /// one moment where looking answers the question.
+    /// `settled` is what the capture WAITS for; `inspect` is what it
+    /// asserts. A caller with async work behind it supplies both, built from
+    /// one predicate, so the thing waited on and the thing claimed cannot
+    /// drift apart.
     public static string Capture(Func<FrameworkElement> build, Size size, string name,
-        Action<FrameworkElement>? inspect = null)
+        Action<FrameworkElement>? inspect = null,
+        Func<FrameworkElement, bool>? settled = null)
     {
         var path = Path.Combine(SnapshotDir(), name + ".png");
         lock (Gate)
@@ -80,8 +85,8 @@ public static class SnapshotRenderer
                         window.Show();
                     }
                     // Everything Show() set in motion has to finish before
-                    // the shutter opens — see PumpUntilQuiet.
-                    PumpUntilQuiet();
+                    // the shutter opens — see PumpUntilSettled.
+                    PumpUntilSettled(element, settled);
                     OffscreenLayout.LayOut(element, size);
 
                     inspect?.Invoke(element);
@@ -221,13 +226,25 @@ public static class SnapshotRenderer
         if (failure is not null) throw failure;
     }
 
-    /// How long the harness will wait for a shown window to finish reacting.
-    /// Bounded on purpose: a snapshot must never be able to hang a test run.
-    private const int PumpPasses = 4;
-    private const int PumpWaitMs = 10;
+    /// The hard cap on waiting, and nothing more than that. The normal path
+    /// does not spend it — the loop leaves the moment the caller's condition
+    /// is true — so this is sized for the worst case rather than the usual
+    /// one: xunit saturates the thread pool, and a continuation coming back
+    /// from a starved pool can take far longer than the work inside it. A
+    /// budget tuned to how fast an idle laptop happens to be is how shared
+    /// infrastructure starts flaking, and seven tasks depend on this one.
+    private const int SettleDeadlineMs = 2000;
 
-    /// Runs the work the window queued in response to being shown, before the
-    /// picture is taken.
+    /// How long to wait before draining again while the condition is still
+    /// false. Short, because it only costs anything when the pool is slow.
+    private const int SettlePollMs = 5;
+
+    /// The longest a single drain may run before it gives the loop control
+    /// back. This is a safety valve, not a budget — see DrainToIdle.
+    private const int DrainSliceMs = 250;
+
+    /// Runs the work the element queued in response to being shown, before
+    /// the picture is taken.
     ///
     /// The live tiles are why this exists. OverviewViewModel's tick awaits a
     /// Task.Run, so the readings come back on a continuation posted to this
@@ -238,23 +255,61 @@ public static class SnapshotRenderer
     /// dispatcher loop, so there was no SynchronizationContext to post to,
     /// the continuation ran inline on the pool thread, and it beat layout to
     /// the properties. On a real UI thread the continuation queues, which is
-    /// what a UI thread is supposed to do — so the harness now waits for it
-    /// on purpose instead of relying on the absence of a message pump.
+    /// what a UI thread is supposed to do — so the harness waits for it on
+    /// purpose instead of relying on the absence of a message pump.
     ///
-    /// A nested frame rather than Invoke-at-idle, because this runs INSIDE
-    /// the dispatcher operation that is doing the capture: the queue cannot
-    /// drain until we let it. Several short passes rather than one, because
-    /// the continuation has to come back from the thread pool first.
-    private static void PumpUntilQuiet()
+    /// CONDITION-bounded, not time-bounded, and the difference is the whole
+    /// point. With no condition there is nothing to wait for beyond an empty
+    /// queue, and one drain says that. With one, the loop exits the moment it
+    /// holds, so the deadline above is only ever reached when something is
+    /// genuinely wrong. Running out of time is deliberately SILENT: the
+    /// caller's inspect assertion is what names the failure, because the
+    /// harness photographs and the test decides what counts as a picture.
+    private static void PumpUntilSettled(
+        FrameworkElement element, Func<FrameworkElement, bool>? isSettled)
     {
-        for (var pass = 0; pass < PumpPasses; pass++)
+        var deadline = Environment.TickCount64 + SettleDeadlineMs;
+        while (true)
         {
-            var frame = new DispatcherFrame();
-            Dispatcher.CurrentDispatcher.BeginInvoke(
-                (Action)(() => frame.Continue = false), DispatcherPriority.ApplicationIdle);
-            Dispatcher.PushFrame(frame);
-            Thread.Sleep(PumpWaitMs);
+            var idle = DrainToIdle();
+            // With a condition, the condition decides. Without one there is
+            // nothing to wait for except the queue emptying, so an idle pass
+            // IS the answer — and a pass that was cut short is not, which is
+            // why DrainToIdle reports which of the two happened.
+            if (isSettled is null ? idle : isSettled(element)) return;
+            if (Environment.TickCount64 >= deadline) return;
+            Thread.Sleep(SettlePollMs);
         }
+    }
+
+    /// Lets the dispatcher run everything queued above ApplicationIdle, and
+    /// says whether it got there. A nested frame rather than an Invoke,
+    /// because this runs INSIDE the dispatcher operation doing the capture:
+    /// the queue cannot drain until that operation lets it.
+    ///
+    /// The timer is not a refinement, it is the difference between a bounded
+    /// wait and a hung test run. A shown cockpit animates forever — the
+    /// overview's orbit, comet and sheen spin for as long as the window is up
+    /// — and every animation frame posts a RENDER-priority operation. Render
+    /// outranks ApplicationIdle, so on a window like that the queue never
+    /// falls idle, the marker below is never reached, and PushFrame spins
+    /// until the process is killed. I hung a full suite run exactly this way.
+    /// Send priority is above Render, so the clock always gets through.
+    private static bool DrainToIdle()
+    {
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        var frame = new DispatcherFrame();
+        var reachedIdle = false;
+
+        dispatcher.BeginInvoke(
+            (Action)(() => { reachedIdle = true; frame.Continue = false; }),
+            DispatcherPriority.ApplicationIdle);
+        var timer = new DispatcherTimer(TimeSpan.FromMilliseconds(DrainSliceMs),
+            DispatcherPriority.Send, (_, _) => frame.Continue = false, dispatcher);
+        try { Dispatcher.PushFrame(frame); }
+        finally { timer.Stop(); }
+
+        return reachedIdle;
     }
 
     /// Starts the UI thread on first use and hands back its dispatcher.

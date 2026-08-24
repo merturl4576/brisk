@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace Brisk.Views;
@@ -29,6 +30,14 @@ public static class OffscreenLayout
     /// the clock is dropped and the count is set to where the sweep would
     /// have landed. Recursive because the two layers sit inside the card's
     /// tree, not on a name the renderer could reach for.
+    ///
+    /// The instrument numerals are the same problem wearing different
+    /// clothes. A live tile whose reading replaces the startup em dash ticks
+    /// it in over 170 ms, and a capture that photographs the window shortly
+    /// after the reading arrives catches that fade a fifth of the way
+    /// through: the numbers are present, correct, and rendered at a quarter
+    /// opacity. Every assertion passes and the picture is wrong, which is the
+    /// failure this whole method exists to refuse.
     public static void Settle(DependencyObject root)
     {
         if (root is SegmentedGauge gauge)
@@ -36,6 +45,10 @@ public static class OffscreenLayout
             gauge.BeginAnimation(SegmentedGauge.LitCountProperty, null);
             gauge.LitCount = SegmentedGauge.LitCountFor(gauge.Score);
         }
+        // Scoped to the TextBlocks NumeralTick actually drives, so a still
+        // frame cannot quietly strip an opacity that something else set.
+        if (root is TextBlock numeral && NumeralTick.GetValue(numeral) is not null)
+            NumeralTick.Settle(numeral);
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
             Settle(VisualTreeHelper.GetChild(root, i));
     }
