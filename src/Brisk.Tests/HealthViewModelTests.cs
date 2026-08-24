@@ -156,6 +156,114 @@ public class HealthViewModelTests
         Assert.False(vm.Rows.Single(r => r.RuleId == "power-plan").HasStorageAction);
     }
 
+    /// Kind decides placement: a Notice leaves the advise section for its
+    /// own band. It is NEVER hidden — kind changes scoring and placement,
+    /// and a fact brisk can only report still gets a card that says so.
+    [Fact]
+    public async Task NoticeFindings_LandInTheNoticeBand_NotTheAdviseSection()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+
+        await state.ScanAsync();
+
+        Assert.Single(vm.AdviseRows);
+        Assert.Equal("disk-breakdown", vm.AdviseRows[0].RuleId);
+        Assert.Single(vm.NoticeRows);
+        Assert.Equal("thermals", vm.NoticeRows[0].RuleId);
+        Assert.Empty(vm.Rows.Where(r => r.RuleId == "thermals"));
+
+        // The band is rebuilt by each scan, not stacked onto.
+        await state.ScanAsync();
+        Assert.Single(vm.NoticeRows);
+    }
+
+    /// Notices cost the score nothing, but they are still worth reading, so
+    /// the hero sentence counts them among the öneri. A page whose only
+    /// findings are notices must not announce good news directly above a
+    /// band that is listing them — that would erase them from the count.
+    [Fact]
+    public async Task StatusLine_CountsNotices_AmongTheAdvice()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+
+        await state.ScanAsync();
+
+        Assert.Empty(vm.Rows);
+        Assert.Empty(vm.AdviseRows);          // the notice band holds it alone
+        Assert.Equal(loc.F("overview.status.advise", 1), vm.StatusLine);
+        Assert.NotEqual(loc["overview.status.good"], vm.StatusLine);
+
+        // advice and notices together: one count spanning both bands
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+        Assert.Equal(loc.F("overview.status.advise", 2), vm.StatusLine);
+
+        // A problem alongside a notice: the advisory count must never
+        // outrank a fixable row. "Bilgisayarın iyi durumda — 1 öneri" over
+        // a page listing something brisk can fix is the exact reassurance
+        // this wave exists to stop.
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+        Assert.Equal(loc["overview.status.attention"], vm.StatusLine);
+    }
+
+    /// The overview band's "see the evidence" opens the named card wherever
+    /// it sits — the problem list, the advice, or the notice band.
+    ///
+    /// All three bands are asserted positively because all three are real:
+    /// RevelationPicker leads with startup-bloat or display-refresh (problem
+    /// rows) and disk-breakdown (advise) as readily as with a notice, so
+    /// whichever band the link reaches depends on the machine, not on the
+    /// caller. A band lost from the lookup would be navigate-but-don't-expand
+    /// — the defect this method exists to fix, returning silently for
+    /// everyone whose top revelation is not a notice.
+    [Fact]
+    public async Task ExpandFinding_OpensTheNamedCard_WhereverItLives()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("startup-bloat", cat: RuleCategory.Confirm, canFix: true),
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        vm.ExpandFinding("startup-bloat");    // problem list
+        vm.ExpandFinding("disk-breakdown");   // advice
+        vm.ExpandFinding("thermals");         // notice band
+
+        Assert.True(vm.Rows.Single(r => r.RuleId == "startup-bloat").IsExpanded);
+        Assert.True(vm.AdviseRows.Single(r => r.RuleId == "disk-breakdown").IsExpanded);
+        Assert.True(vm.NoticeRows.Single(r => r.RuleId == "thermals").IsExpanded);
+        // A card nobody asked for stays shut: the link opens one, not the page.
+        Assert.False(vm.Rows.Single(r => r.RuleId == "power-plan").IsExpanded);
+    }
+
     [Fact]
     public async Task SectionFilter_SplitsFindingsAcrossPages()
     {
@@ -182,6 +290,24 @@ public class HealthViewModelTests
         Assert.Equal(new[] { "storage-sense", "some-future-rule" },
             health.Rows.Select(r => r.RuleId));
         Assert.Equal(new[] { "thermals" }, health.AdviseRows.Select(r => r.RuleId));
+    }
+
+    /// The notice rules are the ones the revelation band leads with, and
+    /// "see the evidence" routes off THIS predicate — so the id-to-page
+    /// mapping is pinned directly, not just through a view model's filter.
+    /// boot-degradation is the one live use caught: its card is on
+    /// Performans and the link went to Sağlık. Moving an id between the two
+    /// sets is a routing change, and it has to fail a test to happen.
+    [Theory]
+    [InlineData("boot-degradation", true)]
+    [InlineData("memory-speed", true)]
+    [InlineData("ram-pressure", true)]
+    [InlineData("thermals", false)]     // machine condition, not a speed lever
+    public void NoticeRules_ClassifyToThePageThatHoldsTheirCard(
+        string ruleId, bool onPerformance)
+    {
+        Assert.Equal(onPerformance, FindingSections.IsPerformance(ruleId));
+        Assert.Equal(!onPerformance, FindingSections.IsHealth(ruleId));
     }
 
     [Fact]

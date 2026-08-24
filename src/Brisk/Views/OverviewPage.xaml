@@ -264,7 +264,7 @@
                                        Text="{Binding RevelationEvidence}" />
                             <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
                                 <Button Style="{StaticResource LinkButton}"
-                                        Command="{Binding OpenHealthCommand}"
+                                        Command="{Binding OpenFindingCommand}"
                                         Content="{Binding [overview.revelation.see], Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Margin="12,0,0,0" VerticalAlignment="Center"
                                            FontSize="11"

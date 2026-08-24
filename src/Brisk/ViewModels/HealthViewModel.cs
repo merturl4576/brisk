@@ -192,6 +192,12 @@ public sealed class HealthViewModel : ViewModelBase
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
     public ObservableCollection<FindingRow> AdviseRows { get; } = new();
+    /// Findings brisk can only report — the ones whose Kind is Notice. They
+    /// cost the score nothing, so they get their own band under the advice
+    /// instead of sitting among suggestions the user can act on. Splitting
+    /// them out is the only thing Kind changes here: a notice is never
+    /// hidden, and its card renders exactly like an advise card.
+    public ObservableCollection<FindingRow> NoticeRows { get; } = new();
     /// Journal-driven report rows for this page's slice of the rules (the
     /// doneFilter): every fix still in effect, newest first. Replaces the
     /// round-5 static "optimized" checklist — the report claims only what
@@ -424,6 +430,20 @@ public sealed class HealthViewModel : ViewModelBase
         Raise(nameof(ShowDoneReport));
     }
 
+    /// The revelation band's "see the evidence" lands here: open the named
+    /// card so the user reads the evidence instead of hunting for it. All
+    /// three bands are searched — a notice is a finding like any other, and
+    /// the band it sits in is not the caller's business.
+    public void ExpandFinding(string ruleId)
+    {
+        foreach (var row in Rows.Concat(AdviseRows).Concat(NoticeRows))
+            if (string.Equals(row.RuleId, ruleId, StringComparison.OrdinalIgnoreCase))
+            {
+                row.IsExpanded = true;
+                return;
+            }
+    }
+
     /// Row lookup for fix-all's per-rule progress. Runs on the fix-all worker
     /// thread; the scalar state writes it leads to are marshaled by WPF's
     /// binding engine. If a concurrent rescan rebuilds the list mid-walk,
@@ -449,11 +469,14 @@ public sealed class HealthViewModel : ViewModelBase
         var undoable = journal.Select(u => u.RuleId).ToHashSet();
         Rows.Clear();
         AdviseRows.Clear();
+        NoticeRows.Clear();
         foreach (var finding in snapshot.Findings
                      .Where(f => _filter?.Invoke(f) ?? true)
                      .OrderByDescending(f => f.Severity)
                      .ThenByDescending(f => f.ImpactStars))
-            (finding.Category == RuleCategory.Advise ? AdviseRows : Rows)
+            (finding.Kind == FindingKind.Notice ? NoticeRows
+                : finding.Category == RuleCategory.Advise ? AdviseRows
+                : Rows)
                 .Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
                     row => _ = FixAsync(row), row => _ = UndoAsync(row),
                     _ => OpenStorageRequested?.Invoke()));
@@ -474,8 +497,13 @@ public sealed class HealthViewModel : ViewModelBase
         ScoreText = snapshot.Health.ToString();
         ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
+        // Notices cost the score nothing, but they are still worth
+        // reading — so the sentence counts both bands. Counting only
+        // the advice would announce good news over a page still
+        // showing what brisk measured and cannot fix.
+        var advisory = AdviseRows.Count + NoticeRows.Count;
         StatusLine = Rows.Count > 0 ? _loc["overview.status.attention"]
-            : AdviseRows.Count > 0 ? _loc.F("overview.status.advise", AdviseRows.Count)
+            : advisory > 0 ? _loc.F("overview.status.advise", advisory)
             : _loc["overview.status.good"];
         FixAllCommand.RaiseCanExecuteChanged();
     }

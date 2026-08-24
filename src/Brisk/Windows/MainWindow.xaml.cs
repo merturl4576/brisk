@@ -35,8 +35,22 @@ public partial class MainWindow : Window
         // quiet "{n} more findings …" row navigates to the sibling page.
         health.CrossNavigateRequested += () => NavPerf.IsChecked = true;
         performance.CrossNavigateRequested += () => NavHealth.IsChecked = true;
-        // The revelation band's "see the evidence" lands on Sağlık.
-        overview.OpenHealthRequested += () => NavHealth.IsChecked = true;
+        // The band's "see the evidence" goes to the page that HOSTS the
+        // finding — the boot finding lives on Performans, and sending its
+        // reader to Sağlık was the first defect live use found.
+        overview.OpenFindingRequested += ruleId =>
+        {
+            if (FindingSections.IsPerformance(ruleId))
+            {
+                NavPerf.IsChecked = true;
+                performance.ExpandFinding(ruleId);
+            }
+            else
+            {
+                NavHealth.IsChecked = true;
+                health.ExpandFinding(ruleId);
+            }
+        };
         // Live tiles pulse only while this window is truly on screen: shown
         // starts it; hide/close-to-tray/minimize stops it. The flyout never
         // hosts live tiles, so no other window can start the timer.

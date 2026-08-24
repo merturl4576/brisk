@@ -132,6 +132,9 @@ public class MemorySpeedRuleTests
         Assert.Equal("memory-speed", finding.RuleId);
         Assert.Equal(Severity.Warning, finding.Severity);
         Assert.Equal(4, finding.ImpactStars);
+        // The evidence refuses to tell anyone to change a BIOS setting; a
+        // score that docked 12 points for it would be giving that order.
+        Assert.Equal(FindingKind.Notice, finding.Kind);
         Assert.Equal("rule.memory-speed.title", finding.TitleKey);
         Assert.Equal("rule.memory-speed.evidence", finding.EvidenceKey);
         // NotNull was the whole assertion here, and swapping the arg for

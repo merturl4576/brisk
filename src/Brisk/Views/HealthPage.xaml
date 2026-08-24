@@ -145,6 +145,23 @@
                 </TextBlock>
                 <ItemsControl ItemsSource="{Binding AdviseRows}"
                               ItemTemplate="{StaticResource FindingCard}" />
+                <!-- Facts brisk can only report: they cost the score nothing,
+                     so they stand below the advice under their own heading —
+                     still shown, still measured, just not asking for a fix. -->
+                <TextBlock Margin="0,10,0,6"
+                           Text="{Binding [health.notice.section], Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource SectionLabel}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NoticeRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding NoticeRows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
                 <!-- Where the rest of the findings live (category split):
                      a quiet link to the Performans page. -->
                 <Button Style="{StaticResource LinkButton}"

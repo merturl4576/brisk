@@ -116,10 +116,10 @@ public static class TestData
     public static DiagnosticFinding Finding(string ruleId, Severity sev = Severity.Warning,
         RuleCategory cat = RuleCategory.Auto, int stars = 3, bool canFix = true,
         string? evidenceKey = null, IReadOnlyList<string>? evidenceArgs = null,
-        Headline? headline = null) => new(
+        Headline? headline = null, FindingKind kind = FindingKind.Problem) => new(
         ruleId, $"rule.{ruleId}.title", $"Title {ruleId}", $"Evidence {ruleId}",
         sev, cat, stars, canFix, canFix ? $"Fix {ruleId}" : null,
-        evidenceKey, evidenceArgs, headline);
+        evidenceKey, evidenceArgs, headline, kind);
 
     public static TargetScanResult Target(string id, CleanupLevel level, long bytes,
         string? skipped = null, bool pick = false, bool optIn = false, bool admin = false,

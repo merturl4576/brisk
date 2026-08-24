@@ -74,7 +74,12 @@ public sealed class MemorySpeedRule : AdviseRuleBase
             Headline: new Headline(
                 $"{configured} MT/s", $"rated for {rated} MT/s",
                 $"rule.{Id}.headline.value", new[] { configured },
-                $"rule.{Id}.headline.caption", new[] { rated }));
+                $"rule.{Id}.headline.caption", new[] { rated }),
+            // A notice: the evidence explicitly declines to tell anyone to
+            // change a BIOS setting, and one of the two causes it names is a
+            // board that cannot go faster. A score charging for the gap gives
+            // the order the sentence just refused to give.
+            Kind: FindingKind.Notice);
     }
 
     /// A module is only slow if both of its numbers are real. A rated speed

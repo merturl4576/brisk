@@ -55,6 +55,24 @@ public class StartupBloatRuleTests
         // No heavy tail → the shorter evidence template, count only.
         Assert.Equal("rule.startup-bloat.evidence", finding!.EvidenceKey);
         Assert.Equal(new[] { "6" }, finding.EvidenceArgs);
+        // This branch also fires just AFTER a successful fix has taken the
+        // heavy programs out, so it must not read like the fix did nothing:
+        // with nothing left that brisk would touch, the remaining programs
+        // are the reader's judgement to make.
+        //
+        // Pinned whole rather than sampled. This exact sentence is what the
+        // CLI prints, and Strings.resx restates it for the GUI under the key
+        // asserted above — EvidenceLocalizationTests pins that render against
+        // the same literal. Two full pins on one sentence are what keeps the
+        // terminal reader and the GUI reader from being told different
+        // things; a sampled assert would let a reworded tail through.
+        //
+        // Note where it points: at a named surface, not "below". The CLI
+        // prints this into a terminal with nothing below it, so deixis that
+        // reads fine on the Performance page would be a lie in the shell.
+        Assert.Equal("6 programs start with Windows. None of them is on brisk's " +
+            "heavy list, so which ones you actually need is your call — review " +
+            "them under Startup programs on the Performance page.", finding.Evidence);
     }
 
     [Fact]

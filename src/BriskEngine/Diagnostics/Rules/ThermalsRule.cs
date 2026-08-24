@@ -106,6 +106,10 @@ public sealed class ThermalsRule : AdviseRuleBase
             "System is running hot",
             $"{readings}.{note} {Advice}",
             Severity.Warning, Category, ImpactStars: 2, CanFix: false, FixDescription: null,
-            EvidenceKey: $"rule.{Id}.evidence{variant}", EvidenceArgs: new[] { readings });
+            EvidenceKey: $"rule.{Id}.evidence{variant}", EvidenceArgs: new[] { readings },
+            // A notice: this is a temperature brisk read, and the advice it
+            // carries is fans and thermal paste. Docking the score for it
+            // would be brisk grading a machine on work only hands can do.
+            Kind: FindingKind.Notice);
     }
 }

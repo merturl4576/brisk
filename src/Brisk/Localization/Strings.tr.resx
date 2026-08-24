@@ -53,6 +53,7 @@
   <data name="health.restorepointfailed" xml:space="preserve"><value>geri yükleme noktası oluşturulamadı — hiçbir şey değiştirilmedi</value></data>
   <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
   <data name="health.advise.section" xml:space="preserve"><value>Öneriler</value></data>
+  <data name="health.notice.section" xml:space="preserve"><value>brisk'in yalnızca bildirebildikleri</value></data>
   <data name="finding.details" xml:space="preserve"><value>Ayrıntılar</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Düzeltiliyor…</value></data>
@@ -166,7 +167,7 @@
   <data name="rule.power-plan.evidence" xml:space="preserve"><value>Etkin plan: {0}. Bu plan CPU hızlarını bilerek sınırlar; performans planı işlemcinin tam turbo hızına çıkmasına izin verir.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>Bu bilgisayarda iki GPU var; {0} için yüksek performanslı GPU tercihi tanımlı değil, bu yüzden Windows onu yavaş tümleşik GPU'da çalıştırabilir.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
-  <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor.</value></data>
+  <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Hiçbiri brisk'in ağır listesinde değil; hangilerinin sana gerçekten gerekli olduğu senin kararın — Performans sayfasındaki Açılış programları listesinden gözden geçir.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}.</value></data>
   <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>program Windows ile başlıyor</value></data>
