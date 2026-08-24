@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Media;
 using Brisk.Theming;
@@ -21,25 +21,51 @@ namespace Brisk.Views;
 public sealed class AtmosphereLayer : FrameworkElement
 {
     // ------------------------------------------------------------------
-    // The tuning surface. Every number the atmosphere's LOOK depends on is
-    // named here rather than buried in OnRender, because these are starting
-    // values judged against rendered images, not settled ones.
+    // The tuning surface, and it is SETTLED. These three opacities were
+    // chosen from rendered images at the variant gate, not argued about —
+    // the middle weight, with the horizon glow raised until it could
+    // actually be seen.
     //
-    // The three opacities are also a legibility budget: BrightestComposite()
-    // composites exactly these, in exactly this order, and ContrastTests
-    // refuses anything that pushes TextMuted under 4.5:1. Raise one and the
-    // test says so.
+    // They are also a legibility budget, and THE BUDGET IS NOW SPENT.
+    // BrightestComposite() composites exactly these, in exactly this order,
+    // and ContrastTests refuses anything that pushes TextMuted under 4.5:1.
+    // What they compose to is (20,44,61), which is 4.51:1 — seven
+    // thousandths above the floor.
+    //
+    // So the rule the rest of the cockpit has to obey: NOTHING ELSE MAY ADD
+    // LIGHT to anything BrightestComposite() accounts for. A lit panel edge,
+    // a floor ellipse, any new decoration on the bare ground — each carries
+    // its OWN contrast check rather than leaning on this one, because there
+    // is no room left underneath it.
+    //
+    // And if headroom is ever genuinely needed, it is bought by lightening
+    // TextMuted one step. NEVER by dimming the atmosphere back down: the
+    // weight below is what the design was chosen at, and quietly returning
+    // it would undo the decision instead of paying for the new thing.
     // ------------------------------------------------------------------
 
     /// How much of the texture colour a rain column adds to the sky.
     public const double RainOpacity = 0.04;
 
-    /// The grid floor's line opacity (spec band: 8-12%).
+    /// The grid floor's line opacity. The spec's band was 8-12%, and the top
+    /// of that band turns out not to be affordable — anything past 0.107
+    /// fails the floor even with rain and glow left alone.
     public const double GridOpacity = 0.08;
 
     /// The horizon glow's opacity AT ITS CENTRE; it falls to nothing at the
     /// edge of the ellipse below.
-    public const double GlowOpacity = 0.03;
+    ///
+    /// This is the most expensive number in the file: AccentGlow is a bright
+    /// turquoise, so each 1% here costs about 0.11 of contrast ratio against
+    /// the 0.05 that rain or grid costs. It opened at 0.03 and was RAISED,
+    /// which is the opposite of what a budget argument would suggest, for a
+    /// reason that only a render of the bare layer could show: at 0.03 the
+    /// entire horizon was six levels of green across 1100 pixels — invisible,
+    /// while still charging 0.28 of ratio for the privilege. A light at the
+    /// end of the floor is the most cockpit-like thing in the concept, so it
+    /// was made real rather than deleted. 0.045 is the ceiling that leaves
+    /// rain and grid where they are.
+    public const double GlowOpacity = 0.045;
 
     /// The glow ellipse's radii, as fractions of the window. Wide and flat —
     /// a horizon is a long light, not a lamp.
