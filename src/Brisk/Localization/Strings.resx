@@ -9,6 +9,10 @@
   <data name="nav.performance" xml:space="preserve"><value>Performance</value></data>
   <data name="nav.clean" xml:space="preserve"><value>Storage</value></data>
   <data name="nav.settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="chrome.minimize" xml:space="preserve"><value>Minimize</value></data>
+  <data name="chrome.maximize" xml:space="preserve"><value>Maximize</value></data>
+  <data name="chrome.restore" xml:space="preserve"><value>Restore</value></data>
+  <data name="chrome.close" xml:space="preserve"><value>Close</value></data>
   <data name="perf.title" xml:space="preserve"><value>Performance</value></data>
   <data name="overview.status.good" xml:space="preserve"><value>Your PC is in good shape</value></data>
   <data name="overview.status.attention" xml:space="preserve"><value>Some findings need attention</value></data>

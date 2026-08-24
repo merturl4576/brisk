@@ -101,6 +101,23 @@ public static class SnapshotRenderer
         return path;
     }
 
+    /// The same STA thread, the same installed theme and the same lock as
+    /// Capture — for a test that needs to DRIVE a piece of the cockpit rather
+    /// than photograph it. It shares the gate because it shares the
+    /// Application: two WPF tests running at once would be building controls
+    /// against one resource dictionary from two threads.
+    public static void OnUiThread(Action work)
+    {
+        lock (Gate)
+        {
+            OnStaThread(() =>
+            {
+                InstallTheme();
+                work();
+            });
+        }
+    }
+
     /// How many distinct 32-bit pixel values the PNG holds. A render that drew nothing
     /// is a flat fill — one colour, or a handful from a background gradient —
     /// and that is the failure this exists to catch: the report card once

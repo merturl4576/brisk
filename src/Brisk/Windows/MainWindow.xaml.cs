@@ -1,5 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Automation;
+using Brisk.Localization;
 using Brisk.Theming;
 using Brisk.ViewModels;
 
@@ -59,11 +61,17 @@ public partial class MainWindow : Window
         {
             UpdateLiveTicking();
             // Snap layouts and double-click-on-caption change the state
-            // without going through our button, so the glyph follows the
-            // STATE rather than the click.
-            UpdateMaximizeGlyph();
+            // without going through our button, so what the button SHOWS and
+            // what it is CALLED both follow the state rather than the click.
+            UpdateMaximizeButton();
         };
-        UpdateMaximizeGlyph();
+        // The other two caption buttons take their name and tooltip from
+        // bindings, which re-read themselves when Loc raises Item[]. This one
+        // is set in code, so it has to be told — otherwise switching language
+        // on the Settings page would leave the middle button announcing its
+        // old name while every label around it changed.
+        Loc.Instance.PropertyChanged += (_, _) => UpdateMaximizeButton();
+        UpdateMaximizeButton();
     }
 
     /// Segoe Fluent Icons ChromeMaximize / ChromeRestore. Codepoints in an
@@ -72,9 +80,23 @@ public partial class MainWindow : Window
     private const string MaximizeGlyph = "\uE922";
     private const string RestoreGlyph = "\uE923";
 
-    private void UpdateMaximizeGlyph() =>
-        MaximizeButton.Content =
-            WindowState == WindowState.Maximized ? RestoreGlyph : MaximizeGlyph;
+    /// Glyph, accessible name and tooltip in one place, because this one
+    /// button is two buttons: Maximize on a normal window, Restore on a
+    /// maximized one. Windows' own caption buttons swap their name the same
+    /// way, so following the state is the LESS surprising choice for a screen
+    /// reader user, not the more. A name left saying "Maximize" while the
+    /// glyph said restore would be a quietly wrong claim aimed at exactly the
+    /// people least able to check it against the picture.
+    private void UpdateMaximizeButton()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        MaximizeButton.Content = maximized ? RestoreGlyph : MaximizeGlyph;
+        // ONE string behind both, so the spoken name and the tooltip cannot
+        // drift apart the way two keys eventually would.
+        var name = Loc.Instance[maximized ? "chrome.restore" : "chrome.maximize"];
+        AutomationProperties.SetName(MaximizeButton, name);
+        MaximizeButton.ToolTip = name;
+    }
 
     private void Minimize_Click(object sender, RoutedEventArgs e) =>
         WindowState = WindowState.Minimized;

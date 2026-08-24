@@ -9,6 +9,10 @@
   <data name="nav.performance" xml:space="preserve"><value>Performans</value></data>
   <data name="nav.clean" xml:space="preserve"><value>Depolama</value></data>
   <data name="nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="chrome.minimize" xml:space="preserve"><value>Küçült</value></data>
+  <data name="chrome.maximize" xml:space="preserve"><value>Ekranı kapla</value></data>
+  <data name="chrome.restore" xml:space="preserve"><value>Önceki boyuta getir</value></data>
+  <data name="chrome.close" xml:space="preserve"><value>Kapat</value></data>
   <data name="perf.title" xml:space="preserve"><value>Performans</value></data>
   <data name="overview.status.good" xml:space="preserve"><value>Bilgisayarın iyi durumda</value></data>
   <data name="overview.status.attention" xml:space="preserve"><value>İlgilenilmesi gereken bulgular var</value></data>

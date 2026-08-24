@@ -96,13 +96,26 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                         VerticalAlignment="Top">
+                <!-- Windows used to own these three and named them in the
+                     user's language; drawing them ourselves took that away,
+                     so each one carries its own name. The accessible name
+                     and the tooltip read the SAME key — one resource, so a
+                     screen reader and a hovering mouse can never be told two
+                     different things about one button. -->
                 <Button x:Name="MinimizeButton" Content="&#xE921;"
                         Style="{StaticResource CaptionButton}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        AutomationProperties.Name="{Binding [chrome.minimize],
+                            Source={x:Static loc:Loc.Instance}}"
+                        ToolTip="{Binding [chrome.minimize],
+                            Source={x:Static loc:Loc.Instance}}"
                         Click="Minimize_Click" />
-                <!-- Content is set from code-behind too: the glyph is the
-                     restore chevron while maximized. -->
-                <Button x:Name="MaximizeButton" Content="&#xE922;"
+                <!-- No name, tooltip or glyph here: this button says three
+                     different things depending on the window state, and all
+                     three are set together by UpdateMaximizeButton so they
+                     cannot disagree. A static "Maximize" would be a lie half
+                     the time. -->
+                <Button x:Name="MaximizeButton"
                         Style="{StaticResource CaptionButton}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True"
                         Click="Maximize_Click" />
@@ -111,6 +124,10 @@
                 <Button x:Name="CloseButton" Content="&#xE8BB;"
                         Style="{StaticResource CaptionClose}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        AutomationProperties.Name="{Binding [chrome.close],
+                            Source={x:Static loc:Loc.Instance}}"
+                        ToolTip="{Binding [chrome.close],
+                            Source={x:Static loc:Loc.Instance}}"
                         Click="Close_Click" />
             </StackPanel>
         </Grid>

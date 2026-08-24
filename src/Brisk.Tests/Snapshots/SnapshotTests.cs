@@ -105,7 +105,7 @@ public class SnapshotTests
     /// App.xaml.cs performs, with the engine, the recycle bin and the
     /// process/registry surfaces replaced. Everything is built on the render
     /// thread, because that is the thread the window will live on.
-    private static Window CockpitWindow()
+    internal static Window CockpitWindow()
     {
         var host = new FakeEngineHost
         {

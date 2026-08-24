@@ -86,7 +86,14 @@ public sealed class ShellSourceTests
             "WindowChrome window is extended past every screen edge, so its " +
             "content has to be pushed back in by that much");
         Assert.Contains("WindowState", margin!, StringComparison.Ordinal);
-        Assert.Contains("Converter", margin!, StringComparison.Ordinal);
+        // Named, not merely present. "reads WindowState through SOME converter"
+        // is satisfied by every converter in the app, and MaximizedMarginTests
+        // only proves what MaximizedMargin answers when something asks it — so
+        // between the two of them a window wired to the wrong converter passed
+        // both. This is the only piece of the shell whose correctness rests
+        // entirely on its own arithmetic, since nobody has yet maximized a
+        // real brisk window and looked at it.
+        Assert.Contains("MaximizedMargin", margin!, StringComparison.Ordinal);
     }
 
     /// The rail is gone, so a tile floats directly on the atmosphere and has
@@ -94,6 +101,12 @@ public sealed class ShellSourceTests
     /// selection — must differ from the tile's resting fill AND from the
     /// ground behind it, in BOTH themes: the regression this refuses shipped
     /// as two keys that had quietly become the same colour.
+    ///
+    /// "The ground" is two keys, not one. The atmosphere is a gradient from
+    /// Bg0 at the window's edges down to Bg, and the tiles sit high on the
+    /// left where the SKY is — so a fill that drifted toward Bg0 would dim
+    /// the tiles into their own background while a Bg-only check waved it
+    /// through. Both ends of the gradient are checked.
     [Fact]
     public void NavTile_HoverAndSelection_AreVisibleAgainstTheGround()
     {
@@ -113,7 +126,8 @@ public sealed class ShellSourceTests
             var key = ResourceKey.Match(fill).Groups[1].Value;
             Assert.NotEqual("", key);
             foreach (var theme in new[] { "Dark.xaml", "Light.xaml" })
-                Assert.NotEqual(ThemeSource.ColorOf(theme, "Bg"),
+            foreach (var ground in new[] { "Bg", "Bg0" })
+                Assert.NotEqual(ThemeSource.ColorOf(theme, ground),
                     ThemeSource.ColorOf(theme, key));
         }
 

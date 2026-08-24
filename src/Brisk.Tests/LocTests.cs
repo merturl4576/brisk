@@ -191,6 +191,15 @@ public class LocTests
     // above the cards instead of the sentence that explains why they carry no
     // button.
     [InlineData("health.notice.section")]
+    // The window's own caption controls. Windows used to name these buttons
+    // in the user's language; brisk draws them itself now, so a miss here
+    // announces a private-use-area glyph to a screen reader and shows the raw
+    // key in the tooltip. Restore is listed beside Maximize because the middle
+    // button carries both names, one per window state.
+    [InlineData("chrome.minimize")]
+    [InlineData("chrome.maximize")]
+    [InlineData("chrome.restore")]
+    [InlineData("chrome.close")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();
@@ -457,6 +466,37 @@ public class LocTests
         Assert.DoesNotContain("bulgu", loc["report.fixes.more"]);
         // The borrowed key keeps its own noun — it is correct where it belongs.
         Assert.Contains("bulgu", loc["overview.revelation.more"]);
+    }
+
+    /// The caption buttons, pinned by value in both languages.
+    ///
+    /// Maximize is not fullscreen — a maximized window keeps its taskbar and
+    /// its title bar — so "Tam ekran yap" would name something this button
+    /// does not do, which is the same class of defect as a findings card
+    /// claiming a measurement it never took. Windows' own Turkish calls this
+    /// control "Ekranı kapla", and a caption button is the one control where
+    /// a user arrives with muscle memory from every other app on the machine:
+    /// matching the platform IS the requirement, not a preference. Pinned by
+    /// value because a plausible-sounding rewrite is exactly how a wrong word
+    /// gets in, and nothing else in the suite would notice.
+    [Theory]
+    [InlineData("en", "Minimize", "Maximize", "Restore", "Close")]
+    [InlineData("tr", "Küçült", "Ekranı kapla", "Önceki boyuta getir", "Kapat")]
+    public void CaptionButtonNames_SayWhatTheButtonsDo(string language,
+        string minimize, string maximize, string restore, string close)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        Assert.Equal(minimize, loc["chrome.minimize"]);
+        Assert.Equal(maximize, loc["chrome.maximize"]);
+        Assert.Equal(restore, loc["chrome.restore"]);
+        Assert.Equal(close, loc["chrome.close"]);
+
+        // The claim the middle button may never make.
+        foreach (var fullscreen in new[] { "Tam ekran", "Fullscreen", "Full screen" })
+            Assert.DoesNotContain(fullscreen, loc["chrome.maximize"],
+                StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
