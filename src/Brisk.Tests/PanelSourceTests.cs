@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml.Linq;
 using Brisk.Localization;
@@ -92,7 +93,14 @@ public sealed class PanelSourceTests
     /// through it FIRST: a page-local `BasedOn` style is free to add setters
     /// of its own, and the nearest style wins. That sentence was here before
     /// the code was, which is the defect a reviewer caught — see
-    /// InlineStyleOf.
+    /// InlineStyleOf. A local ATTRIBUTE beats both, and missing it was the
+    /// second half of the same omission; it is checked below.
+    ///
+    /// Only direct <Setter> children of a style count, here as in the cards
+    /// guard: a setter inside <Style.Triggers> is a state rather than a
+    /// dress, which is how the finding card keeps its hover fill. A page that
+    /// trimmed its heading from a trigger would pass. That is a knowing gap,
+    /// not an oversight.
     [Theory]
     [InlineData("HealthPage.xaml", "health.advise.section")]
     [InlineData("HealthPage.xaml", "health.notice.section")]
@@ -117,6 +125,18 @@ public sealed class PanelSourceTests
         Assert.False(setters.ContainsKey("TextTrimming"),
             $"{page}'s [{key}] heading trims after all — a style on the page " +
             "put the ellipsis back that PanelHeader was written to keep out");
+
+        // The same two claims on the ELEMENT, because a local attribute beats
+        // every style setter in WPF — which left this guard green under a
+        // one-attribute mutation while the Turkish heading trimmed on screen.
+        // The cards guard below had been checking both surfaces all along.
+        Assert.True(heading!.Attribute("TextTrimming") is null,
+            $"{page}'s [{key}] heading sets TextTrimming as a local attribute, " +
+            "which beats every setter PanelHeader has");
+        var wrapping = (string?)heading!.Attribute("TextWrapping");
+        Assert.True(wrapping is null or "Wrap",
+            $"{page}'s [{key}] heading sets TextWrapping to {wrapping} as a " +
+            "local attribute, which beats the Wrap that PanelHeader sets");
     }
 
     /// The cards on Sağlık, Performans and Depolama are not written on those
@@ -261,10 +281,26 @@ public sealed class PanelSourceTests
     /// said to stop for, and I shipped it as "appearance".
     ///
     /// Asserted on a BUILT card rather than on two setters, and in both
-    /// directions: the panel is out of the tab order AND the expander inside
-    /// it is still in it. Reading the setters alone would be satisfied by a
-    /// panel that had taken the card's own controls out of the tab order with
-    /// it, which is a worse defect than the one being fixed.
+    /// directions: the panel is out of the tab order, and it did not take the
+    /// card with it. Reading the setters alone would be satisfied by an
+    /// over-broad fix that locked the keyboard out of the card's own
+    /// controls, which is a worse defect than the one being fixed.
+    ///
+    /// The second direction takes THREE properties, and picking the wrong one
+    /// is a mistake this test already shipped once: it asserted only
+    /// expander.IsTabStop, which NO edit to CockpitPanel can flip, because
+    /// Focusable and IsTabStop do not inherit. The guard named an adversary
+    /// it could not see. The two ways a panel really can drag its contents
+    /// out of the tab order both travel DOWN the tree:
+    ///
+    ///   * TabNavigation=None on the panel makes Tab skip the whole subtree
+    ///     while every IsTabStop under it stays true. It is one plausible
+    ///     hardening line away, and it would leave every finding row
+    ///     impossible to open from the keyboard.
+    ///   * IsEnabled=False inherits, so it disables the subtree outright.
+    ///
+    /// expander.IsTabStop stays as the third, since it is the one that
+    /// speaks for the expander itself.
     [Fact]
     public void ThePanel_IsNoKeyboardStop_ButItsExpanderStillIs()
     {
@@ -285,11 +321,21 @@ public sealed class PanelSourceTests
                 "rectangle on it, the one artefact Win11FocusVisual exists " +
                 "to keep off this app");
 
+            // Tab has to keep DESCENDING into the panel, and this is the one
+            // the expander cannot answer for: TabNavigation=None here would
+            // skip the whole subtree with every IsTabStop under it left true.
+            Assert.Equal(KeyboardNavigationMode.Continue,
+                KeyboardNavigation.GetTabNavigation(panel));
+            // IsEnabled, unlike the two above, DOES inherit — so a panel
+            // that took this one down would take the whole card down with it.
+            Assert.True(panel.IsEnabled,
+                "the panel is disabled " + Dash + "IsEnabled inherits, so the " +
+                "expander and both buttons under it went with it");
+
             var expander = Descendants(card).OfType<ToggleButton>().First();
             Assert.True(expander.IsTabStop,
-                "the panel took the card's own expander out of the tab order " +
-                "with it " + Dash + "the row can no longer be opened from the " +
-                "keyboard at all");
+                "the expander is not a tab stop " + Dash + "the row can no " +
+                "longer be opened from the keyboard at all");
         });
     }
 
