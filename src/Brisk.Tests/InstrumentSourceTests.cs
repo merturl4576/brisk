@@ -176,6 +176,124 @@ public sealed class InstrumentSourceTests
     }
 
     // ------------------------------------------------------------------
+    // The instrument's own palette.
+    // ------------------------------------------------------------------
+
+    /// The readout in the middle of the dial, against the fill the hero
+    /// family paints behind it. 4.5:1 and not the arcs' 3:1 because these are
+    /// glyphs: the score is 56 px and would clear WCAG's large-text allowance
+    /// on its own, but the captions sharing its panel are 10.5 and 11 px
+    /// small-caps, and they are read as one readout with it.
+    ///
+    /// EVERY colour the style can apply is measured, not the one setter that
+    /// happens to be written first. HeroScore paints the score in HeroText
+    /// only until a scan lands, and in one of the three brights ever after —
+    /// so a check that read the default alone would certify the one colour a
+    /// reader mostly does not see.
+    ///
+    /// A Theory over styles rather than over dictionaries, unlike the
+    /// satellites above: the Hero* family is always-dark in BOTH themes by
+    /// design, so there is exactly one state to measure.
+    ///
+    /// HeroStripCaption is the page heroes' caption — Sağlık, Performans and
+    /// Depolama each open with a strip wearing this same fill — and it holds
+    /// no colour of its own, so it is also what makes the BasedOn walk below
+    /// load-bearing rather than merely written.
+    [Theory]
+    [InlineData("HeroScore")]
+    [InlineData("HeroPodCaption")]
+    [InlineData("HeroStripCaption")]
+    public void TheScoreAndItsCaption_StayLegibleOnTheInstrumentsOwnFill(string style)
+    {
+        var ground = PanelGround();
+
+        foreach (var key in StyleBrushKeys(style, "Foreground"))
+        {
+            // Composited, not compared raw, for HeroMuted's sake: it is 55%
+            // white, so the colour a reader actually sees is the panel
+            // showing through it.
+            var ink = Composite(ground, SharedColor(key), 1);
+
+            var ratio = Contrast.Ratio(ink, ground);
+            Assert.True(ratio >= 4.5,
+                $"{style}'s {key} on the instrument's own fill is {ratio:F2}:1 " +
+                "— under the 4.5:1 floor text has to clear, so the panel was " +
+                "retuned out from under the readout standing on it");
+        }
+    }
+
+    /// The health ring's lit segments, at the 3:1 floor a graphical object
+    /// has to clear — the arcs' floor, for the arcs' reason. All three bands,
+    /// because a ring that is legible only while the machine is healthy goes
+    /// quiet exactly when it has something to say.
+    ///
+    /// The UNLIT track is deliberately not in here. It is the ABSENCE of a
+    /// segment rather than a segment — 12% white, nowhere near 3:1 — and
+    /// pinning it would pin a floor the instrument does not want.
+    [Fact]
+    public void TheLitRingSegments_StandOutAgainstThePanelBehindThem()
+    {
+        var ground = PanelGround();
+
+        foreach (var key in ElementBrushKeys("LitGauge", "LitBrush"))
+        {
+            var ratio = Contrast.Ratio(Composite(ground, SharedColor(key), 1), ground);
+            Assert.True(ratio >= 3.0,
+                $"the lit ring's {key} on the panel behind it is {ratio:F2}:1 — " +
+                "under the 3:1 floor a graphical object has to clear, so the one " +
+                "element in this instrument that carries a claim cannot be read");
+        }
+    }
+
+    /// Local beats style, in WPF and in this file's blind spot: every ratio
+    /// above is read off a Style, so a Foreground or an Opacity written on
+    /// the INSTANCE would override the value being measured, and every check
+    /// here would go on certifying a colour the page had stopped drawing.
+    ///
+    /// Only the properties that are measured, and only on the page this file
+    /// reads. A local FontSize or TextAlignment is how these styles are meant
+    /// to be specialised — the overview sets both — so a check that forbade
+    /// every local value would be a check against using styles at all.
+    [Fact]
+    public void TheStyledElements_CarryNoLocalOverrideOfWhatIsMeasured()
+    {
+        var page = Page();
+        var measured = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["SatelliteFloor"] = new[] { "Fill", "Opacity", "OpacityMask" },
+            ["SatelliteValue"] = new[] { "Foreground" },
+            ["SatelliteCaption"] = new[] { "Foreground" },
+            ["HeroScore"] = new[] { "Foreground" },
+            ["HeroPodCaption"] = new[] { "Foreground" },
+        };
+
+        foreach (var (style, properties) in measured)
+        {
+            var wearers = page.Descendants()
+                .Where(e => ResourceKey.Match((string?)e.Attribute("Style") ?? "")
+                    .Groups[1].Value == style)
+                .ToArray();
+            // NotEmpty first, for Assert.All's reason above: rename a style
+            // and both loops below run zero times, leaving a guard that
+            // passes by finding nothing to look at.
+            Assert.NotEmpty(wearers);
+
+            foreach (var element in wearers)
+            foreach (var property in properties)
+                // Two ways to write one override — an attribute, and the
+                // property element <Ellipse.OpacityMask> that carries no
+                // attribute for an attribute check to find.
+                Assert.True(
+                    element.Attribute(property) is null
+                    && !element.Elements().Any(child => child.Name.LocalName
+                        == element.Name.LocalName + "." + property),
+                    $"{element.Name.LocalName} wearing {style} sets {property} on " +
+                    "itself — local beats style in WPF, so the ratio measured off " +
+                    $"{style} above is not the one this element draws");
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Reading the page and the dictionaries.
     // ------------------------------------------------------------------
 
@@ -308,6 +426,56 @@ public sealed class InstrumentSourceTests
             setters[(string)setter.Attribute("Property")!] =
                 (string?)setter.Attribute("Value") ?? "";
         return setters;
+    }
+
+    /// Every brush key a style can apply to `property`: the whole BasedOn
+    /// chain, and the setters INSIDE its triggers as well as the ones beside
+    /// them. SetterChain above answers "what does this style apply by
+    /// default", which is the wrong question for a colour that only shows in
+    /// a state — and the hero's score is exactly that colour.
+    private static string[] StyleBrushKeys(string styleKey, string property)
+    {
+        var keys = new List<string>();
+        for (var at = styleKey; at is not null;)
+        {
+            var style = SharedResource("Style", at);
+            keys.AddRange(BrushKeysIn(style, property));
+            at = ResourceKey.Match((string?)style.Attribute("BasedOn") ?? "")
+                .Groups[1].Value is { Length: > 0 } parent ? parent : null;
+        }
+        return Pinned(keys);
+    }
+
+    /// The same question asked of an ELEMENT on the page, which can answer it
+    /// either way round: as an attribute on itself, or as setters in the
+    /// style it carries inline. The lit gauge uses the second — a default and
+    /// two DataTriggers — and reading only one of the two routes would
+    /// measure the ring in one of its three states and call it the ring.
+    private static string[] ElementBrushKeys(string name, string property)
+    {
+        var element = Page().Descendants()
+            .Single(e => (string?)e.Attribute(X + "Name") == name);
+        return Pinned(BrushKeysIn(element, property)
+            .Prepend(ResourceKey.Match((string?)element.Attribute(property) ?? "")
+                .Groups[1].Value)
+            .ToList());
+    }
+
+    private static IEnumerable<string> BrushKeysIn(XElement scope, string property) =>
+        scope.Descendants()
+            .Where(e => e.Name.LocalName == "Setter"
+                && (string?)e.Attribute("Property") == property)
+            .Select(e => ResourceKey.Match((string?)e.Attribute("Value") ?? "")
+                .Groups[1].Value);
+
+    /// Empty is the failure mode both readers share: mistype a property name
+    /// and the foreach measures nothing while the test stays green.
+    private static string[] Pinned(List<string> keys)
+    {
+        var found = keys.Where(key => key.Length > 0)
+            .Distinct(StringComparer.Ordinal).ToArray();
+        Assert.NotEmpty(found);
+        return found;
     }
 
     private static XElement SharedResource(string kind, string key) =>

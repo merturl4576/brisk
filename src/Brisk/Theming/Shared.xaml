@@ -682,9 +682,19 @@
     <!-- The hero is an always-dark instrument panel in BOTH       -->
     <!-- themes — under the explicit light theme these keys are    -->
     <!-- what keep it dark, so they must not follow the theme      -->
-    <!-- dictionaries. The dark palette still shares the brights   -->
-    <!-- (Good/SeverityWarning/SeverityCritical); its grounds      -->
-    <!-- parted from this graphite when the cockpit turned navy.   -->
+    <!-- dictionaries. That is why the Hero* colours below are     -->
+    <!-- LITERALS rather than {DynamicResource}: the family speaks -->
+    <!-- the dark palette's vocabulary — its Surface, its Bg, its  -->
+    <!-- signature turquoise — and it has to go on speaking it     -->
+    <!-- while the light dictionary is the one loaded. The brights -->
+    <!-- (Good/SeverityWarning/SeverityCritical) it shares         -->
+    <!-- outright; the grounds and the accent it copies, and each  -->
+    <!-- copy names below the key it copies. The rest is the       -->
+    <!-- hero's own and did not move: HeroText is opaque, and the  -->
+    <!-- translucent lifts (HeroMuted, HeroUnlit, HeroHairline,    -->
+    <!-- HeroPodFill, HeroOrbit) compose over whatever fill is     -->
+    <!-- under them, so they followed the grounds by standing      -->
+    <!-- still.                                                    -->
     <!-- ======================================================== -->
     <Color x:Key="HeroGoodColor">#4ADE80</Color>
     <Color x:Key="HeroWarnColor">#FBBF24</Color>
@@ -697,33 +707,49 @@
     <SolidColorBrush x:Key="HeroUnlit" Color="#1FFFFFFF" />
     <SolidColorBrush x:Key="HeroHairline" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="HeroPodFill" Color="#0AFFFFFF" />
-    <Color x:Key="HeroAccentColor">#4CC2FF</Color>
+    <!-- The instrument's own accent, and it is brisk's signature turquoise:
+         the same value the dark palette holds as AccentBrush, copied here
+         rather than bound, for the reason the block above gives. Bound, the
+         light dictionary would hand this panel its own AccentBrush — a teal
+         darkened until white ink sits on it, which measures 2.70:1 on the
+         fill below and 1.98:1 at the strength the CPU arc draws at, under
+         the 3:1 a graphical object has to clear. Its AccentDim, the QUIETER
+         voice, measures 6.20:1 on the same fill: bind the theme's pair here
+         and the echo comes out louder than the arc it echoes. -->
+    <Color x:Key="HeroAccentColor">#5FD4E8</Color>
     <SolidColorBrush x:Key="HeroAccent" Color="{StaticResource HeroAccentColor}" />
     <!-- Living-cockpit motion paints (overview only): the orbit's hairline
-         dashes (13% white) and the inner CPU ring's 70%-opacity accent. -->
+         dashes (13% white) and the inner CPU ring's 70%-opacity accent.
+         The accent is spelled out again with its alpha rather than layered
+         on the Color key above, because a brush that carried the alpha as
+         Opacity would read from source as full strength, and the arcs'
+         contrast checks read from source. -->
     <SolidColorBrush x:Key="HeroOrbit" Color="#21FFFFFF" />
-    <SolidColorBrush x:Key="HeroAccentRing" Color="#B34CC2FF" />
+    <SolidColorBrush x:Key="HeroAccentRing" Color="#B35FD4E8" />
     <!-- The inner RAM arc: the SAME hero accent at half strength, so the two
          live arcs read as one voice and its quieter echo. It is deliberately
          not a second hue and emphatically not a semantic colour — the outer
          health ring is the instrument's only claim-carrying element, and a
          RAM arc that turned amber at 80% would be a threshold judgment no
-         rule in this app has made. At 50% it measures 3.13:1 on the panel's
-         brightest ground against the CPU arc's 4.92:1 — clearly the second
+         rule in this app has made. At 50% it measures 3.36:1 on the panel's
+         brightest ground against the CPU arc's 5.26:1 — clearly the second
          arc, and still clear of the 3:1 floor a graphical object has to
-         hold. Both figures are measured by InstrumentSourceTests off these
-         very values, not copied in beside them. -->
-    <SolidColorBrush x:Key="HeroAccentRingDim" Color="#804CC2FF" />
+         hold. Those two figures are arithmetic written down beside the values
+         and nothing checks them. What IS checked is the floor:
+         InstrumentSourceTests reads these brushes and the ground under them
+         out of source and fails if either arc drops through 3:1. -->
+    <SolidColorBrush x:Key="HeroAccentRingDim" Color="#805FD4E8" />
 
     <!-- The ONE permitted gradient: a soft radial vignette, a touch lighter
-         behind the ring and settling into deep graphite at the edges (~3–4%
-         luminance shift, not a spotlight). The stops are the hero's own
-         graphite — they matched the dark palette's Surface and Bg until
-         that palette turned navy. -->
+         behind the ring and settling into the page's own night at the edges
+         (a small shift, not a spotlight). The stops are the dark palette's
+         Surface and Bg — the relationship this gradient always had, restored:
+         it held that palette's graphite Surface and Bg until the cockpit
+         retune turned the palette navy and left the instrument behind. -->
     <RadialGradientBrush x:Key="HeroSurface" Center="0.25,0.5"
                          GradientOrigin="0.25,0.5" RadiusX="0.75" RadiusY="1.2">
-        <GradientStop Color="#151A21" Offset="0" />
-        <GradientStop Color="#0E1116" Offset="1" />
+        <GradientStop Color="#0C2434" Offset="0" />
+        <GradientStop Color="#0A1626" Offset="1" />
     </RadialGradientBrush>
 
     <!-- Digital numerals: the score in mono, colored by the shared

@@ -151,7 +151,7 @@ public class SnapshotTests
     /// reaches it: RAM rides 7 px inside, the gauge's ticks stop 6 px
     /// outside the centreline, and the health ring's own colours are
     /// red-led or green-led, never blue-led — which is why the ink is told
-    /// apart by hue rather than by brightness.
+    /// apart by hue first, with a brightness floor underneath.
     ///
     /// The first capture is the control, and it is what stops a zero in the
     /// second from being a zero about the wrong place: the same band, in the
@@ -160,9 +160,14 @@ public class SnapshotTests
     /// drawing what it DID measure in the very frame where it draws nothing
     /// for what it did not.
     ///
-    /// Zero, not "fewer". A faint arc, a zero-length arc and a stub left by
-    /// a rounding error are all ink, and all three are pictures of a
-    /// measurement that does not exist.
+    /// Zero, not "fewer". A zero-length arc and a stub left by a rounding
+    /// error are both ink, and both are pictures of a measurement that does
+    /// not exist. A FAINT arc is the one this count cannot answer for:
+    /// IsArcInk's brightness floor is what keeps the health ring's glow out
+    /// of the band, and ink dimmer than that floor hides behind it. That case
+    /// belongs to the tree assertion above, which sees the element rather
+    /// than its pixels — and the fix is not a lower floor, which would start
+    /// counting the glow.
     ///
     /// The tree assertions inside the captures and the pixel counts after
     /// them are two different claims, and NEITHER covers the other. The tree
@@ -227,13 +232,18 @@ public class SnapshotTests
             radius - BandHalfWidth, radius + BandHalfWidth, IsArcInk);
 
     /// An arc's ink, told from everything else that can reach the band by
-    /// hue. The panel behind it is a near-black graphite that leads with
-    /// blue by only 12 levels. The health ring bleeds a glow inward, and its
-    /// three colours are the reason BOTH comparisons are here rather than
-    /// one: amber and red are red-led and fail the first, but Good is
+    /// hue and by brightness. The panel behind it is a near-black navy: at
+    /// its brightest stop it leads with blue by 40 levels, which the first
+    /// comparison rejects by exactly nothing, and it sits at B 52 against a
+    /// floor of 100. The health ring bleeds a glow inward, and its three
+    /// colours are the reason the two hue comparisons are BOTH here rather
+    /// than one: amber and red are red-led and fail the first, but Good is
     /// #4ADE80, which clears "blue beats red by 40" on its own — and is
-    /// stopped dead by blue having to beat green as well. Only a lit
-    /// turquoise stroke leads with blue on both counts, brightly.
+    /// stopped dead by blue having to beat green as well. On navy the hue
+    /// pair alone would not finish the job: a 10% bleed of Good composites
+    /// to #12373C, which passes both of them, and only the brightness floor
+    /// leaves it out. That is why the floor does not come down. Only a lit
+    /// turquoise stroke leads with blue on every count, brightly.
     private static bool IsArcInk(Color pixel) =>
         pixel.B > pixel.R + 40 && pixel.B > pixel.G && pixel.B > 100;
 
