@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -232,6 +232,53 @@ public sealed class ShellSourceTests
                     NumberStyles.HexNumber, CultureInfo.InvariantCulture))
                 .ToArray();
         return Math.Sqrt(Channels(a).Zip(Channels(b), (x, y) => (x - y) * (x - y)).Sum());
+    }
+
+    /// A theme switch has to move BOTH of brisk's marks, and only one of
+    /// them lives on a window. The title bar is refreshed in the theme
+    /// callback; the tray icon is drawn once at startup from the palette
+    /// installed at the time, so without a refresh beside it the notification
+    /// area keeps yesterday's colour and the two marks describe different
+    /// themes — which is the exact defect that pinning the accent was meant
+    /// to end, one step out of the window.
+    ///
+    /// It is a source fact because the callback is a lambda handed to a view
+    /// model inside OnStartup: there is no seam to drive and no visible
+    /// consequence in a test run, and the failure is a wrong colour in a
+    /// place no assertion looks.
+    [Fact]
+    public void TheThemeSwitchCallback_RefreshesTheTrayMarkToo()
+    {
+        var body = LambdaBody(
+            File.ReadAllText(Path.Combine(BriskDir(), "App.xaml.cs")),
+            "themeSetting =>");
+
+        Assert.True(body.Contains("ApplyTitleBar", StringComparison.Ordinal),
+            "the theme-change callback no longer refreshes the title bar: " + body);
+        Assert.True(body.Contains("SetAccent", StringComparison.Ordinal),
+            "the theme-change callback refreshes the title bar but not the " +
+            "tray icon, so after an in-session dark/light switch brisk's mark " +
+            "in the notification area still carries the previous theme's " +
+            "accent while the mark in the title bar carries the new one: " + body);
+    }
+
+    /// The braced body of the lambda that starts at `marker`, brace-balanced
+    /// so that reformatting the callback across lines cannot fool the test.
+    private static string LambdaBody(string source, string marker)
+    {
+        var start = source.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"App.xaml.cs has no lambda starting \"{marker}\"");
+        var open = source.IndexOf('{', start);
+        Assert.True(open >= 0, $"the lambda at \"{marker}\" has no braced body");
+
+        var depth = 0;
+        for (var i = open; i < source.Length; i++)
+        {
+            if (source[i] == '{') depth++;
+            else if (source[i] == '}' && --depth == 0)
+                return source[open..(i + 1)];
+        }
+        throw new InvalidOperationException($"unbalanced braces after \"{marker}\"");
     }
 
     /// A theme entry's value, whether it sits on the Color attribute (a

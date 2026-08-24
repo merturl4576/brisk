@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -102,7 +102,18 @@ public partial class App : Application
                 safeClean, bin, Loc.Instance, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,
                 composition.SettingsPath, composition.Launcher,
-                themeSetting => { theme.Apply(themeSetting); _main?.ApplyTitleBar(); },
+                themeSetting =>
+                {
+                    theme.Apply(themeSetting);
+                    _main?.ApplyTitleBar();
+                    // Both of brisk's marks, not one. The tray icon is drawn
+                    // from the installed palette, and a switch that moved the
+                    // title bar without it would leave the notification area
+                    // carrying the previous theme's accent — the marks
+                    // disagreeing about what brisk looks like, which is what
+                    // sourcing the tray from the palette was meant to stop.
+                    _tray?.SetAccent(SignatureAccent());
+                },
                 Loc.Instance.SetLanguage);
 
             _flyout = new FlyoutWindow(flyoutVm);
@@ -125,15 +136,7 @@ public partial class App : Application
             // is the exact failure this whole mechanism exists to prevent.
             state.ConfirmationRaised += () => Dispatcher.Invoke(ShowMain);
 
-            // The tray icon is brisk's mark in the notification area, so it
-            // wears brisk's signature — read from the palette theme.Apply
-            // just installed, not from the Windows accent it used to be
-            // drawn in. Two marks in one colour: a mark in the title bar
-            // and a mark in the tray that disagreed about what brisk looks
-            // like is exactly what pinning the accent exists to stop.
-            var accent = ((SolidColorBrush)Current.Resources["AccentBrush"]).Color;
-            _tray = new TrayIcon(System.Drawing.Color.FromArgb(accent.R, accent.G, accent.B),
-                Loc.Instance);
+            _tray = new TrayIcon(SignatureAccent(), Loc.Instance);
             _tray.LeftClick += () => _flyout.ShowAt();
             _tray.OpenRequested += ShowMain;
             _tray.ScanRequested += () => _ = state.ScanAsync();
@@ -195,4 +198,20 @@ public partial class App : Application
         _tray?.Dispose();
         base.OnExit(e);
     }
+
+    /// brisk's signature, as the tray's drawing code wants it, read from the
+    /// palette that is installed right now.
+    ///
+    /// The tray icon is brisk's mark in the notification area, so it wears
+    /// brisk's own colour rather than the Windows accent it used to be drawn
+    /// in — see ThemeManager.Apply for why the signature stopped following
+    /// the desktop. One method rather than two reads, because the first draw
+    /// and the after-a-theme-switch redraw have to agree, and two copies of
+    /// "where does the accent come from" is exactly how they would stop.
+    private static System.Drawing.Color SignatureAccent()
+    {
+        var accent = ((SolidColorBrush)Current.Resources["AccentBrush"]).Color;
+        return System.Drawing.Color.FromArgb(accent.R, accent.G, accent.B);
+    }
+
 }
