@@ -37,6 +37,15 @@
     <SolidColorBrush x:Key="AccentDim" Color="#7FA9C4" />
     <SolidColorBrush x:Key="AccentGlow" Color="#00000000" />
     <SolidColorBrush x:Key="AccentTextBrush" Color="#FFFFFF" />
+    <!-- Transparent here too, and the two glow objects below inherit that:
+         a glow is light added to a dark room. The keys exist so a style can
+         name one glow in both themes and have it simply vanish in this one,
+         rather than every glowing element carrying a theme branch. -->
+    <Color x:Key="AccentGlowColor">#00000000</Color>
+    <DropShadowEffect x:Key="GlowSoft" ShadowDepth="0" BlurRadius="14"
+                      Opacity="0.35" Color="{StaticResource AccentGlowColor}" />
+    <DropShadowEffect x:Key="GlowStrong" ShadowDepth="0" BlurRadius="22"
+                      Opacity="0.60" Color="{StaticResource AccentGlowColor}" />
     <SolidColorBrush x:Key="SeverityInfo" Color="#0067C0" />
     <SolidColorBrush x:Key="SeverityWarning" Color="#B45309" />
     <SolidColorBrush x:Key="SeverityCritical" Color="#C42B2B" />

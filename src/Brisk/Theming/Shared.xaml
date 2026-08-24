@@ -1140,55 +1140,89 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
-    <!-- Nav item on the rail. Tag carries an optional Segoe Fluent glyph
-         (iconography, not a localizable string); items without one — the
-         brand — collapse the icon slot. Hover and the checked pill both
-         fill with Surface; selection is carried by the accent bar and the
-         text weight, the Win11 nav-view way. -->
+    <!-- A nav tile. Round 14 took the recessed rail away, so these no longer
+         sit IN anything: they float directly on the window's atmosphere, and
+         a floating tile has to carry its own edge and its own answer to
+         "which page am I on".
+
+         At rest it is an empty hairline outline on the night. Hovered it
+         fills with SurfaceHi and takes the soft glow. Selected it fills the
+         same way but takes the STRONG glow, the accent on its border and on
+         its glyph, and the text weight — so hover and selection are never the
+         same picture. That distinction is not decoration: between round 13
+         and here, the checked pill and the rail behind it were both painted
+         Surface, and the app spent two commits unable to say which page was
+         showing.
+
+         Tag carries an optional Segoe Fluent glyph (iconography, not a
+         localizable string); items without one — the brand — collapse the
+         icon slot. The label sits UNDER the glyph and WRAPS rather than
+         clips: Turkish runs longer than English ("Performans", "Depolama"),
+         and an icon-only nav in an app whose whole point is being
+         understandable would be a regression. -->
     <Style x:Key="NavRadio" TargetType="RadioButton">
         <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
-        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontSize" Value="11" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Margin" Value="0,0,0,10" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Grid Margin="8,2">
-                        <Border x:Name="Chrome" CornerRadius="5" MinHeight="34"
-                                Background="Transparent">
-                            <StackPanel Orientation="Horizontal" Margin="12,0"
-                                        VerticalAlignment="Center">
-                                <!-- FontWeight pinned: the checked state's
-                                     SemiBold must not fake-bold the icon font. -->
-                                <TextBlock x:Name="Glyph" Margin="0,0,10,0"
-                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                           FontSize="14" FontWeight="Normal"
-                                           VerticalAlignment="Center"
-                                           Text="{TemplateBinding Tag}" />
-                                <ContentPresenter VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-                        <Rectangle x:Name="Indicator" Width="3" Height="14"
-                                   RadiusX="1.5" RadiusY="1.5"
-                                   HorizontalAlignment="Left" VerticalAlignment="Center"
-                                   Fill="{DynamicResource AccentBrush}"
-                                   Visibility="Collapsed" />
-                    </Grid>
+                    <Border x:Name="Tile" Width="88" MinHeight="70" CornerRadius="10"
+                            Background="Transparent"
+                            BorderBrush="{DynamicResource Hairline}"
+                            BorderThickness="1">
+                        <StackPanel Margin="7,10" VerticalAlignment="Center">
+                            <!-- FontWeight pinned: the checked state's
+                                 SemiBold must not fake-bold the icon font. -->
+                            <TextBlock x:Name="Glyph" Margin="0,0,0,7"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="19" FontWeight="Normal"
+                                       HorizontalAlignment="Center"
+                                       Text="{TemplateBinding Tag}" />
+                            <!-- A ContentPresenter handed a string builds a
+                                 TextBlock that never wraps, so the label is
+                                 given a template that does. Colour, size and
+                                 weight arrive by inheritance from the tile,
+                                 which is what lets the triggers below move
+                                 all three at once. -->
+                            <ContentPresenter HorizontalAlignment="Center">
+                                <ContentPresenter.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" TextWrapping="Wrap"
+                                                   TextAlignment="Center" />
+                                    </DataTemplate>
+                                </ContentPresenter.ContentTemplate>
+                            </ContentPresenter>
+                        </StackPanel>
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Tag" Value="{x:Null}">
                             <Setter TargetName="Glyph" Property="Visibility"
                                     Value="Collapsed" />
                         </Trigger>
+                        <!-- Hover first, selection second: a trigger declared
+                             later wins, so the tile the pointer is over while
+                             it is also the selected one still reads selected. -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource Surface}" />
+                            <Setter TargetName="Tile" Property="Background"
+                                    Value="{DynamicResource SurfaceHi}" />
+                            <Setter TargetName="Tile" Property="Effect"
+                                    Value="{DynamicResource GlowSoft}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Text}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource Surface}" />
-                            <Setter TargetName="Indicator" Property="Visibility"
-                                    Value="Visible" />
+                            <Setter TargetName="Tile" Property="Background"
+                                    Value="{DynamicResource SurfaceHi}" />
+                            <Setter TargetName="Tile" Property="BorderBrush"
+                                    Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Tile" Property="Effect"
+                                    Value="{DynamicResource GlowStrong}" />
+                            <Setter TargetName="Glyph" Property="Foreground"
+                                    Value="{DynamicResource AccentBrush}" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>
@@ -1198,11 +1232,72 @@
         </Setter>
     </Style>
 
-    <!-- The "brisk" nav item: the app identity, still clearly a nav entry. -->
+    <!-- The "brisk" nav tile: the app identity, still clearly a nav entry.
+         It carries no glyph, so its icon slot collapses and the wordmark
+         takes the whole tile — which is the distinction, now that every
+         other tile is a picture over a label. -->
     <Style x:Key="NavBrand" TargetType="RadioButton" BasedOn="{StaticResource NavRadio}">
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+
+    <!-- The caption controls of brisk's own title bar. Windows no longer
+         paints minimize/maximize/close for us — WindowChrome hands the
+         caption strip back to the app — so these three are ordinary Buttons,
+         and every one of them needs WindowChrome.IsHitTestVisibleInChrome at
+         its use site or the caption swallows the click before WPF sees it.
+         Flat and transparent at rest: the atmosphere is the title bar's
+         ground and a filled button would cut a hole in it.
+
+         Tag is this template's second slot, the way it is the glyph slot on
+         NavRadio — here it carries the foreground the button takes WHILE
+         hovered, so close can go white on red without a second template. -->
+    <Style x:Key="CaptionButton" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="44" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+        <Setter Property="Background" Value="{DynamicResource BgHover}" />
+        <Setter Property="Tag" Value="{DynamicResource Text}" />
+        <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome" Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background"
+                                    Value="{Binding Background,
+                                        RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Setter Property="Foreground"
+                                    Value="{Binding Tag,
+                                        RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Close, which by every platform's convention goes red under the
+         pointer. White ink on it in both themes: SeverityCritical is a
+         strong fill in each, and the theme's own Text would be black on red
+         in light. -->
+    <Style x:Key="CaptionClose" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+        <Setter Property="Background" Value="{DynamicResource SeverityCritical}" />
+        <Setter Property="Tag">
+            <Setter.Value>
+                <SolidColorBrush Color="White" />
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>

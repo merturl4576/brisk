@@ -2,24 +2,53 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:Brisk.Localization"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:views="clr-namespace:Brisk.Views"
-        Title="brisk" Width="900" Height="600"
+        Title="brisk" Width="1100" Height="700" MinWidth="900" MinHeight="600"
         Background="{DynamicResource Bg}"
         Topmost="{Binding PendingConfirmation,
             Converter={x:Static views:NullToBool.Instance}}">
-    <Grid>
+    <!-- The window stops wearing Windows' title bar and draws its own.
+         WindowChrome, NOT WindowStyle="None" + AllowsTransparency: this route
+         keeps the real Win32 frame underneath, so snap layouts, the resize
+         borders, Aero snap, the system menu and double-click-to-maximize all
+         still work without a line of code. The transparency route would have
+         us reimplement every one of them by hand.
+
+         CaptionHeight matches the title-bar row below: it is how tall the
+         drag strip is, and it is also what makes double-click-to-maximize
+         work. Anything interactive inside that strip needs
+         WindowChrome.IsHitTestVisibleInChrome or the caption swallows the
+         click before WPF ever sees it — see the three buttons below, and
+         ShellSourceTests, which refuses a title-bar Button without it. -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="44" CornerRadius="0"
+                            GlassFrameThickness="0" ResizeBorderThickness="6"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <!-- The margin is the second WindowChrome trap. Windows maximizes a
+         framed window by extending it past every screen edge by the frame's
+         width, expecting the frame to be what lands out there; brisk draws
+         content to the edge instead, so maximizing without this would push
+         the title bar, the nav and the page bottom off the screen.
+         MaximizedMargin gives back 7 when maximized and 0 otherwise. -->
+    <Grid Margin="{Binding WindowState,
+              RelativeSource={RelativeSource AncestorType={x:Type Window}},
+              Converter={x:Static views:MaximizedMargin.Instance}}">
         <Grid.RowDefinitions>
-            <!-- Two message strips above everything, spanning the rail and the
-                 page. They live on the WINDOW, not on a page, for the same
-                 reason the confirmation overlay does: whatever brisk has to
-                 say about the machine it is running on outlives whichever
-                 page happens to be selected. -->
+            <!-- Our own title bar, then two message strips above everything,
+                 spanning the nav column and the page. The strips live on the
+                 WINDOW, not on a page, for the same reason the confirmation
+                 overlay does: whatever brisk has to say about the machine it
+                 is running on outlives whichever page happens to be
+                 selected. -->
+            <RowDefinition Height="44" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="176" />
+            <ColumnDefinition Width="120" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -30,20 +59,66 @@
              keeps it beneath every sibling however the rows are rearranged
              later; BitmapCache rasterizes the texture once instead of
              recompositing it every frame. IsFlat follows the theme — in
-             light there is no night for rain to fall through. -->
-        <views:AtmosphereLayer Grid.Row="0" Grid.RowSpan="3"
+             light there is no night for rain to fall through.
+
+             IsHitTestVisible="False" because it is decoration across the
+             WHOLE window, title bar included: left hit-testable it would
+             answer for every click that misses a real control, including the
+             ones the caption strip is supposed to turn into a window drag. -->
+        <views:AtmosphereLayer Grid.Row="0" Grid.RowSpan="4"
                                Grid.Column="0" Grid.ColumnSpan="2"
                                Panel.ZIndex="-1" CacheMode="BitmapCache"
+                               IsHitTestVisible="False"
                                IsFlat="{DynamicResource FlatAtmosphere}"
                                SkyBrush="{DynamicResource Bg0}"
                                GroundBrush="{DynamicResource Bg}"
                                TextureBrush="{DynamicResource AccentDim}"
                                GlowBrush="{DynamicResource AccentGlow}" />
 
+        <!-- The title bar. No Background of its own: the atmosphere runs
+             behind it, and a transparent strip is also what lets the caption
+             drag work everywhere the three buttons are not. -->
+        <Grid x:Name="TitleBar" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+            <StackPanel Orientation="Horizontal" Margin="18,0,0,0"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                <!-- brisk ships no logo file, so the mark is drawn: a lit
+                     turquoise slug wearing the same glow the instrument
+                     does. -->
+                <Border Width="9" Height="20" CornerRadius="4.5"
+                        Background="{DynamicResource AccentBrush}"
+                        Effect="{DynamicResource GlowSoft}" />
+                <TextBlock Margin="11,0,0,0" VerticalAlignment="Center"
+                           FontFamily="Segoe UI Variable Display, Segoe UI"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Text}"
+                           Text="{Binding [app.name],
+                               Source={x:Static loc:Loc.Instance}}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                        VerticalAlignment="Top">
+                <Button x:Name="MinimizeButton" Content="&#xE921;"
+                        Style="{StaticResource CaptionButton}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        Click="Minimize_Click" />
+                <!-- Content is set from code-behind too: the glyph is the
+                     restore chevron while maximized. -->
+                <Button x:Name="MaximizeButton" Content="&#xE922;"
+                        Style="{StaticResource CaptionButton}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        Click="Maximize_Click" />
+                <!-- brisk lives in the tray, so this hides the window rather
+                     than quitting (see OnClosing). Exit is the tray menu. -->
+                <Button x:Name="CloseButton" Content="&#xE8BB;"
+                        Style="{StaticResource CaptionClose}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                        Click="Close_Click" />
+            </StackPanel>
+        </Grid>
+
         <!-- Whose machine this actually is. Standing, and deliberately NOT
              dismissible: it is a fact about the whole run, and the user must
              meet it before pressing Clean. -->
-        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Padding="16,10"
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="16,10"
                 Background="{DynamicResource SeverityCritical}"
                 Visibility="{Binding HasIdentityWarning,
                     Converter={x:Static views:BoolToVis.Instance}}">
@@ -53,7 +128,7 @@
 
         <!-- What the display rescue did. Self-clearing on the next scan, and
              dismissible here — a sentence that never goes away is furniture. -->
-        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="16,10"
+        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Padding="16,10"
                 Background="{DynamicResource Surface}"
                 BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1"
                 Visibility="{Binding HasDisplayNotice,
@@ -67,35 +142,35 @@
                            Text="{Binding DisplayNotice}" />
             </DockPanel>
         </Border>
-        <!-- Nav rail, a hairline apart from the page ground. Item glyphs
-             ride the Tag slot of NavRadio — Segoe Fluent iconography, not
-             localizable text. -->
-        <Border Grid.Row="2" Grid.Column="0" Background="{DynamicResource Surface}"
-                BorderBrush="{DynamicResource Divider}"
-                BorderThickness="0,0,1,0">
-            <StackPanel Margin="0,12">
-                <RadioButton x:Name="NavOverview" Style="{StaticResource NavBrand}"
-                             GroupName="nav" IsChecked="True" Checked="Nav_Checked"
-                             Content="{Binding [app.name], Source={x:Static loc:Loc.Instance}}" />
-                <Border Height="1" Margin="20,8" Background="{DynamicResource Divider}" />
-                <RadioButton x:Name="NavHealth" Style="{StaticResource NavRadio}"
-                             GroupName="nav" Checked="Nav_Checked" Tag="&#xE95E;"
-                             Content="{Binding [nav.health], Source={x:Static loc:Loc.Instance}}" />
-                <RadioButton x:Name="NavPerf" Style="{StaticResource NavRadio}"
-                             GroupName="nav" Checked="Nav_Checked" Tag="&#xEC4A;"
-                             Content="{Binding [nav.performance], Source={x:Static loc:Loc.Instance}}" />
-                <RadioButton x:Name="NavClean" Style="{StaticResource NavRadio}"
-                             GroupName="nav" Checked="Nav_Checked" Tag="&#xEDA2;"
-                             Content="{Binding [nav.clean], Source={x:Static loc:Loc.Instance}}" />
-                <RadioButton x:Name="NavSettings" Style="{StaticResource NavRadio}"
-                             GroupName="nav" Checked="Nav_Checked" Tag="&#xE713;"
-                             Content="{Binding [nav.settings], Source={x:Static loc:Loc.Instance}}" />
-            </StackPanel>
-        </Border>
+        <!-- The nav. There is no rail any more — no recessed panel, no
+             divider line down the page's left edge. The tiles stand directly
+             on the atmosphere, which is what the empty space around them is
+             for. Item glyphs ride the Tag slot of NavRadio — Segoe Fluent
+             iconography, not localizable text. -->
+        <StackPanel Grid.Row="3" Grid.Column="0" Margin="16,10,0,0"
+                    VerticalAlignment="Top">
+            <RadioButton x:Name="NavOverview" Style="{StaticResource NavBrand}"
+                         GroupName="nav" IsChecked="True" Checked="Nav_Checked"
+                         Content="{Binding [app.name], Source={x:Static loc:Loc.Instance}}" />
+            <Border Height="1" Width="88" Margin="0,0,0,12" HorizontalAlignment="Left"
+                    Background="{DynamicResource Divider}" />
+            <RadioButton x:Name="NavHealth" Style="{StaticResource NavRadio}"
+                         GroupName="nav" Checked="Nav_Checked" Tag="&#xE95E;"
+                         Content="{Binding [nav.health], Source={x:Static loc:Loc.Instance}}" />
+            <RadioButton x:Name="NavPerf" Style="{StaticResource NavRadio}"
+                         GroupName="nav" Checked="Nav_Checked" Tag="&#xEC4A;"
+                         Content="{Binding [nav.performance], Source={x:Static loc:Loc.Instance}}" />
+            <RadioButton x:Name="NavClean" Style="{StaticResource NavRadio}"
+                         GroupName="nav" Checked="Nav_Checked" Tag="&#xEDA2;"
+                         Content="{Binding [nav.clean], Source={x:Static loc:Loc.Instance}}" />
+            <RadioButton x:Name="NavSettings" Style="{StaticResource NavRadio}"
+                         GroupName="nav" Checked="Nav_Checked" Tag="&#xE713;"
+                         Content="{Binding [nav.settings], Source={x:Static loc:Loc.Instance}}" />
+        </StackPanel>
         <!-- Transparent, not unset: the page host is the one container the
              atmosphere has to show through, and saying so keeps a later
              hand from reaching for a Bg fill here out of habit. -->
-        <Grid Grid.Row="2" Grid.Column="1" Background="Transparent">
+        <Grid Grid.Row="3" Grid.Column="1" Background="Transparent">
             <views:OverviewPage x:Name="OverviewView" />
             <views:HealthPage x:Name="HealthView" Visibility="Collapsed" />
             <views:PerfPage x:Name="PerfView" Visibility="Collapsed" />
@@ -114,7 +189,7 @@
              the tray's Fix all) can trigger it — the window's DataContext is
              the shared AppState, so the prompt covers whichever page is
              showing no matter which button started the fix. -->
-        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Background="#CC000000"
+        <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Background="#CC000000"
                 Visibility="{Binding PendingConfirmation,
                     Converter={x:Static views:NullToVis.Instance}}">
             <Border Style="{StaticResource HeroStrip}" MaxWidth="420" Padding="24"

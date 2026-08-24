@@ -55,8 +55,38 @@ public partial class MainWindow : Window
         // starts it; hide/close-to-tray/minimize stops it. The flyout never
         // hosts live tiles, so no other window can start the timer.
         IsVisibleChanged += (_, _) => UpdateLiveTicking();
-        StateChanged += (_, _) => UpdateLiveTicking();
+        StateChanged += (_, _) =>
+        {
+            UpdateLiveTicking();
+            // Snap layouts and double-click-on-caption change the state
+            // without going through our button, so the glyph follows the
+            // STATE rather than the click.
+            UpdateMaximizeGlyph();
+        };
+        UpdateMaximizeGlyph();
     }
+
+    /// Segoe Fluent Icons ChromeMaximize / ChromeRestore. Codepoints in an
+    /// icon font are iconography, not localizable text — the same reason the
+    /// nav's glyphs sit in Tag rather than in the string table.
+    private const string MaximizeGlyph = "\uE922";
+    private const string RestoreGlyph = "\uE923";
+
+    private void UpdateMaximizeGlyph() =>
+        MaximizeButton.Content =
+            WindowState == WindowState.Maximized ? RestoreGlyph : MaximizeGlyph;
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+
+    /// Close, not Shutdown: OnClosing below turns this into a hide, because
+    /// brisk lives in the tray. Quitting is the tray menu's Exit.
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     private void UpdateLiveTicking()
     {

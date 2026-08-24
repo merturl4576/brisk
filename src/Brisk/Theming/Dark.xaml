@@ -46,6 +46,19 @@
     <SolidColorBrush x:Key="AccentDim" Color="#3A8FA3" />
     <SolidColorBrush x:Key="AccentGlow" Color="#5FD4E8" />
     <SolidColorBrush x:Key="AccentTextBrush" Color="#0B0B0B" />
+    <!-- The same glow value as a Color, because a DropShadowEffect glows by
+         Color and cannot be handed a Brush. The pair is pinned together by
+         ShellSourceTests so it cannot drift into two different turquoises. -->
+    <Color x:Key="AccentGlowColor">#5FD4E8</Color>
+    <!-- The permitted glow as something a style can simply switch on: soft
+         under the pointer, strong on the selected nav tile. It lives in the
+         THEME dictionary and not in Shared.xaml for the same reason
+         FlatAtmosphere does — whether there is a glow at all is a theme
+         decision, and the light dictionary answers no. -->
+    <DropShadowEffect x:Key="GlowSoft" ShadowDepth="0" BlurRadius="14"
+                      Opacity="0.35" Color="{StaticResource AccentGlowColor}" />
+    <DropShadowEffect x:Key="GlowStrong" ShadowDepth="0" BlurRadius="22"
+                      Opacity="0.60" Color="{StaticResource AccentGlowColor}" />
     <!-- In brisk a color carries a claim, so the decorative signature may
          never enter one. SeverityInfo keeps its own blue instead of following
          the accent it used to share a value with, and Good/Warning/Critical

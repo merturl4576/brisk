@@ -7,7 +7,7 @@ namespace Brisk.Services;
 public sealed class Settings
 {
     public string Language { get; set; } = "system"; // system | en | tr
-    // system | light | dark. Dark is the default on purpose: the graphite
+    // system | light | dark. Dark is the default on purpose: the navy
     // cockpit IS the product's face, so a fresh install (or a settings file
     // from before this key existed) opens dark. Anyone who explicitly picked
     // light or system has that value in their JSON and keeps it.

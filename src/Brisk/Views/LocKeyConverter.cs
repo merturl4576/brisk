@@ -51,3 +51,35 @@ public sealed class NullToBool : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter,
         CultureInfo culture) => throw new NotSupportedException();
 }
+
+/// The maximize overhang, and the reason MainWindow's root content has a
+/// Margin at all.
+///
+/// A WindowChrome window keeps its real Win32 frame — that is the whole point
+/// of preferring it to WindowStyle=None — and Windows maximizes a framed
+/// window by extending it past every screen edge by the frame's own width, on
+/// the understanding that the frame is what lands out there. brisk draws its
+/// content right to the window edge instead, so without this the top of the
+/// title bar, the left of the nav and the bottom of the page all sit off the
+/// screen the moment someone maximizes.
+///
+/// Seven device-independent units is the frame WPF actually leaves us
+/// (SM_CXSIZEFRAME + SM_CXPADDEDBORDER on a default Windows 11 desktop). It is
+/// deliberately a plain number rather than a system-metric read: this is a
+/// visual gutter, and a wrong-by-a-pixel gutter is a cosmetic flaw, while the
+/// P/Invoke that would make it exact is a whole surface of its own.
+public sealed class MaximizedMargin : IValueConverter
+{
+    public static readonly MaximizedMargin Instance = new();
+
+    private const double Overhang = 7;
+
+    public object Convert(object? value, Type targetType, object? parameter,
+        CultureInfo culture) =>
+        value is System.Windows.WindowState.Maximized
+            ? new System.Windows.Thickness(Overhang)
+            : new System.Windows.Thickness(0);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter,
+        CultureInfo culture) => throw new NotSupportedException();
+}

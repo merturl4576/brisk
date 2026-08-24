@@ -56,8 +56,11 @@ public sealed class ResourceKeyTests
             .ToHashSet(StringComparer.Ordinal);
 
     /// Shared.xaml declares styles, templates and the always-dark Hero*
-    /// family — keys the app legitimately binds by {DynamicResource} that
-    /// have no business in a theme dictionary. Subtracting what Shared.xaml
+    /// family — keys the app MAY legitimately bind by {DynamicResource} and
+    /// that have no business in a theme dictionary. "May": today every one of
+    /// them is reached by {StaticResource}, so this subtraction is a standing
+    /// permission rather than a description of current bindings. Subtracting
+    /// what Shared.xaml
     /// actually declares beats an allow-list, which would go stale the first
     /// time a style is renamed.
     private static HashSet<string> SharedOwnKeys() =>
