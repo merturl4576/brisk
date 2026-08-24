@@ -97,6 +97,9 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _revelationMoreText = "";
     private string _revelationEmptyText = "";
     private string _reportSavedText = "";
+    /// The rule id behind the revelation band; "" while the band is empty,
+    /// which is what keeps the link silent instead of navigating nowhere.
+    private string _revelationRuleId = "";
     /// Rule ids seen in the undoable list on the previous refresh; null until
     /// the first population so nothing animates at startup.
     private HashSet<string>? _seenUndoable;
@@ -132,7 +135,10 @@ public sealed class OverviewViewModel : ViewModelBase
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
         SaveReportCommand = new RelayCommand(SaveReport, () => HasSnapshot);
-        OpenHealthCommand = new RelayCommand(() => OpenHealthRequested?.Invoke());
+        OpenFindingCommand = new RelayCommand(() =>
+        {
+            if (_revelationRuleId.Length > 0) OpenFindingRequested?.Invoke(_revelationRuleId);
+        });
     }
 
     public ObservableCollection<ReportLine> ReportLines { get; } = new();
@@ -168,10 +174,11 @@ public sealed class OverviewViewModel : ViewModelBase
     public string RevelationEvidence { get => _revelationEvidence; private set => Set(ref _revelationEvidence, value); }
     public string RevelationMoreText { get => _revelationMoreText; private set => Set(ref _revelationMoreText, value); }
     public string RevelationEmptyText { get => _revelationEmptyText; private set => Set(ref _revelationEmptyText, value); }
-    public RelayCommand OpenHealthCommand { get; }
-    /// MainWindow subscribes and flips the nav — the same contract
-    /// HealthViewModel.CrossNavigateRequested already uses.
-    public event Action? OpenHealthRequested;
+    public RelayCommand OpenFindingCommand { get; }
+    /// Carries the rule id of the finding the band is showing: "see the
+    /// evidence" has to open THAT card, so MainWindow routes to whichever
+    /// page hosts the rule instead of to a fixed page name.
+    public event Action<string>? OpenFindingRequested;
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
     /// The report's ✓ lead line ("Result: 210 MB freed · 3 fixes applied").
     /// Empty when the last run changed nothing; the pages hide the lead
@@ -475,6 +482,7 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationMoreText = revelations.Count > 1
                 ? _loc.F("overview.revelation.more", revelations.Count - 1) : "";
             RevelationEmptyText = "";
+            _revelationRuleId = top.RuleId;
         }
         else
         {
@@ -482,6 +490,7 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationClaim = ""; RevelationEvidence = ""; RevelationMoreText = "";
             RevelationEmptyText = _loc.F("overview.revelation.none",
                 DiagnosticRuleRegistry.All.Count);
+            _revelationRuleId = "";
         }
         // Three-state headline driven by the same predicate as the fix-all
         // button: work to do → attention; only recommendations left →

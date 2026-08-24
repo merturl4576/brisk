@@ -430,6 +430,20 @@ public sealed class HealthViewModel : ViewModelBase
         Raise(nameof(ShowDoneReport));
     }
 
+    /// The revelation band's "see the evidence" lands here: open the named
+    /// card so the user reads the evidence instead of hunting for it. All
+    /// three bands are searched — a notice is a finding like any other, and
+    /// the band it sits in is not the caller's business.
+    public void ExpandFinding(string ruleId)
+    {
+        foreach (var row in Rows.Concat(AdviseRows).Concat(NoticeRows))
+            if (string.Equals(row.RuleId, ruleId, StringComparison.OrdinalIgnoreCase))
+            {
+                row.IsExpanded = true;
+                return;
+            }
+    }
+
     /// Row lookup for fix-all's per-rule progress. Runs on the fix-all worker
     /// thread; the scalar state writes it leads to are marshaled by WPF's
     /// binding engine. If a concurrent rescan rebuilds the list mid-walk,

@@ -766,13 +766,23 @@ public class OverviewViewModelTests
     }
 
     [Fact]
-    public void OpenHealth_RaisesTheNavigationEvent()
+    public async Task OpenFinding_CarriesTheTopRevelationsRuleId()
     {
-        var (vm, _, _) = Build();
-        var fired = false;
-        vm.OpenHealthRequested += () => fired = true;
-        vm.OpenHealthCommand.Execute(null);
-        Assert.True(fired);
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("zz-fake", cat: RuleCategory.Advise, canFix: false,
+                headline: new Headline("57 s", "cap",
+                    "rule.zz-fake.headline.value", new[] { "57" },
+                    "rule.zz-fake.headline.caption", Array.Empty<string>())),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        string? requested = null;
+        vm.OpenFindingRequested += id => requested = id;
+        vm.OpenFindingCommand.Execute(null);
+
+        Assert.Equal("zz-fake", requested);
     }
 
     [Fact]

@@ -214,6 +214,39 @@ public class HealthViewModelTests
         });
         await state.ScanAsync();
         Assert.Equal(loc.F("overview.status.advise", 2), vm.StatusLine);
+
+        // A problem alongside a notice: the advisory count must never
+        // outrank a fixable row. "Bilgisayarın iyi durumda — 1 öneri" over
+        // a page listing something brisk can fix is the exact reassurance
+        // this wave exists to stop.
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+        Assert.Equal(loc["overview.status.attention"], vm.StatusLine);
+    }
+
+    /// The overview band's "see the evidence" opens the named card wherever
+    /// it sits — the problem list, the advice, or the notice band.
+    [Fact]
+    public async Task ExpandFinding_OpensTheNamedCard_WhereverItLives()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        vm.ExpandFinding("thermals");
+
+        Assert.True(vm.NoticeRows.Single(r => r.RuleId == "thermals").IsExpanded);
+        Assert.False(vm.Rows.Single(r => r.RuleId == "power-plan").IsExpanded);
     }
 
     [Fact]
