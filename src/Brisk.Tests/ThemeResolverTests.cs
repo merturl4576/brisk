@@ -1,7 +1,5 @@
-using System.Windows.Media;
-using Brisk.Theming;
+﻿using Brisk.Theming;
 using Xunit;
-using Color = System.Windows.Media.Color;
 
 namespace Brisk.Tests;
 
@@ -22,16 +20,9 @@ public class ThemeResolverTests
         Assert.Equal("light", ThemeResolver.Resolve("system", () => null));
     }
 
-    [Fact]
-    public void AccentFrom_ParsesDword_ForcesOpaque()
-    {
-        var color = ThemeResolver.AccentFrom(unchecked((int)0xC40078D4));
-        Assert.Equal(Color.FromArgb(0xFF, 0x00, 0x78, 0xD4), color);
-    }
-
-    [Fact]
-    public void AccentFrom_Null_IsDefaultBlue()
-    {
-        Assert.Equal(Color.FromArgb(0xFF, 0x4C, 0xC2, 0xFF), ThemeResolver.AccentFrom(null));
-    }
+    // The two AccentFrom facts are gone with the method. They pinned a dword
+    // parse and a fallback blue for a value that is no longer read: the
+    // signature accent is the theme dictionary's, so there is nothing left
+    // for a system accent to win. Theme DETECTION is what is still asserted
+    // above, and it is the half that still runs.
 }

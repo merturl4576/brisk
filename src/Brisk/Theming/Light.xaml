@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- True here, and this is the whole of settled decision 1 in one value:
@@ -28,13 +28,28 @@
     <SolidColorBrush x:Key="Text" Color="#1B1B1B" />
     <SolidColorBrush x:Key="TextMuted" Color="#616161" />
     <SolidColorBrush x:Key="TextFaint" Color="#8A8A8A" />
-    <!-- AccentDim is the accent washed toward the page for decoration that
-         must not compete. AccentGlow is fully transparent: a glow is light
-         added to a dark room, and there is no dark room here — the key exists
-         so glowing elements can bind one name in both themes and simply
-         vanish in this one. -->
-    <SolidColorBrush x:Key="AccentBrush" Color="#0067C0" />
-    <SolidColorBrush x:Key="AccentDim" Color="#7FA9C4" />
+    <!-- The signature, and it is brisk's rather than Windows'. This used
+         to be #0067C0 — the Windows blue — and it did not matter what it
+         said, because ThemeManager overwrote it with the desktop's accent
+         colour before anyone saw it. That injection is gone (see
+         ThemeManager.Apply), so this value is now what the light theme
+         actually wears, and it had to become a colour brisk chose.
+
+         It is the dark theme's turquoise carried into a light room: the same
+         hue, darkened until white ink sits on it at 5.91:1 and it reads at
+         5.33:1 on the page. That also settles the collision the variant gate
+         found — SeverityInfo below KEEPS #0067C0, and the two are now 47.4
+         ΔE apart where they were identical. The dark theme cured the same
+         collision the same way round: move the decoration, never the claim.
+
+         AccentDim is that accent washed toward the page for decoration that
+         must not compete; it followed the accent's hue, at the lightness the
+         old washed blue had (L* 66.4 against 67.2). AccentGlow is fully
+         transparent: a glow is light added to a dark room, and there is no
+         dark room here — the key exists so glowing elements can bind one
+         name in both themes and simply vanish in this one. -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#0F6E7E" />
+    <SolidColorBrush x:Key="AccentDim" Color="#76AAB3" />
     <SolidColorBrush x:Key="AccentGlow" Color="#00000000" />
     <SolidColorBrush x:Key="AccentTextBrush" Color="#FFFFFF" />
     <!-- Transparent here too, and the two glow objects below inherit that:
@@ -46,6 +61,9 @@
                       Opacity="0.35" Color="{StaticResource AccentGlowColor}" />
     <DropShadowEffect x:Key="GlowStrong" ShadowDepth="0" BlurRadius="22"
                       Opacity="0.60" Color="{StaticResource AccentGlowColor}" />
+    <!-- Unmoved, and that is the point: Info is blue in every convention
+         this app's users have met, so the accent left the neighbourhood
+         instead. -->
     <SolidColorBrush x:Key="SeverityInfo" Color="#0067C0" />
     <SolidColorBrush x:Key="SeverityWarning" Color="#B45309" />
     <SolidColorBrush x:Key="SeverityCritical" Color="#C42B2B" />

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -156,6 +156,82 @@ public sealed class ShellSourceTests
     {
         Assert.Equal(ThemeValue(theme, "AccentGlow"),
             ThemeValue(theme, "AccentGlowColor"));
+    }
+
+    /// The signature accent is the PALETTE's, not the desktop's. ThemeManager
+    /// used to finish Apply() by writing the Windows accent colour over
+    /// AccentBrush and AccentTextBrush, which meant the value in Dark.xaml or
+    /// Light.xaml was a fallback that nobody with a configured desktop ever
+    /// saw — and the variant gate's renders were pictures of a colour no user
+    /// had.
+    ///
+    /// It is asserted from SOURCE because there is no behaviour to watch:
+    /// re-adding two dictionary writes is a three-line change that breaks
+    /// nothing, fails no existing test, and quietly hands the choice of
+    /// brisk's decorative colour back to whoever configured Windows.
+    [Fact]
+    public void ThemeManager_DoesNotHandTheSignatureBackToTheDesktop()
+    {
+        // Comments explain why the injection is gone, so only the CODE lines
+        // are searched — otherwise the explanation would fail the test.
+        var code = File.ReadAllLines(
+                Path.Combine(BriskDir(), "Theming", "ThemeManager.cs"))
+            .Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal))
+            .ToArray();
+
+        foreach (var key in new[] { "AccentBrush", "AccentTextBrush" })
+            Assert.False(code.Any(line =>
+                    line.Contains($"Resources[\"{key}\"]", StringComparison.Ordinal)),
+                $"ThemeManager assigns {key} again. The signature accent is the " +
+                "theme dictionary's on purpose: a colour carries a claim in this " +
+                "product, and a desktop accent brisk did not choose can land on " +
+                "top of a severity colour — see the comment in Apply()");
+    }
+
+    /// The product rule, finally fenced: the decorative signature may never
+    /// wear a claim colour. It could not be asserted while Windows chose the
+    /// accent, because the value under test arrived at runtime from a machine
+    /// the test does not run on. Pinning the accent is what made this
+    /// checkable, and this is the check.
+    ///
+    /// The distance is crude Euclidean RGB on purpose. It is a fence, not a
+    /// colour-science claim: exact inequality alone would have let a near-miss
+    /// through, and a near-miss is the same defect with better manners. The
+    /// tightest real pair today is light AccentBrush #0F6E7E against
+    /// SeverityInfo #0067C0, at 68 — so 60 leaves room to move a value
+    /// without leaving room to recreate the collision.
+    [Theory]
+    [InlineData("Dark.xaml")]
+    [InlineData("Light.xaml")]
+    public void TheSignatureAccent_NeverWearsAClaimColour(string theme)
+    {
+        var accent = ThemeValue(theme, "AccentBrush");
+
+        foreach (var claim in new[]
+                 { "SeverityInfo", "SeverityWarning", "SeverityCritical", "Good" })
+        {
+            var value = ThemeValue(theme, claim);
+            Assert.False(string.Equals(accent, value, StringComparison.OrdinalIgnoreCase),
+                $"{theme}: AccentBrush and {claim} are both {value} — one colour " +
+                "carrying a claim and decoration at once, which is the collision " +
+                "the palette was retuned to end");
+            var distance = RgbDistance(accent, value);
+            Assert.True(distance >= 60,
+                $"{theme}: AccentBrush {accent} sits {distance:F0} from {claim} " +
+                $"{value} — close enough to be mistaken for it, which is the " +
+                "same defect as sharing the value");
+        }
+    }
+
+    /// Straight-line distance between two "#RRGGBB" strings in RGB. Max 441.
+    private static double RgbDistance(string a, string b)
+    {
+        static int[] Channels(string hex) =>
+            Enumerable.Range(0, 3)
+                .Select(i => int.Parse(hex.TrimStart('#').Substring(i * 2, 2),
+                    NumberStyles.HexNumber, CultureInfo.InvariantCulture))
+                .ToArray();
+        return Math.Sqrt(Channels(a).Zip(Channels(b), (x, y) => (x - y) * (x - y)).Sum());
     }
 
     /// A theme entry's value, whether it sits on the Color attribute (a

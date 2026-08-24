@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Brisk.Localization;
 using Brisk.Services;
@@ -10,7 +11,6 @@ using Brisk.Tray;
 using Brisk.ViewModels;
 using Brisk.Windows;
 using BriskEngine;
-using Microsoft.Win32;
 
 namespace Brisk;
 
@@ -125,9 +125,13 @@ public partial class App : Application
             // is the exact failure this whole mechanism exists to prevent.
             state.ConfirmationRaised += () => Dispatcher.Invoke(ShowMain);
 
-            var accent = ThemeResolver.AccentFrom(
-                Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM")
-                    ?.GetValue("ColorizationColor") as int?);
+            // The tray icon is brisk's mark in the notification area, so it
+            // wears brisk's signature — read from the palette theme.Apply
+            // just installed, not from the Windows accent it used to be
+            // drawn in. Two marks in one colour: a mark in the title bar
+            // and a mark in the tray that disagreed about what brisk looks
+            // like is exactly what pinning the accent exists to stop.
+            var accent = ((SolidColorBrush)Current.Resources["AccentBrush"]).Color;
             _tray = new TrayIcon(System.Drawing.Color.FromArgb(accent.R, accent.G, accent.B),
                 Loc.Instance);
             _tray.LeftClick += () => _flyout.ShowAt();
