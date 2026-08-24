@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Automation;
 using Brisk.Localization;
@@ -79,6 +79,31 @@ public sealed class CaptionButtonTests
         var name = AutomationProperties.GetName(button);
         Assert.Equal(expected, name);
         Assert.Equal(name, button.ToolTip);
+    }
+
+    /// The failure this pair of fixes exists for, made deterministic.
+    ///
+    /// A MainWindow subscribes the process-lifetime Loc.Instance singleton
+    /// and never unsubscribes, so it stays reachable long after the test that
+    /// built it returned. Republishing the language from a thread that is not
+    /// the window's own then walks that subscriber list synchronously and
+    /// reads WindowState, which VerifyAccess()es — and the throw lands in
+    /// whichever test happened to call SetLanguage, not in the one that
+    /// leaked the window. LocKeyConverterTests has always had exactly this
+    /// shape, and was green only because of the order tests happened to run
+    /// in.
+    ///
+    /// What is asserted is the absence of a throw, and that is the whole
+    /// claim: SetLanguage invokes handlers on the caller's thread, so a
+    /// window that fails to marshal takes this test down with it.
+    [Fact]
+    public void RepublishingTheLanguage_OffTheWindowsThread_DoesNotThrowIntoIt()
+    {
+        SnapshotRenderer.OnUiThread(() => _ = SnapshotTests.CockpitWindow());
+
+        // Deliberately NOT inside OnUiThread: this is the test runner's own
+        // thread, which is the foreign one.
+        Republish();
     }
 
     /// Re-announce the language already in force. SetLanguage raises Item[]

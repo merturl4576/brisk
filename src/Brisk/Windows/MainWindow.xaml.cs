@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Automation;
 using Brisk.Localization;
@@ -70,8 +70,28 @@ public partial class MainWindow : Window
         // is set in code, so it has to be told — otherwise switching language
         // on the Settings page would leave the middle button announcing its
         // old name while every label around it changed.
-        Loc.Instance.PropertyChanged += (_, _) => UpdateMaximizeButton();
+        Loc.Instance.PropertyChanged += OnLanguageRepublished;
         UpdateMaximizeButton();
+    }
+
+    /// Loc.Instance is a process-lifetime singleton, and SetLanguage raises
+    /// PropertyChanged SYNCHRONOUSLY on whichever thread called it. In the
+    /// running app that is always the dispatcher, because the only caller is
+    /// the Settings page — but "always" there is a habit, not a guarantee,
+    /// and UpdateMaximizeButton reads WindowState, which VerifyAccess()es.
+    /// A window that is subscribed to a singleton is reachable from anywhere,
+    /// including from a thread that has never heard of it.
+    ///
+    /// So it is marshalled, for the same reason and in the same shape as
+    /// AppState.ConfirmationRaised in App.xaml.cs: a UI update whose trigger
+    /// can be raised off the dispatcher has to put itself back on it. In
+    /// thread, it stays synchronous — the caption-button tests assert the
+    /// name immediately after republishing the language, and would be
+    /// racing an async hop otherwise.
+    private void OnLanguageRepublished(object? sender, PropertyChangedEventArgs e)
+    {
+        if (Dispatcher.CheckAccess()) UpdateMaximizeButton();
+        else _ = Dispatcher.InvokeAsync(UpdateMaximizeButton);
     }
 
     /// Segoe Fluent Icons ChromeMaximize / ChromeRestore. Codepoints in an

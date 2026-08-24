@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -91,7 +91,7 @@ public class SnapshotTests
     public void MainWindow_LaysOutAndRendersTheWholeCockpit()
     {
         var path = SnapshotRenderer.Capture(
-            CockpitWindow, new Size(1100, 700), "window");
+            CockpitWindow, new Size(1100, 700), "window", AssertTheGlassIsLive);
 
         Assert.True(File.Exists(path));
         var colors = SnapshotRenderer.DistinctColors(path);
@@ -99,6 +99,28 @@ public class SnapshotTests
             $"window render has {colors} distinct colours — the whole cockpit " +
             "photographed as a flat fill, which is what a window that never " +
             "laid out looks like");
+    }
+
+    /// What DistinctColors cannot say, checked in the one moment it can be:
+    /// the live tiles are photographed with READINGS on them.
+    ///
+    /// This is not hypothetical tidiness. Moving the harness onto a single
+    /// shared UI thread broke exactly this and nothing else — the tick awaits
+    /// a Task.Run, and on a thread with a real dispatcher the continuation
+    /// queues instead of running inline on the pool, so the shutter opened on
+    /// four em dashes. Every test in the suite stayed green, because the only
+    /// witness was a PNG nobody was reading. The harness now waits for that
+    /// continuation; this is what notices if it ever stops.
+    private static void AssertTheGlassIsLive(FrameworkElement element)
+    {
+        var page = (FrameworkElement)((Window)element).FindName("OverviewView")!;
+        var overview = (OverviewViewModel)page.DataContext;
+
+        Assert.False(overview.LiveCpuText == "—",
+            "the cockpit was photographed with an em dash where the CPU " +
+            "reading should be — the window was rendered before its first " +
+            "live tick came back, so the image is a picture of a machine " +
+            "with no sensors rather than of the canned reading");
     }
 
     /// The real window with fake machinery behind it: the same composition

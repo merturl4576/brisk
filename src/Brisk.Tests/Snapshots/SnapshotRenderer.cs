@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Brisk.Views;
 // WinForms is on in this project, so bare Application and Size are ambiguous.
 using Application = System.Windows.Application;
@@ -39,7 +40,19 @@ public static class SnapshotRenderer
 
     private static bool _themeInstalled;
 
-    public static string Capture(Func<FrameworkElement> build, Size size, string name)
+    /// The harness's one UI thread. Written on that thread and read by
+    /// callers, but every read and write happens under Gate, which is the
+    /// barrier — OnStaThread is only ever reached through Capture or
+    /// OnUiThread, and both hold the lock across the whole call.
+    private static Dispatcher? _ui;
+
+    /// `inspect` runs on the UI thread with the element laid out and about to
+    /// be photographed. It exists because "the image is not dead" is a weak
+    /// thing to assert about a picture of a cockpit: a caller that cares
+    /// whether a particular reading made it onto the glass can look, in the
+    /// one moment where looking answers the question.
+    public static string Capture(Func<FrameworkElement> build, Size size, string name,
+        Action<FrameworkElement>? inspect = null)
     {
         var path = Path.Combine(SnapshotDir(), name + ".png");
         lock (Gate)
@@ -66,7 +79,12 @@ public static class SnapshotRenderer
                         window.ShowActivated = false;
                         window.Show();
                     }
+                    // Everything Show() set in motion has to finish before
+                    // the shutter opens — see PumpUntilQuiet.
+                    PumpUntilQuiet();
                     OffscreenLayout.LayOut(element, size);
+
+                    inspect?.Invoke(element);
 
                     var bitmap = new RenderTargetBitmap(
                         (int)size.Width, (int)size.Height, Dpi, Dpi, PixelFormats.Pbgra32);
@@ -171,17 +189,100 @@ public static class SnapshotRenderer
 
     /// WPF objects demand an STA thread and the test runner does not have one
     /// — the same reason ReportCardRenderer.RenderOnStaThread exists.
+    ///
+    /// ONE thread, for the life of the test process. It used to be a fresh
+    /// thread per call, and that was a latent fault rather than a style
+    /// choice: a WPF object belongs to the thread that made it, and the
+    /// windows built here OUTLIVE the call that built them. Every MainWindow
+    /// subscribes the process-lifetime Loc.Instance singleton and never
+    /// unsubscribes, so each capture left a live window reachable from a
+    /// static field on a thread that had already exited. The next
+    /// Loc.SetLanguage — CaptionButtonTests raises it on purpose,
+    /// LocKeyConverterTests in passing — walked that subscriber list
+    /// synchronously and read WindowState on a dead foreign thread, and
+    /// VerifyAccess threw into whichever unrelated test was running at the
+    /// time. The suite was green on scheduling order, not on design: adding
+    /// two more window captures killed the run at test 487 of 502, and the
+    /// stack pointed at a test that had nothing to do with it.
+    ///
+    /// A single shared thread makes every window this harness has ever built
+    /// a peer of every other one, so the harness's own raises are in-thread.
+    /// The other half of the fix is in MainWindow, which now marshals that
+    /// handler instead of trusting whatever thread the singleton was poked
+    /// from.
     private static void OnStaThread(Action work)
     {
         Exception? failure = null;
-        var thread = new Thread(() =>
+        UiThread().Invoke(() =>
         {
             try { work(); }
             catch (Exception ex) { failure = ex; }
         });
+        if (failure is not null) throw failure;
+    }
+
+    /// How long the harness will wait for a shown window to finish reacting.
+    /// Bounded on purpose: a snapshot must never be able to hang a test run.
+    private const int PumpPasses = 4;
+    private const int PumpWaitMs = 10;
+
+    /// Runs the work the window queued in response to being shown, before the
+    /// picture is taken.
+    ///
+    /// The live tiles are why this exists. OverviewViewModel's tick awaits a
+    /// Task.Run, so the readings come back on a continuation posted to this
+    /// dispatcher — and a capture that renders without letting that
+    /// continuation run photographs em dashes where the numbers should be.
+    ///
+    /// It used to work by accident. The old throwaway thread never ran a
+    /// dispatcher loop, so there was no SynchronizationContext to post to,
+    /// the continuation ran inline on the pool thread, and it beat layout to
+    /// the properties. On a real UI thread the continuation queues, which is
+    /// what a UI thread is supposed to do — so the harness now waits for it
+    /// on purpose instead of relying on the absence of a message pump.
+    ///
+    /// A nested frame rather than Invoke-at-idle, because this runs INSIDE
+    /// the dispatcher operation that is doing the capture: the queue cannot
+    /// drain until we let it. Several short passes rather than one, because
+    /// the continuation has to come back from the thread pool first.
+    private static void PumpUntilQuiet()
+    {
+        for (var pass = 0; pass < PumpPasses; pass++)
+        {
+            var frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(
+                (Action)(() => frame.Continue = false), DispatcherPriority.ApplicationIdle);
+            Dispatcher.PushFrame(frame);
+            Thread.Sleep(PumpWaitMs);
+        }
+    }
+
+    /// Starts the UI thread on first use and hands back its dispatcher.
+    private static Dispatcher UiThread()
+    {
+        if (_ui is not null) return _ui;
+
+        var ready = new ManualResetEventSlim();
+        var thread = new Thread(() =>
+        {
+            _ui = Dispatcher.CurrentDispatcher;
+            ready.Set();
+            // The pump, and it is not optional: Invoke above would otherwise
+            // queue work that nothing ever runs, and a window that is Shown
+            // would never process a single message.
+            Dispatcher.Run();
+        })
+        {
+            // Never shut down — the windows parked on it must stay reachable
+            // on a LIVE thread, which is the whole point. Background, so a
+            // dispatcher that is deliberately immortal cannot outlive the
+            // test host and hang the run.
+            IsBackground = true,
+            Name = "brisk-snapshot-ui",
+        };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        thread.Join();
-        if (failure is not null) throw failure;
+        ready.Wait();
+        return _ui!;
     }
 }
