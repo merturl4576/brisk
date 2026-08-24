@@ -88,8 +88,11 @@ public sealed class PanelSourceTests
     /// that rots silently: repoint one heading back at SectionLabel and the
     /// page still builds, still lays out, still photographs — it just stops
     /// being a cockpit in one place, and no other test in the suite looks.
-    /// The wrap claim is re-asserted through the page's OWN style too, since
-    /// a page-local `BasedOn` style is free to add setters of its own.
+    /// The wrap claim is re-asserted through the page's OWN style too, and
+    /// through it FIRST: a page-local `BasedOn` style is free to add setters
+    /// of its own, and the nearest style wins. That sentence was here before
+    /// the code was, which is the defect a reviewer caught — see
+    /// InlineStyleOf.
     [Theory]
     [InlineData("HealthPage.xaml", "health.advise.section")]
     [InlineData("HealthPage.xaml", "health.notice.section")]
@@ -109,7 +112,7 @@ public sealed class PanelSourceTests
         var chain = StyleChain(StyleKeyOf(heading!));
         Assert.Contains("PanelHeader", chain.Keys);
 
-        var setters = Collapse(chain.Styles);
+        var setters = CascadeOf(heading!, chain.Styles);
         Assert.Equal("Wrap", setters.GetValueOrDefault("TextWrapping"));
         Assert.False(setters.ContainsKey("TextTrimming"),
             $"{page}'s [{key}] heading trims after all — a style on the page " +
@@ -133,14 +136,25 @@ public sealed class PanelSourceTests
         Assert.Contains("CockpitPanel", StyleChain(StyleKeyOf(root)).Keys);
 
         // The panel's own fill and edge, not a private copy of them. A local
-        // attribute beats a style setter in WPF, so a leftover Background=
-        // here would silently win over CockpitPanel and the card would go on
-        // wearing whatever it wore before while claiming to have joined.
+        // attribute beats a style setter in WPF, and an inline setter beats
+        // the BasedOn one, so a leftover Background in EITHER place would
+        // silently win over CockpitPanel and the card would go on wearing
+        // whatever it wore before while claiming to have joined. Only direct
+        // <Setter> children count: a setter inside <Style.Triggers> is a
+        // state, which is how the card's hover fill is allowed to live here.
+        var inline = Collapse(InlineStyleOf(root) is { } style
+            ? new[] { style }
+            : Array.Empty<XElement>());
         foreach (var overridden in new[]
                  { "Background", "BorderBrush", "BorderThickness", "CornerRadius" })
+        {
             Assert.True(root.Attribute(overridden) is null,
-                $"{template}'s panel sets {overridden} locally, which beats the " +
-                "CockpitPanel setter it is supposed to be taking");
+                $"{template}'s panel sets {overridden} as a local attribute, " +
+                "which beats the CockpitPanel setter it is supposed to be taking");
+            Assert.False(inline.ContainsKey(overridden),
+                $"{template}'s panel sets {overridden} in its own inline style, " +
+                "which beats the CockpitPanel setter it is BasedOn");
+        }
     }
 
     /// The panel carries its brackets itself.
@@ -416,12 +430,36 @@ public sealed class PanelSourceTests
             .Groups[1].Value;
         if (named.Length > 0) return named;
 
-        var inline = element.Elements()
-            .SingleOrDefault(e => e.Name.LocalName.EndsWith(".Style", StringComparison.Ordinal))
-            ?.Elements().SingleOrDefault(e => e.Name.LocalName == "Style");
+        var inline = InlineStyleOf(element);
         return inline is null
             ? null
             : ResourceKey.Match((string?)inline.Attribute("BasedOn") ?? "").Groups[1].Value;
+    }
+
+    /// The <X.Style> a use site declares inline, if it declares one.
+    ///
+    /// It has to be handed to Collapse alongside the Shared.xaml chain, and
+    /// forgetting to was a real hole rather than a hypothetical one: the
+    /// heading guard's comment claimed the wrap was re-asserted through the
+    /// page style while only the shared chain was ever read, so a
+    /// TextTrimming setter planted in a page-local style trimmed the Turkish
+    /// heading with the guard still green — and the failure message the
+    /// guard would never print says "a style on the page put the ellipsis
+    /// back". A guard that asserts less than its comment claims is worse
+    /// than no comment; this wave has been burned by one already.
+    private static XElement? InlineStyleOf(XElement element) =>
+        element.Elements()
+            .SingleOrDefault(e => e.Name.LocalName.EndsWith(".Style", StringComparison.Ordinal))
+            ?.Elements().SingleOrDefault(e => e.Name.LocalName == "Style");
+
+    /// The whole cascade an element actually ends up wearing: its inline
+    /// style first, because that is the nearest one, then everything the
+    /// inline style is BasedOn.
+    private static Dictionary<string, string> CascadeOf(
+        XElement element, IEnumerable<XElement> chain)
+    {
+        var inline = InlineStyleOf(element);
+        return Collapse(inline is null ? chain : chain.Prepend(inline));
     }
 
     private static XElement SharedResource(string kind, string key) =>
