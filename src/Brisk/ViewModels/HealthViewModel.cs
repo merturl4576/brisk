@@ -192,6 +192,12 @@ public sealed class HealthViewModel : ViewModelBase
 
     public ObservableCollection<FindingRow> Rows { get; } = new();
     public ObservableCollection<FindingRow> AdviseRows { get; } = new();
+    /// Findings brisk can only report — the ones whose Kind is Notice. They
+    /// cost the score nothing, so they get their own band under the advice
+    /// instead of sitting among suggestions the user can act on. Splitting
+    /// them out is the only thing Kind changes here: a notice is never
+    /// hidden, and its card renders exactly like an advise card.
+    public ObservableCollection<FindingRow> NoticeRows { get; } = new();
     /// Journal-driven report rows for this page's slice of the rules (the
     /// doneFilter): every fix still in effect, newest first. Replaces the
     /// round-5 static "optimized" checklist — the report claims only what
@@ -449,11 +455,14 @@ public sealed class HealthViewModel : ViewModelBase
         var undoable = journal.Select(u => u.RuleId).ToHashSet();
         Rows.Clear();
         AdviseRows.Clear();
+        NoticeRows.Clear();
         foreach (var finding in snapshot.Findings
                      .Where(f => _filter?.Invoke(f) ?? true)
                      .OrderByDescending(f => f.Severity)
                      .ThenByDescending(f => f.ImpactStars))
-            (finding.Category == RuleCategory.Advise ? AdviseRows : Rows)
+            (finding.Kind == FindingKind.Notice ? NoticeRows
+                : finding.Category == RuleCategory.Advise ? AdviseRows
+                : Rows)
                 .Add(new FindingRow(finding, _loc, undoable.Contains(finding.RuleId),
                     row => _ = FixAsync(row), row => _ = UndoAsync(row),
                     _ => OpenStorageRequested?.Invoke()));

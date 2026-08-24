@@ -53,6 +53,7 @@
   <data name="health.restorepointfailed" xml:space="preserve"><value>restore point was not created — nothing was changed</value></data>
   <data name="health.advise" xml:space="preserve"><value>advice</value></data>
   <data name="health.advise.section" xml:space="preserve"><value>Recommendations</value></data>
+  <data name="health.notice.section" xml:space="preserve"><value>What brisk can only report</value></data>
   <data name="finding.details" xml:space="preserve"><value>Details</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Fixing…</value></data>

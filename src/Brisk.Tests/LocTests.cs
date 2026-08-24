@@ -186,6 +186,11 @@ public class LocTests
     [InlineData("overview.report.card.saved")]
     [InlineData("overview.report.card.saved.fileonly")]
     [InlineData("overview.report.card.failed")]
+    // The heading over the findings brisk can only report. It labels a whole
+    // band on two pages, so a miss in either language would print the raw key
+    // above the cards instead of the sentence that explains why they carry no
+    // button.
+    [InlineData("health.notice.section")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

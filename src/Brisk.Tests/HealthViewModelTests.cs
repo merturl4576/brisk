@@ -156,6 +156,33 @@ public class HealthViewModelTests
         Assert.False(vm.Rows.Single(r => r.RuleId == "power-plan").HasStorageAction);
     }
 
+    /// Kind decides placement: a Notice leaves the advise section for its
+    /// own band. It is NEVER hidden — kind changes scoring and placement,
+    /// and a fact brisk can only report still gets a card that says so.
+    [Fact]
+    public async Task NoticeFindings_LandInTheNoticeBand_NotTheAdviseSection()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("disk-breakdown", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice),
+        });
+
+        await state.ScanAsync();
+
+        Assert.Single(vm.AdviseRows);
+        Assert.Equal("disk-breakdown", vm.AdviseRows[0].RuleId);
+        Assert.Single(vm.NoticeRows);
+        Assert.Equal("thermals", vm.NoticeRows[0].RuleId);
+        Assert.Empty(vm.Rows.Where(r => r.RuleId == "thermals"));
+
+        // The band is rebuilt by each scan, not stacked onto.
+        await state.ScanAsync();
+        Assert.Single(vm.NoticeRows);
+    }
+
     [Fact]
     public async Task SectionFilter_SplitsFindingsAcrossPages()
     {

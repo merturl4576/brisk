@@ -53,6 +53,7 @@
   <data name="health.restorepointfailed" xml:space="preserve"><value>geri yükleme noktası oluşturulamadı — hiçbir şey değiştirilmedi</value></data>
   <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
   <data name="health.advise.section" xml:space="preserve"><value>Öneriler</value></data>
+  <data name="health.notice.section" xml:space="preserve"><value>brisk'in yalnızca bildirebildikleri</value></data>
   <data name="finding.details" xml:space="preserve"><value>Ayrıntılar</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Düzeltiliyor…</value></data>

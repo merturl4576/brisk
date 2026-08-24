@@ -71,6 +71,23 @@ public class HealthScoreTests
         Assert.Equal(100, HealthScore.Compute(notices));
     }
 
+    /// The skip is a skip, not a stop. Rule order puts boot-degradation (a
+    /// notice) ahead of startup-bloat (a problem) on a real machine, so a
+    /// walk that STOPPED at the first notice would drop every penalty behind
+    /// it and hand back a score with nothing charged for problems that are
+    /// still there.
+    [Fact]
+    public void ANoticeAheadOfAProblem_StillChargesTheProblem()
+    {
+        var notice = new DiagnosticFinding("a", "rule.a.title", "A", "ev",
+            Severity.Critical, RuleCategory.Advise, 5, false, null,
+            Kind: FindingKind.Notice);
+
+        // notice first, then Warning 3*3=9 -> 91
+        Assert.Equal(91, HealthScore.Compute(
+            new[] { notice, F(Severity.Warning, 3) }));
+    }
+
     /// Nothing opts in by accident: every rule that says nothing about Kind
     /// keeps costing the score exactly what it did before.
     [Fact]
