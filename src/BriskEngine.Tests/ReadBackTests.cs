@@ -776,10 +776,15 @@ public class ReadBackTests
     /// WHAT THIS THEORY GIVES AND WHAT IT DOES NOT. It runs over every
     /// TelemetrySwitchRule DiagnosticRuleRegistry ships, not over a list kept
     /// here, so a seventh switch arrives as a row with no recorded answer and
-    /// fails until somebody works one out. And a switch this file cannot plant
-    /// a state for fails too, rather than reporting "no witness" for a rule it
-    /// never touched — the silent answer that would otherwise cover a future
-    /// word-valued rule, which is the shape location already is.
+    /// fails until somebody works one out. And a switch that NONE of this
+    /// file's planted states could make read as off fails too, rather than
+    /// reporting "no witness" for a rule the search never got into the state
+    /// it is about. That is decided by the rule's own read rather than by a
+    /// property of this file's writes: it used to be the proxy
+    /// `Values.Count == 0`, and a word-valued rule shipping a NON-EMPTY
+    /// Values — one override away from the shape location already is —
+    /// slipped past the proxy into the numeric branch and was recorded as a
+    /// silent false.
     ///
     /// What it does NOT do is prove a rule cannot part them. The search is
     /// BOUNDED — six candidate numbers, six candidate words — so a recorded
@@ -802,12 +807,14 @@ public class ReadBackTests
         var (outcome, witness) =
             SearchForAStateThatReadsAsOffWithoutBeingBrisksWrite(rule);
 
-        Assert.True(outcome != StateSearch.CouldNotPlantAnyState,
-            $"'{id}' carries no RegistryValue and is not a rule this file knows " +
-            "how to write a state for, so nothing was planted and nothing was " +
-            "checked. Add a fork beside the LocationRule one — reporting no " +
-            "witness for a rule that was never planted is the silent answer this " +
-            "test exists to refuse.");
+        Assert.True(outcome != StateSearch.NoPlantedStateEverReadAsOff,
+            $"'{id}': nothing this file planted ever made this rule read as off, " +
+            "so the search never reached the state it exists to ask about. " +
+            "Either this file cannot write the state this rule reads — add a " +
+            "fork beside the LocationRule one — or the state it does read as " +
+            "off sits outside the bounded candidates here. Reporting no " +
+            "witness for a rule that was never seen reading as off is the " +
+            "silent answer this test exists to refuse.");
 
         var found = outcome == StateSearch.FoundOne;
         Assert.True(found == recorded, found
@@ -854,52 +861,73 @@ public class ReadBackTests
             ["location"] = true,
         };
 
-    /// Three outcomes, and the third is the one that matters: a rule this file
-    /// cannot plant a state for is NOT a rule with no witness. Collapsing
-    /// those two into one null is exactly how a future word-valued rule would
-    /// be waved through, so they are separate answers and the caller fails on
-    /// the third.
+    /// Three outcomes, and the third is the one that matters: a rule the
+    /// search never got INTO the state it is about is NOT a rule with no
+    /// witness. Collapsing those two into one null is exactly how a future
+    /// word-valued rule would be waved through, so they are separate answers
+    /// and the caller fails on the third.
     private enum StateSearch
     {
         FoundOne,
         NoneInTheStatesThisFileCanPlant,
-        CouldNotPlantAnyState,
+        NoPlantedStateEverReadAsOff,
     }
 
     /// Looks for a state that reads as off while NOT being what the rule's fix
     /// writes. Forked on LocationRule by TYPE rather than by id, so a rename
-    /// cannot quietly send it down the numeric branch — and any OTHER rule
-    /// with an empty Values falls through to CouldNotPlantAnyState instead of
-    /// walking an empty loop and answering "nothing wrong here", which is the
-    /// same empty-collection hazard the whole read-back was built around.
+    /// cannot quietly send it down the numeric branch.
+    ///
+    /// The third outcome is decided by WHAT THE RULE READ, not by what this
+    /// file wrote. Every branch records whether a state it planted actually
+    /// made the rule read as off; if none ever did, the search never reached
+    /// the state it exists to ask about, and it says so instead of answering
+    /// "no witness". That used to be decided on the proxy `Values.Count == 0`,
+    /// and the proxy is not the property: a word-valued rule shipping a
+    /// NON-EMPTY Values takes the numeric branch, gets six SetInts it never
+    /// reads, never once reads as off, and was recorded as a silent false.
+    /// That shape was planted and watched pass before this was changed.
+    ///
+    /// What the third outcome now covers is therefore WIDER than "this file
+    /// cannot write this rule's state", and the failure message says both
+    /// halves: a rule whose state this file cannot write at all lands here,
+    /// and so does one whose off-reading state simply sits outside the
+    /// bounded candidates below.
     private static (StateSearch Outcome, string? Witness)
         SearchForAStateThatReadsAsOffWithoutBeingBrisksWrite(TelemetrySwitchRule rule)
     {
+        var everReadAsOff = false;
+
         if (rule is LocationRule)
         {
             foreach (var word in new[] { "deny", "DENY", "dEnY", "Allow", "Prompt", "" })
             {
                 var (ctx, reg) = Context();
                 reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, word);
-                if (!rule.IsOn(ctx) &&
-                    !string.Equals(word, LocationRule.Denied, StringComparison.Ordinal))
+                if (rule.IsOn(ctx)) continue;
+                everReadAsOff = true;
+                if (!string.Equals(word, LocationRule.Denied, StringComparison.Ordinal))
                     return (StateSearch.FoundOne, $"the word \"{word}\"");
             }
-            return (StateSearch.NoneInTheStatesThisFileCanPlant, null);
+            return (Outcome(everReadAsOff), null);
         }
-
-        if (rule.Values.Count == 0)
-            return (StateSearch.CouldNotPlantAnyState, null);
 
         foreach (var candidate in new[] { -1, 0, 1, 2, 3, 7 })
         {
             var (ctx, reg) = Context();
             foreach (var v in rule.Values) reg.SetInt(v.KeyPath, v.ValueName, candidate);
-            if (!rule.IsOn(ctx) && rule.Values.Any(v => v.OffValue != candidate))
+            if (rule.IsOn(ctx)) continue;
+            everReadAsOff = true;
+            if (rule.Values.Any(v => v.OffValue != candidate))
                 return (StateSearch.FoundOne, $"the number {candidate}");
         }
-        return (StateSearch.NoneInTheStatesThisFileCanPlant, null);
+        return (Outcome(everReadAsOff), null);
     }
+
+    /// The two answers a search that found no witness can honestly give,
+    /// told apart by whether the rule was ever seen reading as off at all.
+    private static StateSearch Outcome(bool everReadAsOff) => everReadAsOff
+        ? StateSearch.NoneInTheStatesThisFileCanPlant
+        : StateSearch.NoPlantedStateEverReadAsOff;
 
     /// The positive half of the correction above: the sentence names the read
     /// brisk made. Pinned as a literal for the same reason the other three

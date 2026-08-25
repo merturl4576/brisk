@@ -148,9 +148,13 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite runs over every
     /// TelemetrySwitchRule DiagnosticRuleRegistry ships, so a seventh switch
     /// fails there until somebody records which side of this it falls on, and
-    /// a switch it cannot plant a state for fails rather than reporting one it
-    /// never checked. What it does NOT do is prove a rule cannot part them: it
-    /// plants a BOUNDED set of states and reports what it found among those.
+    /// a switch that none of its planted states could make READ AS OFF fails
+    /// rather than reporting a witness for a state it never reached. That
+    /// test is the rule's own read: it was once the proxy "does this rule
+    /// carry any RegistryValue?", which a word-valued rule shipping a
+    /// non-empty Values walks straight past. What it does NOT do is prove a
+    /// rule cannot part them: it plants a BOUNDED set of states and reports
+    /// what it found among those.
     public virtual WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
         WriteEffect.NotAPolicy;
 
