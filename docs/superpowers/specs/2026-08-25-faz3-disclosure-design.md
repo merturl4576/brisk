@@ -73,19 +73,23 @@ All local reads. No network call of any kind exists in this wave.
 
 **Corrected 2026-08-25, after Tasks 2-4 shipped.** This section originally named
 four new probes. Three of them were never needed and one of the three would
-have been actively wrong; the table below is what was built. The original text
-is quoted under each row it replaced, because a spec that quietly rewrites
-itself teaches the next reader nothing.
+have been actively wrong. The table below is what the first three rows became;
+the fourth is unbuilt and says so. Each row's note quotes the clause it
+replaces, because a spec that quietly rewrites itself teaches the next reader
+nothing — and this note is itself a correction, since an earlier draft of this
+paragraph claimed the whole table was built and that whole rows were quoted.
 
 | probe | source | notes |
 |---|---|---|
 | *(none — the existing `IRegistryProbe`)* | registry: advertising ID, diagnostic data level, tailored experiences, speech/typing personalisation, location, activity history, Recall | The spec said `RealPrivacyProbe`. No new probe was needed: `IRegistryProbe` already exposes `GetInt`/`GetString`/`GetSubKeyNames`/`GetValueNames`/`GetBytes`, which is the whole surface. |
 | *(none — the existing `IRegistryProbe`)* | `USBSTOR` instance count; earliest install date from each instance's `Properties\{83da6326-…}\0064` FILETIME | The spec said `RealUsbHistoryProbe`, reading the date from `SetupAPI.dev.log`. **That log is never read.** The date comes from the device property store — and on an unelevated machine that key is refused, so the count ships without a date and the finding says so. |
 | *(none — the existing `IRegistryProbe`)* | `UserAssist` value-name count under both `Count` keys | The spec said "ROT13-decoded". **Nothing is decoded, ever.** The count is the number of value names; decoding would produce exactly the contents red line 2 forbids, and code that decodes is code a reviewer must then prove never leaks. |
-| `IDeliveryOptimizationProbe` | Delivery Optimization performance counters | bytes uploaded to peers this month — the one genuinely new probe, still to be built |
+| `IDeliveryOptimizationProbe` | Delivery Optimization performance counters | bytes uploaded to peers this month. The one genuinely new probe, and **still to be built** — Task 5. The spec first called it `RealDeliveryOptimizationProbe`; the interface is what the context takes and the `Real…` class is what implements it, so both names are right about different things. |
 
-Each follows the existing `RealProbes` shape and gets a fake for tests. A probe
-that throws or finds nothing reports "unreadable", never zero — the difference
+The one new probe follows the existing `RealProbes` shape and gets a fake for
+tests; the three rows that read "(none)" need neither, because `IRegistryProbe`
+already has both. What binds all four is the rule above them: a read that
+throws or finds nothing reports "unreadable", never zero — the difference
 between "no USB devices recorded" and "I could not read the USB record" is the
 difference between a claim and a lie.
 
