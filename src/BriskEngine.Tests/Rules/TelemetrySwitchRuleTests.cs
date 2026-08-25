@@ -11,27 +11,47 @@ using Xunit;
 
 namespace BriskEngine.Tests.Rules;
 
-/// The four switches a later task of this wave will turn off behind one
-/// button, on a privacy page that does not exist on this build. One thing
-/// makes them unlike every other fixable rule brisk ships, and it is asserted
-/// here rather than described: a value that is ABSENT reads as ON. A machine
-/// nobody has touched has nothing written at any of these paths, and Windows
-/// treats that absence as the permissive default — so Detect has to fire on
-/// an empty registry, and the undo of that fix has to DELETE the value again.
-/// Writing the off number where there was no value at all is not a
+/// The six switches this wave gives brisk: four that cost the user nothing
+/// visible, and two — location and activity-history — that cost Find my
+/// device and Timeline. One thing makes them unlike every other fixable rule
+/// brisk ships, and it is asserted here rather than described: a value that is
+/// ABSENT reads as ON — not because brisk knows what Windows does with an
+/// unwritten value, but because it cannot read one as off. So Detect has to
+/// fire on an empty registry, and the undo of that fix has to DELETE the value
+/// again. Writing the off number where there was no value at all is not a
 /// restoration; it is a second change wearing an undo's name.
+///
+/// Five of the six store a number. location stores a WORD — "Allow" or "Deny"
+/// — so it carries no RegistryValue at all and reads, writes and restores its
+/// own state; the theories driven by NumberValuedSwitches leave it out and the
+/// Location_* facts below cover it instead.
 public class TelemetrySwitchRuleTests
 {
     private static readonly string[] Ids =
     {
         "advertising-id", "diagnostic-level",
         "tailored-experiences", "speech-typing",
+        "location", "activity-history",
     };
+
+    /// Every switch whose state brisk reads as a number, which is every one of
+    /// them except location. The theories that walk a rule's Values collection
+    /// take this list: over location they would walk an EMPTY collection and
+    /// pass while asserting nothing at all.
+    private static readonly string[] NumberValuedIds =
+        Ids.Where(id => id != "location").ToArray();
 
     public static TheoryData<string> AllSwitches()
     {
         var data = new TheoryData<string>();
         foreach (var id in Ids) data.Add(id);
+        return data;
+    }
+
+    public static TheoryData<string> NumberValuedSwitches()
+    {
+        var data = new TheoryData<string>();
+        foreach (var id in NumberValuedIds) data.Add(id);
         return data;
     }
 
@@ -41,6 +61,8 @@ public class TelemetrySwitchRuleTests
         "diagnostic-level" => new DiagnosticLevelRule(),
         "tailored-experiences" => new TailoredExperiencesRule(),
         "speech-typing" => new SpeechTypingRule(),
+        "location" => new LocationRule(),
+        "activity-history" => new ActivityHistoryRule(),
         _ => throw new ArgumentOutOfRangeException(
             nameof(id), id, "not one of this wave's telemetry switches"),
     };
@@ -55,9 +77,10 @@ public class TelemetrySwitchRuleTests
         reg.GetInt(v.KeyPath, v.ValueName)?.ToString(CultureInfo.InvariantCulture)
         ?? "absent";
 
-    /// The trap, per rule: nothing written anywhere, and all four still fire.
+    /// The trap, per rule: nothing written anywhere, and every one of them
+    /// still fires. location has the same trap and its own test for it, below.
     [Theory]
-    [MemberData(nameof(AllSwitches))]
+    [MemberData(nameof(NumberValuedSwitches))]
     public void UntouchedMachine_IsAFinding_AndFixThenUndoLeavesEveryValueAbsent(string id)
     {
         var (ctx, reg) = Context();
@@ -80,7 +103,7 @@ public class TelemetrySwitchRuleTests
     /// Every value explicitly at the number the fix writes: the switch reads
     /// as off and brisk has nothing to say about it.
     [Theory]
-    [MemberData(nameof(AllSwitches))]
+    [MemberData(nameof(NumberValuedSwitches))]
     public void EveryValueAlreadyOff_IsNoFinding(string id)
     {
         var (ctx, reg) = Context();
@@ -96,7 +119,7 @@ public class TelemetrySwitchRuleTests
     /// The switch explicitly on. The round trip has to hand back the number
     /// that was there, not the absence the untouched case restores.
     [Theory]
-    [MemberData(nameof(AllSwitches))]
+    [MemberData(nameof(NumberValuedSwitches))]
     public void EveryValueOn_IsAFinding_AndUndoRestoresTheNumberThatWasThere(string id)
     {
         var (ctx, reg) = Context();
@@ -144,8 +167,11 @@ public class TelemetrySwitchRuleTests
         Assert.Equal(id, finding.RuleId);
         Assert.Equal($"rule.{id}.title", finding.TitleKey);
         Assert.Equal($"rule.{id}.evidence", finding.EvidenceKey);
-        Assert.Equal(RuleCategory.Auto, finding.Category);
-        Assert.True(finding.CanFix, $"{id}: the one-button group has to be fixable");
+        // The rule's own consent level, whatever it is — the finding must not
+        // report a different one from the rule that produced it. Which level
+        // each rule ships is pinned by TheConsentLevel_MatchesWhatTheSwitchCosts.
+        Assert.Equal(Rule(id).Category, finding.Category);
+        Assert.True(finding.CanFix, $"{id}: a switch brisk offers to flip has to be fixable");
         Assert.False(string.IsNullOrWhiteSpace(finding.FixDescription),
             $"{id}: nothing describes what the fix does");
         Assert.Null(finding.Headline);
@@ -165,10 +191,163 @@ public class TelemetrySwitchRuleTests
             "in DiagnosticRuleRegistry.All");
     }
 
-    /// speech-typing is the only switch with two values, and the machine a
-    /// single-value rule would get wrong is the half-set one: somebody
-    /// restricted text collection and never touched ink. The undo has to
-    /// restore a 1 to one value and remove the other.
+    /// The consent level, per switch, and the reason it differs. RuleCategory
+    /// is what the CLI's `fix --all` selects on — it applies every Auto rule
+    /// it finds a finding for — so this is not a label, it is the thing that
+    /// decides whether somebody who typed `--all` and was shown no consequence
+    /// can lose Find my device. CliFixAll_NeverReachesASwitchThatCostsThe
+    /// UserSomething, in ProgramFixTests, asserts the other end of the same
+    /// wire.
+    [Theory]
+    [InlineData("advertising-id", RuleCategory.Auto)]
+    [InlineData("diagnostic-level", RuleCategory.Auto)]
+    [InlineData("tailored-experiences", RuleCategory.Auto)]
+    [InlineData("speech-typing", RuleCategory.Auto)]
+    [InlineData("location", RuleCategory.Confirm)]
+    [InlineData("activity-history", RuleCategory.Confirm)]
+    public void TheConsentLevel_MatchesWhatTheSwitchCosts(string id, RuleCategory expected)
+    {
+        Assert.True(Rule(id).Category == expected,
+            $"{id} ships as {Rule(id).Category}, not {expected} — and a costly " +
+            "switch shipped as Auto is one a CLI `fix --all` would apply with " +
+            "no consequence named");
+    }
+
+    /// The whole point of the two costly switches: the loss is IN the copy,
+    /// in both languages, or the switch is a trap. Read off disk from both
+    /// resx files, and from the ENGINE's own prose too — `brisk scan` prints
+    /// every finding's title and evidence, and `brisk fix --rule <id>` prints
+    /// them again before it asks for --yes; neither prints advice, and the
+    /// word appears nowhere in the CLI. A loss named only in the advice is a
+    /// loss no CLI user is ever shown.
+    ///
+    /// This pins a phrasing, which usually goes stale on the next reword.
+    /// Here the phrasing IS the requirement: these two sentences are what the
+    /// task exists to put in front of the user, so a reword that drops one
+    /// should fail rather than pass quietly.
+    [Theory]
+    [InlineData("location", "Find my device stops working.", "'Cihazımı bul' çalışmaz.")]
+    [InlineData("activity-history", "Timeline ends.", "Timeline biter.")]
+    public void TheCostlySwitch_NamesTheLoss_InBothLanguages(
+        string id, string english, string turkish)
+    {
+        var (ctx, _) = Context();
+        var finding = Rule(id).Detect(ctx)!;
+        Assert.True(finding.Evidence.Contains(english, StringComparison.Ordinal),
+            $"the engine's evidence for {id} never says \"{english}\" — and the " +
+            "CLI prints evidence, never advice");
+
+        foreach (var (file, sentence) in new[]
+                 { ("Strings.resx", english), ("Strings.tr.resx", turkish) })
+        {
+            var strings = Resx(file);
+            foreach (var key in new[] { $"rule.{id}.evidence", $"rule.{id}.advice" })
+            {
+                Assert.True(strings.TryGetValue(key, out var text),
+                    $"{key} is missing from {file}");
+                Assert.True(text!.Contains(sentence, StringComparison.Ordinal),
+                    $"{key} in {file} never says \"{sentence}\", so the switch " +
+                    "costs something the copy does not name");
+            }
+        }
+    }
+
+    /// location is the one switch whose state is a word. "Deny" is the only
+    /// thing that reads as off; the cases below — "Allow", a word brisk does
+    /// not recognise, an empty string and nothing written at all — read as on,
+    /// because what cannot be read as off is not reported as off. The fifth
+    /// case, a value of a type brisk cannot read as text, has its own fact
+    /// below it.
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Allow")]
+    [InlineData("Prompt")]
+    [InlineData("")]
+    public void Location_AnythingButDenied_IsAFinding_AndUndoPutsItBack(string? state)
+    {
+        var (ctx, reg) = Context();
+        var rule = new LocationRule();
+        if (state is not null)
+            reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, state);
+
+        Assert.True(rule.IsOn(ctx),
+            $"the location consent reads {state ?? "absent"}, which is not " +
+            $"{LocationRule.Denied}, and IsOn reported the switch as off");
+        Assert.NotNull(rule.Detect(ctx));
+
+        var prior = rule.Fix(ctx);
+        Assert.Equal(LocationRule.Denied,
+            reg.GetString(LocationRule.KeyPath, LocationRule.ValueName));
+        Assert.Null(rule.Detect(ctx));
+
+        rule.Undo(ctx, prior);
+        var after = reg.GetString(LocationRule.KeyPath, LocationRule.ValueName);
+        Assert.True(after == state,
+            $"undo left {after ?? "absent"} at {LocationRule.KeyPath}\\" +
+            $"{LocationRule.ValueName}, not the {state ?? "absent"} that was there");
+    }
+
+    /// The same word the fix writes, already there: brisk has nothing to say.
+    [Fact]
+    public void Location_AlreadyDenied_IsNoFinding()
+    {
+        var (ctx, reg) = Context();
+        reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, LocationRule.Denied);
+
+        Assert.False(new LocationRule().IsOn(ctx),
+            $"the location consent reads {LocationRule.Denied} — the word the " +
+            "fix itself writes — and IsOn still reads true");
+        Assert.Null(new LocationRule().Detect(ctx));
+    }
+
+    /// A registry brisk did not write is not one brisk gets to assume the
+    /// shape of. Reading "deny" as on would have brisk offer to switch off
+    /// something already off, and then report a change it did not make.
+    [Fact]
+    public void Location_DeniedInAnyCase_IsNoFinding()
+    {
+        var (ctx, reg) = Context();
+        reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, "deny");
+
+        Assert.False(new LocationRule().IsOn(ctx),
+            "the location consent reads deny and IsOn read the case, not the word");
+    }
+
+    /// The unreadable case, and the wave's rule for it: an unreadable probe
+    /// reports unreadable, never protection. A number sitting where the
+    /// consent word belongs cannot be read as text at all — the real probe
+    /// returns null for it exactly as the fake does — and brisk did NOT read
+    /// that as denied, so it does not report it as denied.
+    [Fact]
+    public void Location_AValueOfATypeBriskCannotRead_ReadsAsOn_NotAsProtection()
+    {
+        var (ctx, reg) = Context();
+        reg.SetInt(LocationRule.KeyPath, LocationRule.ValueName, 0);
+
+        Assert.True(new LocationRule().IsOn(ctx),
+            "a number sits where the location consent word belongs, brisk " +
+            "could not read it as text, and IsOn reported the switch as off");
+        Assert.NotNull(new LocationRule().Detect(ctx));
+    }
+
+    /// location carries no RegistryValue, and that is a hazard worth failing
+    /// over rather than discovering. Anything that walks the family's Values
+    /// collections — a future read-back comparing what brisk wrote against
+    /// what is there now — walks nothing at all for this rule and would report
+    /// a switch it never checked as one it checked and found fine. The rule's
+    /// own consts are where its surface lives.
+    [Fact]
+    public void Location_CarriesNoRegistryValue_BecauseItsStateIsAWord()
+    {
+        Assert.True(new LocationRule().Values.Count == 0,
+            "LocationRule grew a RegistryValue: RegistryValue carries an on " +
+            "number and an off number, and this switch has neither");
+    }
+
+    /// One of the two switches that carry two values (activity-history is the
+    /// other), and the machine a single-value rule would get wrong is the
+    /// half-set one: somebody restricted text collection and never touched
+    /// ink. The undo has to restore a 1 to one value and remove the other.
     [Fact]
     public void SpeechTyping_TextRestrictedAndInkAbsent_IsStillAFinding_AndUndoRestoresBothStates()
     {
@@ -196,21 +375,25 @@ public class TelemetrySwitchRuleTests
     /// brisk cannot tell what an unrecognised number means, and "I could not
     /// read this as off" is not "this is off".
     ///
-    /// Run over all three flag switches, not just advertising-id, because a
+    /// Run over all four flag switches, not just advertising-id, because a
     /// subclass can narrow the read back by overriding ReadsAsOn and one of
-    /// them already does. diagnostic-level is the exception and is left out
-    /// on purpose: its override is a threshold, so every number it can read
-    /// is either at or above Enhanced (on) or below it (off) and no third
-    /// state exists for it to mishandle.
+    /// them already does. Two switches are left out on purpose:
+    /// diagnostic-level, whose override is a threshold, so every number it
+    /// can read is either at or above Enhanced (on) or below it (off) and no
+    /// third state exists for it to mishandle; and location, whose state is a
+    /// word rather than a number — Location_AnythingButDenied_IsAFinding_
+    /// AndUndoPutsItBack is the same assertion in its own alphabet, and it
+    /// runs an unrecognised word through it.
     [Theory]
     [InlineData("advertising-id")]
     [InlineData("tailored-experiences")]
     [InlineData("speech-typing")]
+    [InlineData("activity-history")]
     public void AnUnrecognisedNumber_ReadsAsOn_NotAsProtection(string id)
     {
         var (ctx, reg) = Context();
         var rule = Rule(id);
-        // 7 is neither OnValue nor OffValue for any of the three: their pairs
+        // 7 is neither OnValue nor OffValue for any of the four: their pairs
         // are (1, 0) and (0, 1).
         foreach (var v in rule.Values) reg.SetInt(v.KeyPath, v.ValueName, 7);
 
@@ -305,14 +488,16 @@ public class TelemetrySwitchRuleTests
             $"rule.{id}.advice is missing from Strings.resx");
     }
 
-    private static Dictionary<string, string> EnglishStrings()
+    private static Dictionary<string, string> EnglishStrings() => Resx("Strings.resx");
+
+    private static Dictionary<string, string> Resx(string fileName)
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
              dir = dir.Parent)
             if (File.Exists(Path.Combine(dir.FullName, "brisk.sln")))
                 return XDocument
                     .Load(Path.Combine(dir.FullName, "src", "Brisk", "Localization",
-                        "Strings.resx")).Root!
+                        fileName)).Root!
                     .Elements("data")
                     .ToDictionary(e => (string)e.Attribute("name")!,
                         e => (string)e.Element("value")!);
@@ -325,6 +510,10 @@ public class TelemetrySwitchRuleTests
     /// wrong number would pass all of them by being consistently wrong. Only
     /// diagnostic-level's 2 and 1 appear as literals anywhere else, in the
     /// Security and Enhanced tests.
+    ///
+    /// Five rules, six values: location is not here because it has no
+    /// RegistryValue to be here with. TheLocationSurface_IsTheOneTheSpecNames
+    /// pins its path the only way it can be pinned.
     [Fact]
     public void TheRegistrySurfaces_AreTheOnesTheSpecNames()
     {
@@ -341,8 +530,35 @@ public class TelemetrySwitchRuleTests
                     "RestrictImplicitTextCollection", 0, 1),
                 (@"HKCU\Software\Microsoft\InputPersonalization",
                     "RestrictImplicitInkCollection", 0, 1),
+                (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
+                    "PublishUserActivities", 1, 0),
+                (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
+                    "UploadUserActivities", 1, 0),
             },
             Ids.SelectMany(id => Rule(id).Values)
                 .Select(v => (v.KeyPath, v.ValueName, v.OnValue, v.OffValue)));
+    }
+
+    /// location's row of the same table. Its state is a word, so the pair the
+    /// other rules keep as OnValue/OffValue is a single word here: the one
+    /// that reads as off, and the one the fix writes, are the same "Deny".
+    /// There is no "Allow" literal to pin — the rule never tests for one.
+    [Fact]
+    public void TheLocationSurface_IsTheOneTheSpecNames()
+    {
+        // Asserted field by field rather than as one tuple: a tuple comparison
+        // elides the middle of a long path and reports two strings that read
+        // identically, which is the one thing a path test must not do.
+        foreach (var (name, expected, actual) in new[]
+                 {
+                     ("key path",
+                         @"HKCU\Software\Microsoft\Windows\CurrentVersion" +
+                         @"\CapabilityAccessManager\ConsentStore\location",
+                         LocationRule.KeyPath),
+                     ("value name", "Value", LocationRule.ValueName),
+                     ("the word that reads as off", "Deny", LocationRule.Denied),
+                 })
+            Assert.True(expected == actual,
+                $"location's {name} is \"{actual}\", not \"{expected}\"");
     }
 }

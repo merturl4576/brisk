@@ -29,8 +29,8 @@ public class PrivacyRedLineTests
     /// shipped as a Problem would lower the score and this test would still
     /// pass. That guard runs over the real rules and lives in the engine's
     /// own suite, where a DiagnosticContext can be built — as of this wave it
-    /// covers the four telemetry switches, which are the only privacy rules
-    /// that exist. The six the wave has yet to ship are still uncovered.
+    /// covers the six telemetry switches, which are the only privacy rules
+    /// that exist. The four the wave has yet to ship are still uncovered.
     [Fact]
     public void APrivacyNotice_DoesNotMoveTheHealthScore()
     {
@@ -96,8 +96,8 @@ public class PrivacyRedLineTests
     /// rule hardcodes its own Id — and a typo there routes the finding to
     /// Sağlık without a word of complaint. Reading the shipped rule objects
     /// against the shipped list, from the one project that can see both, is
-    /// what turns that silence into a failure. It reaches the four telemetry
-    /// switches; the six privacy rules still to be written need the same line
+    /// what turns that silence into a failure. It reaches the six telemetry
+    /// switches; the four privacy rules still to be written need the same line
     /// extended to whatever base class or marker they arrive with.
     [Fact]
     public void EveryTelemetrySwitchRule_ShipsAnIdThePrivacyListCarries()
@@ -105,7 +105,7 @@ public class PrivacyRedLineTests
         var switches = DiagnosticRuleRegistry.All
             .OfType<TelemetrySwitchRule>().ToList();
 
-        Assert.Equal(4, switches.Count);
+        Assert.Equal(6, switches.Count);
         foreach (var rule in switches)
             Assert.True(FindingSections.IsPrivacy(rule.Id),
                 $"rule '{rule.Id}' is a telemetry switch, but no id in " +

@@ -5,22 +5,28 @@ using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.Rules.Privacy;
 
-/// The four switches a later task of this wave will turn off behind one
-/// button on a privacy page that does not exist yet. Four rules share
-/// one shape: a handful of registry values, a number that reads as on, a
-/// number the fix writes, and an undo that restores every value a COMPLETED
-/// fix recorded. Not every value a fix touched: FixRunner journals the prior
-/// state only after Fix returns, so a multi-value write that threw partway
-/// leaves the writes it already made unrecorded and un-undoable. Nothing
-/// here is atomic and nothing here says it is.
+/// The six switches this wave gives brisk, on a privacy page that does not
+/// exist yet. Five of them share one shape: a handful of registry values, a
+/// number that reads as on, a number the fix writes, and an undo that restores
+/// every value a COMPLETED fix recorded. Not every value a fix touched:
+/// FixRunner journals the prior state only after Fix returns, so a multi-value
+/// write that threw partway leaves the writes it already made unrecorded and
+/// un-undoable. Nothing here is atomic and nothing here says it is.
+///
+/// The sixth, LocationRule, keeps the family's finding and its undo discipline
+/// but not its numbers: that switch's state is a WORD, so it carries no
+/// RegistryValue at all and overrides every member that would have read or
+/// written one. What it shares is what matters — the same finding, the same
+/// Notice, and an undo that puts back what the fix found.
 ///
 /// The shape exists because of one property none of brisk's other fixable
-/// rules has: ABSENCE reads as on. A value nobody has written is the
-/// permissive state on every one of these paths, so Detect fires on a
-/// registry with nothing in it, and Undo has to DELETE the value the fix
-/// created rather than write the off number over it. A number written where
-/// there was none is a second change wearing an undo's name — it would leave
-/// a machine reading "somebody decided this" on a setting nobody had touched.
+/// rules has: ABSENCE reads as on. Not because brisk knows what Windows does
+/// with an unwritten value, but because it cannot read one as off, and what
+/// cannot be read as off is not reported as off. So Detect fires on a registry
+/// with nothing in it, and Undo has to DELETE the value the fix created rather
+/// than write the off number over it. A number written where there was none is
+/// a second change wearing an undo's name — it would leave a machine reading
+/// "somebody decided this" on a setting nobody had touched.
 ///
 /// What every subclass's copy says, and what none of it may say: it reports
 /// how a switch on this machine currently reads. brisk reads a registry
@@ -46,17 +52,33 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
 
     public abstract string Id { get; }
 
-    /// Auto is a consent level, not a topic. These four cost the user nothing
-    /// visible, which is why a later task of this wave can put them behind a
-    /// single button; the privacy rules that cost something will be Confirm
-    /// and are not written yet. Nothing acts on this category for a privacy
-    /// finding today — FixAllService excludes the topic outright.
-    public RuleCategory Category => RuleCategory.Auto;
+    /// Auto is a consent level, not a topic, and brisk's two fix-all surfaces
+    /// read it differently — so this default is load-bearing, and the two
+    /// switches that cost the user something override it to Confirm.
+    ///
+    /// The GUI's "Fix all (safe)" excludes the whole privacy topic by rule id,
+    /// category or no category. That predicate lives in Brisk's FixAllService,
+    /// which this assembly cannot see, cannot reference and does not enforce;
+    /// FixAllServiceTests is what holds it.
+    ///
+    /// `brisk fix --all` on the CLI is a different path with a different
+    /// answer: it selects on this property alone, so it DOES turn the four
+    /// consequence-free switches off today. That is a decision, not a gap —
+    /// nothing a user relies on stops working when an advertising ID goes off.
+    /// It is also exactly why location and activity-history are Confirm:
+    /// `--all` may never take Find my device or Timeline away from somebody
+    /// who was shown no consequence. ProgramFixTests pins that end.
+    public virtual RuleCategory Category => RuleCategory.Auto;
 
     /// Public because the read-back a later task of this wave adds will ask a
     /// second question of the same values — "is the number brisk wrote still
     /// the number that is there?" — and IsOn, which answers only "does this
     /// read as on", cannot. Nothing outside this class reads it today.
+    ///
+    /// EMPTY for LocationRule, whose state is a word and not a number. A
+    /// caller that walks this collection to decide what a switch is set to
+    /// gets no values for that rule and must not read that as "nothing to
+    /// check" — it means "ask this rule instead".
     public abstract IReadOnlyList<RegistryValue> Values { get; }
 
     /// English, and pinned identical to this rule's English resx entry by
@@ -70,7 +92,12 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     protected abstract string FixDescription { get; }
 
     /// True when any one of the switch's values does not read as off.
-    public bool IsOn(DiagnosticContext ctx) =>
+    ///
+    /// Virtual because a rule whose state is not a number has no values to
+    /// read here and would answer "off" for every machine ever built. A public
+    /// read that says off while Detect fires is the rule contradicting itself,
+    /// so a subclass that overrides Detect overrides this with it.
+    public virtual bool IsOn(DiagnosticContext ctx) =>
         Values.Any(v => ReadsAsOn(ctx.Registry.GetInt(v.KeyPath, v.ValueName), v));
 
     /// Anything that does not explicitly read as off reads as on. That
@@ -83,9 +110,15 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     protected virtual bool ReadsAsOn(int? actual, RegistryValue value) =>
         actual != value.OffValue;
 
-    public DiagnosticFinding? Detect(DiagnosticContext ctx)
+    public virtual DiagnosticFinding? Detect(DiagnosticContext ctx) =>
+        IsOn(ctx) ? Finding() : null;
+
+    /// The family's finding, built in one place so that a subclass which reads
+    /// its own state — LocationRule does — cannot drift into reporting
+    /// different keys, a different kind or a different star count from the
+    /// five beside it.
+    protected DiagnosticFinding Finding()
     {
-        if (!IsOn(ctx)) return null;
         return new DiagnosticFinding(
             Id, $"rule.{Id}.title", Title, Evidence,
             // Info, one star. The impact scale measures expected PERFORMANCE
@@ -104,7 +137,7 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
             Kind: FindingKind.Notice);
     }
 
-    public string Fix(DiagnosticContext ctx)
+    public virtual string Fix(DiagnosticContext ctx)
     {
         // Read every value before writing any of them, so the record of what
         // was there is taken from the machine as found.
@@ -116,7 +149,7 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
         return JsonSerializer.Serialize(prior);
     }
 
-    public void Undo(DiagnosticContext ctx, string priorStateJson)
+    public virtual void Undo(DiagnosticContext ctx, string priorStateJson)
     {
         var prior = JsonSerializer.Deserialize<Prior>(priorStateJson)!;
         foreach (var v in prior.Values)

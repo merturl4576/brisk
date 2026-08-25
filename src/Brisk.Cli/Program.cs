@@ -307,7 +307,7 @@ public static class Program
         if (cmd.All)
         {
             var anyFailed = false;
-            foreach (var rule in DiagnosticRuleRegistry.All.Where(r => r.Category == RuleCategory.Auto))
+            foreach (var rule in FixAllRules())
             {
                 var finding = Safe(() => rule.Detect(ctx));
                 if (finding is null) continue;
@@ -355,6 +355,28 @@ public static class Program
         Console.Error.WriteLine("brisk: fix requires --all or --rule <id>");
         return 2;
     }
+
+    /// Every rule `brisk fix --all` considers, and no other. Of these it
+    /// applies the ones whose Detect fires, and only with --yes; a rule that
+    /// is not here is not reachable by that command at all. Extracted from the
+    /// loop so a test can read the selection instead of inferring it from what
+    /// the command printed.
+    ///
+    /// This is NOT the GUI's fix-all. That one lives in Brisk's FixAllService,
+    /// which this project does not reference and cannot see, and it excludes
+    /// the whole privacy topic by rule id. This selects on the consent level
+    /// alone, so it does reach the four privacy switches that cost the user
+    /// nothing visible, and is meant to: nothing anybody relies on stops
+    /// working when an advertising ID goes off.
+    ///
+    /// The line it must never cross is the two switches that DO cost
+    /// something. `--all` names no consequence, so it may not take Find my
+    /// device or Timeline away; those rules ship as Confirm, and
+    /// ProgramFixTests asserts they stay out of what this returns.
+    public static IReadOnlyList<IDiagnosticRule> FixAllRules() =>
+        DiagnosticRuleRegistry.All
+            .Where(r => r.Category == RuleCategory.Auto)
+            .ToList();
 
     /// The display fix is applied for this session only, because the mode that
     /// blanks a screen must not also be the mode the machine boots into. The

@@ -22,5 +22,10 @@ public static class DiagnosticRuleRegistry
         // pages that exist.
         new AdvertisingIdRule(), new DiagnosticLevelRule(),
         new TailoredExperiencesRule(), new SpeechTypingRule(),
+        // The two that cost the user something. They are Confirm rather than
+        // Auto, which is what keeps them out of `brisk fix --all` — being in
+        // this list means brisk detects them and `brisk scan` prints them,
+        // not that anything flips them without being asked.
+        new LocationRule(), new ActivityHistoryRule(),
     };
 }

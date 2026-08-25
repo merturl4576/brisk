@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Brisk.Cli;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules;
@@ -95,6 +96,51 @@ public sealed class ProgramFixTests : IDisposable
         Assert.Equal(0, Program.Fix(
             new CliCommand("fix", RuleId: "display-refresh", Keep: true), ctx, Runner()));
         Assert.Equal(0, displays.PersistCalls);
+    }
+
+    /// `brisk fix --all` is a SECOND fix-all, and it does not go through the
+    /// GUI's FixAllService — that one lives in the Brisk project, excludes the
+    /// whole privacy topic by rule id, and Brisk.Cli does not reference it.
+    /// The CLI selects on RuleCategory alone, which is why the four
+    /// consequence-free switches ARE reached by `brisk fix --all --yes` and
+    /// are meant to be: nothing a user relies on stops working when an
+    /// advertising ID goes off.
+    ///
+    /// These two are the line. `--all` may never take Find my device or
+    /// Timeline away from somebody who typed --all and was shown no
+    /// consequence. Today they are outside the selection because they ship as
+    /// Confirm; this test is what makes that a guarantee rather than a
+    /// coincidence, and it fails the moment either rule is made Auto or the
+    /// selection stops filtering on the category.
+    [Theory]
+    [InlineData("location")]
+    [InlineData("activity-history")]
+    public void CliFixAll_NeverReachesASwitchThatCostsTheUserSomething(string ruleId)
+    {
+        // Not vacuous: the rule has to BE in the registry for its absence from
+        // the selection to mean anything. A typo'd id would otherwise pass
+        // this test by naming a rule that does not exist.
+        Assert.True(DiagnosticRuleRegistry.All.Any(r => r.Id == ruleId),
+            $"no rule with id '{ruleId}' is registered, so its absence from " +
+            "`fix --all` proves nothing");
+
+        var selected = Program.FixAllRules().Select(r => r.Id).ToArray();
+        Assert.False(selected.Contains(ruleId),
+            $"`brisk fix --all` reaches '{ruleId}' and would apply it on any " +
+            "machine it fires on, costing the user something the command " +
+            "never named");
+    }
+
+    /// The other half, so the guard above cannot pass by the selection being
+    /// empty: `fix --all` still reaches the switches that cost nothing.
+    [Fact]
+    public void CliFixAll_StillReachesTheSwitchesThatCostNothing()
+    {
+        var selected = Program.FixAllRules().Select(r => r.Id).ToArray();
+        foreach (var id in new[] { "advertising-id", "diagnostic-level",
+                                   "tailored-experiences", "speech-typing" })
+            Assert.True(selected.Contains(id),
+                $"`brisk fix --all` stopped reaching '{id}'");
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
