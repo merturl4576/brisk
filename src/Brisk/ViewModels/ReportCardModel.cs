@@ -53,14 +53,30 @@ public sealed class ReportCardModel
     /// against the height the Grid gives it instead.
     ///
     /// THE BUDGET IS SHARED, because the frame does not grow. Three sections
-    /// compete for the column and each of them can want more than it gets, so
-    /// each one counts what it dropped rather than losing it.
+    /// compete for the column and they do not compete on equal terms.
     ///
-    /// This is the fix list's CEILING — what it gets on a card whose sections
-    /// above took the least they can: one unread sentence, and no findings
-    /// overflow. FixBudget is what it actually gets. The fix list is the
-    /// section that gives way because it comes from the journal, is uncapped,
-    /// and is the footnote on a card whose subject is the numbers above it.
+    /// The findings are capped and count what they dropped. The fix list is
+    /// budgeted and counts what it dropped. The section between them does
+    /// NEITHER: the spec's fourth red line says an unreadable probe is never a
+    /// silent zero, so every line it has is printed, and the fix list is what
+    /// pays for them — one row given up per line taken, since those two rows
+    /// are the same height.
+    ///
+    /// THAT TRADE HAS A FLOOR AND IS THEREFORE NOT A BOUND. FixBudget will not
+    /// take the fix list below one row, so once the unread section passes nine
+    /// lines nothing is left to pay and the column grows past the frame again.
+    /// Unreachable on the shipped rules — the ceiling there is the sensor line
+    /// plus one per report-only disclosure — and stated rather than assumed:
+    /// TheTrade_HasHeadroomForEveryUnreadLineTheShippedRulesCanProduce derives
+    /// that ceiling from the registry and fails when it stops fitting. Said
+    /// plainly because the last sentence in this file that claimed a mechanism
+    /// it did not have hid a live clipping defect for a whole wave.
+    ///
+    /// This constant is the fix list's CEILING: what it gets on a card whose
+    /// sections above took the least they can — one unread sentence, and no
+    /// findings overflow. It gives way rather than the sections above because
+    /// it comes from the journal, is uncapped, and is the footnote on a card
+    /// whose subject is the numbers above it.
     public const int MaxFixRows = 9;
 
     /// How many measured numbers the card leads with; the rest are counted on

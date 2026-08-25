@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
@@ -167,8 +168,13 @@ public class ReportCardModelTests
     /// enough to outgrow the body used to draw off both ends of the bitmap and
     /// vanish — no error, no test that could see it, and a shareable picture
     /// with its top and bottom sheared off. The journal is uncapped and a
-    /// machine that has run fix-all carries eight or ten entries, so the cap
+    /// machine that has run fix-all carries eight or ten entries, so the bound
     /// is here and the remainder is counted rather than dropped.
+    ///
+    /// This card is the one where the bound IS MaxFixRows: one unread line, no
+    /// findings overflow, so the sections above take the least they can and
+    /// the fix list gets its ceiling. What it gets when they take more is
+    /// TheFixList_GivesUpARow_ForEveryLineTheSectionsAboveItTook's subject.
     ///
     /// The counts are derived rather than typed: the third one used to be a
     /// literal 16 called "one per rule in the registry", and the registry has
@@ -213,13 +219,26 @@ public class ReportCardModelTests
     /// The section was described as bounded by "the picker takes five at
     /// most", and nothing enforced it: the picker takes every finding that
     /// carries a headline, and exactly five shipped rules carried one until
-    /// this wave's disclosures brought the count to nine. A machine with six
-    /// of them posted a card with a row sheared off at the frame's edge —
-    /// silently, which is the failure this whole budget exists to stop.
+    /// this wave's disclosures brought the count to nine. A machine with six of
+    /// them AND a full fix list posted a card with a row sheared off at the
+    /// frame's edge — 758px measured against the 715px the column gets —
+    /// silently, which is the failure this whole budget exists to stop. Six
+    /// findings alone did not do it; it took the rest of the column being full
+    /// as well, which is why the budget is shared rather than per-section.
+    ///
+    /// The counts are derived for the same reason FixCounts' are: the last one
+    /// was a literal 9 called "one per rule that can carry a headline today",
+    /// a number nothing in the tree declares. The registry's size is a true
+    /// upper bound on how many findings a scan can carry and is asked for.
+    public static TheoryData<int> FindingCounts() => new()
+    {
+        ReportCardModel.MaxFindingRows,        // exactly the cap
+        ReportCardModel.MaxFindingRows + 1,    // one over: five rows and "and 1 more"
+        DiagnosticRuleRegistry.All.Count,      // one per rule the registry ships
+    };
+
     [Theory]
-    [InlineData(5)]      // exactly the budget: every finding keeps its own row
-    [InlineData(6)]      // one over: five rows and "and 1 more"
-    [InlineData(9)]      // one per rule that can carry a headline today
+    [MemberData(nameof(FindingCounts))]
     public void Findings_AreCappedAtTheFrame_WithTheRemainderCounted(int count)
     {
         var findings = Enumerable.Range(0, count)
@@ -285,6 +304,56 @@ public class ReportCardModelTests
         Assert.Equal(Loc("en").F("report.fixes.more", hidden), card.Fixes[^1]);
     }
 
+    /// THE TRADE HAS A FLOOR, and this is where it stops being a trade. The
+    /// fix list cannot give up its last row — a card carrying fixes that
+    /// showed none of them and said nothing about it would be the silent drop
+    /// the budget exists to stop — so past a certain number of unread lines
+    /// nothing pays for them and the column grows past the frame again. The
+    /// shared budget is a trade, not a bound, and this is where the difference
+    /// becomes visible.
+    ///
+    /// Today's ceiling on that section is the sensor line plus one per
+    /// report-only disclosure, and it sits inside the floor. What is asserted
+    /// is the HEADROOM, derived from the shipped rules rather than typed: a
+    /// wave that adds report-only disclosures until the trade stops paying
+    /// fails here, before it ships as a card nobody photographed.
+    [Fact]
+    public void TheTrade_HasHeadroomForEveryUnreadLineTheShippedRulesCanProduce()
+    {
+        var disclosureIds = DiagnosticRuleRegistry.All
+            .OfType<PrivacyDisclosureRule>().Select(r => r.Id).ToList();
+        var mostUnreadLines = 1 + disclosureIds.Count;   // the sensor line, plus one each
+        // What the trade WOULD hand the fix list, before FixBudget's floor.
+        var unclamped = ReportCardModel.MaxFixRows - (mostUnreadLines - 1) - 1;
+
+        Assert.True(unclamped >= 1,
+            $"{disclosureIds.Count} report-only disclosures can put {mostUnreadLines} "
+            + "lines under \"what brisk could not read\", and the fix list has only "
+            + $"{ReportCardModel.MaxFixRows} rows to trade away — the budget stops "
+            + "paying for them and the body column grows past the frame");
+
+        // And the model hands over exactly that many, which is what says the
+        // floor did not quietly clamp the arithmetic above into looking fine.
+        var findings = Enumerable.Range(0, ReportCardModel.MaxFindingRows + 1)
+            .Select(i => TestData.Finding($"rule-{i:00}", cat: RuleCategory.Advise,
+                canFix: false, headline: H($"{i}")))
+            .ToList();
+        findings.AddRange(disclosureIds.Select(id => TestData.Finding(
+            id, Severity.Info, RuleCategory.Advise, stars: 1, canFix: false,
+            kind: FindingKind.Notice)));
+        var fixes = Enumerable.Range(0, 16)
+            .Select(i => new UndoableFix($"rule-{i:00}",
+                new DateTime(2026, 8, 20, 10, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
+            .ToArray();
+
+        var card = ReportCardModel.Build(
+            TestData.Snapshot(findings, new SensorStatus(true, true, null)),
+            fixes, Loc("en"));
+
+        Assert.Equal(mostUnreadLines, card.Unread.Count);
+        Assert.Equal(unclamped, card.Fixes.Count);
+    }
+
     /// Newest first survives the cap: the row that falls off the end is the
     /// oldest fix, not whichever one the journal happened to list last.
     [Fact]
@@ -331,14 +400,103 @@ public class ReportCardModelTests
         Assert.NotEqual(Loc("tr").F("overview.revelation.more", 8), tr.Fixes[^1]);
     }
 
-    /// EVERYTHING THE CARD CAN PRINT, in one place. Every ban below is read
-    /// off this, so a section added to the model without being added here
-    /// would be a section no privacy assertion covers.
-    private static string AllTextOn(ReportCardModel card) => string.Join("\n",
-        card.Findings.Select(l => l.Lead + " " + l.Text)
-            .Concat(card.Unread).Concat(card.Fixes)
-            .Append(card.FindingsEmptyText).Append(card.DateText)
-            .Append(card.VersionText).Append(card.RepoLine));
+    /// THE FLATTENER'S OWN COVERAGE. The privacy bans below reach exactly as
+    /// far as AllTextOn does, so what AllTextOn misses is what they do not
+    /// check — and the list version this replaced said it was everything while
+    /// being wrong inside the commit that wrote the sentence: FindingsMoreText
+    /// was added to the model and not to the list, so every section but the
+    /// new one was covered. No leak followed, because that line is a count.
+    /// The coverage claim was still false.
+    ///
+    /// TWO cards, because two of the model's strings cannot both be lit:
+    /// FindingsMoreText is what a card with more findings than it can show
+    /// says, FindingsEmptyText is what a card with none says. Every property
+    /// has to be non-empty on at least one of them, so a property that is
+    /// empty everywhere fails rather than passing by never being exercised.
+    [Fact]
+    public void AllTextOn_ReachesEveryStringTheModelExposes()
+    {
+        var cards = new[]
+        {
+            ReportCardModel.Build(EverySectionPopulated(), OneFix(), Loc("en")),
+            ReportCardModel.Build(
+                TestData.Snapshot(null, new SensorStatus(true, true, null)),
+                OneFix(), Loc("en")),
+        };
+
+        foreach (var property in typeof(ReportCardModel)
+                     .GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var exercised = false;
+            foreach (var card in cards)
+            {
+                var pieces = Flatten(property, property.GetValue(card)).ToList();
+                if (pieces.Count == 0 || pieces.Any(piece => piece.Length == 0))
+                    continue;
+                var text = AllTextOn(card);
+                foreach (var piece in pieces)
+                    Assert.True(text.Contains(piece, StringComparison.Ordinal),
+                        $"ReportCardModel.{property.Name} does not reach AllTextOn, " +
+                        "so no privacy assertion on this card covers it");
+                exercised = true;
+            }
+            Assert.True(exercised,
+                $"ReportCardModel.{property.Name} was empty on both fixtures, so " +
+                "neither of them exercises the coverage this claims to check");
+        }
+    }
+
+    private static UndoableFix[] OneFix() => new[]
+    {
+        new UndoableFix("power-plan",
+            new DateTime(2026, 8, 20, 10, 0, 0, DateTimeKind.Utc)),
+    };
+
+    /// A snapshot that lights every section a single card can light at once:
+    /// one finding past the cap so the overflow line is there, a disclosure
+    /// that read nothing, and both sensors silent.
+    private static ScanSnapshot EverySectionPopulated()
+    {
+        var findings = Enumerable.Range(0, ReportCardModel.MaxFindingRows + 1)
+            .Select(i => TestData.Finding($"rule-{i:00}", cat: RuleCategory.Advise,
+                canFix: false, headline: H($"{i}")))
+            .ToList();
+        findings.Add(new DiagnosticFinding(
+            "usb-history", "rule.usb-history.title.unread", "unread usb-history",
+            "Evidence usb-history", Severity.Info, RuleCategory.Advise, 1,
+            CanFix: false, FixDescription: null, Headline: null,
+            Kind: FindingKind.Notice));
+        return TestData.Snapshot(findings, new SensorStatus(false, false, null));
+    }
+
+    /// EVERYTHING THE CARD CAN PRINT, read off the model by reflection rather
+    /// than from a list somebody has to remember to extend. A property added
+    /// to the model is in reach by construction; the list version promised
+    /// that and could not keep it.
+    ///
+    /// A property whose type this cannot flatten THROWS. Stringifying it would
+    /// contribute a type name, which reads as covered and is not — and a
+    /// section nobody noticed was uncovered is the whole failure this helper
+    /// exists to prevent.
+    private static string AllTextOn(ReportCardModel card) => string.Join(
+        Environment.NewLine,
+        typeof(ReportCardModel)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .SelectMany(p => Flatten(p, p.GetValue(card))));
+
+    private static IEnumerable<string> Flatten(PropertyInfo property, object? value) =>
+        value switch
+        {
+            null => Array.Empty<string>(),
+            string text => new[] { text },
+            IEnumerable<string> lines => lines,
+            IEnumerable<CardLine> rows => rows.Select(l => l.Lead + " " + l.Text),
+            int or bool => new[] { value.ToString()! },
+            _ => throw new InvalidOperationException(
+                $"ReportCardModel.{property.Name} is a {value.GetType().Name}, which " +
+                "AllTextOn cannot read. Teach it the type — stringifying it would " +
+                "put a type name into the privacy assertions and read as covered."),
+        };
 
     /// 47 USB storage instances laid out the way Windows records them — a
     /// subkey per device MODEL, a subkey per attached INSTANCE below it — one

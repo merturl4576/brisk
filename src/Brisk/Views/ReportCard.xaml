@@ -120,10 +120,12 @@
                      against the height the Grid actually gives it. Nothing
                      here scrolls, wraps or shrinks, and WPF's layout clip
                      cuts whatever does not fit at the Grid's edge — so a
-                     card with one fix row too many loses that row silently,
-                     with no exception and nothing on the picture to say a
-                     row is missing. The fix list is capped in the model;
-                     this name is how the cap is held to the frame. -->
+                     card with one row too many loses that row silently, with
+                     no exception and nothing on the picture to say a row is
+                     missing. Two sections are bounded in the model now: the
+                     findings by a cap, the fix list by what the sections
+                     above it left. This name is how both are held to the
+                     frame. -->
                 <StackPanel x:Name="Body" Grid.Column="1" Margin="36,0,0,0"
                             VerticalAlignment="Center">
                     <TextBlock FontSize="14" Typography.Capitals="AllSmallCaps"

@@ -319,6 +319,13 @@ Create `src/Brisk/ViewModels/ReportCardModel.cs`.
 > `ScoreBrushKey`, the name the app's own score styles already bind; and the
 > fix list is capped at nine rows with an "and N more" line, because the card's
 > frame does not clip gracefully — it clips silently.
+>
+> **Corrected 2026-08-26, by the Faz 3 wave.** The nine is now a CEILING, not
+> a cap. The card's body column is fixed and the unread section grew, so the
+> fix list gives up one row for every line the sections above it take; and the
+> findings section is capped too, at five, with the overflow counted on a line
+> of its own. It had no cap at all when this note was written, which is what
+> let a six-finding card be sheared off in silence. Read the shipped file.
 
 Add the `report.*` block to `Strings.resx` and `Strings.tr.resx`.
 

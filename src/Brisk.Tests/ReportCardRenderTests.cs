@@ -19,16 +19,26 @@ using Size = System.Windows.Size;
 namespace Brisk.Tests;
 
 /// The pixel side gets a smoke test, not a pixel test: the PNG exists, is a
-/// PNG, and is card-sized. Everything about the card's CONTENT is pinned on
-/// the model in ReportCardModelTests.
+/// PNG, and is card-sized. What the card SAYS is pinned on the model in
+/// ReportCardModelTests, and everything here is about what the model cannot
+/// answer for.
 ///
-/// Two things beyond existence ARE worth reading off the pixels, because they
-/// are the parts with no text to assert on. The ring is one: the first card
-/// this renderer produced came out with a full grey track and no lit arc at
-/// all — the gauge's ignition animation never advances without a dispatcher
-/// pumping frames — and it was a perfectly valid 312 KB PNG. The finding rows
-/// are the other: they are a DataTemplate, and a template that silently
-/// renders nothing looks exactly like a machine that had nothing to report.
+/// Two things are worth reading off the pixels, because they are the parts
+/// with no text to assert on. The ring is one: the first card this renderer
+/// produced came out with a full grey track and no lit arc at all — the
+/// gauge's ignition animation never advances without a dispatcher pumping
+/// frames — and it was a perfectly valid 312 KB PNG. The finding rows are the
+/// other: they are a DataTemplate, and a template that silently renders
+/// nothing looks exactly like a machine that had nothing to report.
+///
+/// Two more things are read off the laid-out CONTROL rather than off the
+/// pixels, and neither has a model test that could see it. What the column
+/// asks for against what the Grid gives it is one — a clipped card and a card
+/// that fits look equally tidy, so no pixel count can tell them apart. The
+/// findings' overflow line is the other: its text and its collapse trigger
+/// bind the same model property, and a misspelled path there renders an empty
+/// row rather than failing, which is a defect the model is incapable of
+/// having.
 public class ReportCardRenderTests
 {
     /// Straight from Theming/Shared.xaml: the three lit-arc colours, and the
