@@ -71,12 +71,18 @@ to leave telemetry on; that choice is theirs and brisk is not scoring it.
 
 All local reads. No network call of any kind exists in this wave.
 
+**Corrected 2026-08-25, after Tasks 2-4 shipped.** This section originally named
+four new probes. Three of them were never needed and one of the three would
+have been actively wrong; the table below is what was built. The original text
+is quoted under each row it replaced, because a spec that quietly rewrites
+itself teaches the next reader nothing.
+
 | probe | source | notes |
 |---|---|---|
-| `RealPrivacyProbe` | registry: advertising ID, diagnostic data level, tailored experiences, speech/typing personalisation, location, activity history, Recall | one probe, one struct of states |
-| `RealUsbHistoryProbe` | `USBSTOR` enum count, earliest date from `SetupAPI.dev.log` | counts and dates only, never names |
-| `RealRunHistoryProbe` | `UserAssist` counts, ROT13-decoded | **count only**; decoded names are used to count and are never stored or surfaced |
-| `RealDeliveryOptimizationProbe` | Delivery Optimization performance counters | bytes uploaded to peers this month |
+| *(none — the existing `IRegistryProbe`)* | registry: advertising ID, diagnostic data level, tailored experiences, speech/typing personalisation, location, activity history, Recall | The spec said `RealPrivacyProbe`. No new probe was needed: `IRegistryProbe` already exposes `GetInt`/`GetString`/`GetSubKeyNames`/`GetValueNames`/`GetBytes`, which is the whole surface. |
+| *(none — the existing `IRegistryProbe`)* | `USBSTOR` instance count; earliest install date from each instance's `Properties\{83da6326-…}\0064` FILETIME | The spec said `RealUsbHistoryProbe`, reading the date from `SetupAPI.dev.log`. **That log is never read.** The date comes from the device property store — and on an unelevated machine that key is refused, so the count ships without a date and the finding says so. |
+| *(none — the existing `IRegistryProbe`)* | `UserAssist` value-name count under both `Count` keys | The spec said "ROT13-decoded". **Nothing is decoded, ever.** The count is the number of value names; decoding would produce exactly the contents red line 2 forbids, and code that decodes is code a reviewer must then prove never leaks. |
+| `IDeliveryOptimizationProbe` | Delivery Optimization performance counters | bytes uploaded to peers this month — the one genuinely new probe, still to be built |
 
 Each follows the existing `RealProbes` shape and gets a fake for tests. A probe
 that throws or finds nothing reports "unreadable", never zero — the difference
