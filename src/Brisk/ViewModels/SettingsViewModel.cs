@@ -43,14 +43,26 @@ public sealed class SettingsViewModel : ViewModelBase
         };
     }
 
-    public IReadOnlyList<ChoiceOption> LanguageOptions { get; } = new[]
+    /// Both lists are REBUILT on a language change rather than declared once.
+    /// The labels are resolved by a converter bound to LabelKey, and that key
+    /// is the same in every language, so nothing re-runs the conversion and
+    /// WPF keeps the string it built the first time. A fresh list rebuilds the
+    /// item containers, which is what asks the converter again. Seen live: an
+    /// English settings page with "Koyu" still in the Theme box.
+    public IReadOnlyList<ChoiceOption> LanguageOptions { get; private set; }
+        = BuildLanguageOptions();
+
+    public IReadOnlyList<ChoiceOption> ThemeOptions { get; private set; }
+        = BuildThemeOptions();
+
+    private static IReadOnlyList<ChoiceOption> BuildLanguageOptions() => new[]
     {
         new ChoiceOption("system", "settings.value.system"),
         new ChoiceOption("en", "settings.value.en"),
         new ChoiceOption("tr", "settings.value.tr"),
     };
 
-    public IReadOnlyList<ChoiceOption> ThemeOptions { get; } = new[]
+    private static IReadOnlyList<ChoiceOption> BuildThemeOptions() => new[]
     {
         new ChoiceOption("system", "settings.value.system"),
         new ChoiceOption("light", "settings.value.light"),
@@ -66,6 +78,13 @@ public sealed class SettingsViewModel : ViewModelBase
             _settings.Language = value;
             Persist(nameof(Language));
             _applyLanguage(value);
+            // After the language is in force, never before: the rebuilt lists
+            // are what make the converter run again, and it reads the culture
+            // that _applyLanguage just set.
+            LanguageOptions = BuildLanguageOptions();
+            ThemeOptions = BuildThemeOptions();
+            Raise(nameof(LanguageOptions));
+            Raise(nameof(ThemeOptions));
         }
     }
 

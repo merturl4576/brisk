@@ -191,6 +191,29 @@ public sealed class SecondaryViewModelTests : IDisposable
         Assert.False(vm.StartWithWindows);
     }
 
+    /// Seen in a live window: with Language switched to English the Theme box
+    /// still read "Koyu". Both dropdowns resolve their labels through a
+    /// converter bound to LabelKey — a key that never changes — so nothing
+    /// re-runs the conversion and WPF keeps the string it built once. The fix
+    /// is the only one available at this seam: republish the lists so the item
+    /// containers are rebuilt and the converter is asked again.
+    [Fact]
+    public void LanguageChange_RepublishesBothDropdowns()
+    {
+        var vm = new SettingsViewModel(new Settings(),
+            Path.Combine(_root, "lang.json"),
+            new StartupLauncher(new TaskStateRunner(), new FakeRegistry(),
+                @"C:\x\brisk-app.exe"),
+            _ => { }, _ => { });
+        var raised = new List<string>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        vm.Language = "tr";
+
+        Assert.Contains(nameof(vm.LanguageOptions), raised);
+        Assert.Contains(nameof(vm.ThemeOptions), raised);
+    }
+
     /// ...and a schtasks that refuses must not leave settings.json claiming an
     /// autostart that does not exist.
     [Fact]
