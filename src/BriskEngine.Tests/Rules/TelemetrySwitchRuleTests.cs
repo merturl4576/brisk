@@ -275,9 +275,11 @@ public class TelemetrySwitchRuleTests
     ///
     /// The two rules are not equally placed behind that sentence, and the
     /// sentence is not a substitute for the read. diagnostic-level also reads
-    /// a second, consumer-side key, so a later task has two numbers that can
-    /// disagree; activity-history has no counterpart established for it and
-    /// says so in its own class doc. The admission is the floor for both.
+    /// a second, consumer-side key, so the read-back HAS two numbers that can
+    /// disagree and says "written but ignored" when they do; activity-history
+    /// has no counterpart established for it, says so in its own class doc,
+    /// and reads back as written-but-unverified on every machine rather than
+    /// borrowing the held line. The admission is the floor for both.
     [Theory]
     [InlineData("activity-history",
         "whether this edition of Windows acts on that policy is not something " +
@@ -392,10 +394,16 @@ public class TelemetrySwitchRuleTests
 
     /// location carries no RegistryValue, and that is a hazard worth failing
     /// over rather than discovering. Anything that walks the family's Values
-    /// collections — a future read-back comparing what brisk wrote against
-    /// what is there now — walks nothing at all for this rule and would report
-    /// a switch it never checked as one it checked and found fine. The rule's
-    /// own consts are where its surface lives.
+    /// collections to compare what brisk wrote against what is there now
+    /// walks nothing at all for this rule and would report a switch it never
+    /// checked as one it checked and found fine. The rule's own consts are
+    /// where its surface lives.
+    ///
+    /// The read-back that would have been the first caller to do exactly that
+    /// was built not to: ReadBack asks IsOn and EffectOfTheWrite, both
+    /// virtual, so location answers for itself. ReadBackTests'
+    /// Location_IsReadBackThroughItsOwnWord_NotThroughAValuesWalk is what
+    /// fails if that ever changes.
     [Fact]
     public void Location_CarriesNoRegistryValue_BecauseItsStateIsAWord()
     {
@@ -496,11 +504,16 @@ public class TelemetrySwitchRuleTests
     }
 
     /// The edition trap. A diagnostic data level is recorded under two keys,
-    /// and the "written but ignored" sentence a later task of this wave will
-    /// print depends on their being able to disagree. So brisk reads the
-    /// second one and never writes it: a fix that wrote the number it later
-    /// reads back would leave that task comparing brisk's number with itself.
-    /// Absent reads as null, never as 0.
+    /// and the read-back's "written but ignored" state depends on their being
+    /// able to disagree. So brisk reads the second one and never writes it: a
+    /// fix that wrote the number it later reads back would leave the
+    /// read-back comparing brisk's number with itself. Absent reads as null,
+    /// never as 0.
+    ///
+    /// DiagnosticLevelRule.EffectOfTheWrite is what reads this value, and
+    /// ReadBackTests plants the two numbers against each other. No surface
+    /// prints the resulting line yet — the Privacy page that will is a later
+    /// task of this wave.
     [Fact]
     public void DiagnosticLevel_ReadsTheConsumerValue_AndTheFixNeverWritesIt()
     {
@@ -516,8 +529,8 @@ public class TelemetrySwitchRuleTests
 
         rule.Fix(ctx);
         Assert.True(rule.EffectiveLevel(ctx) == 3,
-            "the fix wrote the value it reads back — the read-back a later " +
-            "task adds would then be comparing brisk's number with itself");
+            "the fix wrote the value it reads back — the read-back would " +
+            "then be comparing brisk's number with itself");
         Assert.Equal(1, reg.GetInt(DiagnosticLevelRule.KeyPath,
             DiagnosticLevelRule.ValueName));
     }

@@ -230,6 +230,16 @@ public class LocTests
     // instead — English above four Turkish tiles, and green here; the key-set
     // test is the one that fails on it, measured with this very key.
     [InlineData("nav.overview")]
+    // The read-back's four lines. ReadBackTests reads these keys off disk from
+    // both files, which proves they are THERE; only this row proves the
+    // English one LOADS through ResourceManager, and the two are different
+    // gaps — see this theory's comment above. Nothing renders them yet: the
+    // Privacy page that will is a later task of this wave, and a miss in the
+    // English resx would put "readback.held" on it where the sentence goes.
+    [InlineData("readback.held")]
+    [InlineData("readback.reverted")]
+    [InlineData("readback.ignored")]
+    [InlineData("readback.unverified")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

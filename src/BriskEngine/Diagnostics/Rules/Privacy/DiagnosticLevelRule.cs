@@ -13,12 +13,11 @@ public sealed class DiagnosticLevelRule : TelemetrySwitchRule
     public const string ValueName = "AllowTelemetry";
 
     /// The second key a diagnostic data level is recorded under. brisk reads
-    /// it and never writes it. Nothing consumes this read yet: the read-back
-    /// that will compare the two numbers and say "written but ignored" is a
-    /// later task of this wave. The reason to read one and write the other
-    /// from the start is that the comparison only means anything while the
-    /// numbers can disagree — a fix that wrote both would leave that later
-    /// task reading brisk's own number back to itself.
+    /// it and never writes it, and that separation is what makes the
+    /// comparison mean anything: a fix that wrote both would leave the
+    /// read-back reading brisk's own number back to itself. EffectOfTheWrite
+    /// below is what consumes it — it is the one reading in this family that
+    /// can tell an edition that acted on a policy from one that did not.
     public const string EffectiveKeyPath =
         @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection";
 
@@ -47,6 +46,34 @@ public sealed class DiagnosticLevelRule : TelemetrySwitchRule
     /// no policy written at all does not read as held at basic either.
     protected override bool ReadsAsOn(int? actual, RegistryValue value) =>
         actual is null || actual >= value.OnValue;
+
+    /// The one switch in this family brisk can say more about than "the value
+    /// I wrote is still there". The policy asks for basic; this reads the
+    /// second value this machine keeps for the same setting, at a key brisk
+    /// never writes, and reports whether the two disagree.
+    ///
+    /// The threshold is the same Enhanced this rule's own read uses, so the
+    /// two readings are speaking one language: what the rule calls on at the
+    /// policy key is what this calls not-acted-on at the second key.
+    ///
+    /// Null is Unread and never ActedOn. EffectiveLevel cannot tell an absent
+    /// value from one it could not read, so neither can this — and neither of
+    /// those is "the machine is at basic".
+    ///
+    /// WHAT THIS IS NOT: brisk did not watch Windows do anything, and it did
+    /// not establish that the second key is where an applied policy lands. It
+    /// read two values this machine keeps for one setting and found them
+    /// disagreeing, and Ignored is the reading it takes from that. Everything
+    /// downstream is about a local policy not being acted on; nothing
+    /// downstream is about what leaves the machine, which brisk never
+    /// measured.
+    public override WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
+        EffectiveLevel(ctx) switch
+        {
+            null => WriteEffect.Unread,
+            >= Enhanced => WriteEffect.Ignored,
+            _ => WriteEffect.ActedOn,
+        };
 
     protected override string Title =>
         "The diagnostic data level is not held at the basic level";

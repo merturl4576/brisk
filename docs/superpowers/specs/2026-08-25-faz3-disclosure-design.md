@@ -135,14 +135,43 @@ other fix — and is what the read-back below re-reads.
 journals every fix it applies. Each scan re-reads the settings brisk has turned
 off and compares against the journal:
 
-- **still off** → a quiet line: *"23 gün önce kapattın, hâlâ kapalı"*
-- **back on** → a finding: *"Bunu 12 Ağustos'ta kapatmıştın; 3 Eylül'de geri
-  açılmış."* This is the sentence no competitor can print.
+- **still off** → a quiet line: *"{0} gün önce kapattın, hâlâ kapalı"*
+- **back on** → *"Bunu {0} tarihinde kapatmıştın; şu an yeniden açık."* This is
+  the sentence no competitor can print.
 - **written but ignored** (a policy on an edition that does not honour it) →
-  *"ayar kapalı yazıyor ama bu sürümde Windows onu dikkate almıyor"*
+  *"Ayar kapalı yazıyor ama bu Windows sürümü onu dikkate almıyor."*
+- **written, and brisk cannot tell** — a policy with no second value to read it
+  against → the date, and the admission both policy rules already carry word
+  for word: *"bu Windows sürümünün o ilkeye uyup uymadığını bu okuma
+  söyleyemez"*
 
 The third case is the wave's best story and its hardest honesty test: it is
 brisk reporting that its own fix did not take.
+
+**Corrected 2026-08-25, after Task 6 shipped.** Three things above were wrong
+when written, and the shipped code is what the list now describes.
+
+- The back-on line said *"…; 3 Eylül'de geri açılmış."* **brisk has no such
+  date.** The journal records brisk's own writes, so brisk knows when it
+  applied the fix and what the setting reads now, and nothing about the moment
+  in between. The shipped sentence names the fix date and the present reading
+  and stops.
+- There were **three states and there are four.** Three assumed every switch
+  can be sorted into them, and they cannot. Only `diagnostic-level` has a
+  second value brisk reads and never writes, so only it can separate an
+  edition that ignored the policy from one that honoured it.
+  `activity-history` has no such value — Task 3 declined to invent a path it
+  could not vouch for, precisely so this state would not rest on a read that
+  means nothing — so a three-state read-back would have had to report it as
+  *still off* on exactly the Home machine where the policy is ignored and
+  Timeline is still running. The fourth state says brisk does not know
+  instead. The four consumer settings are not policies at all and never reach
+  it: their value **is** the setting, so re-reading it is the whole answer.
+- The back-on line was called **a finding**, and it is not one. The read-back
+  produces `ReadBackResult` rows; `DiagnosticFinding`s come from the rules.
+  The two coincide on this case — the state is decided by the same live read
+  that decides whether the rule reports a finding — which is why the guard
+  below still has something to be red about.
 
 ## UI
 
@@ -178,8 +207,8 @@ The red lines above are tests, not comments:
 - no finding produced by this wave lowers the health score
 - the report card carries counts and never a device or program name
 - a probe that fails produces "unreadable", never zero
-- a fix that does not hold produces the read-back finding, watched red by
-  planting a re-enabled setting
+- a fix that does not hold reads back as reverted and never as held, watched
+  red by planting a re-enabled setting
 
 Plus the house standard: every fixable rule's `Fix`/`Undo` round-trips, and the
 new page gets a snapshot render.

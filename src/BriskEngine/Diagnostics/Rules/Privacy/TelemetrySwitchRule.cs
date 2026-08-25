@@ -5,6 +5,45 @@ using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.Rules.Privacy;
 
+/// What brisk can find out about whether this machine is acting on the value
+/// a fix wrote. The read-back asks a rule this AFTER the rule has already
+/// said the switch reads as off, so every member below describes a machine
+/// where brisk's write is still readable as off.
+///
+/// It exists because a POLICY — a value under HKLM\SOFTWARE\Policies — is
+/// the one kind of setting an edition of Windows can have written down and
+/// still not act on. That is the Home-edition case the whole wave was built
+/// around, and it is not something a switch's own read can see: the rule
+/// re-reads the value it wrote, so a successful write always reads back as
+/// off whether or not the edition honoured it.
+///
+/// The four answers are not a description of the six switches, they are what
+/// a rule is allowed to say. Which one each switch actually says is asserted
+/// in ReadBackTests, from the registry paths themselves rather than from a
+/// list somebody maintains.
+public enum WriteEffect
+{
+    /// This switch is not a policy: brisk writes the very value the setting
+    /// is kept in, so there is nothing between the write and the setting for
+    /// an edition to ignore, and no second value to go looking for.
+    NotAPolicy,
+
+    /// A policy, and a second value brisk reads and never writes says this
+    /// machine is where the policy asks it to be.
+    ActedOn,
+
+    /// A policy, and that second value says this machine is not.
+    Ignored,
+
+    /// A policy, and brisk has no second reading for it. Either none was ever
+    /// established for this setting — Task 3 declined to name a path it could
+    /// not vouch for, rather than build this answer on a read that means
+    /// nothing — or the one that exists could not be read on this machine.
+    /// The two are one answer here on purpose: both mean brisk does not know,
+    /// and a caller may report neither of them as the other.
+    Unread,
+}
+
 /// The six switches this wave gives brisk, on a privacy page that does not
 /// exist yet. Five of them share one shape: a handful of registry values, a
 /// number that reads as on, a number the fix writes, and an undo that restores
@@ -70,10 +109,30 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     /// who was shown no consequence. ProgramFixTests pins that end.
     public virtual RuleCategory Category => RuleCategory.Auto;
 
-    /// Public because the read-back a later task of this wave adds will ask a
-    /// second question of the same values — "is the number brisk wrote still
-    /// the number that is there?" — and IsOn, which answers only "does this
-    /// read as on", cannot. Nothing outside this class reads it today.
+    /// What brisk can find out about whether this machine is acting on the
+    /// value this rule's fix wrote — see WriteEffect for what each answer
+    /// means and why the question exists at all.
+    ///
+    /// NotAPolicy is the default because four of the six switches are not
+    /// policies: their value IS the setting, and re-reading it is the whole
+    /// answer. The two that live under a Policies key override this. Only
+    /// DiagnosticLevelRule can answer it from a reading; ActivityHistoryRule
+    /// overrides it to say it cannot, which is a different sentence from the
+    /// default's "there is nothing here to check".
+    ///
+    /// The read-back asks this only after IsOn has already read false, so an
+    /// implementation may assume the value it wrote reads as off and does not
+    /// have to re-establish that.
+    public virtual WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
+        WriteEffect.NotAPolicy;
+
+    /// Public, and read from outside this class by the tests that pin the
+    /// family's registry surface and by the tests that plant a switch back on
+    /// — not by the read-back, which was the reason it was made public and
+    /// which ended up not needing it. ReadBack decides everything through
+    /// IsOn and EffectOfTheWrite, both virtual, so the rule answers for its
+    /// own state; walking this collection instead would have been the defect
+    /// the paragraph below warns about.
     ///
     /// EMPTY for LocationRule, whose state is a word and not a number. A
     /// caller that walks this collection to decide what a switch is set to

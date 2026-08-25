@@ -307,4 +307,8 @@
   <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk only reads this counter; it does not change Delivery Optimization and offers no fix for it. What it takes from the counter is how many bytes Delivery Optimization uploaded to other machines this month — never what was in them.</value></data>
   <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>uploaded from this machine to other machines this month</value></data>
+  <data name="readback.held" xml:space="preserve"><value>You switched this off {0} days ago; it still reads as off.</value></data>
+  <data name="readback.reverted" xml:space="preserve"><value>You switched this off on {0}; it reads as on again now.</value></data>
+  <data name="readback.ignored" xml:space="preserve"><value>The setting reads as off, but this edition of Windows is not acting on it. brisk read a second value this machine keeps for the same setting, and that one still reads as on.</value></data>
+  <data name="readback.unverified" xml:space="preserve"><value>You switched this off {0} days ago and the value brisk wrote is still there; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
 </root>

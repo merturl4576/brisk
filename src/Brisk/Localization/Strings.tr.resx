@@ -307,4 +307,8 @@
   <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk bu sayacı yalnızca okur; Delivery Optimization'ı değiştirmez ve bunun için bir düzeltme sunmaz. Sayaçtan aldığı tek şey Delivery Optimization'ın bu ay başka makinelere yüklediği bayt miktarıdır — içinde ne olduğu asla.</value></data>
   <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>bu ay bu makineden başka makinelere yüklendi</value></data>
+  <data name="readback.held" xml:space="preserve"><value>{0} gün önce kapattın, hâlâ kapalı</value></data>
+  <data name="readback.reverted" xml:space="preserve"><value>Bunu {0} tarihinde kapatmıştın; şu an yeniden açık.</value></data>
+  <data name="readback.ignored" xml:space="preserve"><value>Ayar kapalı yazıyor ama bu Windows sürümü onu dikkate almıyor. brisk aynı ayar için bu makinenin tuttuğu ikinci bir değeri okudu; o değer hâlâ açık diyor.</value></data>
+  <data name="readback.unverified" xml:space="preserve"><value>Bunu {0} gün önce kapattın ve brisk'in yazdığı değer hâlâ yerinde; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
 </root>

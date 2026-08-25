@@ -23,13 +23,14 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// consequence it did not achieve, which is the one failure this whole wave
 /// exists to refuse. DiagnosticLevelRule makes the same admission, in its
 /// evidence and its advice as this rule does, and can do better than this
-/// rule can: it reads a second, consumer-side key, so a later task has two
-/// numbers to compare. No second key is read here: none was established for this setting
+/// rule can: it reads a second, consumer-side key, so it has two numbers to
+/// compare. No second key is read here: none was established for this setting
 /// the way diagnostic-level's was, and a registry path brisk cannot vouch for
 /// would be a worse defect than the promise it replaces — brisk would be
-/// reading a path that may hold nothing, and a later task would build the
-/// "written but ignored" sentence on top of it. So the copy says what brisk
-/// can see instead of promising what it cannot.
+/// reading a path that may hold nothing and building the "written but
+/// ignored" sentence on top of it. So the copy says what brisk can see
+/// instead of promising what it cannot, and EffectOfTheWrite below says the
+/// same thing to the read-back.
 public sealed class ActivityHistoryRule : TelemetrySwitchRule
 {
     public const string KeyPath = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System";
@@ -49,6 +50,24 @@ public sealed class ActivityHistoryRule : TelemetrySwitchRule
         new RegistryValue(KeyPath, PublishValueName, OnValue: 1, OffValue: 0),
         new RegistryValue(KeyPath, UploadValueName, OnValue: 1, OffValue: 0),
     };
+
+    /// Unread, on every machine, and it is the honest answer rather than a
+    /// gap. This is a policy — the one kind of value an edition of Windows
+    /// can have written down and still not act on — and brisk has no second
+    /// value for it, so it cannot tell an edition that honoured it from one
+    /// that ignored it.
+    ///
+    /// The alternative was for the read-back to fall through to its "still
+    /// off" line, which on a Home machine that ignored the policy would tell
+    /// somebody their switch is off on exactly the machine where it is not.
+    /// That is the failure this wave exists to refuse, so the rule says it
+    /// does not know.
+    ///
+    /// It takes the context it is handed and reads nothing from it; the
+    /// parameter is the base's, and an answer that varied by machine would
+    /// need a value brisk does not have.
+    public override WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
+        WriteEffect.Unread;
 
     protected override string Title => "Activity history is not switched off";
 
