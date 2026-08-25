@@ -327,6 +327,16 @@ public class HealthViewModelTests
     public void NoticeRules_ClassifyToThePageThatHoldsTheirCard(
         string ruleId, bool onPerformance)
     {
+        // IsHealth stopped being simply !IsPerformance when the privacy ids
+        // arrived, so the either/or the second assertion encodes is no longer
+        // general: it holds for these four because none of them is a privacy
+        // id. That precondition is asserted rather than trusted to a comment,
+        // so a privacy id added to this theory fails on a line that says why
+        // rather than as a bare Expected/Actual on one of the two below.
+        // Privacy routing has its own pins in PrivacyRedLineTests.
+        Assert.False(FindingSections.IsPrivacy(ruleId),
+            $"{ruleId} is a privacy rule — this theory covers only the "
+            + "Performans/Sağlık either-or");
         Assert.Equal(onPerformance, FindingSections.IsPerformance(ruleId));
         Assert.Equal(!onPerformance, FindingSections.IsHealth(ruleId));
     }

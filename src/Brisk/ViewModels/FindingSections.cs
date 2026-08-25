@@ -1,20 +1,28 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using BriskEngine.Models;
 
 namespace Brisk.ViewModels;
 
-/// The privacy rule ids, in one place. The rules, the page and the report
-/// card all need the same list, and three copies of it would drift.
+/// Which rule ids the UI routes as privacy. This is NOT the rules' source of
+/// truth and cannot be: the rules live in BriskEngine, which references
+/// nothing of Brisk, so each one hardcodes its own Id literal the way
+/// PowerPlanRule does. So this is a second copy that nothing cross-checks,
+/// and the mismatch fails SILENTLY rather than loudly — an id that matches no
+/// rule simply never fires, and a rule whose Id is missing here falls through
+/// to Sağlık like any unknown id. Read the two against each other by hand
+/// when adding a rule; the test pinning these ten is what makes a change to
+/// the list deliberate, not what makes it correct.
 public static class PrivacyRuleIds
 {
-    public static readonly string[] All =
+    public static readonly ReadOnlyCollection<string> All = new(new[]
     {
         "advertising-id", "diagnostic-level", "tailored-experiences",
         "speech-typing", "location", "activity-history",
         "recall-status", "usb-history", "run-history",
         "delivery-optimization",
-    };
+    });
 }
 
 /// Topical page routing for findings. RuleCategory is a consent level

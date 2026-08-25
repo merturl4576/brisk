@@ -7,16 +7,23 @@ namespace Brisk.Tests;
 
 /// The two lines the disclosure wave rests on: a privacy finding never moves
 /// the health score, and a privacy rule never lands on a page that grades the
-/// machine. Both are structural — every rule this wave adds inherits them by
-/// putting its id in PrivacyRuleIds.All.
+/// machine. Only the second is inherited: putting an id in PrivacyRuleIds.All
+/// is what routes it, and every rule that does so gets that line for free.
+/// The score exemption comes from somewhere the list cannot reach — each rule
+/// choosing FindingKind.Notice for itself.
 public class PrivacyRedLineTests
 {
     /// A characterization test: HealthScore.Compute already skips
-    /// FindingKind.Notice, so this passes on the tree that introduced it.
-    /// It is here so the day someone charges for a notice — or ships a
-    /// privacy rule as a Problem — the failure names the reason instead of
-    /// arriving as a score that quietly moved. Watched red by flipping the
-    /// planted finding's Kind to Problem.
+    /// FindingKind.Notice, so this passes on the tree that introduced it. It
+    /// catches exactly one regression — HealthScore charging for a Notice —
+    /// and names the reason rather than letting a score quietly move.
+    /// Watched red by flipping the planted finding's Kind to Problem.
+    ///
+    /// What it does NOT catch: the finding below is synthetic and its Notice
+    /// is written here, so no real rule's Kind is ever read. A privacy rule
+    /// shipped as a Problem would lower the score and this test would still
+    /// pass. That guard has to run over the real rules, and does not exist
+    /// yet.
     [Fact]
     public void APrivacyNotice_DoesNotMoveTheHealthScore()
     {
