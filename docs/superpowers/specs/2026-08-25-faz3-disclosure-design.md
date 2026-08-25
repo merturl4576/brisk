@@ -1,0 +1,180 @@
+# Faz 3 — Disclosure and the Telemetry Triple — Design
+
+**Status:** approved 2026-08-25. Implements PLAN.md §6.3 and the Faz 3
+checklist in one wave, on the maintainer's decision.
+
+**Version:** lands as 0.6.0. No git tag — the visible release stays at v0.1.0
+until the announcement, which follows this phase.
+
+## Why
+
+Everything brisk does today is about the machine's speed and hygiene. The niche
+where the stars actually are is privacy and debloat, and brisk has never
+entered it. PLAN.md §6.3 is the entry: not "Windows is watching you", which
+everyone has heard and nobody is surprised by, but **the number on your own
+machine** — the records Windows keeps and most people do not know exist.
+
+The differentiator is not the disclosure. Every debloat tool shows settings.
+**No tool checks that what it turned off stayed off.** Windows feature updates
+re-enable some of it; some policies are silently ignored on Home. The tool
+says "disabled", the user believes they are protected. brisk reads back, and
+looks again weeks later.
+
+## Scope
+
+**In:** the disclosure probes, the telemetry triple (show / reversibly turn off
+/ read back whether it held), the Delivery Optimization disclosure, a new
+Privacy page, and entry into the existing revelation lottery.
+
+**Out, with reasons:**
+
+- **Per-app network usage (SRUM).** Its data lives in an ESE database, not the
+  registry — a new dependency or a parser of its own, alone worth more than the
+  other eight probes combined. Deferred to Faz 6. Delivery Optimization takes
+  its place in this wave and is the stronger claim anyway.
+- **Any speed test.** Contacting an outside server contradicts "nothing leaves
+  your machine". Never, not as an option (§6.3 decision, 2026-08-23).
+- **GPU assignment visibility.** Faz 6.
+
+## The red lines
+
+These are not guidance. Each becomes a test (see Guards).
+
+1. **brisk never says "Microsoft can no longer see this."** The only sentence
+   available is *"this setting currently reads as off; I last confirmed it on
+   this date"*. brisk reads a machine; it has no visibility into what Microsoft
+   receives.
+2. **Numbers, never contents.** "47 USB devices" yes; device names never.
+   "1,284 program records" yes; the program list never. This already governs
+   the report card and now governs the Privacy page.
+3. **Policies that do not apply on this edition are said so.** A Home machine
+   where a Group Policy value is written but ignored must read as ignored, not
+   as protection.
+4. **What could not be read goes in "okuyamadıklarım".** An unreadable probe is
+   never a silent zero.
+
+## Health score
+
+Every finding in this wave is `FindingKind.Notice`, **including the ones brisk
+can fix.** This deliberately breaks the v0.4 heuristic that a fixable finding
+is a `Problem`, and executes PLAN.md's own line: *"ifşa bulguları sağlık
+puanını düşürmemeli"*.
+
+The reasoning, recorded because the exception will look wrong to a later
+reader: the health score grades the machine's **performance and hygiene**. An
+advertising ID that is switched on does not make the machine slower. Privacy is
+a second axis — brisk shows it and can act on it, but does not grade it. A user
+whose machine is fast and clean should read 100 whether or not they have chosen
+to leave telemetry on; that choice is theirs and brisk is not scoring it.
+
+## Engine — probes
+
+All local reads. No network call of any kind exists in this wave.
+
+| probe | source | notes |
+|---|---|---|
+| `RealPrivacyProbe` | registry: advertising ID, diagnostic data level, tailored experiences, speech/typing personalisation, location, activity history, Recall | one probe, one struct of states |
+| `RealUsbHistoryProbe` | `USBSTOR` enum count, earliest date from `SetupAPI.dev.log` | counts and dates only, never names |
+| `RealRunHistoryProbe` | `UserAssist` counts, ROT13-decoded | **count only**; decoded names are used to count and are never stored or surfaced |
+| `RealDeliveryOptimizationProbe` | Delivery Optimization performance counters | bytes uploaded to peers this month |
+
+Each follows the existing `RealProbes` shape and gets a fake for tests. A probe
+that throws or finds nothing reports "unreadable", never zero — the difference
+between "no USB devices recorded" and "I could not read the USB record" is the
+difference between a claim and a lie.
+
+## Engine — rules
+
+New rules, all `Notice`, and a new `RuleCategory.Privacy` member so the page
+can filter them the way Health and Performance already filter theirs.
+
+**Report only, no fix** — brisk shows the number and nothing else:
+
+- `usb-history` — how many devices, how far back
+- `run-history` — how many program records
+- `delivery-optimization` — bytes uploaded to strangers this month
+- `recall-status` — present and on, present and off, or not on this build.
+  Deliberately no fix in this wave: the surface is new, varies between builds,
+  and a fix brisk cannot verify is exactly what this project refuses to ship.
+  The page links to Windows' own setting instead.
+
+**Show and fix, no visible consequence** — these four are what the single
+button turns off:
+
+- `advertising-id`, `diagnostic-level`, `tailored-experiences`, `speech-typing`
+
+**Show and fix, but the user loses something** — their own switch, with the
+loss named beside it:
+
+- `location` (Find my device stops working)
+- `activity-history` (Timeline ends)
+
+Every fixable rule implements `Fix`/`Undo` against the existing `FixJournal`,
+so every change brisk makes here is undoable by the same machinery as every
+other fix — and is what the read-back below re-reads.
+
+## The read-back — "tuttu mu"
+
+**No scheduler, no background service, no new moving part.** brisk already
+journals every fix it applies. Each scan re-reads the settings brisk has turned
+off and compares against the journal:
+
+- **still off** → a quiet line: *"23 gün önce kapattın, hâlâ kapalı"*
+- **back on** → a finding: *"Bunu 12 Ağustos'ta kapatmıştın; 3 Eylül'de geri
+  açılmış."* This is the sentence no competitor can print.
+- **written but ignored** (a policy on an edition that does not honour it) →
+  *"ayar kapalı yazıyor ama bu sürümde Windows onu dikkate almıyor"*
+
+The third case is the wave's best story and its hardest honesty test: it is
+brisk reporting that its own fix did not take.
+
+## UI
+
+A sixth nav tile, **Gizlilik**, holding three blocks:
+
+1. **Disclosure** — the numbers, largest first.
+2. **"Windows'a ne gönderiliyor"** — the switches, in the two-tier model the
+   maintainer chose: one button turns off everything with **no visible
+   consequence** (advertising ID, diagnostic level, tailored experiences,
+   speech/typing); the two settings that **cost the user something** (location,
+   activity history) sit on their own switches with the loss named beside them
+   — *"'Cihazımı bul' çalışmaz"*, *"Timeline biter"*. All of it reversible.
+   Recall appears here as state only, with a link to Windows' own setting, for
+   the reason given under Rules.
+3. **Read-back** — what brisk turned off, when, and whether it held.
+
+Disclosure findings enter the existing `RevelationPicker` lottery, so the
+Overview headline can lead with *"47 cihaz"* on a machine where that is the
+most striking number. The shock should not require navigating to find it.
+
+## Report card
+
+Disclosure findings appear on the card under the existing rule: counts, never
+contents. The card's "okuyamadıklarım" section gains any probe that could not
+read its source.
+
+## Guards
+
+The red lines above are tests, not comments:
+
+- no rule's copy — in either language — contains a claim about what Microsoft
+  can or cannot see
+- no finding produced by this wave lowers the health score
+- the report card carries counts and never a device or program name
+- a probe that fails produces "unreadable", never zero
+- a fix that does not hold produces the read-back finding, watched red by
+  planting a re-enabled setting
+
+Plus the house standard: every fixable rule's `Fix`/`Undo` round-trips, and the
+new page gets a snapshot render.
+
+## Risks named up front
+
+- **This is the largest wave the project has run.** It runs as two task groups
+  on one branch: disclosure first (read-only, no risk), actions second.
+- **Recall detection** is new surface and varies between builds. It may land in
+  "okuyamadıklarım", and that is an acceptable outcome rather than a failure.
+- **Delivery Optimization counters** need a cmdlet or COM call. If unavailable,
+  the honest gap is the answer.
+- **Diagnostic-data policy on Home** is the classic case where a tool lies. It
+  is also exactly what the read-back exists for.
