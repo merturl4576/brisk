@@ -522,7 +522,16 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationMoreText = revelations.Count > 1
                 ? _loc.F("overview.revelation.more", revelations.Count - 1) : "";
             RevelationEmptyText = "";
-            _revelationRuleId = top.RuleId;
+            // The band shows every picked finding's number; the LINK only
+            // works for a finding some page hosts. MainWindow sends anything
+            // that is not a performance rule to Sağlık, and Sağlık's filter
+            // excludes the privacy ids — so a privacy finding leading the
+            // band would select a page that does not carry it and expand
+            // nothing. Until a page hosts them, the id is left empty, which
+            // is the same silence the band already uses when it has no
+            // finding to point at. The number, the claim and the evidence
+            // still show.
+            _revelationRuleId = FindingSections.IsPrivacy(top) ? "" : top.RuleId;
         }
         else
         {

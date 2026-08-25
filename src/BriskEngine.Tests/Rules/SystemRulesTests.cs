@@ -61,11 +61,11 @@ public class SystemRulesTests
     }
 
     [Fact]
-    public void Registry_HasTwentyTwoRules_WithUniqueIds()
+    public void Registry_HasTwentyFiveRules_WithUniqueIds()
     {
         var all = DiagnosticRuleRegistry.All;
-        Assert.Equal(22, all.Count);
-        Assert.Equal(22, System.Linq.Enumerable.Count(
+        Assert.Equal(25, all.Count);
+        Assert.Equal(25, System.Linq.Enumerable.Count(
             System.Linq.Enumerable.Distinct(System.Linq.Enumerable.Select(all, r => r.Id))));
     }
 }

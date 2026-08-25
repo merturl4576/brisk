@@ -28,9 +28,10 @@ public class PrivacyRedLineTests
     /// is written here, so no real rule's Kind is ever read. A privacy rule
     /// shipped as a Problem would lower the score and this test would still
     /// pass. That guard runs over the real rules and lives in the engine's
-    /// own suite, where a DiagnosticContext can be built — as of this wave it
-    /// covers the six telemetry switches, which are the only privacy rules
-    /// that exist. The four the wave has yet to ship are still uncovered.
+    /// own suite, where a DiagnosticContext can be built — it covers the six
+    /// telemetry switches and the three report-only disclosures, which are
+    /// the privacy rules that exist. delivery-optimization, the last id on
+    /// the list below, has no rule yet and so no such guard either.
     [Fact]
     public void APrivacyNotice_DoesNotMoveTheHealthScore()
     {
@@ -97,8 +98,10 @@ public class PrivacyRedLineTests
     /// Sağlık without a word of complaint. Reading the shipped rule objects
     /// against the shipped list, from the one project that can see both, is
     /// what turns that silence into a failure. It reaches the six telemetry
-    /// switches; the four privacy rules still to be written need the same line
-    /// extended to whatever base class or marker they arrive with.
+    /// switches; its sibling below reaches the three report-only disclosures,
+    /// which are not TelemetrySwitchRules and so are invisible to this one.
+    /// A privacy rule arriving under some third base class needs the same
+    /// line extended to it again.
     [Fact]
     public void EveryTelemetrySwitchRule_ShipsAnIdThePrivacyListCarries()
     {
@@ -112,12 +115,38 @@ public class PrivacyRedLineTests
                 "PrivacyRuleIds.All matches it — its findings would route to Sağlık");
     }
 
+    /// The same cross-check for the other half of the privacy topic. These
+    /// three share no base class with the switches — they can be fixed by
+    /// nobody, so they are AdviseRuleBase rules — which is exactly why the
+    /// theory above cannot see them and why this one exists rather than a
+    /// widened OfType. The count is asserted first, so deleting a rule shows
+    /// up here as a failure instead of as a loop that runs twice and passes.
+    [Fact]
+    public void EveryPrivacyDisclosureRule_ShipsAnIdThePrivacyListCarries()
+    {
+        var disclosures = DiagnosticRuleRegistry.All
+            .OfType<PrivacyDisclosureRule>().ToList();
+
+        Assert.Equal(3, disclosures.Count);
+        foreach (var rule in disclosures)
+            Assert.True(FindingSections.IsPrivacy(rule.Id),
+                $"rule '{rule.Id}' is a privacy disclosure, but no id in " +
+                "PrivacyRuleIds.All matches it — its findings would route to Sağlık");
+    }
+
     /// THE STATE OF THIS BUILD, pinned so that changing it is deliberate.
     /// There is no privacy page yet: App.xaml.cs builds exactly two findings
     /// pages, IsHealth and IsPerformance, and both exclude these ids, so a
-    /// privacy finding reaches no row on either. It also carries no Headline,
-    /// so RevelationPicker — and the report card, which picks through it —
-    /// skip it as well.
+    /// privacy finding reaches no row on either. The finding planted below
+    /// also carries no Headline, so RevelationPicker — and the report card,
+    /// which picks through it — skip THAT one as well. That is a fact about
+    /// this planted finding and no longer a fact about privacy findings: the
+    /// three report-only disclosures ship a Headline whenever their read
+    /// succeeds, and RevelationPicker takes findings that carry one, so on a
+    /// real machine a privacy finding can reach the overview band and the
+    /// report card's picked list while still reaching no row on either page.
+    /// The band shows its number and offers no link — OpenFinding_OverA
+    /// PrivacyRevelation_SendsTheReaderNowhere holds that end.
     ///
     /// What this guarantees, exactly: these two view models, wired the way
     /// App.xaml.cs wires them, put a privacy finding on neither page. It is
@@ -174,6 +203,8 @@ public class PrivacyRedLineTests
             perf.Rows.Concat(perf.AdviseRows).Concat(perf.NoticeRows)
                 .Select(r => r.RuleId));
 
+        // About the finding planted above, which has no Headline — not about
+        // privacy findings in general. See the note on this test.
         Assert.Empty(RevelationPicker.Pick(state.Snapshot!.Findings)
             .Where(f => FindingSections.IsPrivacy(f)));
     }

@@ -917,6 +917,38 @@ public class OverviewViewModelTests
         Assert.Equal("zz-fake", requested);
     }
 
+    /// The three report-only disclosures carry a Headline, so one of them can
+    /// lead this band on a real machine — and MainWindow sends anything that
+    /// is not a performance rule to Sağlık, whose filter excludes the privacy
+    /// ids. "See the evidence" would select a page that does not carry the
+    /// finding and expand nothing. So the band shows the number and offers no
+    /// destination for it, which is the silence the empty band already uses.
+    /// When a page hosts these findings, this is the test that has to change.
+    [Fact]
+    public async Task OpenFinding_OverAPrivacyRevelation_SendsTheReaderNowhere()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("usb-history", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice,
+                headline: new Headline("47", "cap",
+                    "rule.usb-history.headline.value", new[] { "47" },
+                    "rule.usb-history.headline.caption", Array.Empty<string>())),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        string? requested = null;
+        vm.OpenFindingRequested += id => requested = id;
+        vm.OpenFindingCommand.Execute(null);
+
+        Assert.True(vm.HasRevelation, "the privacy finding did not reach the band at all");
+        Assert.Equal("47", vm.RevelationValue);
+        Assert.True(requested is null,
+            $"the band offered to open '{requested}', and no page this build " +
+            "shows carries a privacy finding");
+    }
+
     [Fact]
     public async Task SaveReport_RendersTheCardAndAnnouncesThePath()
     {

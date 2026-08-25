@@ -27,5 +27,13 @@ public static class DiagnosticRuleRegistry
         // this list means brisk detects them and `brisk scan` prints them,
         // not that anything flips them without being asked.
         new LocationRule(), new ActivityHistoryRule(),
+        // The report-only disclosures: no switch, no fix, just what Windows
+        // has already written down, counted. They are Advise, which is the
+        // consent level FixRunner refuses to apply a fix for at all — and
+        // unlike the six above they carry a Headline whenever their read
+        // succeeds, so RevelationPicker takes them today: on a machine where
+        // one of these counts sorts first, it is the number the overview band
+        // and the report card lead with.
+        new UsbHistoryRule(), new RunHistoryRule(), new RecallStatusRule(),
     };
 }
