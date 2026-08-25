@@ -1,4 +1,7 @@
+using System;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
@@ -189,8 +192,16 @@ public class PrivacyRedLineTests
         var perf = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsPerformance, doneFilter: FindingSections.IsPerformance,
             crossLinkKey: "performance.crosslink", morphPause: () => Task.CompletedTask);
-        // The third page, wired the way App.xaml.cs wires it. Building it
-        // here is what stops this test passing by never asking about it.
+        // The third page. Building it here is what stops this test passing
+        // by never asking about it.
+        //
+        // Wired the way App.xaml.cs wires it in every argument that decides
+        // WHERE A FINDING LANDS, which is all this test is about, and NOT in
+        // the opener: App passes WindowsSettingsLink.Open and this passes a
+        // stub, because a red-line test that could start the Settings app is
+        // a test with a side effect nobody asked for. That divergence is what
+        // App_WiresTheRealWindowsSettingsOpener covers, since no copy of a
+        // wiring can vouch for the original.
         var privacy = new PrivacyViewModel(state, host, loc, () => false,
             _ => true, morphPause: () => Task.CompletedTask);
 
@@ -245,5 +256,51 @@ public class PrivacyRedLineTests
                 "delivery-optimization",
             },
             PrivacyRuleIds.All);
+    }
+
+    /// The half a required constructor parameter cannot reach.
+    ///
+    /// PrivacyViewModel's opener has no default, so the compiler guarantees
+    /// every construction site passes SOMETHING — and every test in this
+    /// suite passes a stub, because a test that could start the Settings app
+    /// has a side effect nobody asked for. What no test could otherwise
+    /// notice is the production site passing one too: `_ => false` compiles,
+    /// ships, and withholds nothing visibly while the Recall row's link does
+    /// nothing at all on a real machine.
+    ///
+    /// So the one wiring that matters is read from SOURCE. Crude on purpose
+    /// — it matches the call and looks for the name inside it — because the
+    /// alternative is a composition root refactored to be observable, which
+    /// is a larger claim than this needs.
+    [Fact]
+    public void App_WiresTheRealWindowsSettingsOpener()
+    {
+        var source = File.ReadAllText(Path.Combine(BriskDir(), "App.xaml.cs"));
+        var call = Regex.Match(source,
+            @"new\s+PrivacyViewModel\s*\((?<args>[^;]*?)\)\s*;",
+            RegexOptions.Singleline);
+
+        Assert.True(call.Success,
+            "App.xaml.cs builds no PrivacyViewModel at all — the Gizlilik " +
+            "page is not wired into the running app");
+        var args = call.Groups["args"].Value;
+        Assert.True(args.Contains("WindowsSettingsLink.Open", StringComparison.Ordinal),
+            "App.xaml.cs builds the Gizlilik page with " +
+            $"`{Collapse(args)}` and nothing in it names " +
+            "WindowsSettingsLink.Open. The opener is a required parameter, so " +
+            "this compiles with a stub in it — and a stub there is a Recall " +
+            "row whose only control reaches nothing on a real machine");
+    }
+
+    private static string Collapse(string text) =>
+        Regex.Replace(text, @"\s+", " ").Trim();
+
+    private static string BriskDir()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
+             dir = dir.Parent)
+            if (File.Exists(Path.Combine(dir.FullName, "brisk.sln")))
+                return Path.Combine(dir.FullName, "src", "Brisk");
+        throw new InvalidOperationException("brisk.sln not found above test bin");
     }
 }

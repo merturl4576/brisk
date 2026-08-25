@@ -351,17 +351,17 @@ public class SnapshotTests
     ///
     /// The assertions are about what only this frame can see: a read-back
     /// line per journal entry, each with a sentence under its title, and the
-    /// Recall row's link to Windows' own setting, which lives with the card's
-    /// other actions behind the fold. The read-back count comes from the view
-    /// model rather than from a number written here, so a fixture that grows
-    /// a fifth line does not need this edited — what would fail is the block
-    /// going empty or losing its text.
+    /// Recall row's link to Windows' own setting — that it exists, that it
+    /// reached the picture, and that it says something — which lives with the
+    /// card's other actions behind the fold. The read-back count comes from
+    /// the view model rather than from a number written here, so a fixture
+    /// that grows a fifth line does not need this edited — what would fail is
+    /// the block going empty or losing its text.
     /// Enough for the fixture's eleven cards — one of them open — and its
     /// headings with room to spare. Not a magic number to be tuned when the
-    /// picture crops: the
-    /// assertion inside the capture is what fails if a line stops reaching
-    /// the image, and the answer to that is a taller frame, not a smaller
-    /// claim.
+    /// picture crops: the assertions inside the capture are what fail if
+    /// something stops reaching the image, and the answer to that is a taller
+    /// frame, not a smaller claim.
     private const int TallEnoughForTheWholePage = 1500;
 
     [Fact]
@@ -371,10 +371,15 @@ public class SnapshotTests
         var path = SnapshotRenderer.Capture(
             () =>
             {
-                // The window is built for its composition, not to be shown:
-                // it is what wires a PrivacyViewModel exactly the way
-                // App.xaml.cs does. A second PrivacyPage over the same view
-                // model is what gets photographed.
+                // The window is built for its composition, not to be
+                // shown: it is what wires a PrivacyViewModel the way
+                // App.xaml.cs does, in everything the picture depends on. It
+                // is NOT the same wiring in two arguments, and both are
+                // stated where they are passed — a frozen clock, so "3 days
+                // ago" is a fact about the fixture, and a stub opener, so a
+                // render cannot start the real Settings app. A second
+                // PrivacyPage over the same view model is what gets
+                // photographed.
                 var window = CockpitWindow();
                 vm = (PrivacyViewModel)
                     ((FrameworkElement)window.FindName("PrivacyView")!).DataContext;
@@ -436,6 +441,13 @@ public class SnapshotTests
                     "the Recall row's link is in the tree and not in the " +
                     "picture: it is " + link.Visibility + " and " +
                     link.ActualWidth + " units wide");
+                // And that it says something. The caption comes from the same
+                // map entry as the URI now, so an entry with no caption key
+                // renders a button that is visible, clickable, correctly
+                // wired and BLANK — which no visibility or width check can
+                // see.
+                Assert.Equal(recall.WindowsSettingCaption, link.Content as string);
+                Assert.NotEqual("", recall.WindowsSettingCaption);
             });
 
         Assert.True(File.Exists(path));

@@ -38,10 +38,20 @@ public sealed class FindingRow : ViewModelBase
     /// pointing at one would be brisk sending a reader somewhere it never
     /// established was there. That is the same claim-without-evidence the
     /// rule itself declines to make about the setting.
-    private static readonly Dictionary<string, string> WindowsSettingRules =
-        new(StringComparer.OrdinalIgnoreCase)
+    ///
+    /// THE CAPTION IS PART OF THE ENTRY, not a fixed string in the markup.
+    /// A destination and the words on the button that reaches it are one
+    /// decision: a second entry pointing anywhere else, over a caption
+    /// written for this one, would render a button naming a page it does not
+    /// open — and nothing would object, because a caption that is not a
+    /// function of the URI cannot disagree with it. Declaring both here is
+    /// what makes adding a destination without saying what its button says
+    /// impossible rather than merely unwise.
+    internal static readonly Dictionary<string, (string Uri, string CaptionKey)>
+        WindowsSettingRules = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["recall-status"] = "ms-settings:privacy",
+            ["recall-status"] = ("ms-settings:privacy",
+                "finding.action.windowssetting"),
         };
 
     private bool _isExpanded;
@@ -122,9 +132,16 @@ public sealed class FindingRow : ViewModelBase
         // the link on a row brisk offers no fix for — a link beside a Fix
         // button would be brisk pointing at the change it just declined to
         // make.
-        WindowsSettingUri = IsAdvise && onOpenWindowsSetting is not null
-            && WindowsSettingRules.TryGetValue(finding.RuleId, out var settingUri)
-                ? settingUri : "";
+        var setting = IsAdvise && onOpenWindowsSetting is not null
+            && WindowsSettingRules.TryGetValue(finding.RuleId, out var declared)
+                ? declared : default;
+        WindowsSettingUri = setting.Uri ?? "";
+        // Resolved here rather than bound to a fixed key in the card, so the
+        // words on the button come from the same entry the click does. Row-
+        // computed like Title and CostText, and re-read for the same reason
+        // they are: AppState.SetLanguage raises Changed, and every row is
+        // rebuilt from it.
+        WindowsSettingCaption = setting.CaptionKey is { } key ? loc[key] : "";
         HasWindowsSettingAction = WindowsSettingUri.Length > 0;
         FixCommand = new RelayCommand(() => onFix(this), () => CanFix);
         UndoCommand = new RelayCommand(() => onUndo(this), () => CanUndo);
@@ -163,6 +180,9 @@ public sealed class FindingRow : ViewModelBase
     /// The page of Windows' own Settings app the link opens, and "" for every
     /// row that points nowhere.
     public string WindowsSettingUri { get; }
+    /// What the link's button says, in the user's language — from the same
+    /// entry that names the URI, so the two cannot describe different pages.
+    public string WindowsSettingCaption { get; }
     public bool HasHeadline { get; }
     /// The lead value in the user's language ("57 sn"); "" when the finding
     /// carries no headline — the card collapses the column then.

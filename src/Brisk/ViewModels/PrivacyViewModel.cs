@@ -412,14 +412,20 @@ public sealed class PrivacyViewModel : ViewModelBase
     ///
     /// The fall-through is not one band but two, and they are not equally
     /// safe to fall into. A finding with a reading lands under the numbers,
-    /// which claims only that this page offers no button for it — true of
-    /// anything that reaches here. A finding with NO Headline lands under
-    /// "what brisk could not read", which is a claim about the READ, and the
-    /// only thing tested for it is the absence of a headline. That is the
-    /// disclosure family's own contract and holds for every rule this wave
-    /// ships; a future privacy rule that is Confirm, not fixable and headless
-    /// for some other reason would be described as unreadable by a page that
-    /// never asked. Flagged rather than guarded: the alternative is a list of
+    /// whose heading claims that Windows wrote something down and NOTHING
+    /// about what this page will do with it. recall-status is the row that
+    /// settles which of those two things the band means: it carries a
+    /// Headline, so it lands here, and it carries the link to Windows' own
+    /// setting, so this band holds a row with a control on it. What the band
+    /// promises about is the READING; what it does not hold is a switch brisk
+    /// will flip, and the two tiers above are where those go.
+    ///
+    /// A finding with NO Headline lands under "what brisk could not read",
+    /// which IS a claim about the read, and the only thing tested for it is
+    /// the absence of a headline. That is the disclosure family's own
+    /// contract and holds for every rule this wave ships; a future privacy
+    /// rule that is Confirm, not fixable and headless for some other reason
+    /// would be described as unreadable by a page that never asked. Flagged rather than guarded: the alternative is a list of
     /// "the unreadable ones" maintained beside the rules, which is the second
     /// channel this page was built to avoid.
     private ObservableCollection<FindingRow> Band(DiagnosticFinding finding) =>

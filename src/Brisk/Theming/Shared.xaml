@@ -1113,8 +1113,7 @@
                                 Command="{Binding OpenWindowsSettingCommand}"
                                 Visibility="{Binding HasWindowsSettingAction,
                                     Converter={x:Static views:BoolToVis.Instance}}"
-                                Content="{Binding [finding.action.windowssetting],
-                                    Source={x:Static loc:Loc.Instance}}" />
+                                Content="{Binding WindowsSettingCaption}" />
                     </StackPanel>
                 </StackPanel>
             </StackPanel>

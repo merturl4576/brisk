@@ -658,6 +658,50 @@ public class PrivacyViewModelTests
         Assert.NotEqual("privacy.setting.failed", vm.Message);
     }
 
+    /// The caption and the destination are ONE declaration, and this is what
+    /// says so.
+    ///
+    /// The button's text used to be a fixed key in the markup while the
+    /// destinations lived in a Dictionary — one entry today, and a map is a
+    /// map. A second rule pointing at, say, the diagnostics page would have
+    /// rendered "Open Windows privacy settings" over a button that opens
+    /// something else, and nothing anywhere would have objected: the caption
+    /// was not a function of the URI. Now the rule declares both, so a second
+    /// entry cannot be added without saying what its button says.
+    ///
+    /// Driven off the map rather than off a list here, so an entry added
+    /// without a caption key — or with one no resx carries — fails. Both
+    /// languages, because either can be the live one and Loc's indexer
+    /// answers with the KEY when it has no string, which renders a button
+    /// captioned "finding.action.windowssetting".
+    [Theory]
+    [MemberData(nameof(EveryWindowsSettingRule))]
+    public void EveryWindowsSettingRule_NamesAPageAndACaptionBothLanguagesCarry(
+        string ruleId, string uri, string captionKey)
+    {
+        Assert.StartsWith("ms-settings:", uri, StringComparison.Ordinal);
+
+        foreach (var language in new[] { "en", "tr" })
+        {
+            var loc = new Loc();
+            loc.SetLanguage(language);
+            Assert.NotEqual(captionKey, loc[captionKey]);
+        }
+
+        var row = new FindingRow(Disclosure(ruleId, "Off"), EnglishLoc(),
+            canUndo: false, _ => { }, _ => { }, onOpenWindowsSetting: _ => { });
+        Assert.Equal(EnglishLoc()[captionKey], row.WindowsSettingCaption);
+        Assert.Equal(uri, row.WindowsSettingUri);
+    }
+
+    public static TheoryData<string, string, string> EveryWindowsSettingRule()
+    {
+        var data = new TheoryData<string, string, string>();
+        foreach (var (ruleId, destination) in FindingRow.WindowsSettingRules)
+            data.Add(ruleId, destination.Uri, destination.CaptionKey);
+        return data;
+    }
+
     // ---- Helpers --------------------------------------------------------
 
     private static IReadOnlyList<FindingRow> AllRows(PrivacyViewModel vm) =>

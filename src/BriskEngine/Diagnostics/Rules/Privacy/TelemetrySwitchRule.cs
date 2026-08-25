@@ -50,10 +50,10 @@ public enum WriteEffect
 /// them in two tiers. Five of them share one shape: a handful of registry
 /// values, a number that reads as on, a number the fix writes, and an undo
 /// that restores every value a COMPLETED fix recorded. Not every value a fix
-/// touched:
-/// FixRunner journals the prior state only after Fix returns, so a multi-value
-/// write that threw partway leaves the writes it already made unrecorded and
-/// un-undoable. Nothing here is atomic and nothing here says it is.
+/// touched: FixRunner journals the prior state only after Fix returns, so a
+/// multi-value write that threw partway leaves the writes it already made
+/// unrecorded and un-undoable. Nothing here is atomic and nothing here says
+/// it is.
 ///
 /// The sixth, LocationRule, keeps the family's finding and its undo discipline
 /// but not its numbers: that switch's state is a WORD, so it carries no
