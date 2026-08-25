@@ -1,5 +1,7 @@
+using System.Linq;
 using Brisk.ViewModels;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Models;
 using Xunit;
 
@@ -22,8 +24,10 @@ public class PrivacyRedLineTests
     /// What it does NOT catch: the finding below is synthetic and its Notice
     /// is written here, so no real rule's Kind is ever read. A privacy rule
     /// shipped as a Problem would lower the score and this test would still
-    /// pass. That guard has to run over the real rules, and does not exist
-    /// yet.
+    /// pass. That guard runs over the real rules and lives in the engine's
+    /// own suite, where a DiagnosticContext can be built — as of this wave it
+    /// covers the four telemetry switches, which are the only privacy rules
+    /// that exist. The six the wave has yet to ship are still uncovered.
     [Fact]
     public void APrivacyNotice_DoesNotMoveTheHealthScore()
     {
@@ -82,6 +86,27 @@ public class PrivacyRedLineTests
     {
         Assert.True(FindingSections.IsPrivacy("Advertising-ID"),
             "IsPrivacy is case-sensitive; the Performance set beside it is not");
+    }
+
+    /// The one cross-check the split makes possible. PrivacyRuleIds lives in
+    /// Brisk and the rules live in BriskEngine, which cannot see it, so every
+    /// rule hardcodes its own Id — and a typo there routes the finding to
+    /// Sağlık without a word of complaint. Reading the shipped rule objects
+    /// against the shipped list, from the one project that can see both, is
+    /// what turns that silence into a failure. It reaches the four telemetry
+    /// switches; the six privacy rules still to be written need the same line
+    /// extended to whatever base class or marker they arrive with.
+    [Fact]
+    public void EveryTelemetrySwitchRule_ShipsAnIdThePrivacyPageRoutes()
+    {
+        var switches = DiagnosticRuleRegistry.All
+            .OfType<TelemetrySwitchRule>().ToList();
+
+        Assert.Equal(4, switches.Count);
+        foreach (var rule in switches)
+            Assert.True(FindingSections.IsPrivacy(rule.Id),
+                $"rule '{rule.Id}' is a telemetry switch, but no id in " +
+                "PrivacyRuleIds.All matches it — its findings would route to Sağlık");
     }
 
     /// The list itself, pinned in the order the spec names it. The theory
