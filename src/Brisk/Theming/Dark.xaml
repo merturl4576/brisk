@@ -72,6 +72,12 @@
          the accent it used to share a value with, and Good/Warning/Critical
          are the product's vocabulary — not styling, and not retuned. -->
     <SolidColorBrush x:Key="SeverityInfo" Color="#5B8DEF" />
+    <!-- The semantic palette sits on Tailwind's 400 rung (green-400,
+         amber-400, red-400), so the notice voice joins it at the same rung as
+         cyan-400. Its own literal, deliberately NOT the accent's #5FD4E8:
+         a claim that copied the decorative signature would be retuned by the
+         next person retuning the brand. 8.82:1 on Surface, 10.06:1 on Bg. -->
+    <SolidColorBrush x:Key="SeverityNotice" Color="#22D3EE" />
     <SolidColorBrush x:Key="SeverityWarning" Color="#FBBF24" />
     <SolidColorBrush x:Key="SeverityCritical" Color="#F87171" />
     <SolidColorBrush x:Key="Good" Color="#4ADE80" />

@@ -72,6 +72,27 @@ public class HealthViewModelTests
         Assert.Equal(loc["overview.status.good"], vm.StatusLine);
     }
 
+    /// v0.4 stopped a Notice lowering the score, because brisk cannot charge
+    /// for what it can only report. The COLOUR kept charging: thermals is
+    /// Severity.Warning, so the row wore warning amber under a sentence saying
+    /// the machine is in good shape. Severity still describes how bad the
+    /// thing is; Kind decides whether brisk is in a position to call it a
+    /// problem, and the colour follows Kind first.
+    [Fact]
+    public async Task NoticeRows_DoNotWearTheWarningColour()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("thermals", Severity.Warning, RuleCategory.Advise,
+                canFix: false, kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+
+        var notice = Assert.Single(vm.NoticeRows);
+        Assert.Equal("SeverityNotice", notice.SeverityKey);
+    }
+
     [Fact]
     public async Task Rows_MapFindings_TitlesLocalized_WithEngineFallback()
     {
@@ -1253,7 +1274,7 @@ public class HealthViewModelTests
 
     [Theory]
     [InlineData(95, "Good")]
-    [InlineData(72, "SeverityWarning")]
+    [InlineData(72, "SeverityNotice")]
     [InlineData(50, "SeverityCritical")]
     public async Task ScoreBrushKey_FollowsScore(int health, string expected)
     {

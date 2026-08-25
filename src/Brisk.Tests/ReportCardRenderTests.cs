@@ -34,6 +34,7 @@ public class ReportCardRenderTests
     /// Straight from Theming/Shared.xaml: the three lit-arc colours, and the
     /// ink the card writes its text in.
     private static readonly Color Good = Color.FromRgb(0x4A, 0xDE, 0x80);
+    private static readonly Color Notice = Color.FromRgb(0x22, 0xD3, 0xEE);
     private static readonly Color Warn = Color.FromRgb(0xFB, 0xBF, 0x24);
     private static readonly Color Crit = Color.FromRgb(0xF8, 0x71, 0x71);
     private static readonly Color Ink = Color.FromRgb(0xF2, 0xF4, 0xF8);
@@ -171,6 +172,7 @@ public class ReportCardRenderTests
 
         var healthyGreen = PixelsNear(healthy, Good);
         var healthyRed = PixelsNear(healthy, Crit);
+        var middlingNotice = PixelsNear(middling, Notice);
         var middlingAmber = PixelsNear(middling, Warn);
         var middlingGreen = PixelsNear(middling, Good);
         var failingRed = PixelsNear(failing, Crit);
@@ -180,11 +182,16 @@ public class ReportCardRenderTests
         // healthy green, and neither must one at 72 — that band is the whole
         // reason the ring stopped being hardcoded.
         Assert.True(healthyGreen > 3_000, $"95 is not green: {healthyGreen}");
-        Assert.True(middlingAmber > 3_000, $"72 is not amber: {middlingAmber}");
+        Assert.True(middlingNotice > 3_000,
+            $"72 is not the notice colour: {middlingNotice}");
         Assert.True(failingRed > 3_000, $"35 is not red: {failingRed}");
         Assert.True(middlingGreen < 100, $"72 is wearing green: {middlingGreen}");
         Assert.True(failingGreen < 100, $"35 is wearing green: {failingGreen}");
         Assert.True(healthyRed < 100, $"95 is wearing red: {healthyRed}");
+        // The band MOVED, and this is the half that proves it: before the
+        // notice colour, 72 was amber here. Without this line the ring could
+        // wear both and the count above would still pass.
+        Assert.True(middlingAmber < 100, $"72 is still wearing amber: {middlingAmber}");
     }
 
     /// Everything else here renders the EMPTY card, where the findings
@@ -203,14 +210,14 @@ public class ReportCardRenderTests
 
         var withLeads = PixelsNear(full, Ink, fromX: LeadFromX, toX: LeadToX);
         var withoutLeads = PixelsNear(without, Ink, fromX: LeadFromX, toX: LeadToX);
-        var amber = PixelsNear(full, Warn);
+        var notice = PixelsNear(full, Notice);
 
         Assert.True(withLeads > withoutLeads + 3_000,
             $"the finding leads are missing: {withLeads} vs {withoutLeads} lit "
             + "pixels in the lead column");
         // The tall card is also the one where the centred column could clip,
         // so prove the ring beside it still rendered.
-        Assert.True(amber > 3_000, $"the full card's ring is not lit: {amber}");
+        Assert.True(notice > 3_000, $"the full card's ring is not lit: {notice}");
     }
 
     /// The numeral in the middle of the ring stays the card's own ink at every

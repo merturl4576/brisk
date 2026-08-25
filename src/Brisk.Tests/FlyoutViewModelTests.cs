@@ -64,7 +64,7 @@ public class FlyoutViewModelTests
 
         Assert.True(vm.HasSnapshot);
         Assert.Equal("72", vm.HealthText);
-        Assert.Equal("SeverityWarning", vm.HealthBrushKey);
+        Assert.Equal("SeverityNotice", vm.HealthBrushKey);
         Assert.Equal("2 findings · 1 one-click fixable", vm.FindingsLine);
         // ROUND 11 honesty: the flyout's Clean runs the safe defaults, so
         // its line promises exactly that — 2 KB (user-temp), never the

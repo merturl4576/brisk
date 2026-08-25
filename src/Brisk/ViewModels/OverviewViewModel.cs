@@ -495,7 +495,15 @@ public sealed class OverviewViewModel : ViewModelBase
         _seenUndoable = undoable.Select(f => f.RuleId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var snapshot = _state.Snapshot;
-        if (snapshot is null) return;
+        if (snapshot is null)
+        {
+            // Refresh is also the re-projection a language switch gets, and a
+            // switch can land before the first scan. The clean button's
+            // generic label is the one caption that lives out here and cannot
+            // heal itself — the live caption is rewritten on its next tick.
+            CleanSafeText = _loc["overview.cleanspace.none"];
+            return;
+        }
         ScoreText = snapshot.Health.ToString(CultureInfo.InvariantCulture);
         ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);

@@ -42,10 +42,10 @@ public class OverviewViewModelTests
 
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State) Build(
         Func<bool>? isDryRun = null, FakeLive? live = null,
-        Func<ReportCardModel, string, bool>? renderReport = null)
+        Func<ReportCardModel, string, bool>? renderReport = null, Loc? loc = null)
     {
         var (vm, host, state, _) = BuildWithBin(isDryRun, live,
-            renderReport: renderReport);
+            renderReport: renderReport, loc: loc);
         return (vm, host, state);
     }
 
@@ -54,7 +54,7 @@ public class OverviewViewModelTests
     private static (OverviewViewModel Vm, FakeEngineHost Host, AppState State, FakeBin Bin)
         BuildWithBin(Func<bool>? isDryRun = null, FakeLive? live = null,
             Settings? settings = null,
-            Func<ReportCardModel, string, bool>? renderReport = null)
+            Func<ReportCardModel, string, bool>? renderReport = null, Loc? loc = null)
     {
         var host = new FakeEngineHost();
         host.NextSnapshot = TestData.Snapshot(
@@ -64,7 +64,10 @@ public class OverviewViewModelTests
                 TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
             },
             TestData.Target("user-temp", CleanupLevel.Safe, 2048));
-        var state = new AppState(host);
+        // One Loc for the whole composition, exactly as App.xaml.cs wires it:
+        // AppState and the view model share Loc.Instance in the running app.
+        var strings = loc ?? EnglishLoc();
+        var state = new AppState(host, strings);
         var bin = new FakeBin();
         var fixAll = new FixAllService(host);
         // Wired exactly as App.xaml.cs wires it: the confirmation is raised
@@ -72,7 +75,7 @@ public class OverviewViewModelTests
         state.TrackFixes(fixAll);
         var vm = new OverviewViewModel(state, host, fixAll,
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
-            live ?? new FakeLive(), EnglishLoc(), isDryRun ?? (() => false),
+            live ?? new FakeLive(), strings, isDryRun ?? (() => false),
             renderReport);
         return (vm, host, state, bin);
     }
@@ -99,13 +102,51 @@ public class OverviewViewModelTests
 
         Assert.Equal("72", vm.ScoreText);
         Assert.Equal(72.0, vm.ScoreValue);   // numeric twin drives the gauge sweep
-        Assert.Equal("SeverityWarning", vm.ScoreBrushKey);
+        Assert.Equal("SeverityNotice", vm.ScoreBrushKey);
         Assert.Equal(loc["overview.status.attention"], vm.StatusText);
         Assert.Contains("2 findings", vm.SummaryText);
         Assert.Contains("1 one-click fixable", vm.SummaryText);
         Assert.Contains("2 KB", vm.SummaryText);
         Assert.Contains("Last scan:", vm.SummaryText);
         Assert.True(vm.HasSnapshot);
+    }
+
+    /// The window's OWN strings follow a language switch because XAML asks Loc
+    /// for them again on the Item[] notification. Everything a view model
+    /// COMPUTED at scan time is a plain string it stored, and nothing re-runs
+    /// it: before this passed, switching to Turkish left the headline, the
+    /// finding titles and the cross-link in English while the nav around them
+    /// turned Turkish. StatusText stands for all of them — it is computed the
+    /// same way, in the same Refresh, as the rest.
+    [Fact]
+    public async Task LanguageSwitch_RetranslatesWhatTheViewModelAlreadyComputed()
+    {
+        var loc = EnglishLoc();
+        var (vm, _, state) = Build(loc: loc);
+        await state.ScanAsync();
+        var english = vm.StatusText;
+
+        state.SetLanguage("tr");
+
+        Assert.NotEqual(english, vm.StatusText);
+        Assert.Equal(loc["overview.status.attention"], vm.StatusText);
+    }
+
+    /// The same switch, one step earlier. Refresh returns as soon as it finds
+    /// no snapshot, so the captions that exist BEFORE a scan were the ones it
+    /// walked past — and the clean button's generic label cannot heal itself
+    /// the way the live caption does on its next tick.
+    [Fact]
+    public void LanguageSwitch_BeforeAnyScan_RetranslatesTheCleanButtonToo()
+    {
+        var loc = EnglishLoc();
+        var (vm, _, state) = Build(loc: loc);
+        var english = vm.CleanSafeText;
+
+        state.SetLanguage("tr");
+
+        Assert.NotEqual(english, vm.CleanSafeText);
+        Assert.Equal(loc["overview.cleanspace.none"], vm.CleanSafeText);
     }
 
     [Fact]

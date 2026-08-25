@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine.Diagnostics;
@@ -189,6 +190,39 @@ public sealed class SecondaryViewModelTests : IDisposable
             _ => { }, _ => { });
 
         Assert.False(vm.StartWithWindows);
+    }
+
+    /// Seen in a live window: with Language switched to English the Theme box
+    /// still read "Koyu". The labels were resolved by a converter bound to
+    /// LabelKey — the same string in every language — so the binding never
+    /// re-evaluated and WPF kept the text it built once. The label is read
+    /// live now, and each option announces that it reads differently.
+    ///
+    /// The list itself deliberately does NOT move; ChoiceComboBoxTests holds
+    /// both halves of why, on a real ComboBox.
+    [Fact]
+    public void LanguageChange_RelabelsBothDropdowns()
+    {
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        var vm = new SettingsViewModel(new Settings(),
+            Path.Combine(_root, "lang.json"),
+            new StartupLauncher(new TaskStateRunner(), new FakeRegistry(),
+                @"C:\x\brisk-app.exe"),
+            _ => { }, loc.SetLanguage, loc);
+        var dark = vm.ThemeOptions.Single(o => o.Value == "dark");
+        var announced = 0;
+        dark.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ChoiceOption.Label)) announced++;
+        };
+        Assert.Equal("Dark", dark.Label);
+
+        vm.Language = "tr";
+
+        Assert.Equal("Koyu", dark.Label);
+        Assert.Equal(1, announced);
+        Assert.Equal("Türkçe", vm.LanguageOptions.Single(o => o.Value == "tr").Label);
     }
 
     /// ...and a schtasks that refuses must not leave settings.json claiming an

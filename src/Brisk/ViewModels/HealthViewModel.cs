@@ -40,12 +40,17 @@ public sealed class FindingRow : ViewModelBase
             ? LocalizedText.Headline(headline, loc).Value : "";
         ImpactText = new string('●', finding.ImpactStars)
                    + new string('○', 5 - finding.ImpactStars);
-        SeverityKey = finding.Severity switch
-        {
-            Severity.Critical => "SeverityCritical",
-            Severity.Warning => "SeverityWarning",
-            _ => "SeverityInfo",
-        };
+        // Kind is read BEFORE Severity, and that order is the claim: Severity
+        // still says how bad the thing is, but Kind says whether brisk is in a
+        // position to call it a problem at all. v0.4 took the score penalty off
+        // a Notice for that reason and left the colour charging.
+        SeverityKey = finding.Kind == FindingKind.Notice ? "SeverityNotice"
+            : finding.Severity switch
+            {
+                Severity.Critical => "SeverityCritical",
+                Severity.Warning => "SeverityWarning",
+                _ => "SeverityInfo",
+            };
         IsAdvise = finding.Category == RuleCategory.Advise;
         CategoryText = IsAdvise ? loc["health.advise"] : "";
         CanFix = finding.CanFix && !IsAdvise;

@@ -94,8 +94,8 @@ public class SegmentedGaugeTests
     [Theory]
     [InlineData(100, "Good")]
     [InlineData(90, "Good")]
-    [InlineData(89, "SeverityWarning")]
-    [InlineData(70, "SeverityWarning")]
+    [InlineData(89, "SeverityNotice")]
+    [InlineData(70, "SeverityNotice")]
     [InlineData(69, "SeverityCritical")]
     [InlineData(0, "SeverityCritical")]
     public void GaugeColor_FollowsTheSharedHealthMapping(int health, string expected)

@@ -4,9 +4,10 @@
              xmlns:loc="clr-namespace:Brisk.Localization"
              xmlns:Brisk="clr-namespace:Brisk.Views">
     <UserControl.Resources>
-        <Brisk:LocKeyConverter x:Key="LocKey" />
         <DataTemplate x:Key="ChoiceTemplate">
-            <TextBlock Text="{Binding LabelKey, Converter={StaticResource LocKey}}" />
+            <!-- Label, not LabelKey through the converter: the key never
+                 changes, so a binding on it never re-evaluates. -->
+            <TextBlock Text="{Binding Label}" />
         </DataTemplate>
     </UserControl.Resources>
     <!-- The page rides the app's one content column; the form itself stays
