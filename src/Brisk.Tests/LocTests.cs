@@ -90,10 +90,10 @@ public class LocTests
     /// Loc's indexer answers through ResourceManager (Loc.cs:17), and
     /// ResourceManager falls back to the NEUTRAL resource. So this theory
     /// fails on one gap only: a key missing from Strings.resx, where the
-    /// indexer's `?? key` hands back the key itself and both passes below
-    /// see it. A key present in English and missing from Turkish renders the
-    /// English sentence in a Turkish GUI — silently, never the raw key — and
-    /// both passes below stay green over it. ResxFiles_ExposeTheSameKeySet
+    /// indexer's `?? key` hands back the key itself and the en pass below
+    /// fails on it. A key present in English and missing from Turkish renders
+    /// the English sentence in a Turkish GUI — silently, never the raw key —
+    /// and both passes below stay green over it. ResxFiles_ExposeTheSameKeySet
     /// is what sees that one, and 7e64eb4 put it on this branch's record:
     /// the missing Turkish caption keys were caught by the key-set test and
     /// waved through by this one.
