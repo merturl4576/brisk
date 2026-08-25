@@ -21,10 +21,10 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// a successful fix this finding always clears — whether or not the machine
 /// acted on the policy. The copy has to say that, or brisk is reporting a
 /// consequence it did not achieve, which is the one failure this whole wave
-/// exists to refuse. DiagnosticLevelRule makes the same admission — in its
-/// advice only, not in its evidence — and can do better than this rule can:
-/// it reads a second, consumer-side key, so a later task has two numbers to
-/// compare. No second key is read here: none was established for this setting
+/// exists to refuse. DiagnosticLevelRule makes the same admission, in its
+/// evidence and its advice as this rule does, and can do better than this
+/// rule can: it reads a second, consumer-side key, so a later task has two
+/// numbers to compare. No second key is read here: none was established for this setting
 /// the way diagnostic-level's was, and a registry path brisk cannot vouch for
 /// would be a worse defect than the promise it replaces — brisk would be
 /// reading a path that may hold nothing, and a later task would build the

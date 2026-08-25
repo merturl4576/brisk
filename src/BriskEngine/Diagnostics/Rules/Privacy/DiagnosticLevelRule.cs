@@ -51,12 +51,21 @@ public sealed class DiagnosticLevelRule : TelemetrySwitchRule
     protected override string Title =>
         "The diagnostic data level is not held at the basic level";
 
+    /// The closing clause was in rule.diagnostic-level.advice and nowhere
+    /// else, which meant no CLI user was ever shown it: `brisk scan` and
+    /// `brisk fix --rule <id>` print a finding's title and evidence, and
+    /// nothing in Brisk.Cli reads a rule.*.advice string at all. So it is in
+    /// the evidence too, word for word as the advice has it, and
+    /// ThePolicySwitch_DoesNotPromiseTheEditionObeyedIt now demands it of
+    /// both policy switches.
     protected override string Evidence =>
         "brisk read the diagnostic data policy on this machine: it is set " +
         "above the basic level, or it is not set at all, and neither of those " +
         "reads as held at basic. brisk reads the setting itself and nothing " +
         "past it. Holding it at basic writes one value, needs administrator " +
-        "rights, and can be undone.";
+        "rights, and can be undone. What brisk re-reads on the next scan is " +
+        "the policy value it wrote; whether this edition of Windows acts on " +
+        "that policy is not something that read can tell you.";
 
     protected override string FixDescription =>
         "Hold the diagnostic data level at basic (undoable)";

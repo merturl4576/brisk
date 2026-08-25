@@ -266,12 +266,24 @@ public class TelemetrySwitchRuleTests
     /// the one rule.diagnostic-level.advice already uses, which is what makes
     /// a grep for it find every place brisk makes this admission.
     ///
-    /// diagnostic-level is deliberately not in this theory. It carries the
-    /// English sentence in its advice only, not in its evidence — a gap this
-    /// task found and did not close, because that string was settled in an
-    /// earlier round and reopening it was not this task's to do.
+    /// diagnostic-level is here too, and for one round it was not: it carried
+    /// the sentence in its advice and not in its evidence, which is the same
+    /// CLI gap — a user who only ever runs `brisk scan` or `brisk fix --rule
+    /// diagnostic-level` was never shown it. Both policy switches now say it
+    /// in both places, so the theory takes both and a rule that drops it from
+    /// either fails.
+    ///
+    /// The two rules are not equally placed behind that sentence, and the
+    /// sentence is not a substitute for the read. diagnostic-level also reads
+    /// a second, consumer-side key, so a later task has two numbers that can
+    /// disagree; activity-history has no counterpart established for it and
+    /// says so in its own class doc. The admission is the floor for both.
     [Theory]
     [InlineData("activity-history",
+        "whether this edition of Windows acts on that policy is not something " +
+        "that read can tell you",
+        "bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez")]
+    [InlineData("diagnostic-level",
         "whether this edition of Windows acts on that policy is not something " +
         "that read can tell you",
         "bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez")]
