@@ -138,9 +138,19 @@ public class TelemetrySwitchRuleTests
     }
 
     /// Privacy is a second axis: brisk shows it and acts on it but never
-    /// grades it. PrivacyRedLineTests proves HealthScore skips a Notice it
-    /// plants itself and says in as many words that no real rule's Kind is
-    /// ever read there. This reads them.
+    /// grades it. This reads the real Kind of every switch, over states this
+    /// file plants itself.
+    ///
+    /// It is one of four tests that read a real Kind, and the widest of them
+    /// is not in this assembly. PrivacyDisclosureRuleTests and
+    /// DeliveryOptimizationRuleTests cover the other families the way this
+    /// one covers the switches — each from an id list it keeps itself —
+    /// while PrivacyRedLineTests' EveryPrivacyRule_ReportsANoticeAndCosts
+    /// TheScoreNothing walks DiagnosticRuleRegistry.All against
+    /// PrivacyRuleIds.All. That is the one reading that GROWS when a privacy
+    /// rule is added; the three id lists do not, and BriskEngine cannot see
+    /// PrivacyRuleIds at all. What stays here is the family's own coverage:
+    /// these six under the states this file knows how to build.
     [Theory]
     [MemberData(nameof(AllSwitches))]
     public void TheFinding_IsANotice_AndCostsTheHealthScoreNothing(string id)

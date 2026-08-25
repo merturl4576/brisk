@@ -315,8 +315,8 @@
   <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>
-  <data name="privacy.switches.section" xml:space="preserve"><value>Windows'a ne gönderiliyor</value></data>
-  <data name="privacy.switches.note" xml:space="preserve"><value>Bunlar Windows'un bunun için tuttuğu anahtarlar. brisk her anahtarı okur ve yazabilir, ötesini değil: bu makineden ne çıktığı, bu okumaların söyleyebileceği bir şey değil.</value></data>
+  <data name="privacy.switches.section" xml:space="preserve"><value>Windows'un kendi gizlilik anahtarları</value></data>
+  <data name="privacy.switches.note" xml:space="preserve"><value>brisk her anahtarı okur ve yazabilir, ötesini değil: bu makineden ne çıktığı, bu okumaların söyleyebileceği bir şey değil.</value></data>
   <data name="privacy.switches.safe.note" xml:space="preserve"><value>Bunları kapatmak kullandığın hiçbir şeyi götürmez; brisk hepsini geri açabilir.</value></data>
   <data name="privacy.switches.costly.section" xml:space="preserve"><value>Bunlar sana bir şeye mal olur</value></data>
   <data name="privacy.switches.none" xml:space="preserve"><value>brisk'in buradan okuduğu her anahtar zaten kapalı okunuyor.</value></data>

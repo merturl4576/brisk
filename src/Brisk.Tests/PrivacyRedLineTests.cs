@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
@@ -13,12 +15,40 @@ using Xunit;
 
 namespace Brisk.Tests;
 
-/// The two lines the disclosure wave rests on: a privacy finding never moves
-/// the health score, and a privacy rule never lands on a page that grades the
-/// machine. Only the second is inherited: putting an id in PrivacyRuleIds.All
-/// is what routes it, and every rule that does so gets that line for free.
-/// The score exemption comes from somewhere the list cannot reach — each rule
-/// choosing FindingKind.Notice for itself.
+/// The spec's red lines, on the side of the split that can see both the
+/// shipped rules and the app's own routing list.
+///
+/// TWO OF THE FOUR ARE HERE, with the wave's health-score line beside them.
+/// Red line 1 — no copy claims anything about what anybody else sees — runs
+/// over every string the privacy topic ships, in both languages. Red line 4
+/// — an unreadable probe never becomes a number — runs over every rule the
+/// registry ships under an id this app routes. The health-score line — every
+/// privacy finding is a Notice, so none of them grades the machine — runs
+/// over the same rules.
+///
+/// RED LINE 2 IS NOT HERE, and a second copy of it would be worse than none.
+/// Counts yes and contents never is enforced on the surface a screenshot
+/// actually carries, by ReportCardModelTests: TheCard_CarriesCounts_AndNever
+/// ADeviceOrAProgramName and PrivacyBan_EvidenceNamesAndPathsNeverReachThe
+/// Card run over a card the real rules built from a registry with a real
+/// device name planted in it, and AllTextOn_ReachesEveryStringTheModel
+/// Exposes holds the reflection that makes those two cover the whole model.
+/// A guard here would cover a narrower surface and drift from that one.
+///
+/// RED LINE 3 IS NOT HERE EITHER. A policy this edition ignores must read as
+/// ignored, which is the read-back's WrittenButIgnored state, and it is held
+/// in the engine's ReadBackTests by DiagnosticLevel_PolicyWritten_ButThe
+/// MachineRecordsAHigherLevel_ReadsAsIgnored — where the second value a
+/// machine keeps for that setting can be planted, which is what deciding
+/// between the two states needs.
+///
+/// ONE of these is inherited and the rest are not, which is worth knowing.
+/// Putting an id in PrivacyRuleIds.All is what keeps a finding off the pages
+/// that grade the machine, so every rule that does so gets that line for
+/// free. The Notice, the copy and the unreadable answer come from somewhere
+/// the list cannot reach — each rule choosing each of them for itself — and
+/// that is why they are read off the shipped rules below rather than
+/// asserted about a finding written here.
 public class PrivacyRedLineTests
 {
     /// A characterization test: HealthScore.Compute already skips
@@ -30,10 +60,10 @@ public class PrivacyRedLineTests
     /// What it does NOT catch: the finding below is synthetic and its Notice
     /// is written here, so no real rule's Kind is ever read. A privacy rule
     /// shipped as a Problem would lower the score and this test would still
-    /// pass. That guard runs over the real rules and lives in the engine's
-    /// own suite, where a DiagnosticContext can be built — it covers the six
-    /// telemetry switches and the four report-only disclosures, which is
-    /// every id on the list below.
+    /// pass. EveryPrivacyRule_ReportsANoticeAndCostsTheScoreNothing, further
+    /// down this file, is the guard that reads real Kinds — off the shipped
+    /// registry, over every id the shipped list carries. Three engine tests
+    /// read them too, family by family, from id lists they keep themselves.
     [Fact]
     public void APrivacyNotice_DoesNotMoveTheHealthScore()
     {
@@ -256,6 +286,421 @@ public class PrivacyRedLineTests
                 "delivery-optimization",
             },
             PrivacyRuleIds.All);
+    }
+
+    // ---------------------------------------------------------------------
+    // RED LINE 1 — no copy claims anything about what Microsoft can see
+    // ---------------------------------------------------------------------
+
+    /// One phrase brisk's privacy copy may not contain, and the sentence the
+    /// failure prints beside it.
+    ///
+    /// A REGEX rather than a substring, because the substring form of an
+    /// English word ban fires on the words that contain it: "sent" sits
+    /// inside "consent", which is the noun rule.location.evidence uses for
+    /// the thing Windows actually records. A guard nobody can satisfy gets
+    /// deleted, and the deletion takes the real ban with it.
+    ///
+    /// The Turkish entries are single words matched anywhere in the string,
+    /// which is why the two-word phrases the spec and the brief name need no
+    /// entry of their own: "göremez" catches "artık göremez", and "gitmiyor"
+    /// catches "veri gitmiyor". Exactly one of them is a STEM, and its own
+    /// comment says why.
+    private sealed record BannedPhrase(string Pattern, string Why);
+
+    /// Why the first half of the list is banned — red line 1's own sentence.
+    private const string CannotPromiseIt =
+        "brisk read a value on this machine and observed nothing about what " +
+        "anybody receives, so it cannot promise that anybody stopped seeing " +
+        "anything";
+
+    /// Why the second half is — the same claim with the sign flipped, which
+    /// is this task's decision rather than the spec's sentence. See the note
+    /// on NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees.
+    private const string CannotAssertItEither =
+        "brisk read a value on this machine and observed no transmission, so " +
+        "it cannot assert one either";
+
+    private static readonly BannedPhrase[] Banned =
+    {
+        // The assurance red line 1 names in as many words.
+        new(@"no longer sees?", CannotPromiseIt),
+        new(@"cannot see", CannotPromiseIt),
+        new(@"can'?t see", CannotPromiseIt),
+        new(@"stop(s|ped)? sending", CannotPromiseIt),
+        new(@"göremez", CannotPromiseIt),
+        new(@"görmüyor", CannotPromiseIt),
+        new(@"gitmiyor", CannotPromiseIt),
+        new(@"toplamıyor", CannotPromiseIt),
+
+        // The same claim asserted rather than denied. "Microsoft" is banned
+        // bare rather than only beside a verb: brisk names no company
+        // anywhere in this topic, and any sentence that named one would be
+        // brisk speaking for a party it never read. The engine's own
+        // NoDisclosureCopy_ClaimsAnythingAboutWhoReceivesWhat already bans
+        // the bare word over part of the same copy, so this is the house
+        // reading rather than a new one.
+        new(@"Microsoft", CannotAssertItEither),
+        new(@"\bsends?\b", CannotAssertItEither),
+        new(@"\bsending\b", CannotAssertItEither),
+        new(@"\bsent\b", CannotAssertItEither),
+        new(@"\bsees\b", CannotAssertItEither),
+        new(@"\breceiv(e|es|ed)\b", CannotAssertItEither),
+        new(@"\bcollect(s|ed|ing)?\b", CannotAssertItEither),
+        // The stem, and it deliberately catches the NEGATIVE forms too —
+        // "gönderilmiyor", "is not sent" — because denying a transmission
+        // needs exactly the sight that asserting one does, and brisk has
+        // neither. \w* rather than a bare stem so the failure prints the
+        // whole word it found instead of the fragment it matched. The other
+        // Turkish entries stay spelled out: "topl\w*" would ban "toplam",
+        // which is the ordinary word for a total, and "gör\w*" would ban
+        // half the language.
+        new(@"gönder\w*", CannotAssertItEither),
+        new(@"topluyor", CannotAssertItEither),
+        new(@"görüyor", CannotAssertItEither),
+        new(@"gidiyor", CannotAssertItEither),
+    };
+
+    /// THE SPEC'S FIRST RED LINE, over every string the privacy topic ships,
+    /// in both languages. Spec, "The red lines" 1: brisk never says
+    /// "Microsoft can no longer see this", because brisk reads a machine and
+    /// has no visibility into what Microsoft receives.
+    ///
+    /// THREE FAMILIES OF KEY, and the third is what this guard was widened
+    /// for. `rule.<id>.*` is the rules' own copy, and two engine tests
+    /// already ban a shorter list over parts of it. `readback.*` is the four
+    /// sentences the read-back block renders, and ReadBackTests bans a list
+    /// over exactly those four. `privacy.*` IS THE PAGE'S OWN COPY — its
+    /// headings, its buttons, the sentence under each block — and nothing
+    /// read what it CLAIMED until this test. LocTests names all but one of
+    /// the `privacy.*` keys and proves each LOADS, which is a different
+    /// question and the only one anything asked; nothing read a word of the
+    /// value. That is where the one live breach was. (The key LocTests misses
+    /// is `privacy.setting.failed`. This test reads it — for what it says,
+    /// not for whether it resolves, which is still unguarded.)
+    ///
+    /// THE BAN RUNS BOTH WAYS, and that half is a decision this task took
+    /// rather than a line the spec wrote. Red line 1 forbids the assurance;
+    /// the reason it gives for forbidding it — brisk reads a machine and has
+    /// no sight of what anybody receives — is equally a reason brisk may not
+    /// assert the opposite. The switches heading was asserting it: "What gets
+    /// sent to Windows" / "Windows'a ne gönderiliyor", shipped from the
+    /// spec's own UI section by Task 7, which flagged the collision and left
+    /// the call here.
+    ///
+    /// Three things settled it, and the third is the one that is not a hedge.
+    /// (1) That heading was the ONLY string in all three families, in either
+    /// language, that named a transmission at all; everything else brisk's
+    /// privacy copy says is a reading or a denial. (2) The sentence directly
+    /// beneath it said the opposite in as many words — "what leaves this
+    /// machine is not something those reads can tell you" — so the mitigation
+    /// worked by contradicting the heading it mitigated. (3) It was wrong
+    /// about the switches it headed. An advertising ID is a number apps on
+    /// this machine read; tailored experiences is Windows using data it
+    /// already holds; the location consent governs what apps here may ask
+    /// for. Three of the six are not about anything being sent to Windows, so
+    /// the heading did not merely outrun its evidence, it mislabelled half of
+    /// its own block. It now reads "Windows' own privacy switches" /
+    /// "Windows'un kendi gizlilik anahtarları", and the spec's UI section
+    /// records the change and quotes what it replaced.
+    ///
+    /// NEITHER THIS LIST NOR THE ENGINE'S IS A SUPERSET OF THE OTHER, and
+    /// both run. ReadBackTests bans "leaves your machine" over its own four
+    /// sentences and this does not, on purpose: the page's own note says
+    /// "what leaves this machine is not something those reads can tell you",
+    /// which is the honest limit and not a claim, and no phrase list can tell
+    /// a claim from a denial of knowledge. A ban of that shape is affordable
+    /// over four sentences one person wrote together and is not over the
+    /// whole topic's copy in two languages. The engine's lists are also blind
+    /// to `privacy.*` and to PrivacyRuleIds.All, which BriskEngine cannot
+    /// see.
+    ///
+    /// Every offence is collected before the assertion, so one run names
+    /// every key and every phrase rather than the first one and a rerun.
+    [Fact]
+    public void NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees()
+    {
+        var offences = new List<string>();
+        foreach (var file in ResxFiles)
+        foreach (var (key, text) in Resx(file))
+        {
+            if (!IsPrivacyCopy(key)) continue;
+            foreach (var (phrase, banned) in ClaimsIn(text))
+                offences.Add($"{file}: {key} says \"{phrase}\" — {banned.Why}");
+        }
+
+        Assert.True(offences.Count == 0,
+            $"{offences.Count} string(s) in brisk's privacy copy make a claim " +
+            "about what another party sees:" + Environment.NewLine +
+            string.Join(Environment.NewLine, offences));
+    }
+
+    /// THE CONTROL, in both directions, because a sweep that searches nothing
+    /// returns all-zero and looks exactly like a clean one — the two results
+    /// are indistinguishable from the outside, which is what lets that
+    /// failure survive a review.
+    ///
+    /// Outward: the scope predicate reaches all three families in both files,
+    /// and every rule on the list contributes copy to it. A ban that quietly
+    /// matched no keys would stay green forever.
+    ///
+    /// Inward: the matcher fires on planted text, including the Turkish
+    /// sentence the task brief names, and it reaches real Turkish letters in
+    /// the real file. CultureInvariant is not decoration — this repo is built
+    /// on a Turkish-locale machine, where a culture-sensitive IgnoreCase
+    /// folds I to ı and a banned phrase can match text nobody wrote.
+    [Fact]
+    public void ThePrivacyCopyGuard_ReachesAllThreeFamilies_AndCanFire()
+    {
+        foreach (var file in ResxFiles)
+        {
+            var keys = Resx(file).Keys.Where(IsPrivacyCopy).ToList();
+            Assert.True(keys.Any(k => k.StartsWith("readback.", StringComparison.Ordinal)),
+                $"{file} contributed no readback.* key to the copy ban");
+            Assert.True(keys.Any(k => k.StartsWith("privacy.", StringComparison.Ordinal)),
+                $"{file} contributed no privacy.* key to the copy ban — the " +
+                "page's own copy is the family this guard was widened for");
+            foreach (var id in PrivacyRuleIds.All)
+                Assert.True(
+                    keys.Any(k => k.StartsWith($"rule.{id}.", StringComparison.Ordinal)),
+                    $"{file} carries no rule.{id}.* string, so the copy ban " +
+                    "covers nothing that rule says");
+        }
+
+        var planted = ClaimsIn("Microsoft artık göremez.").Select(hit => hit.Phrase).ToList();
+        Assert.Contains("Microsoft", planted);
+        Assert.Contains("göremez", planted);
+        Assert.Empty(ClaimsIn("brisk read the switch and it does not read as off."));
+        // The trap every English pattern is a regex for: "consent" ends in
+        // "sent", and rule.location.evidence says it. A substring ban fires
+        // here, and this is what stops one being written back in.
+        Assert.Empty(ClaimsIn("brisk read the location consent on this machine."));
+
+        // The same options, on the real file, with a dotless ı in the needle:
+        // proof that the comparison above reaches Turkish text rather than
+        // sliding off it.
+        Assert.True(Match(Resx("Strings.tr.resx")["privacy.hero.note"], "ayarları").Success,
+            "the Turkish page note does not contain the Turkish word this " +
+            "control looks for, so the ban above may be matching nothing at all");
+    }
+
+    /// Every string the privacy topic ships, in the three families named on
+    /// the ban above. `privacy.readback.section` belongs to the page and
+    /// matches the page's prefix; nothing outside the topic uses either.
+    private static bool IsPrivacyCopy(string key) =>
+        key.StartsWith("readback.", StringComparison.Ordinal)
+        || key.StartsWith("privacy.", StringComparison.Ordinal)
+        || PrivacyRuleIds.All.Any(id =>
+            key.StartsWith($"rule.{id}.", StringComparison.Ordinal));
+
+    private static IEnumerable<(string Phrase, BannedPhrase Banned)> ClaimsIn(string text)
+    {
+        foreach (var banned in Banned)
+            if (Match(text, banned.Pattern) is { Success: true } hit)
+                yield return (hit.Value, banned);
+    }
+
+    private static Match Match(string text, string pattern) => Regex.Match(
+        text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static readonly string[] ResxFiles = { "Strings.resx", "Strings.tr.resx" };
+
+    private static Dictionary<string, string> Resx(string fileName) =>
+        XDocument.Load(Path.Combine(BriskDir(), "Localization", fileName))
+            .Root!.Elements("data")
+            .ToDictionary(e => (string)e.Attribute("name")!,
+                e => e.Element("value")?.Value ?? "");
+
+    // ---------------------------------------------------------------------
+    // The health-score line and RED LINE 4 — over the SHIPPED rules
+    // ---------------------------------------------------------------------
+
+    /// EVERY PRIVACY RULE THE BUILD SHIPS EMITS A NOTICE, taken off the two
+    /// shipped lists rather than off a list a test keeps.
+    ///
+    /// The characterization test at the top of this file plants a Notice and
+    /// proves HealthScore skips it, and says in as many words that no real
+    /// rule's Kind is read there. Three engine tests do read real Kinds —
+    /// TelemetrySwitchRuleTests, PrivacyDisclosureRuleTests and
+    /// DeliveryOptimizationRuleTests — and each drives its own family from a
+    /// HAND-WRITTEN id list and constructs the rule objects itself. Between
+    /// them they cover today's ten and grow for nobody: an eleventh privacy
+    /// rule, registered and routed and shipped, is graded by none of them.
+    ///
+    /// This intersects DiagnosticRuleRegistry.All with PrivacyRuleIds.All, so
+    /// a rule added to both is covered the day it is added, whatever base
+    /// class it arrives under. Brisk.Tests is the only project that can see
+    /// both lists.
+    ///
+    /// The finding is asserted to EXIST before its Kind is read. On a machine
+    /// where every setting and record this topic reads is present and on, a
+    /// rule that reports nothing is not a rule that passed — it is a rule
+    /// whose Kind nothing here ever looked at.
+    [Theory]
+    [MemberData(nameof(AllPrivacyRuleIds))]
+    public void EveryPrivacyRule_ReportsANoticeAndCostsTheScoreNothing(string ruleId)
+    {
+        var finding = ShippedRule(ruleId).Detect(EverythingReadsAsOn());
+
+        Assert.True(finding is not null,
+            $"{ruleId} reports nothing on a machine where every setting and " +
+            "record this topic reads is present and on, so nothing here ever " +
+            "read its Kind");
+        Assert.True(finding!.Kind == FindingKind.Notice,
+            $"{ruleId} ships as {finding.Kind}; every finding in this wave is a " +
+            "Notice, including the ones brisk can fix (spec, \"Health score\")");
+        Assert.True(HealthScore.Compute(new[] { finding }) == 100,
+            $"{ruleId} moved the health score to " +
+            $"{HealthScore.Compute(new[] { finding })} on an otherwise clean " +
+            "machine; privacy is a second axis and brisk does not grade it");
+    }
+
+    /// RED LINE 4, over every rule the topic ships: what could not be read
+    /// never becomes a number.
+    ///
+    /// The fixture answers nothing — an empty registry, and a Delivery
+    /// Optimization probe that returns null, which is that probe's own way of
+    /// saying it could not read its counter and is a different answer from
+    /// zero. A rule that COUNTS something lands on its unreadable sentence
+    /// there, which is the red line's own case. A SWITCH lands somewhere
+    /// adjacent and deliberately so: absence reads as on for it, because what
+    /// brisk cannot read as off it does not report as off. So this covers the
+    /// red line in both of the forms it takes in this topic, and claims
+    /// neither of them is the other. Which rule falls where is the rule's
+    /// business and is not listed here — the assertions below hold for both
+    /// answers.
+    ///
+    /// WHAT IS ASSERTED. No headline, because a headline is the number a
+    /// finding leads with and there is no reading here to make one out of.
+    /// No digit in any sentence a reader is shown — the engine's own English,
+    /// which is what `brisk scan` prints, and the string behind each key in
+    /// BOTH resx files, which is what the GUI renders instead. No digit in an
+    /// evidence argument either, since an argument is where a number is
+    /// substituted in. Format placeholders are stripped before the scan: {0}
+    /// is not a number, the argument it would take is, and on this machine
+    /// there are none.
+    [Theory]
+    [MemberData(nameof(AllPrivacyRuleIds))]
+    public void NoPrivacyRule_TurnsAnUnreadableProbeIntoANumber(string ruleId)
+    {
+        var finding = ShippedRule(ruleId).Detect(NothingReadsAtAll());
+
+        Assert.True(finding is not null,
+            $"{ruleId} reports nothing at all on a machine it could read " +
+            "nothing from. A probe that failed belongs in okuyamadıklarım, and " +
+            "silence puts it nowhere");
+        Assert.True(finding!.Headline is null,
+            $"{ruleId} leads with \"{finding.Headline?.Value}\" on a machine it " +
+            "could read nothing from — a headline is the number a finding leads " +
+            "with, and nothing here was read to make one out of");
+
+        NoNumberIn(ruleId, "the English the CLI prints", finding.Title);
+        NoNumberIn(ruleId, "the English the CLI prints", finding.Evidence);
+        foreach (var argument in finding.EvidenceArgs ?? Array.Empty<string>())
+            NoNumberIn(ruleId, "an evidence argument", argument);
+
+        Assert.True(finding.EvidenceKey is not null,
+            $"{ruleId} names no evidence key, so the GUI has nothing to render " +
+            "its unreadable sentence from");
+        foreach (var file in ResxFiles)
+        foreach (var key in new[] { finding.TitleKey, finding.EvidenceKey! })
+        {
+            Assert.True(Resx(file).TryGetValue(key, out var text),
+                $"{ruleId} names {key} and {file} does not carry it, so the " +
+                "GUI renders the raw key where the sentence goes");
+            NoNumberIn(ruleId, $"{key} in {file}", text!);
+        }
+    }
+
+    private static void NoNumberIn(string ruleId, string where, string text)
+    {
+        var number = Regex.Match(Regex.Replace(text, @"\{\d+\}", ""), @"\d+");
+        Assert.False(number.Success,
+            $"{ruleId} states the number {number.Value} in {where} on a machine " +
+            $"it could read nothing from: \"{Collapse(text)}\"");
+    }
+
+    /// The rule THE BUILD SHIPS under this id, never one this test builds. A
+    /// list entry with no rule behind it is a page that will never show that
+    /// row, and nothing else in the suite reads the list in this direction.
+    private static IDiagnosticRule ShippedRule(string ruleId)
+    {
+        var matches = DiagnosticRuleRegistry.All
+            .Where(r => string.Equals(r.Id, ruleId, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        Assert.True(matches.Count == 1,
+            $"PrivacyRuleIds.All carries '{ruleId}' and DiagnosticRuleRegistry " +
+            $"ships {matches.Count} rules under that id; the page shows the " +
+            "findings of exactly the rules registered under it");
+        return matches[0];
+    }
+
+    /// A machine where every switch this topic reads is on and every record
+    /// it counts has something in it — the one state in which all ten rules
+    /// have something to report.
+    ///
+    /// The numbered switches are planted from their OWN Values collection, so
+    /// a switch that moves its keys stays planted. Location's state is a WORD
+    /// and its Values is empty by design, so it is planted by name from that
+    /// rule's own constants: anything that does not read as Deny reads as on,
+    /// and Allow is the word Windows writes there.
+    private static DiagnosticContext EverythingReadsAsOn()
+    {
+        var reg = new FakeRegistry();
+        foreach (var rule in DiagnosticRuleRegistry.All.OfType<TelemetrySwitchRule>())
+        foreach (var value in rule.Values)
+            reg.SetInt(value.KeyPath, value.ValueName, value.OnValue);
+        reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, "Allow");
+
+        // One USB model with one instance under it — the two levels deep
+        // Windows records one attached device at.
+        const string model = "Ven_Test&Prod_Stick";
+        Sub(reg, UsbHistoryRule.KeyPath, model);
+        Sub(reg, $@"{UsbHistoryRule.KeyPath}\{model}", "instance-01");
+        // One entry under one of the two keys UserAssist counts are kept in.
+        reg.SetString(RunHistoryRule.CountKeyPaths[0], "an-encoded-entry", "");
+        // Zero is the reading that LEAVES Recall's data analysis on: the
+        // value names what it disables, so its sense is inverted.
+        reg.SetInt(RecallStatusRule.KeyPath, RecallStatusRule.ValueName, 0);
+
+        return Context(reg, uploadedBytes: 4L << 30);
+    }
+
+    /// A machine that answers nothing at all.
+    private static DiagnosticContext NothingReadsAtAll() =>
+        Context(new FakeRegistry(), uploadedBytes: null);
+
+    /// The eleven probes no privacy rule reads THROW, so a rule that grows a
+    /// reading nobody arranged fails loudly rather than measuring a machine
+    /// this fixture never described. The twelfth answers, because
+    /// delivery-optimization is the one rule in the topic that reads
+    /// something other than the registry — and NoOtherProbes' throw would be
+    /// swallowed by that rule's own catch and turn silently into the
+    /// unreadable answer, which is one of the two states these tests exist to
+    /// tell apart.
+    private static DiagnosticContext Context(IRegistryProbe registry, long? uploadedBytes)
+    {
+        var none = new NoOtherProbes();
+        return new DiagnosticContext(none, registry, none, none, none, none, none,
+            none, none, none, none,
+            new DeliveryOptimizationReading(uploadedBytes),
+            Path.Combine(Path.GetTempPath(), "brisk-privacy-red-line-context"));
+    }
+
+    /// Null is the probe's own "I could not read the counter", and a number
+    /// is a reading. Nothing here rounds one into the other.
+    private sealed record DeliveryOptimizationReading(long? Bytes)
+        : IDeliveryOptimizationProbe
+    {
+        public long? BytesUploadedToPeers() => Bytes;
+    }
+
+    private static void Sub(FakeRegistry reg, string parent, string child)
+    {
+        if (!reg.SubKeys.TryGetValue(parent, out var children))
+            reg.SubKeys[parent] = children = new List<string>();
+        if (!children.Contains(child)) children.Add(child);
     }
 
     /// The half a required constructor parameter cannot reach.

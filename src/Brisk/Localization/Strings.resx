@@ -315,8 +315,8 @@
   <data name="privacy.title" xml:space="preserve"><value>Privacy on this machine</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>
-  <data name="privacy.switches.section" xml:space="preserve"><value>What gets sent to Windows</value></data>
-  <data name="privacy.switches.note" xml:space="preserve"><value>These are the switches Windows keeps for it. brisk reads each switch and can write it, and nothing past that: what leaves this machine is not something those reads can tell you.</value></data>
+  <data name="privacy.switches.section" xml:space="preserve"><value>Windows' own privacy switches</value></data>
+  <data name="privacy.switches.note" xml:space="preserve"><value>brisk reads each switch and can write it, and nothing past that: what leaves this machine is not something those reads can tell you.</value></data>
   <data name="privacy.switches.safe.note" xml:space="preserve"><value>Switching these off takes nothing away that you use, and brisk can switch every one of them back on.</value></data>
   <data name="privacy.switches.costly.section" xml:space="preserve"><value>These cost you something</value></data>
   <data name="privacy.switches.none" xml:space="preserve"><value>Every switch brisk reads here already reads as off.</value></data>

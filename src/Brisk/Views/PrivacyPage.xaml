@@ -101,10 +101,14 @@
                 <TextBlock Style="{StaticResource PanelHeader}"
                            Text="{Binding [privacy.switches.section],
                                Source={x:Static loc:Loc.Instance}}" />
-                <!-- The heading names the topic; this names what brisk
-                     actually read. It sits directly under it so the two are
-                     never read apart: brisk reads a switch on this machine
-                     and has no sight of what leaves it. -->
+                <!-- The limit, directly under the heading. The heading
+                     once named a transmission and this sentence was the
+                     mitigation that had to sit against it; the heading was
+                     changed instead, and the sentence stays because the limit
+                     is true either way: brisk reads a switch on this machine
+                     and has no sight of what leaves it. Both this string and
+                     the heading above are read by PrivacyRedLineTests'
+                     NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees. -->
                 <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
                            Margin="2,0,0,10"
                            Text="{Binding [privacy.switches.note],

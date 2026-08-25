@@ -657,8 +657,14 @@ public class ReadBackTests
     /// The red line, over this task's own four keys. brisk measured a local
     /// policy and a local setting; it measured nothing about what any company
     /// receives, and the read-back is exactly where that claim would be
-    /// tempting to make. A wider version of this over every privacy string is
-    /// a later task of this wave; this one covers what this task added.
+    /// tempting to make. The wider version over every privacy string now
+    /// exists and reads these four keys as well: PrivacyRedLineTests'
+    /// NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees, in Brisk.Tests,
+    /// which is the only project that can see PrivacyRuleIds.All and the
+    /// page's own strings. This one stays because it is the engine's guard on
+    /// the engine's own sentences, and because its list is not the same list:
+    /// it bans "leaves your machine" over these four and the wider one does
+    /// not, for the reason recorded there.
     ///
     /// The Turkish entries are written with the real letters — göremez, not
     /// goremez — because a banned phrase spelled in ASCII can never match the

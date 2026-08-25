@@ -178,15 +178,41 @@ when written, and the shipped code is what the list now describes.
 A sixth nav tile, **Gizlilik**, holding three blocks:
 
 1. **Disclosure** — the numbers, largest first.
-2. **"Windows'a ne gönderiliyor"** — the switches, in the two-tier model the
-   maintainer chose: one button turns off everything with **no visible
-   consequence** (advertising ID, diagnostic level, tailored experiences,
-   speech/typing); the two settings that **cost the user something** (location,
-   activity history) sit on their own switches with the loss named beside them
-   — *"'Cihazımı bul' çalışmaz"*, *"Timeline biter"*. All of it reversible.
+2. **"Windows'un kendi gizlilik anahtarları"** — the switches, in the two-tier
+   model the maintainer chose: one button turns off everything with **no
+   visible consequence** (advertising ID, diagnostic level, tailored
+   experiences, speech/typing); the two settings that **cost the user
+   something** (location, activity history) sit on their own switches with the
+   loss named beside them — *"'Cihazımı bul' çalışmaz"*, *"Timeline biter"*.
+   All of it reversible.
    Recall appears here as state only, with a link to Windows' own setting, for
    the reason given under Rules.
 3. **Read-back** — what brisk turned off, when, and whether it held.
+
+**Corrected 2026-08-26, after Task 9 shipped.** Item 2's heading was
+**"Windows'a ne gönderiliyor"** — *"What gets sent to Windows"* — and it now
+reads **"Windows'un kendi gizlilik anahtarları"** / *"Windows' own privacy
+switches"*. Task 7 shipped the original, flagged that it and red line 1 pull
+against each other, and left the call to Task 9, which took it.
+
+The reason red line 1 gives for forbidding *"Microsoft can no longer see
+this"* — brisk reads a machine and has no visibility into what Microsoft
+receives — is equally a reason brisk may not assert the opposite, and the old
+heading asserted it. Two further facts settled it. It was the only string in
+the whole privacy topic, in either language, that named a transmission at all,
+and the sentence directly beneath it says *"what leaves this machine is not
+something those reads can tell you"* — so the mitigation worked by
+contradicting the heading it mitigated. And it was **wrong about the switches
+it headed**: an advertising ID is a number apps on this machine read, tailored
+experiences is Windows using data it already holds, and the location consent
+governs what apps here may ask for. Three of the six are not about anything
+being sent to Windows, so the heading did not merely outrun its evidence, it
+mislabelled half of its own block.
+
+`privacy.switches.note` lost its opening sentence with it — *"These are the
+switches Windows keeps for it"* pointed at the claim that is gone. The limit
+that sentence exists for is untouched and still sits directly under the
+heading.
 
 Disclosure findings enter the existing `RevelationPicker` lottery, so the
 Overview headline can lead with *"47 cihaz"* on a machine where that is the
@@ -237,15 +263,33 @@ it. The other three disclosures stay off the list, which is the tail rank.
 
 ## Guards
 
-The red lines above are tests, not comments:
+The red lines above are tests, not comments. **Named here as of Task 9**,
+because a guard nobody can find is a guard the next reader writes a second
+copy of:
 
-- no rule's copy — in either language — contains a claim about what Microsoft
-  can or cannot see
-- no finding produced by this wave lowers the health score
-- the report card carries counts and never a device or program name
-- a probe that fails produces "unreadable", never zero
+- no string this topic ships — rule copy, read-back sentence or page heading,
+  in either language — contains a claim about what Microsoft can or cannot
+  see, **nor the same claim with the sign flipped**:
+  `PrivacyRedLineTests.NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees`,
+  over every `rule.<privacy id>.*`, `readback.*` and `privacy.*` key in both
+  resx files, with `ThePrivacyCopyGuard_ReachesAllThreeFamilies_AndCanFire` as
+  its control in both directions
+- no finding produced by this wave lowers the health score:
+  `PrivacyRedLineTests.EveryPrivacyRule_ReportsANoticeAndCostsTheScoreNothing`,
+  over `DiagnosticRuleRegistry.All` intersected with `PrivacyRuleIds.All`, so
+  an eleventh privacy rule is covered the day it is registered
+- the report card carries counts and never a device or program name:
+  `ReportCardModelTests.TheCard_CarriesCounts_AndNeverADeviceOrAProgramName`
+  and `PrivacyBan_EvidenceNamesAndPathsNeverReachTheCard`, over a card the real
+  rules built from a registry with a real device name in it
+- a probe that fails produces "unreadable", never zero:
+  `PrivacyRedLineTests.NoPrivacyRule_TurnsAnUnreadableProbeIntoANumber`, over
+  the same ten rules against a machine that answers nothing
 - a fix that does not hold reads back as reverted and never as held, watched
-  red by planting a re-enabled setting
+  red by planting a re-enabled setting:
+  `ReadBackTests.AFixThatIsNotThereAnyMore_ReadsAsReverted`, with
+  `DiagnosticLevel_PolicyWritten_ButTheMachineRecordsAHigherLevel_ReadsAsIgnored`
+  holding red line 3 beside it
 
 Plus the house standard: every fixable rule's `Fix`/`Undo` round-trips, and the
 new page gets a snapshot render.
