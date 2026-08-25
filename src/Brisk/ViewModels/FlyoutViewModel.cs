@@ -156,8 +156,9 @@ public sealed class FlyoutViewModel : ViewModelBase
         if (snapshot is null) return;
         HealthText = snapshot.Health.ToString();
         HealthBrushKey = HealthBrush.KeyFor(snapshot.Health);
-        var fixable = snapshot.Findings.Count(f =>
-            f.Category != RuleCategory.Advise && f.CanFix);
+        // The same predicate the button obeys, not a second copy of it:
+        // "one-click fixable" counts what one click will actually do.
+        var fixable = snapshot.Findings.Count(FixAllService.IsOneClickFixable);
         FindingsLine = _loc.F("flyout.findings", snapshot.Findings.Count, fixable);
         // The honest figure (round 11): the flyout's Clean button runs the
         // safe defaults, so its "reclaimable" line promises exactly that —

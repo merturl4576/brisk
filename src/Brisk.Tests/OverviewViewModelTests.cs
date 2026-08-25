@@ -93,6 +93,27 @@ public class OverviewViewModelTests
         Assert.Equal(loc.F("overview.cleanspace", "2 KB"), vm.CleanSafeText);
     }
 
+    /// The same promise as the flyout's, on the surface that carries the
+    /// button: the summary may only count findings this button will act on,
+    /// and it does not act on a privacy setting at any consent level.
+    [Fact]
+    public async Task Summary_CountsOnlyWhatTheFixAllButtonWillActuallyDo()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("location", cat: RuleCategory.Confirm, canFix: true,
+                kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+
+        Assert.Contains("3 findings", vm.SummaryText);
+        Assert.Contains("1 one-click fixable", vm.SummaryText);
+    }
+
     [Fact]
     public async Task Refresh_PopulatesHeroAndSummary()
     {

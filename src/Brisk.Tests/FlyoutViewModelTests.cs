@@ -55,6 +55,30 @@ public class FlyoutViewModelTests
         return (vm, bin);
     }
 
+    /// "one-click fixable" is a promise about the button beside it, and that
+    /// button does not reach a privacy setting. Counting the four telemetry
+    /// switches into this number tells the user the click will do four things
+    /// it will refuse — a lie the moment the disclosure rules entered the
+    /// registry, because an untouched machine has all four on.
+    [Fact]
+    public async Task FindingsLine_CountsOnlyWhatTheFixAllButtonWillActuallyDo()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("location", cat: RuleCategory.Confirm, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+
+        Assert.Equal("4 findings · 1 one-click fixable", vm.FindingsLine);
+    }
+
     [Fact]
     public async Task Scan_PopulatesSummaryLines()
     {

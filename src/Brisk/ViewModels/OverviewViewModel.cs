@@ -542,8 +542,9 @@ public sealed class OverviewViewModel : ViewModelBase
             : _loc["overview.status.good"];
         // The "{m} one-click fixable" phrase only appears while it is a
         // promise (m > 0); "0 tanesi düzelir" would read as failure.
-        var fixable = snapshot.Findings.Count(f =>
-            f.Category != RuleCategory.Advise && f.CanFix);
+        // The same predicate the button obeys, not a second copy of it:
+        // "one-click fixable" counts what one click will actually do.
+        var fixable = snapshot.Findings.Count(FixAllService.IsOneClickFixable);
         var parts = new List<string>();
         if (hasWork)
             parts.Add(_loc.F("flyout.findings", snapshot.Findings.Count, fixable));

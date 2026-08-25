@@ -48,16 +48,19 @@ public sealed class FixAllService
     /// heavy item is already off. The fix-all buttons (overview and health)
     /// query this instead of duplicating the predicate.
     public bool HasWork(ScanSnapshot snapshot) => snapshot.Findings.Any(f =>
-        ThisButtonsWork(f)
+        IsOneClickFixable(f)
         && (!string.Equals(f.RuleId, StartupBloatRuleId, StringComparison.OrdinalIgnoreCase)
             || EnabledHeavyNames().Count > 0));
 
-    /// The one predicate both HasWork and Run read, so the button cannot
-    /// light over work the run then declines. Category is a consent level,
-    /// not a topic: Confirm covers the two privacy switches that cost the
-    /// user something as surely as Auto covers the four that cost nothing,
-    /// so the topic has to be excluded by rule id.
-    private static bool ThisButtonsWork(DiagnosticFinding f) =>
+    /// The one predicate every surface reads: HasWork and Run here, and the
+    /// two places that COUNT the button's work for the "{n} one-click
+    /// fixable" line. Public for that reason — the count and the action have
+    /// to be the same question, or the sentence beside the button promises
+    /// clicks the button declines. Category is a consent level, not a topic:
+    /// Confirm covers the two privacy switches that cost the user something
+    /// as surely as Auto covers the four that cost nothing, so the topic has
+    /// to be excluded by rule id.
+    public static bool IsOneClickFixable(DiagnosticFinding f) =>
         f.Category != RuleCategory.Advise && f.CanFix
         && !FindingSections.IsPrivacy(f);
 
@@ -69,7 +72,7 @@ public sealed class FixAllService
         var attempted = 0;
         var applied = 0;
         foreach (var finding in snapshot.Findings
-                     .Where(ThisButtonsWork))
+                     .Where(IsOneClickFixable))
         {
             attempted++;
             FixingRule?.Invoke(finding);
