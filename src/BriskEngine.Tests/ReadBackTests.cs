@@ -691,6 +691,93 @@ public class ReadBackTests
             "matching nothing at all");
     }
 
+    /// The machine the unverified sentence used to be wrong about, and it is
+    /// reachable rather than theoretical. brisk journalled its fix at
+    /// diagnostic-level; something else later wrote AllowTelemetry 0 —
+    /// Security, STRICTER than the 1 brisk writes, and exactly what another
+    /// debloat tool would set — and the second value cannot be read.
+    ///
+    /// The state is right: the switch reads as off and brisk has no reading
+    /// that says whether this edition acts on the policy. What is NOT true on
+    /// this machine is that the value brisk wrote is still there. It is 0,
+    /// and brisk writes 1.
+    ///
+    /// Only diagnostic-level can reach this, and the reason is its read: a
+    /// THRESHOLD, so any number below Enhanced reads as off, brisk's or not.
+    /// The other five compare against the exact number their own fix writes,
+    /// so for them "reads as off" and "my write is still there" coincide —
+    /// which is why a sentence that named brisk's write passed every test in
+    /// this file until this one.
+    [Fact]
+    public void DiagnosticLevel_AStricterLevelThanBriskWrote_ReadsAsUnverified_AndTheSentenceDoesNotSayBriskWroteIt()
+    {
+        var (ctx, reg) = Context();
+        var rule = new DiagnosticLevelRule();
+        var written = rule.Values.Single().OffValue;
+        const int strickerThanBriskWrites = 0;
+        reg.SetInt(DiagnosticLevelRule.KeyPath, DiagnosticLevelRule.ValueName,
+            strickerThanBriskWrites);
+
+        Assert.True(strickerThanBriskWrites != written,
+            $"this test plants {strickerThanBriskWrites} to be a number brisk's " +
+            $"fix does not write, and the fix writes {written}");
+        Assert.True(rule.EffectiveLevel(ctx) is null,
+            "something is readable at the second key, so this is not the " +
+            "unverified case it says it is");
+
+        var row = Row(ctx, Journal("diagnostic-level"), "diagnostic-level");
+        Assert.True(row.State == ReadBackState.WrittenButUnverified,
+            $"the policy reads {strickerThanBriskWrites}, which is not on and " +
+            $"is not brisk's {written} either, and the read-back says {row.State}");
+
+        foreach (var (file, clause) in new[]
+                 {
+                     ("Strings.resx", "the value brisk wrote is still there"),
+                     ("Strings.tr.resx", "brisk'in yazdığı değer hâlâ yerinde"),
+                 })
+            Assert.False(Resx(file)["readback.unverified"]
+                    .Contains(clause, StringComparison.OrdinalIgnoreCase),
+                $"readback.unverified in {file} says \"{clause}\" — on the " +
+                "machine planted above that is false, and what brisk read is " +
+                "that the switch still reads as off, not whose write is there");
+    }
+
+    /// The positive half of the correction above: the sentence names the read
+    /// brisk made. Pinned as a literal for the same reason the other three
+    /// are — here the wording IS the requirement, because the wording is what
+    /// was wrong.
+    [Theory]
+    [InlineData("Strings.resx", "the switch still reads as off")]
+    [InlineData("Strings.tr.resx", "ayar hâlâ kapalı okunuyor")]
+    public void TheUnverifiedSentence_NamesTheReadItMade(string file, string clause)
+    {
+        Assert.True(Resx(file)["readback.unverified"]
+                .Contains(clause, StringComparison.Ordinal),
+            $"readback.unverified in {file} never says \"{clause}\", so it does " +
+            "not say what brisk actually read");
+    }
+
+    /// "Still" is a claim about a previous look. brisk has one for its OWN
+    /// write — the journal records that it turned the switch off — and none
+    /// at all for the second value, which it reads for the first time on the
+    /// scan that produces this sentence. So the ignored sentence reports what
+    /// that value reads and does not say it has read it before.
+    ///
+    /// The held and unverified sentences DO say "still", and legitimately:
+    /// what they say it about is brisk's own act, which the journal backs.
+    [Theory]
+    [InlineData("Strings.resx", "still reads as on")]
+    [InlineData("Strings.tr.resx", "hâlâ açık diyor")]
+    public void TheIgnoredSentence_DoesNotClaimAPriorReadingOfTheSecondValue(
+        string file, string clause)
+    {
+        Assert.False(Resx(file)["readback.ignored"]
+                .Contains(clause, StringComparison.OrdinalIgnoreCase),
+            $"readback.ignored in {file} says \"{clause}\" — brisk read that " +
+            "value once, on this scan, and has no earlier reading of it to " +
+            "call this one a continuation of");
+    }
+
     private static Dictionary<string, string> Resx(string fileName)
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
