@@ -85,8 +85,14 @@ difference between a claim and a lie.
 
 ## Engine — rules
 
-New rules, all `Notice`, and a new `RuleCategory.Privacy` member so the page
-can filter them the way Health and Performance already filter theirs.
+New rules, all `Notice`, routed to the new page by rule id — **not** by a new
+`RuleCategory` member. `RuleCategory` is a consent level (Auto / Confirm /
+Advise) and `FindingSections` says so in as many words; topic routing already
+happens by rule id, and privacy rules span all three consent levels: the four
+consequence-free ones are `Auto`, the two that cost the user something are
+`Confirm`, and the report-only ones are `Advise`. So the page gets a
+`FindingSections.IsPrivacy` set beside `IsPerformance`, and consent keeps
+meaning consent.
 
 **Report only, no fix** — brisk shows the number and nothing else:
 
