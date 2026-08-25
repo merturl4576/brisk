@@ -7,8 +7,10 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 
 /// What brisk can find out about whether this machine is acting on the value
 /// a fix wrote. The read-back asks a rule this AFTER the rule has already
-/// said the switch reads as off, so every member below describes a machine
-/// where brisk's write is still readable as off.
+/// said the switch READS AS OFF, so every member below describes a machine in
+/// that state — which is not the same as a machine where the value brisk
+/// wrote is the value there. Where the two come apart, and which rules do it,
+/// is on EffectOfTheWrite below.
 ///
 /// It exists because a POLICY — a value under HKLM\SOFTWARE\Policies — is
 /// the one kind of setting an edition of Windows can have written down and
@@ -120,9 +122,19 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     /// overrides it to say it cannot, which is a different sentence from the
     /// default's "there is nothing here to check".
     ///
-    /// The read-back asks this only after IsOn has already read false, so an
-    /// implementation may assume the value it wrote reads as off and does not
-    /// have to re-establish that.
+    /// The read-back asks this only after IsOn has read false, so an
+    /// implementation may assume THE SWITCH READS AS OFF and does not have to
+    /// re-establish that.
+    ///
+    /// It may NOT assume the value the fix wrote is the value sitting there.
+    /// Those two coincide only while a rule keeps the default ReadsAsOn,
+    /// which treats exactly OffValue as off, and TWO rules do not:
+    /// DiagnosticLevelRule reads a THRESHOLD, so a machine somebody else set
+    /// to 0 reads as off with brisk's 1 gone; LocationRule matches its word
+    /// without regard to case, so "deny" reads as off where the fix wrote
+    /// "Deny". Both are reachable, both are planted in ReadBackTests, and
+    /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite is what fails if
+    /// a third rule joins them without this paragraph being read.
     public virtual WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
         WriteEffect.NotAPolicy;
 

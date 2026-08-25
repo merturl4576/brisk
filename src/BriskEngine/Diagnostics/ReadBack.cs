@@ -126,9 +126,15 @@ public enum ReadBackState
     /// and today's read, and nothing in between.
     Reverted,
 
-    /// The write is still there, the switch reads as off, and a second value
-    /// this machine keeps for the same setting says it is not being acted on.
-    /// This is brisk reporting that its own fix did not take.
+    /// The switch reads as off, and a second value this machine keeps for the
+    /// same setting says it is not being acted on. This is brisk reporting
+    /// that its own fix did not take.
+    ///
+    /// "Reads as off" and not "brisk's write is still there": the two are the
+    /// same statement for four of the six switches and not for the other two
+    /// — see EffectOfTheWrite — so this state is defined by the read, which
+    /// brisk made, rather than by whose write is there, which it did not
+    /// check.
     ///
     /// What was measured is two local values that disagree. What is said is
     /// that this edition of Windows is not acting on the policy. Nothing here
@@ -136,10 +142,11 @@ public enum ReadBackState
     /// and the copy for this state says no such thing.
     WrittenButIgnored,
 
-    /// The write is still there, the switch reads as off, and brisk has no
-    /// second reading that could tell an edition that acted on the policy
-    /// from one that did not. Either no second value was ever established for
-    /// this setting, or the one that exists could not be read.
+    /// The switch reads as off, and brisk has no second reading that could
+    /// tell an edition that acted on the policy from one that did not. Either
+    /// no second value was ever established for this setting, or the one that
+    /// exists could not be read. Defined by the read and not by whose write
+    /// is there, for the reason given on WrittenButIgnored above.
     ///
     /// This is not a weaker Held, it is a different answer. Held on a policy
     /// nobody confirmed would be brisk telling a user their switch is off on

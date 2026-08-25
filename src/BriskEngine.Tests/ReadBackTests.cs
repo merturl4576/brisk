@@ -702,24 +702,28 @@ public class ReadBackTests
     /// this machine is that the value brisk wrote is still there. It is 0,
     /// and brisk writes 1.
     ///
-    /// Only diagnostic-level can reach this, and the reason is its read: a
-    /// THRESHOLD, so any number below Enhanced reads as off, brisk's or not.
-    /// The other five compare against the exact number their own fix writes,
-    /// so for them "reads as off" and "my write is still there" coincide —
-    /// which is why a sentence that named brisk's write passed every test in
-    /// this file until this one.
+    /// Only diagnostic-level can reach this STATE, and the reason is its
+    /// read: a THRESHOLD, so any number below Enhanced reads as off, brisk's
+    /// or not. It is not the only rule whose read and whose write come apart,
+    /// though — location matches its word without regard to case, so "deny"
+    /// reads as off where the fix wrote "Deny" — and
+    /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite is where both
+    /// are pinned. FOUR of the six compare against the exact value their own
+    /// fix writes, and for those four "reads as off" and "my write is still
+    /// there" coincide, which is why a sentence that named brisk's write
+    /// passed every test in this file until this one.
     [Fact]
     public void DiagnosticLevel_AStricterLevelThanBriskWrote_ReadsAsUnverified_AndTheSentenceDoesNotSayBriskWroteIt()
     {
         var (ctx, reg) = Context();
         var rule = new DiagnosticLevelRule();
         var written = rule.Values.Single().OffValue;
-        const int strickerThanBriskWrites = 0;
+        const int stricterThanBriskWrites = 0;
         reg.SetInt(DiagnosticLevelRule.KeyPath, DiagnosticLevelRule.ValueName,
-            strickerThanBriskWrites);
+            stricterThanBriskWrites);
 
-        Assert.True(strickerThanBriskWrites != written,
-            $"this test plants {strickerThanBriskWrites} to be a number brisk's " +
+        Assert.True(stricterThanBriskWrites != written,
+            $"this test plants {stricterThanBriskWrites} to be a number brisk's " +
             $"fix does not write, and the fix writes {written}");
         Assert.True(rule.EffectiveLevel(ctx) is null,
             "something is readable at the second key, so this is not the " +
@@ -727,7 +731,7 @@ public class ReadBackTests
 
         var row = Row(ctx, Journal("diagnostic-level"), "diagnostic-level");
         Assert.True(row.State == ReadBackState.WrittenButUnverified,
-            $"the policy reads {strickerThanBriskWrites}, which is not on and " +
+            $"the policy reads {stricterThanBriskWrites}, which is not on and " +
             $"is not brisk's {written} either, and the read-back says {row.State}");
 
         foreach (var (file, clause) in new[]
@@ -740,6 +744,76 @@ public class ReadBackTests
                 $"readback.unverified in {file} says \"{clause}\" — on the " +
                 "machine planted above that is false, and what brisk read is " +
                 "that the switch still reads as off, not whose write is there");
+    }
+
+    /// The structural fact every "reads as off" sentence in this family now
+    /// rests on, pinned so it cannot drift back into an assumption.
+    ///
+    /// "The switch reads as off" and "the value brisk wrote is the value
+    /// there" are the same statement only while a rule keeps the default
+    /// ReadsAsOn, which treats exactly OffValue as off. TWO rules break that,
+    /// in two different alphabets:
+    ///
+    ///   diagnostic-level  reads a THRESHOLD, so 0 (Security) reads as off
+    ///                     while the fix writes 1
+    ///   location          matches its WORD without regard to case, so "deny"
+    ///                     reads as off while the fix writes "Deny"
+    ///
+    /// The other four compare against the exact number their own fix writes
+    /// and have no such state. This theory looks for a witness rather than
+    /// asserting from a list: it walks candidate states, keeps any that reads
+    /// as off and is not what the fix wrote, and reports the one it found.
+    [Theory]
+    [InlineData("advertising-id", false)]
+    [InlineData("tailored-experiences", false)]
+    [InlineData("speech-typing", false)]
+    [InlineData("activity-history", false)]
+    [InlineData("diagnostic-level", true)]
+    [InlineData("location", true)]
+    public void WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite(
+        string id, bool hasOne)
+    {
+        var witness = WitnessThatReadsAsOffWithoutBeingBrisksWrite(id);
+
+        Assert.True((witness is not null) == hasOne,
+            hasOne
+                ? $"{id}: no state was found that reads as off without being what " +
+                  "the fix writes, and this rule is recorded as having one — the " +
+                  "docs that say \"the switch reads as off\" rather than \"brisk's " +
+                  "write is there\" were written for it"
+                : $"{id}: {witness} reads as off and is not what the fix writes, so " +
+                  "\"reads as off\" and \"my write is still there\" have come apart " +
+                  "for a rule recorded as keeping them together");
+    }
+
+    /// A printable description of a state that reads as off and is NOT what
+    /// the rule's fix writes, or null when the rule has none. location is
+    /// handled by its own word because it has no number — the same reason
+    /// every other helper in this file forks on it.
+    private static string? WitnessThatReadsAsOffWithoutBeingBrisksWrite(string id)
+    {
+        var rule = Rule(id);
+        if (id == "location")
+        {
+            foreach (var word in new[] { "deny", "DENY", "dEnY", "Allow", "Prompt", "" })
+            {
+                var (ctx, reg) = Context();
+                reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, word);
+                if (!rule.IsOn(ctx) &&
+                    !string.Equals(word, LocationRule.Denied, StringComparison.Ordinal))
+                    return $"the word \"{word}\"";
+            }
+            return null;
+        }
+
+        foreach (var candidate in new[] { -1, 0, 1, 2, 3, 7 })
+        {
+            var (ctx, reg) = Context();
+            foreach (var v in rule.Values) reg.SetInt(v.KeyPath, v.ValueName, candidate);
+            if (!rule.IsOn(ctx) && rule.Values.Any(v => v.OffValue != candidate))
+                return $"the number {candidate}";
+        }
+        return null;
     }
 
     /// The positive half of the correction above: the sentence names the read
