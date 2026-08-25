@@ -21,7 +21,7 @@ public static class HealthBrush
 {
     public static string KeyFor(int health) =>
         health >= 90 ? "Good"
-        : health >= 70 ? "SeverityWarning"
+        : health >= 70 ? "SeverityNotice"
         : "SeverityCritical";
 }
 

@@ -70,6 +70,13 @@
                                                 Value="{StaticResource HeroGoodColor}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding ScoreBrushKey}"
+                                                         Value="SeverityNotice">
+                                                <Setter Property="LitBrush"
+                                                        Value="{StaticResource HeroNotice}" />
+                                                <Setter Property="GlowColor"
+                                                        Value="{StaticResource HeroNoticeColor}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ScoreBrushKey}"
                                                          Value="SeverityWarning">
                                                 <Setter Property="LitBrush"
                                                         Value="{StaticResource HeroWarn}" />

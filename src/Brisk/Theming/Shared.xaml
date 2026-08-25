@@ -697,9 +697,11 @@
     <!-- still.                                                    -->
     <!-- ======================================================== -->
     <Color x:Key="HeroGoodColor">#4ADE80</Color>
+    <Color x:Key="HeroNoticeColor">#22D3EE</Color>   <!-- copies SeverityNotice -->
     <Color x:Key="HeroWarnColor">#FBBF24</Color>
     <Color x:Key="HeroCritColor">#F87171</Color>
     <SolidColorBrush x:Key="HeroGood" Color="{StaticResource HeroGoodColor}" />
+    <SolidColorBrush x:Key="HeroNotice" Color="{StaticResource HeroNoticeColor}" />
     <SolidColorBrush x:Key="HeroWarn" Color="{StaticResource HeroWarnColor}" />
     <SolidColorBrush x:Key="HeroCrit" Color="{StaticResource HeroCritColor}" />
     <SolidColorBrush x:Key="HeroText" Color="#F2F4F8" />
@@ -768,6 +770,9 @@
         <Style.Triggers>
             <DataTrigger Binding="{Binding ScoreBrushKey}" Value="Good">
                 <Setter Property="Foreground" Value="{StaticResource HeroGood}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ScoreBrushKey}" Value="SeverityNotice">
+                <Setter Property="Foreground" Value="{StaticResource HeroNotice}" />
             </DataTrigger>
             <DataTrigger Binding="{Binding ScoreBrushKey}" Value="SeverityWarning">
                 <Setter Property="Foreground" Value="{StaticResource HeroWarn}" />

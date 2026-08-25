@@ -80,6 +80,12 @@
          this app's users have met, so the accent left the neighbourhood
          instead. -->
     <SolidColorBrush x:Key="SeverityInfo" Color="#0067C0" />
+    <!-- Light's severity values sit a rung darker so they survive white;
+         this is cyan-700 beside the existing amber-700. 4.83:1 on Bg and
+         5.36:1 on Surface, against amber-700's own 4.53:1. Its own literal
+         for the same reason the dark one is: the light accent is #0F6E7E and
+         must stay free to move without moving a claim. -->
+    <SolidColorBrush x:Key="SeverityNotice" Color="#0E7490" />
     <SolidColorBrush x:Key="SeverityWarning" Color="#B45309" />
     <SolidColorBrush x:Key="SeverityCritical" Color="#C42B2B" />
     <SolidColorBrush x:Key="Good" Color="#16A34A" />

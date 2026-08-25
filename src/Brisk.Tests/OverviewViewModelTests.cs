@@ -102,7 +102,7 @@ public class OverviewViewModelTests
 
         Assert.Equal("72", vm.ScoreText);
         Assert.Equal(72.0, vm.ScoreValue);   // numeric twin drives the gauge sweep
-        Assert.Equal("SeverityWarning", vm.ScoreBrushKey);
+        Assert.Equal("SeverityNotice", vm.ScoreBrushKey);
         Assert.Equal(loc["overview.status.attention"], vm.StatusText);
         Assert.Contains("2 findings", vm.SummaryText);
         Assert.Contains("1 one-click fixable", vm.SummaryText);

@@ -27,6 +27,11 @@
                                                 Value="{DynamicResource Good}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding HealthBrushKey}"
+                                                 Value="SeverityNotice">
+                                        <Setter Property="Foreground"
+                                                Value="{DynamicResource SeverityNotice}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HealthBrushKey}"
                                                  Value="SeverityWarning">
                                         <Setter Property="Foreground"
                                                 Value="{DynamicResource SeverityWarning}" />
