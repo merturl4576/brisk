@@ -11,9 +11,13 @@ using Xunit;
 
 namespace BriskEngine.Tests.Rules;
 
-/// The three report-only disclosures: what Windows has recorded about this
-/// machine, as a number. Nothing here can be fixed and nothing here is a
-/// switch — brisk counts what is already written and says how it read.
+/// Three of the four report-only disclosures: what Windows has RECORDED
+/// about this machine, as a number, read out of the registry. Nothing here
+/// can be fixed and nothing here is a switch — brisk counts what is already
+/// written and says how it read. The fourth, delivery-optimization, reads a
+/// counter through a cmdlet rather than a registry key and answers a zero
+/// differently, so it has its own file rather than a fourth entry in the
+/// theories below.
 ///
 /// Two rules govern every assertion in this file.
 ///
@@ -650,7 +654,10 @@ public class PrivacyDisclosureRuleTests
         }
     }
 
-    private static Dictionary<string, string> Resx(string fileName)
+    /// internal rather than private: DeliveryOptimizationRuleTests reads the
+    /// same two files for the same reason, and one reader means one place to
+    /// fix when the resx files move.
+    internal static Dictionary<string, string> Resx(string fileName)
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
              dir = dir.Parent)

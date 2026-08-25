@@ -29,9 +29,8 @@ public class PrivacyRedLineTests
     /// shipped as a Problem would lower the score and this test would still
     /// pass. That guard runs over the real rules and lives in the engine's
     /// own suite, where a DiagnosticContext can be built — it covers the six
-    /// telemetry switches and the three report-only disclosures, which are
-    /// the privacy rules that exist. delivery-optimization, the last id on
-    /// the list below, has no rule yet and so no such guard either.
+    /// telemetry switches and the four report-only disclosures, which is
+    /// every id on the list below.
     [Fact]
     public void APrivacyNotice_DoesNotMoveTheHealthScore()
     {
@@ -98,7 +97,7 @@ public class PrivacyRedLineTests
     /// Sağlık without a word of complaint. Reading the shipped rule objects
     /// against the shipped list, from the one project that can see both, is
     /// what turns that silence into a failure. It reaches the six telemetry
-    /// switches; its sibling below reaches the three report-only disclosures,
+    /// switches; its sibling below reaches the four report-only disclosures,
     /// which are not TelemetrySwitchRules and so are invisible to this one.
     /// A privacy rule arriving under some third base class needs the same
     /// line extended to it again.
@@ -116,7 +115,7 @@ public class PrivacyRedLineTests
     }
 
     /// The same cross-check for the other half of the privacy topic. These
-    /// three share no base class with the switches — they can be fixed by
+    /// four share no base class with the switches — they can be fixed by
     /// nobody, so they are AdviseRuleBase rules — which is exactly why the
     /// theory above cannot see them and why this one exists rather than a
     /// widened OfType. The count is asserted first, so deleting a rule shows
@@ -127,7 +126,7 @@ public class PrivacyRedLineTests
         var disclosures = DiagnosticRuleRegistry.All
             .OfType<PrivacyDisclosureRule>().ToList();
 
-        Assert.Equal(3, disclosures.Count);
+        Assert.Equal(4, disclosures.Count);
         foreach (var rule in disclosures)
             Assert.True(FindingSections.IsPrivacy(rule.Id),
                 $"rule '{rule.Id}' is a privacy disclosure, but no id in " +
@@ -141,8 +140,8 @@ public class PrivacyRedLineTests
     /// also carries no Headline, so RevelationPicker — and the report card,
     /// which picks through it — skip THAT one as well. That is a fact about
     /// this planted finding and no longer a fact about privacy findings: the
-    /// three report-only disclosures ship a Headline whenever their read
-    /// succeeds, and RevelationPicker takes findings that carry one, so on a
+    /// report-only disclosures ship a Headline when they have a reading to
+    /// lead with, and RevelationPicker takes findings that carry one, so on a
     /// real machine a privacy finding can reach the overview band and the
     /// report card's picked list while still reaching no row on either page.
     /// The band shows the number and the claim, and withholds one control in

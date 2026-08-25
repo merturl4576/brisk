@@ -300,4 +300,11 @@
   <data name="rule.recall-status.headline.value.off" xml:space="preserve"><value>Off</value></data>
   <data name="rule.recall-status.headline.value.on" xml:space="preserve"><value>Allowed</value></data>
   <data name="rule.recall-status.headline.caption" xml:space="preserve"><value>Recall data analysis — what the policy says</value></data>
+  <data name="rule.delivery-optimization.title" xml:space="preserve"><value>Windows uploaded data from this machine to other machines this month</value></data>
+  <data name="rule.delivery-optimization.title.unread" xml:space="preserve"><value>How much this machine uploaded to other machines could not be established</value></data>
+  <data name="rule.delivery-optimization.evidence" xml:space="preserve"><value>Delivery Optimization is the part of Windows that uploads content from this machine to other machines. Windows keeps a running count of what it uploaded that way, and for the current calendar month that counter reads {0}. brisk reads the counter and nothing past it: which machines those bytes went to is not something that read can tell you.</value></data>
+  <data name="rule.delivery-optimization.evidence.unread" xml:space="preserve"><value>brisk asked Windows for its Delivery Optimization counter and did not get a number back that it can read. A machine that uploaded nothing and a machine brisk could not ask are different things, so brisk does not report a count of none.</value></data>
+  <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk only reads this counter; it does not change Delivery Optimization and offers no fix for it. What it takes from the counter is how many bytes went out this month — never what was in them.</value></data>
+  <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>uploaded from this machine to other machines this month</value></data>
 </root>

@@ -21,18 +21,27 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// AN UNREADABLE READ REPORTS UNREADABLE, NEVER ZERO. IRegistryProbe answers
 /// an empty list for a key that is not there and for a key with nothing in it
 /// alike, so a subclass counting an empty answer cannot tell those apart and
-/// must not pick one. Its finding then states no number, and carries no
+/// must not pick one. IDeliveryOptimizationProbe carries no such ambiguity
+/// — it answers null for a counter it could not read — and the same rule
+/// follows from either: the finding states no number, and carries no
 /// Headline — a headline is what a finding leads with, and leading with a
 /// reading that never arrived is the same lie in a larger font.
 ///
-/// The Headline is also what makes these three unlike the six switches beside
-/// them: RevelationPicker takes findings that carry one, so a disclosure with
-/// a real count is eligible to lead a scan's presentation where a switch
+/// The Headline is also what makes these unlike the six switches beside them:
+/// RevelationPicker takes findings that carry one, so a disclosure with a
+/// real reading is eligible to lead a scan's presentation where a switch
 /// never was. Where in that order they belong is a later task of this wave;
 /// today they sort after RevelationPicker.Priority's five named rules.
+///
+/// WHAT A ZERO MEANS IS THE SUBCLASS'S OWN CALL. The three that count what
+/// Windows wrote down report every count they can make, and an empty read is
+/// not one of those — it is the ambiguity above. DeliveryOptimizationRule's
+/// probe hands it an unambiguous zero, and it reports nothing at all for
+/// that, because a machine that uploaded no bytes has nothing to disclose.
+/// It still reports the unreadable case, which is the whole distinction.
 public abstract class PrivacyDisclosureRule : AdviseRuleBase
 {
-    /// The shape all three share, in one place so that Kind, Severity and the
+    /// The shape they all share, in one place so that Kind, Severity and the
     /// impact figure cannot drift between them. Everything that differs — the
     /// keys, the prose, the number — is passed in.
     protected DiagnosticFinding Disclosure(

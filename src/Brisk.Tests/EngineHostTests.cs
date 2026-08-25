@@ -133,6 +133,13 @@ file sealed class NullMemoryIntegrity : IMemoryIntegrityProbe
     public bool? IsOn() => null;
 }
 
+/// Answers nothing, which is what an unread counter looks like. Not zero:
+/// these host tests say nothing about what this machine uploaded.
+file sealed class NullDeliveryOptimization : IDeliveryOptimizationProbe
+{
+    public long? BytesUploadedToPeers() => null;
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -190,7 +197,8 @@ public sealed class EngineHostTests : IDisposable
         var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
             new NullProcessInfo(), sensors, new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
-            new NothingRuns(), new NullMemoryIntegrity(), _root);
+            new NothingRuns(), new NullMemoryIntegrity(),
+            new NullDeliveryOptimization(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(_root, "fix-journal.jsonl"));

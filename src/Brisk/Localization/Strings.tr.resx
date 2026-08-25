@@ -300,4 +300,11 @@
   <data name="rule.recall-status.headline.value.off" xml:space="preserve"><value>Kapalı</value></data>
   <data name="rule.recall-status.headline.value.on" xml:space="preserve"><value>İzinli</value></data>
   <data name="rule.recall-status.headline.caption" xml:space="preserve"><value>Recall veri analizi — ilkenin söylediği</value></data>
+  <data name="rule.delivery-optimization.title" xml:space="preserve"><value>Windows bu ay bu makineden başka makinelere veri yükledi</value></data>
+  <data name="rule.delivery-optimization.title.unread" xml:space="preserve"><value>Bu makinenin başka makinelere ne kadar yüklediği belirlenemedi</value></data>
+  <data name="rule.delivery-optimization.evidence" xml:space="preserve"><value>Delivery Optimization, Windows'un bu makineden başka makinelere içerik yüklediği bölümüdür. Windows bu yolla ne kadar yüklediğinin sayacını tutuyor ve içinde bulunulan takvim ayı için bu sayaç {0} gösteriyor. brisk yalnızca bu sayacı okur, ötesini değil: o baytların hangi makinelere ulaştığını bu okuma söyleyemez.</value></data>
+  <data name="rule.delivery-optimization.evidence.unread" xml:space="preserve"><value>brisk Windows'un Delivery Optimization sayacını istedi ve okuyabileceği bir sayı alamadı. Hiçbir şey yüklememiş bir makine ile brisk'in soramadığı bir makine farklı şeylerdir; bu yüzden brisk 'hiç yok' diye bir sayı bildirmiyor.</value></data>
+  <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk bu sayacı yalnızca okur; Delivery Optimization'ı değiştirmez ve bunun için bir düzeltme sunmaz. Sayaçtan aldığı tek şey bu ay dışarı çıkan bayt miktarıdır — içinde ne olduğu asla.</value></data>
+  <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>bu ay bu makineden başka makinelere yüklendi</value></data>
 </root>

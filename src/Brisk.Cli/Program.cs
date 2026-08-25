@@ -63,7 +63,8 @@ public static class Program
             new RealProcessInfoProbe(), sensors, new RealDisplayProbe(),
             new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
-            new RealProcessLister(), new RealMemoryIntegrityProbe(), dataDir);
+            new RealProcessLister(), new RealMemoryIntegrityProbe(),
+            new RealDeliveryOptimizationProbe(), dataDir);
         var log = new ActionLog(Path.Combine(dataDir, "action-log.jsonl"));
         var fixRunner = new FixRunner(new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl")), log);
         var scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(),

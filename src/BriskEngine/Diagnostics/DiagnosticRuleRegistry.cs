@@ -35,5 +35,12 @@ public static class DiagnosticRuleRegistry
         // one of these counts sorts first, it is the number the overview band
         // and the report card lead with.
         new UsbHistoryRule(), new RunHistoryRule(), new RecallStatusRule(),
+        // The fourth report-only disclosure, and the only one that reads a
+        // counter through a cmdlet rather than a registry key. Unlike the
+        // three above it, it reports NOTHING when its reading is zero — a
+        // machine that uploaded no bytes has nothing to disclose — and it
+        // still reports the unreadable case, which is the distinction the
+        // rule exists to keep.
+        new DeliveryOptimizationRule(),
     };
 }
