@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Brisk.ViewModels;
 using BriskEngine.Models;
 
 namespace Brisk.Services;
@@ -16,6 +17,13 @@ public sealed record FixAllResult(
 /// disabling known-heavy startup items (spec ruling). Advise-only findings
 /// are never touched. Safe-level cleaning is a separate button by design and
 /// must never be bundled in here.
+///
+/// Neither is a privacy setting. This button is about speed and hygiene, and
+/// the disclosure spec's action model is two-tier: the four consequence-free
+/// switches are turned off by the Privacy page's own button, and the two that
+/// cost the user something (Find my device, Timeline) by their own controls
+/// with the loss named beside them. A generic button cannot carry either
+/// consent, so it does not reach them at all.
 public sealed class FixAllService
 {
     /// StartupBloatRule.Fix is exactly "disable every enabled known-heavy
@@ -40,9 +48,18 @@ public sealed class FixAllService
     /// heavy item is already off. The fix-all buttons (overview and health)
     /// query this instead of duplicating the predicate.
     public bool HasWork(ScanSnapshot snapshot) => snapshot.Findings.Any(f =>
-        f.Category != RuleCategory.Advise && f.CanFix
+        ThisButtonsWork(f)
         && (!string.Equals(f.RuleId, StartupBloatRuleId, StringComparison.OrdinalIgnoreCase)
             || EnabledHeavyNames().Count > 0));
+
+    /// The one predicate both HasWork and Run read, so the button cannot
+    /// light over work the run then declines. Category is a consent level,
+    /// not a topic: Confirm covers the two privacy switches that cost the
+    /// user something as surely as Auto covers the four that cost nothing,
+    /// so the topic has to be excluded by rule id.
+    private static bool ThisButtonsWork(DiagnosticFinding f) =>
+        f.Category != RuleCategory.Advise && f.CanFix
+        && !FindingSections.IsPrivacy(f);
 
     /// Callers guard dry-run and busy-state before calling; this always acts.
     public FixAllResult Run(ScanSnapshot snapshot)
@@ -52,7 +69,7 @@ public sealed class FixAllService
         var attempted = 0;
         var applied = 0;
         foreach (var finding in snapshot.Findings
-                     .Where(f => f.Category != RuleCategory.Advise && f.CanFix))
+                     .Where(ThisButtonsWork))
         {
             attempted++;
             FixingRule?.Invoke(finding);

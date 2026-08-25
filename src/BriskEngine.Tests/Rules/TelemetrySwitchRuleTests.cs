@@ -188,6 +188,29 @@ public class TelemetrySwitchRuleTests
             "where nothing existed before the fix");
     }
 
+    /// A number that is neither the on value nor the off value. An exact
+    /// match on the on value read this as protection and said nothing, which
+    /// is the silent direction: brisk cannot tell what an unrecognised
+    /// number means, and "I could not read this as off" is not "this is
+    /// off". advertising-id carries it because Enabled is documented as a
+    /// two-state flag, so 2 is exactly the case nobody planned for.
+    [Fact]
+    public void AnUnrecognisedNumber_ReadsAsOn_NotAsProtection()
+    {
+        var (ctx, reg) = Context();
+        reg.SetInt(AdvertisingIdRule.KeyPath, AdvertisingIdRule.ValueName, 2);
+        var rule = new AdvertisingIdRule();
+
+        Assert.True(rule.IsOn(ctx),
+            $"{AdvertisingIdRule.ValueName} reads 2, which is neither on nor " +
+            "off, and IsOn reported it as off");
+        Assert.NotNull(rule.Detect(ctx));
+
+        rule.Undo(ctx, rule.Fix(ctx));
+        Assert.True(reg.GetInt(AdvertisingIdRule.KeyPath, AdvertisingIdRule.ValueName) == 2,
+            "undo did not put the unrecognised number back");
+    }
+
     /// AllowTelemetry 0 is Security — stricter than the 1 the fix writes. A
     /// rule that read "anything but 1" as on would loosen the machine it
     /// claims to be tightening, so 0 is left alone and said nothing about.
@@ -280,22 +303,30 @@ public class TelemetrySwitchRuleTests
         throw new InvalidOperationException("brisk.sln not found above test bin");
     }
 
-    /// The paths, pinned as literals. Every other test in this file reads the
-    /// rule's own Values collection, so a rule pointed at the wrong key would
-    /// pass all of them by being consistently wrong.
+    /// The whole table, pinned as literals — paths AND numbers. Every other
+    /// test in this file reads the rule's own Values collection, on/off
+    /// numbers included, so a rule pointed at the wrong key or writing the
+    /// wrong number would pass all of them by being consistently wrong. Only
+    /// diagnostic-level's 2 and 1 appear as literals anywhere else, in the
+    /// Security and Enhanced tests.
     [Fact]
-    public void ThePaths_AreTheOnesTheSpecNames()
+    public void TheRegistrySurfaces_AreTheOnesTheSpecNames()
     {
         Assert.Equal(
             new[]
             {
-                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled"),
-                (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry"),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo",
+                    "Enabled", 1, 0),
+                (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+                    "AllowTelemetry", 2, 1),
                 (@"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy",
-                    "TailoredExperiencesWithDiagnosticDataEnabled"),
-                (@"HKCU\Software\Microsoft\InputPersonalization", "RestrictImplicitTextCollection"),
-                (@"HKCU\Software\Microsoft\InputPersonalization", "RestrictImplicitInkCollection"),
+                    "TailoredExperiencesWithDiagnosticDataEnabled", 1, 0),
+                (@"HKCU\Software\Microsoft\InputPersonalization",
+                    "RestrictImplicitTextCollection", 0, 1),
+                (@"HKCU\Software\Microsoft\InputPersonalization",
+                    "RestrictImplicitInkCollection", 0, 1),
             },
-            Ids.SelectMany(id => Rule(id).Values).Select(v => (v.KeyPath, v.ValueName)));
+            Ids.SelectMany(id => Rule(id).Values)
+                .Select(v => (v.KeyPath, v.ValueName, v.OnValue, v.OffValue)));
     }
 }

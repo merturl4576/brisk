@@ -7,8 +7,11 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 
 /// The switches the Privacy page turns off with one button. Four rules share
 /// one shape: a handful of registry values, a number that reads as on, a
-/// number the fix writes, and an undo that puts the machine back where it was
-/// found.
+/// number the fix writes, and an undo that restores every value a COMPLETED
+/// fix recorded. Not every value a fix touched: FixRunner journals the prior
+/// state only after Fix returns, so a multi-value write that threw partway
+/// leaves the writes it already made unrecorded and un-undoable. Nothing
+/// here is atomic and nothing here says it is.
 ///
 /// The shape exists because of one property none of brisk's other fixable
 /// rules has: ABSENCE reads as on. A value nobody has written is the
@@ -24,9 +27,11 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// never speaks for one.
 public abstract class TelemetrySwitchRule : IDiagnosticRule
 {
-    /// One value a switch owns. OnValue is the number that reads as on — a
-    /// threshold rather than an exact match for one subclass, which is what
-    /// ReadsAsOn being virtual is for. OffValue is what the fix writes.
+    /// One value a switch owns. OffValue is what the fix writes and the only
+    /// number the default read treats as off. OnValue is the number that
+    /// reads as on — the default read does not need it, since anything that
+    /// is not OffValue reads as on, but the one switch that is a level
+    /// compares against it as a threshold, and the table test pins it.
     public sealed record RegistryValue(
         string KeyPath, string ValueName, int OnValue, int OffValue);
 
@@ -64,11 +69,15 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     public bool IsOn(DiagnosticContext ctx) =>
         Values.Any(v => ReadsAsOn(ctx.Registry.GetInt(v.KeyPath, v.ValueName), v));
 
-    /// Absent counts as on for every switch in this family: a value nobody
-    /// has written is the permissive state on all of these paths, so a
-    /// machine nobody has touched reads as on.
+    /// Anything that does not explicitly read as off reads as on. That
+    /// covers absence, which is the permissive state on all of these paths —
+    /// a machine nobody has touched reads as on — and it covers a number
+    /// that is neither the on nor the off value, which an exact match on
+    /// OnValue used to report as protection. Reporting an unrecognised
+    /// number as off is the silent direction, and this wave's standing rule
+    /// is that what cannot be read as off is not reported as off.
     protected virtual bool ReadsAsOn(int? actual, RegistryValue value) =>
-        actual is null || actual == value.OnValue;
+        actual != value.OffValue;
 
     public DiagnosticFinding? Detect(DiagnosticContext ctx)
     {

@@ -130,6 +130,63 @@ public class FixAllServiceTests
         Assert.Equal("power-plan", Assert.Single(result.FixedRules).RuleId);
     }
 
+    /// THE GENERIC BUTTON DOES NOT REACH A PRIVACY SETTING. "Fix all (safe)"
+    /// is about speed and hygiene; the only thing allowed to turn a privacy
+    /// switch off is the Privacy page's own button, or — for the two that
+    /// cost the user something — that switch's own control. The predicate
+    /// here was `Category != Advise && CanFix`, which is category-blind: the
+    /// four telemetry switches are Auto and fixable, so they rode the button
+    /// the moment they entered the registry, and `location` and
+    /// `activity-history` are Confirm and fixable, so they would have ridden
+    /// it too and taken Find my device and Timeline with them.
+    [Fact]
+    public void Run_LeavesEveryPrivacyFinding_ToThePrivacyPage()
+    {
+        var host = new FakeEngineHost();
+        var snapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("location", cat: RuleCategory.Confirm, canFix: true,
+                kind: FindingKind.Notice),
+        });
+
+        var result = new FixAllService(host).Run(snapshot);
+
+        Assert.Equal(new[] { "power-plan" }, host.Fixed);
+        Assert.Equal(1, result.Attempted);
+        Assert.Equal(1, result.Applied);
+        Assert.Equal(new[] { "power-plan" },
+            result.FixedRules.Select(f => f.RuleId).ToArray());
+    }
+
+    /// And the button greys out rather than standing lit over work it will
+    /// not do. Without this, HasWork is true on virtually every machine,
+    /// because a machine nobody has touched has all four switches on.
+    [Fact]
+    public void HasWork_IsFalse_WhenOnlyPrivacyFindingsAreFixable()
+    {
+        var svc = new FixAllService(new FakeEngineHost());
+
+        Assert.False(svc.HasWork(TestData.Snapshot(new[]
+        {
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("speech-typing", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("activity-history", cat: RuleCategory.Confirm, canFix: true,
+                kind: FindingKind.Notice),
+        })), "the fix-all button is lit over privacy findings it must not touch");
+
+        Assert.True(svc.HasWork(TestData.Snapshot(new[]
+        {
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+        })), "one real fixable finding beside the privacy ones and the button is dark");
+    }
+
     /// Fakes.cs is a locked contract; startup-disable semantics are simulated
     /// with a decorator whose Fix("startup-bloat") disables the heavy items,
     /// exactly like the real StartupBloatRule.Fix does.
