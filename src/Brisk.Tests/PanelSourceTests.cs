@@ -23,10 +23,12 @@ using Size = System.Windows.Size;
 namespace Brisk.Tests;
 
 /// The panel language, asserted from SOURCE — because a style is not a
-/// behaviour. Almost nothing here renders: a `Style` in a resource dictionary
-/// makes no claim a running test can watch, and every defect below ships
-/// green. (The one exception is the last test, which has to build a card;
-/// its comment says why.)
+/// behaviour. Most of this file renders nothing: a `Style` in a resource
+/// dictionary makes no claim a running test can watch, and every defect below
+/// ships green. The exceptions are the two tests that have to drive something
+/// — the card's triggers and the read-back dot's colour across a theme switch
+/// — and each says in its own comment why reading the markup could not have
+/// answered it.
 ///
 ///   * a header that TRIMS instead of wrapping loses the end of a Turkish
 ///     sentence, and Turkish is where it happens — "brisk'in yalnızca
@@ -41,7 +43,7 @@ namespace Brisk.Tests;
 ///     one;
 ///   * and the card's own triggers reach five children by name, which is the
 ///     one thing the reskin could actually have broken. That one has to be
-///     driven rather than read, and it is the last test in the file.
+///     driven rather than read.
 public sealed class PanelSourceTests
 {
     private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -584,6 +586,143 @@ public sealed class PanelSourceTests
             $"the card collapses its impact meter on \"{binding}\", not on " +
             $"{property} — a binding path WPF cannot resolve never matches, " +
             "so the meter keeps rendering and nothing fails");
+    }
+
+    // ------------------------------------------------------------------
+    // The read-back dot, across a theme switch.
+    // ------------------------------------------------------------------
+
+    /// A colour a view model NAMES and the theme RESOLVES has to be resolved
+    /// again when the theme changes, and the read-back dot was not.
+    ///
+    /// It painted its Fill through a value converter, which read the
+    /// application's resources once per binding evaluation. ThemeManager
+    /// .Apply clears and re-adds the merged dictionaries, and nothing
+    /// re-evaluates a converter binding when a dictionary changes — so every
+    /// dot kept the previous theme's brush until the next scan happened to
+    /// rebuild the rows. The two palettes genuinely disagree here (Good is
+    /// #4ADE80 dark and #16A34A light; SeverityWarning #FBBF24 and #B45309),
+    /// so what stood on screen after a switch was the other theme's colour on
+    /// a page of verdicts. App.xaml.cs makes this same argument about the tray
+    /// icon in as many words: a theme switch has to reach every mark brisk
+    /// draws, not only the ones inside the dictionary.
+    ///
+    /// EveryReadBackColour_IsAKeyBothThemesCarry cannot see it. That one asks
+    /// whether the KEY is in each dictionary, and both dictionaries held it
+    /// the whole time.
+    ///
+    /// The swap is performed on a dictionary in the page's own scope — the
+    /// same clear-and-re-add ThemeManager performs, without pulling the theme
+    /// out from under every other test sharing this process. EVERY dot is
+    /// read, in BOTH directions, because a mechanism that happens to be right
+    /// about the one green dot says nothing about the amber ones.
+    [Fact]
+    public void EveryReadBackDot_WearsTheThemeThatIsInstalledNow()
+    {
+        SnapshotRenderer.OnUiThread(() =>
+        {
+            var window = SnapshotTests.CockpitWindow();
+            var vm = (PrivacyViewModel)
+                ((FrameworkElement)window.FindName("PrivacyView")!).DataContext;
+            var page = new PrivacyPage();
+            page.Bind(vm);
+            var host = new Border { Child = page, Resources = new ResourceDictionary() };
+
+            // Light first, so the very first resolution is already something
+            // other than the dictionary the Application is holding — a dot
+            // that reads the app's resources instead of its own scope is
+            // wrong before anything has been switched at all.
+            foreach (var theme in new[] { "Light.xaml", "Dark.xaml", "Light.xaml" })
+            {
+                Wear(host, theme);
+                OffscreenLayout.LayOut(host, new Size(1000, 1400));
+
+                // Selected by the ROW behind each one, not by shape: every
+                // finding card on this page draws a severity dot of its own,
+                // and "the Ellipses in the tree" is eighteen of them.
+                var dots = Descendants(host).OfType<System.Windows.Shapes.Ellipse>()
+                    .Where(e => e.DataContext is ReadBackRow)
+                    .ToList();
+                Assert.True(dots.Count == vm.ReadBackRows.Count,
+                    $"{dots.Count} dots in the read-back block for " +
+                    $"{vm.ReadBackRows.Count} lines — this test reads them " +
+                    "pairwise and cannot say anything if they do not pair");
+
+                for (var i = 0; i < dots.Count; i++)
+                {
+                    var row = vm.ReadBackRows[i];
+                    var expected = ThemeSource.ColorOf(theme, row.StateBrushKey);
+                    Assert.True(dots[i].Fill is SolidColorBrush,
+                        $"the {row.State} dot paints nothing at all under " +
+                        $"{theme}: its Fill is {dots[i].Fill?.ToString() ?? "null"}");
+                    Assert.True(((SolidColorBrush)dots[i].Fill).Color == expected,
+                        $"the {row.State} dot is wearing " +
+                        $"{((SolidColorBrush)dots[i].Fill).Color} under {theme}, " +
+                        $"and {theme}'s \"{row.StateBrushKey}\" is {expected} — " +
+                        "the dot resolved its key against a palette that is no " +
+                        "longer installed, which is a verdict rendered in the " +
+                        "other theme's colour");
+                }
+            }
+        });
+    }
+
+    /// One theme dictionary in an element's own scope, replacing whatever was
+    /// there — the same clear-and-re-add ThemeManager.Apply performs on the
+    /// application's, which is the operation whose effect is under test. The
+    /// ";component" URI names brisk-app for the reason SnapshotRenderer gives:
+    /// the short form resolves against the entry assembly, which under the
+    /// test host is the runner.
+    private static void Wear(FrameworkElement element, string themeFile)
+    {
+        element.Resources.MergedDictionaries.Clear();
+        element.Resources.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri(
+                $"pack://application:,,,/brisk-app;component/Theming/{themeFile}"),
+        });
+    }
+
+    /// The markup half of the Recall link, and the half nothing else can
+    /// see. The view model can be as right as it likes about
+    /// HasWindowsSettingAction: if no Button in the card binds
+    /// OpenWindowsSettingCommand, the link does not exist on screen and every
+    /// view-model test still passes — which is precisely the state the page
+    /// shipped in, with the spec's sentence about Recall half-built and
+    /// nothing red.
+    ///
+    /// Both directions are asserted for the same reason the impact meter's
+    /// guard above asserts both: a Button with no Visibility binding renders
+    /// on every card in the app, and a Visibility bound to a path WPF cannot
+    /// resolve never becomes Collapsed either.
+    [Fact]
+    public void TheWindowsSettingLink_BindsItsVisibilityToThePropertyThatDecidesIt()
+    {
+        const string property = "HasWindowsSettingAction";
+
+        Assert.True(typeof(FindingRow).GetProperty(property) is { } p
+                    && p.PropertyType == typeof(bool),
+            $"FindingRow exposes no bool {property} for the card to bind");
+
+        var links = SharedResource("DataTemplate", "FindingCard").Descendants()
+            .Where(e => e.Name.LocalName == "Button"
+                && ((string?)e.Attribute("Command") ?? "")
+                    .Contains("OpenWindowsSettingCommand", StringComparison.Ordinal))
+            .ToArray();
+
+        // Counted rather than Single()d: "none" is the link never having been
+        // built and "two" is two controls over one command, and those are
+        // different mistakes to have made.
+        Assert.True(links.Length == 1,
+            $"{links.Length} Buttons in the finding card bind " +
+            "OpenWindowsSettingCommand; the Recall row's one link to Windows' " +
+            "own setting is what this test is about");
+        var visibility = (string?)links[0].Attribute("Visibility") ?? "";
+        Assert.True(visibility.Contains(property, StringComparison.Ordinal),
+            $"the link binds its Visibility to \"{visibility}\", not to " +
+            $"{property} — a binding path WPF cannot resolve never matches, so " +
+            "the link renders on every card in the app, pointing at a Windows " +
+            "setting the row never named");
     }
 
     private static XElement SharedResource(string kind, string key) =>

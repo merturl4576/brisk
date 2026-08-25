@@ -349,13 +349,16 @@ public class SnapshotTests
     /// photographs a page rather than a window. What it costs is the nav and
     /// the title bar, which page-privacy.png has.
     ///
-    /// The assertion is about the block that only this frame can see: a
-    /// read-back line per journal entry, each with a sentence under its
-    /// title. The count comes from the view model rather than from a number
-    /// written here, so a fixture that grows a fifth line does not need this
-    /// edited — what would fail is the block going empty or losing its text.
-    /// Enough for the fixture's ten cards and three headings with room to
-    /// spare. Not a magic number to be tuned when the picture crops: the
+    /// The assertions are about what only this frame can see: a read-back
+    /// line per journal entry, each with a sentence under its title, and the
+    /// Recall row's link to Windows' own setting, which lives with the card's
+    /// other actions behind the fold. The read-back count comes from the view
+    /// model rather than from a number written here, so a fixture that grows
+    /// a fifth line does not need this edited — what would fail is the block
+    /// going empty or losing its text.
+    /// Enough for the fixture's eleven cards — one of them open — and its
+    /// headings with room to spare. Not a magic number to be tuned when the
+    /// picture crops: the
     /// assertion inside the capture is what fails if a line stops reaching
     /// the image, and the answer to that is a taller frame, not a smaller
     /// claim.
@@ -375,6 +378,13 @@ public class SnapshotTests
                 var window = CockpitWindow();
                 vm = (PrivacyViewModel)
                     ((FrameworkElement)window.FindName("PrivacyView")!).DataContext;
+                // The Recall card, opened — through the same call the
+                // revelation band's link uses, which is the only route the
+                // app itself has to open a card. Its link to Windows' own
+                // setting lives with the other actions behind the fold, so a
+                // photograph of closed cards is a photograph that cannot say
+                // whether the link is there at all.
+                vm.ExpandFinding("recall-status");
                 var page = new PrivacyPage();
                 page.Bind(vm);
                 return OnAtmosphere(page);
@@ -406,6 +416,26 @@ public class SnapshotTests
                         $"'{row.RuleId}' is in the read-back block and its " +
                         $"{row.State} sentence is nowhere in the picture");
                 }
+
+                // The spec's Recall sentence, in the frame. Found by the
+                // COMMAND OBJECT rather than by its caption: the row and the
+                // control are then provably the same one, and the assertion
+                // says nothing about which language the picture was taken in.
+                var recall = vm.DisclosureRows
+                    .Single(r => r.RuleId == "recall-status");
+                var link = Descendants(element)
+                    .OfType<System.Windows.Controls.Button>()
+                    .SingleOrDefault(b =>
+                        ReferenceEquals(b.Command, recall.OpenWindowsSettingCommand));
+                Assert.True(link is not null,
+                    "no control in the picture is bound to the Recall row's " +
+                    "link to Windows' own setting, and the spec says the row " +
+                    "appears here as state only WITH one");
+                Assert.True(link!.Visibility == Visibility.Visible
+                    && link.ActualWidth > 0,
+                    "the Recall row's link is in the tree and not in the " +
+                    "picture: it is " + link.Visibility + " and " +
+                    link.ActualWidth + " units wide");
             });
 
         Assert.True(File.Exists(path));
@@ -523,6 +553,10 @@ public class SnapshotTests
             Path.Combine(Path.GetTempPath(), "brisk-snapshot-settings.json"),
             launcher, _ => { }, _ => { });
         var privacy = new PrivacyViewModel(state, host, loc, notDryRun,
+            // The render must not start the real Settings app, and nothing
+            // here clicks — what this argument buys the picture is the LINK,
+            // which the row withholds when nobody is wired to open it.
+            _ => true,
             // A frozen clock, so "3 days ago" in the photograph is a fact
             // about the fixture and not about the day the picture was taken.
             () => new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
@@ -571,6 +605,7 @@ public class SnapshotTests
         Disclosure("run-history", "1284"),
         Disclosure("usb-history", "47"),
         Unreadable("delivery-optimization"),
+        RecallOff(),
         TestData.Finding("advertising-id", Severity.Info, RuleCategory.Auto,
             stars: 1, canFix: true, kind: FindingKind.Notice),
         TestData.Finding("speech-typing", Severity.Info, RuleCategory.Auto,
@@ -602,6 +637,34 @@ public class SnapshotTests
             headline: new Headline(value, $"caption {ruleId}",
                 $"rule.{ruleId}.headline.value", new[] { value },
                 $"rule.{ruleId}.headline.caption", Array.Empty<string>()));
+
+    /// Recall, read the way the rule reads it when the policy is set to
+    /// switch the analysis off — and the one row in this fixture that has to
+    /// be spelled out rather than built by the helper above.
+    ///
+    /// RecallStatusRule writes THREE title keys and no "rule.recall-status
+    /// .title", because what the row says depends on what the value read as;
+    /// its headline value is a WORD and its key carries the same suffix. The
+    /// generic helper builds the flat keys, which this rule never produces,
+    /// so a card built that way would photograph the engine's English
+    /// fallback under a heading of localized ones — the same defect the
+    /// unreadable row had, in a different family.
+    ///
+    /// It is in the picture at all because of the link: this is the one row
+    /// on the page whose action opens Windows' own Settings app instead of
+    /// changing something, and an element the spec mandates that no image
+    /// shows is an element nobody has looked at.
+    private static DiagnosticFinding RecallOff() => new(
+        "recall-status", "rule.recall-status.title.off",
+        "Recall's data analysis is switched off by policy on this machine",
+        "evidence recall-status", Severity.Info, RuleCategory.Advise,
+        ImpactStars: 1, CanFix: false, FixDescription: null,
+        EvidenceKey: "rule.recall-status.evidence.off", EvidenceArgs: null,
+        Headline: new Headline("Off",
+            "Recall data analysis — what the policy says",
+            "rule.recall-status.headline.value.off", Array.Empty<string>(),
+            "rule.recall-status.headline.caption", Array.Empty<string>()),
+        Kind: FindingKind.Notice);
 
     /// What brisk found when it looked again — one line in each of the four
     /// states, so the block is photographed saying all four things rather

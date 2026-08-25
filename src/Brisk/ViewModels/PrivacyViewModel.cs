@@ -130,20 +130,29 @@ public sealed class PrivacyViewModel : ViewModelBase
     private readonly IEngineHost _host;
     private readonly Loc _loc;
     private readonly Func<bool> _isDryRun;
+    private readonly Func<string, bool> _openWindowsSetting;
     private readonly Func<DateTime> _utcNow;
     private readonly Func<Task> _morphPause;
     private string _message = "";
     private string _turnOffSafeText = "";
     private bool _busy;
 
+    /// `openWindowsSetting` has no default, deliberately. It is what opens
+    /// Windows' own Settings app for the one row brisk points somewhere else
+    /// for, and a row whose opener is missing withholds its link silently —
+    /// so the compiler is made to ask every construction site for one rather
+    /// than a source-reading test being written to notice afterwards. It
+    /// returns whether the Settings app actually started: a click that
+    /// reached nothing is reported here, not swallowed.
     public PrivacyViewModel(AppState state, IEngineHost host, Loc loc,
-        Func<bool> isDryRun, Func<DateTime>? utcNow = null,
-        Func<Task>? morphPause = null)
+        Func<bool> isDryRun, Func<string, bool> openWindowsSetting,
+        Func<DateTime>? utcNow = null, Func<Task>? morphPause = null)
     {
         _state = state;
         _host = host;
         _loc = loc;
         _isDryRun = isDryRun;
+        _openWindowsSetting = openWindowsSetting;
         _utcNow = utcNow ?? (() => DateTime.UtcNow);
         _morphPause = morphPause ?? (() => Task.Delay(HealthViewModel.FixedMorphMs));
         _state.Changed += Refresh;
@@ -249,6 +258,15 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// outcome of this button on a standard account, not an exotic one. The
     /// batch keeps going, and the sentence afterwards says how many refused
     /// and hands over exactly what the attempt reported.
+    ///
+    /// VERBATIM is the point and also the cost. FixOutcome.Message is the
+    /// engine's own words, and a .NET registry exception carries the full key
+    /// path in its text — so a refusal can put HKLM\SOFTWARE\Policies\... on
+    /// screen. That is a path on the user's own machine rather than anything
+    /// this wave's red lines are about (a device name, a program name, a
+    /// count's contents), and paraphrasing it would leave the one person who
+    /// can act on the refusal without the thing they need. The same choice
+    /// HealthViewModel makes with the same field.
     public async Task TurnOffSafeAsync()
     {
         if (_busy || _state.IsAwaitingDisplayConfirmation) return;
@@ -308,6 +326,20 @@ public sealed class PrivacyViewModel : ViewModelBase
         }
     }
 
+    /// The one control on this page that hands the reader somewhere else
+    /// instead of changing something here: it opens Windows' own Settings app
+    /// at the row's page and stops there.
+    ///
+    /// Recall is report-only on purpose — the surface is new, differs between
+    /// builds, and a fix brisk cannot check afterwards is the one thing this
+    /// project refuses to ship — so what the page offers is the place the
+    /// user can change it themselves. Nothing is journalled, because nothing
+    /// was done; a refusal is said out loud, because the alternative is a
+    /// button that swallows its click.
+    private void OpenWindowsSetting(FindingRow row) =>
+        Message = _openWindowsSetting(row.WindowsSettingUri)
+            ? "" : _loc["privacy.setting.failed"];
+
     /// Undo, from a read-back line's context menu — the same quiet gesture
     /// the journal report rows carry, and the page's answer to "all of it
     /// reversible". A read-back line exists exactly where brisk has a
@@ -360,7 +392,8 @@ public sealed class PrivacyViewModel : ViewModelBase
                      .ThenBy(f => f.RuleId, StringComparer.Ordinal))
             Band(finding).Add(new FindingRow(finding, _loc,
                 undoable.Contains(finding.RuleId),
-                row => _ = FixAsync(row), row => _ = UndoAsync(row)));
+                row => _ = FixAsync(row), row => _ = UndoAsync(row),
+                onOpenWindowsSetting: OpenWindowsSetting));
 
         ReadBackRows.Clear();
         var now = _utcNow();
@@ -373,11 +406,22 @@ public sealed class PrivacyViewModel : ViewModelBase
     }
 
     /// Which band a privacy finding belongs in. The two switch tiers are
-    /// tested for and the disclosure band is what is LEFT — so a privacy
-    /// finding this page has no tier for still lands somewhere and is still
-    /// shown, rather than being dropped between three predicates. Report-only
-    /// is the honest description of that fallback: whatever it is, this page
-    /// is offering no button for it.
+    /// tested for and the two report-only bands are what is LEFT — so a
+    /// privacy finding this page has no tier for still lands somewhere and is
+    /// still shown, rather than being dropped between four predicates.
+    ///
+    /// The fall-through is not one band but two, and they are not equally
+    /// safe to fall into. A finding with a reading lands under the numbers,
+    /// which claims only that this page offers no button for it — true of
+    /// anything that reaches here. A finding with NO Headline lands under
+    /// "what brisk could not read", which is a claim about the READ, and the
+    /// only thing tested for it is the absence of a headline. That is the
+    /// disclosure family's own contract and holds for every rule this wave
+    /// ships; a future privacy rule that is Confirm, not fixable and headless
+    /// for some other reason would be described as unreadable by a page that
+    /// never asked. Flagged rather than guarded: the alternative is a list of
+    /// "the unreadable ones" maintained beside the rules, which is the second
+    /// channel this page was built to avoid.
     private ObservableCollection<FindingRow> Band(DiagnosticFinding finding) =>
         IsConsequenceFree(finding) ? SafeSwitchRows
         : CostsTheUserSomething(finding) ? CostlySwitchRows

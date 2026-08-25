@@ -213,10 +213,16 @@
                                     </ContextMenu>
                                 </ContentControl.ContextMenu>
                                 <DockPanel>
+                                    <!-- The key is BOUND and the Fill is a live
+                                         resource reference: the row names the
+                                         colour, the installed theme resolves
+                                         it, and a theme switch re-resolves it
+                                         where a converter would have left the
+                                         previous palette's brush on the dot
+                                         until the next scan. -->
                                     <Ellipse DockPanel.Dock="Left" Width="8" Height="8"
                                              VerticalAlignment="Top" Margin="0,6,12,0"
-                                             Fill="{Binding StateBrushKey,
-                                                 Converter={x:Static Brisk:ThemeBrush.Instance}}" />
+                                             Brisk:ThemeFill.Key="{Binding StateBrushKey}" />
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource Body}"
                                                    TextWrapping="Wrap"

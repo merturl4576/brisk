@@ -156,10 +156,22 @@ public sealed class FlyoutViewModel : ViewModelBase
         if (snapshot is null) return;
         HealthText = snapshot.Health.ToString();
         HealthBrushKey = HealthBrush.KeyFor(snapshot.Health);
-        // The same predicate the button obeys, not a second copy of it:
-        // "one-click fixable" counts what one click will actually do.
+        // The same predicate THIS window's button obeys, not a second copy of
+        // it: "one-click fixable" counts what pressing the button beside this
+        // line will actually do. It is not a count of everything brisk can
+        // fix in one click — the Gizlilik page carries a button of its own
+        // over a set this predicate excludes by rule id.
+        //
+        // Which is why zero is not printed. On a machine whose findings are
+        // all privacy this said "4 findings · 0 one-click fixable" while that
+        // other button switched all four off: true about the button beside
+        // it, and false as the sentence a tray popup is read as. The count
+        // stays and the promise goes, which is the rule OverviewViewModel
+        // already states for its own copy of this line.
         var fixable = snapshot.Findings.Count(FixAllService.IsOneClickFixable);
-        FindingsLine = _loc.F("flyout.findings", snapshot.Findings.Count, fixable);
+        FindingsLine = fixable > 0
+            ? _loc.F("flyout.findings", snapshot.Findings.Count, fixable)
+            : _loc.F("flyout.findings.only", snapshot.Findings.Count);
         // The honest figure (round 11): the flyout's Clean button runs the
         // safe defaults, so its "reclaimable" line promises exactly that —
         // never deep/dev shelves or locked bytes it would not touch.

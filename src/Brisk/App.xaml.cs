@@ -105,8 +105,14 @@ public partial class App : Application
             // page's own button carries a different consent over a different
             // set — the four switches with no visible consequence, and never
             // the two that cost the user something.
+            //
+            // The link is the last argument and not an optional one: the
+            // Recall row points at Windows' own setting instead of at a fix,
+            // and a page wired without an opener would withhold that link
+            // without a word — which is exactly how it went missing for a
+            // whole commit.
             var privacyVm = new PrivacyViewModel(state, composition.Host,
-                Loc.Instance, isDryRun);
+                Loc.Instance, isDryRun, WindowsSettingsLink.Open);
             var settingsVm = new SettingsViewModel(composition.Settings,
                 composition.SettingsPath, composition.Launcher,
                 themeSetting =>

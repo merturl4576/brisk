@@ -79,6 +79,42 @@ public class FlyoutViewModelTests
         Assert.Equal("4 findings · 1 one-click fixable", vm.FindingsLine);
     }
 
+    /// And the number that half must never print is ZERO — which is the
+    /// number it started printing the day the Gizlilik page shipped.
+    ///
+    /// On a machine whose findings are all privacy, this line read "4
+    /// findings · 0 one-click fixable" while the Privacy page carried one
+    /// button that switches all four off. Read as a promise about the button
+    /// beside it that is true; read as a sentence about brisk — which is how
+    /// a tray popup reads — it says brisk has no one click for any of them,
+    /// and brisk has exactly one. OverviewViewModel already refuses to print
+    /// this half over a machine with nothing for the button to do, in as many
+    /// words: "0 tanesi düzelir" would read as failure. The flyout printed it
+    /// anyway.
+    ///
+    /// The count itself stays: four findings is what brisk found, and the
+    /// page that shows them is one tile away.
+    [Fact]
+    public async Task WithNothingForItsOwnButton_TheFlyoutDropsTheFixableHalf()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("diagnostic-level", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("tailored-experiences", cat: RuleCategory.Auto,
+                canFix: true, kind: FindingKind.Notice),
+            TestData.Finding("speech-typing", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+        });
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+
+        Assert.Equal("4 findings", vm.FindingsLine);
+    }
+
     [Fact]
     public async Task Scan_PopulatesSummaryLines()
     {

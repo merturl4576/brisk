@@ -975,6 +975,58 @@ public class OverviewViewModelTests
         Assert.Equal("usb-history", requested);
     }
 
+    /// THE OTHER SIDE OF THE SAME MECHANISM, and the one that had no test at
+    /// all for a commit.
+    ///
+    /// OverviewViewModel says of RevelationTarget that "the MECHANISM stays
+    /// exactly where it was — a band with nowhere to send a reader still has
+    /// to withhold the control rather than render a Button that swallows the
+    /// click, which is the defect it was built for". Between the Gizlilik
+    /// page landing and this test, nothing anywhere asserted
+    /// HasRevelationLink false: the rewrite above turned the two assertions
+    /// that did into their opposites, and a claim about a mechanism with no
+    /// witness is a claim about nothing.
+    ///
+    /// The reachable case is a scan with no revelation in it — no finding
+    /// carries a headline, so RevelationPicker returns none and the band goes
+    /// away. Both readings of the one fact are asserted, because they fail
+    /// differently: the Button's Visibility binds the flag, and CanExecute is
+    /// what a Button asks before it lets itself be pressed. The dead
+    /// affordance this branch shipped once was a live Button over a command
+    /// with no canExecute at all, so the command is DRIVEN as well as asked —
+    /// a RelayCommand is a plain object, and a direct caller never asks first.
+    [Fact]
+    public async Task WithNoRevelationToShow_TheBandWithholdsItsLink_AndTheCommandRefuses()
+    {
+        var (vm, host, state) = Build();
+        // Findings, but no headline on any of them: something to report and
+        // nothing to lead with, which is the machine this band goes quiet on.
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        var requested = new List<string>();
+        vm.OpenFindingRequested += id => requested.Add(id);
+
+        Assert.False(vm.HasRevelation,
+            "a finding with no headline reached the revelation band, so this " +
+            "test is no longer about a band with nothing to show");
+        Assert.False(vm.HasRevelationLink,
+            "the band offers \"see the evidence\" over no revelation at all — " +
+            "the link is a Button bound to this flag, and there is nothing " +
+            "for it to open");
+        Assert.False(vm.OpenFindingCommand.CanExecute(null),
+            "the command behind the band's link accepts a click over no " +
+            "revelation, which is the dead affordance the canExecute was " +
+            "added for");
+
+        vm.OpenFindingCommand.Execute(null);
+
+        Assert.Empty(requested);
+    }
+
     /// The half of the fix that lives in markup, and the half nothing else
     /// can see. HasRevelationLink is only worth anything if the Button
     /// actually binds its Visibility to it: a typo'd binding path fails

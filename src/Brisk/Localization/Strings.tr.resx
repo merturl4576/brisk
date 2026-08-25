@@ -43,6 +43,7 @@
   <data name="overview.report.card.failed" xml:space="preserve"><value>Kart kaydedilemedi: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
+  <data name="flyout.findings.only" xml:space="preserve"><value>{0} bulgu</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Son tarama: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Taranıyor…</value></data>
@@ -62,6 +63,7 @@
   <data name="health.notice.section" xml:space="preserve"><value>brisk'in yalnızca bildirebildikleri</value></data>
   <data name="finding.details" xml:space="preserve"><value>Ayrıntılar</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
+  <data name="finding.action.windowssetting" xml:space="preserve"><value>Windows gizlilik ayarlarını aç</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Düzeltiliyor…</value></data>
   <data name="finding.undoing" xml:space="preserve"><value>Geri alınıyor…</value></data>
   <data name="health.crosslink" xml:space="preserve"><value>Performans'ta {0} bulgu daha var →</value></data>
@@ -321,6 +323,7 @@
   <data name="privacy.turnoff.safe" xml:space="preserve"><value>{0} ayarı birden kapat</value></data>
   <data name="privacy.turnoff.refused" xml:space="preserve"><value>Bunlardan {0} tanesi kapanmadı; denemenin bildirdiği şu: {1}</value></data>
   <data name="privacy.readback.section" xml:space="preserve"><value>brisk neyi kapattı, tuttu mu</value></data>
+  <data name="privacy.setting.failed" xml:space="preserve"><value>Windows'un kendi ayarları bu makinede açılmadı.</value></data>
   <data name="rule.advertising-id.done" xml:space="preserve"><value>Reklam kimliği kapatıldı</value></data>
   <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Tanılama verisi ilkesi temel düzeye ayarlandı</value></data>
   <data name="rule.tailored-experiences.done" xml:space="preserve"><value>Kişiye özel deneyimler kapatıldı</value></data>

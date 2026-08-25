@@ -43,6 +43,7 @@
   <data name="overview.report.card.failed" xml:space="preserve"><value>The card could not be saved: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
+  <data name="flyout.findings.only" xml:space="preserve"><value>{0} findings</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Last scan: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Scanning…</value></data>
@@ -62,6 +63,7 @@
   <data name="health.notice.section" xml:space="preserve"><value>What brisk can only report</value></data>
   <data name="finding.details" xml:space="preserve"><value>Details</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
+  <data name="finding.action.windowssetting" xml:space="preserve"><value>Open Windows privacy settings</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Fixing…</value></data>
   <data name="finding.undoing" xml:space="preserve"><value>Undoing…</value></data>
   <data name="health.crosslink" xml:space="preserve"><value>{0} more findings in Performance →</value></data>
@@ -321,6 +323,7 @@
   <data name="privacy.turnoff.safe" xml:space="preserve"><value>Switch all {0} off</value></data>
   <data name="privacy.turnoff.refused" xml:space="preserve"><value>{0} of them did not switch off, and this is what the attempt reported: {1}</value></data>
   <data name="privacy.readback.section" xml:space="preserve"><value>What brisk switched off, and whether it held</value></data>
+  <data name="privacy.setting.failed" xml:space="preserve"><value>Windows' own settings did not open on this machine.</value></data>
   <data name="rule.advertising-id.done" xml:space="preserve"><value>Advertising ID switched off</value></data>
   <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Diagnostic data policy set to basic</value></data>
   <data name="rule.tailored-experiences.done" xml:space="preserve"><value>Tailored experiences switched off</value></data>

@@ -47,9 +47,10 @@ public enum WriteEffect
 }
 
 /// The six switches this wave gives brisk, on the Privacy page that shows
-/// them in two tiers. Five of them share one shape: a handful of registry values, a
-/// number that reads as on, a number the fix writes, and an undo that restores
-/// every value a COMPLETED fix recorded. Not every value a fix touched:
+/// them in two tiers. Five of them share one shape: a handful of registry
+/// values, a number that reads as on, a number the fix writes, and an undo
+/// that restores every value a COMPLETED fix recorded. Not every value a fix
+/// touched:
 /// FixRunner journals the prior state only after Fix returns, so a multi-value
 /// write that threw partway leaves the writes it already made unrecorded and
 /// un-undoable. Nothing here is atomic and nothing here says it is.

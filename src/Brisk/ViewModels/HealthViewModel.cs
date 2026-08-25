@@ -20,6 +20,30 @@ public sealed class FindingRow : ViewModelBase
                 "stale-dev-caches" },
         StringComparer.OrdinalIgnoreCase);
 
+    /// The other direction the same idea runs in: advice whose follow-up is
+    /// not in brisk at all, but in a page of Windows' own Settings app. One
+    /// entry, and the reason it is one is the reason the entry exists —
+    /// RecallStatusRule reports the policy and refuses to write it, because
+    /// the surface is new, it differs between builds, and a fix brisk cannot
+    /// check afterwards is the one thing this project refuses to ship. The
+    /// spec's answer to that refusal is this link, in as many words: "Recall
+    /// appears here as state only, with a link to Windows' own setting."
+    ///
+    /// THE URI IS THE PRIVACY ROOT AND NOT A RECALL PAGE, deliberately.
+    /// "ms-settings:privacy" is Privacy & security, which every Windows brisk
+    /// runs on has, and which is where Recall's own setting sits on the
+    /// builds that have Recall. A Recall-specific sub-page is something brisk
+    /// cannot check exists from here — an ms-settings URI Windows does not
+    /// know opens the Settings app on nothing and throws nothing — so
+    /// pointing at one would be brisk sending a reader somewhere it never
+    /// established was there. That is the same claim-without-evidence the
+    /// rule itself declines to make about the setting.
+    private static readonly Dictionary<string, string> WindowsSettingRules =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["recall-status"] = "ms-settings:privacy",
+        };
+
     private bool _isExpanded;
     private bool _isDetailsShown;
     private bool _isFixing;
@@ -28,7 +52,8 @@ public sealed class FindingRow : ViewModelBase
 
     public FindingRow(DiagnosticFinding finding, Loc loc, bool canUndo,
         Action<FindingRow> onFix, Action<FindingRow> onUndo,
-        Action<FindingRow>? onOpenStorage = null)
+        Action<FindingRow>? onOpenStorage = null,
+        Action<FindingRow>? onOpenWindowsSetting = null)
     {
         RuleId = finding.RuleId;
         Title = loc.Title(finding.TitleKey, finding.Title);
@@ -91,10 +116,22 @@ public sealed class FindingRow : ViewModelBase
         CostText = HasCost ? cost : "";
         HasStorageAction = IsAdvise && onOpenStorage is not null
             && StorageAdviceRules.Contains(finding.RuleId);
+        // Same three-part test as HasStorageAction above, for the same three
+        // reasons: the rule declares the destination, the row only advertises
+        // an action somebody is wired to perform, and IsAdvise is what keeps
+        // the link on a row brisk offers no fix for — a link beside a Fix
+        // button would be brisk pointing at the change it just declined to
+        // make.
+        WindowsSettingUri = IsAdvise && onOpenWindowsSetting is not null
+            && WindowsSettingRules.TryGetValue(finding.RuleId, out var settingUri)
+                ? settingUri : "";
+        HasWindowsSettingAction = WindowsSettingUri.Length > 0;
         FixCommand = new RelayCommand(() => onFix(this), () => CanFix);
         UndoCommand = new RelayCommand(() => onUndo(this), () => CanUndo);
         OpenStorageCommand = new RelayCommand(
             () => onOpenStorage?.Invoke(this), () => HasStorageAction);
+        OpenWindowsSettingCommand = new RelayCommand(
+            () => onOpenWindowsSetting?.Invoke(this), () => HasWindowsSettingAction);
     }
 
     public string RuleId { get; }
@@ -120,6 +157,12 @@ public sealed class FindingRow : ViewModelBase
     public bool CanUndo { get; }
     public bool HasDetails { get; }
     public bool HasStorageAction { get; }
+    /// Whether this row points at a setting WINDOWS owns — the one action on
+    /// the Privacy page that is not a change brisk makes.
+    public bool HasWindowsSettingAction { get; }
+    /// The page of Windows' own Settings app the link opens, and "" for every
+    /// row that points nowhere.
+    public string WindowsSettingUri { get; }
     public bool HasHeadline { get; }
     /// The lead value in the user's language ("57 sn"); "" when the finding
     /// carries no headline — the card collapses the column then.
@@ -158,6 +201,7 @@ public sealed class FindingRow : ViewModelBase
     public RelayCommand FixCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand OpenStorageCommand { get; }
+    public RelayCommand OpenWindowsSettingCommand { get; }
 }
 
 public sealed class HealthViewModel : ViewModelBase

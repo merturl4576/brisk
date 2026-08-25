@@ -560,7 +560,12 @@ public sealed class OverviewViewModel : ViewModelBase
             // to send a reader still has to withhold the control rather than
             // render a Button that swallows the click, which is the defect it
             // was built for — and what changed is that a privacy finding now
-            // has somewhere to go.
+            // has somewhere to go. What it still answers for is the else
+            // below, and WithNoRevelationToShow_TheBandWithholdsItsLink_And
+            // TheCommandRefuses is what holds it there: for one commit that
+            // sentence had no test behind it anywhere, because the pair that
+            // used to assert the false case were rewritten into their
+            // opposites when the privacy finding got its page.
             RevelationTarget(top.RuleId);
         }
         else
@@ -599,9 +604,16 @@ public sealed class OverviewViewModel : ViewModelBase
             : advise > 0 ? _loc.F("overview.status.advise", advise)
             : _loc["overview.status.good"];
         // The "{m} one-click fixable" phrase only appears while it is a
-        // promise (m > 0); "0 tanesi düzelir" would read as failure.
-        // The same predicate the button obeys, not a second copy of it:
-        // "one-click fixable" counts what one click will actually do.
+        // promise (m > 0); "0 tanesi düzelir" would read as failure. Here
+        // that is HasWork's doing rather than a test on m — the phrase rides
+        // the whole findings line, and HasWork is false exactly when this
+        // page's button would do nothing.
+        //
+        // The same predicate THIS page's button obeys, not a second copy of
+        // it: "one-click fixable" counts what pressing "Fix all (safe)" will
+        // actually do. It is not a count of everything brisk can fix in one
+        // click, and has not been since the Gizlilik page shipped a button of
+        // its own over the set this predicate excludes by rule id.
         var fixable = snapshot.Findings.Count(FixAllService.IsOneClickFixable);
         var parts = new List<string>();
         if (hasWork)

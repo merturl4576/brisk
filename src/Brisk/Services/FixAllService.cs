@@ -55,11 +55,19 @@ public sealed class FixAllService
         && (!string.Equals(f.RuleId, StartupBloatRuleId, StringComparison.OrdinalIgnoreCase)
             || EnabledHeavyNames().Count > 0));
 
-    /// The one predicate every surface reads: HasWork and Run here, and the
-    /// two places that COUNT the button's work for the "{n} one-click
-    /// fixable" line. Public for that reason — the count and the action have
-    /// to be the same question, or the sentence beside the button promises
-    /// clicks the button declines. Category is a consent level, not a topic,
+    /// The one predicate the FIX-ALL button reads, everywhere it appears:
+    /// HasWork and Run here, and the two places that COUNT that button's work
+    /// for the "{n} one-click fixable" line. Public for that reason — the
+    /// count and the action have to be the same question, or the sentence
+    /// beside the button promises clicks the button declines.
+    ///
+    /// NOT the only one-click predicate in brisk. The Gizlilik page's own
+    /// button walks PrivacyViewModel.IsConsequenceFree, which is the
+    /// complement of the exclusion below: this one refuses the whole privacy
+    /// topic and that one takes the Auto half of it. Two buttons carrying two
+    /// consents over two sets, and each counts itself — a single predicate
+    /// across both would have to promise one button's clicks beside the
+    /// other. Category is a consent level, not a topic,
     /// and excluding by category would not do the job: all six of the wave's
     /// privacy switches ship today, the four consequence-free ones as Auto
     /// and the two that cost the user something as Confirm. Both levels are

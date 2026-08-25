@@ -192,7 +192,7 @@ public class PrivacyRedLineTests
         // The third page, wired the way App.xaml.cs wires it. Building it
         // here is what stops this test passing by never asking about it.
         var privacy = new PrivacyViewModel(state, host, loc, () => false,
-            morphPause: () => Task.CompletedTask);
+            _ => true, morphPause: () => Task.CompletedTask);
 
         await state.ScanAsync();
 

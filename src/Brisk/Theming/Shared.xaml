@@ -1078,9 +1078,13 @@
                                Margin="0,4,0,0" Text="{Binding Evidence}"
                                Visibility="{Binding IsDetailsShown,
                                    Converter={x:Static views:BoolToVis.Instance}}" />
-                    <!-- Fix is the only foreground action (round 9): a card
-                         never advertises Undo — that capability lives in the
-                         done-report rows' context menu, where it belongs. -->
+                    <!-- UNDO is never a foreground action on a card (round 9):
+                         that capability lives in the done-report rows'
+                         context menu, where it belongs. What is here is Fix
+                         and the two ways a card hands the reader somewhere
+                         else — brisk's own Depolama page, and Windows' own
+                         Settings app — each shown only on the rows that have
+                         one. -->
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Button x:Name="FixButton"
                                 Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
@@ -1094,6 +1098,22 @@
                                 Visibility="{Binding HasStorageAction,
                                     Converter={x:Static views:BoolToVis.Instance}}"
                                 Content="{Binding [finding.action.storage],
+                                    Source={x:Static loc:Loc.Instance}}" />
+                        <!-- The other kind of follow-up: the one that leaves
+                             brisk altogether. It opens Windows' own Settings
+                             app and stops there. The Recall row is what
+                             carries it — brisk reports that policy and
+                             refuses to write it, and this is the spec's
+                             answer to that refusal ("state only, with a link
+                             to Windows' own setting"). A ghost button beside
+                             Fix rather than a link glyph, because it is the
+                             same kind of thing "Open Storage" is: this card
+                             is done talking, here is where you go next. -->
+                        <Button Style="{StaticResource GhostButton}"
+                                Command="{Binding OpenWindowsSettingCommand}"
+                                Visibility="{Binding HasWindowsSettingAction,
+                                    Converter={x:Static views:BoolToVis.Instance}}"
+                                Content="{Binding [finding.action.windowssetting],
                                     Source={x:Static loc:Loc.Instance}}" />
                     </StackPanel>
                 </StackPanel>

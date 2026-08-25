@@ -125,6 +125,33 @@ public class PrivacyViewModelTests
             vm.UnreadableRows.Select(r => r.HeadlineValue).ToArray());
     }
 
+    /// The other half of red line 4, and the half only a reader sees: the row
+    /// under "what brisk could not read" says it could not read.
+    ///
+    /// The band routes on the absence of a Headline; the SENTENCE comes from
+    /// the finding's own TitleKey, and the disclosure rules write a separate
+    /// "rule.<id>.title.unread" for it. Nothing joins those two facts — a row
+    /// can land in this band wearing the readable title, which is a finished
+    /// claim ("Windows uploaded data from this machine to other machines this
+    /// month") sitting under a heading that says brisk established nothing.
+    /// That is not hypothetical: it is what the tall render photographed, and
+    /// the picture is the only thing that caught it.
+    [Fact]
+    public async Task AnUnreadableRow_WearsTheRulesUnreadTitle_NotItsReadableOne()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            Unreadable("delivery-optimization"),
+        });
+        await state.ScanAsync();
+
+        var row = Assert.Single(vm.UnreadableRows);
+        Assert.Equal(loc["rule.delivery-optimization.title.unread"], row.Title);
+        Assert.NotEqual(loc["rule.delivery-optimization.title"], row.Title);
+    }
+
     // ---- The one button -----------------------------------------------
 
     /// THE GUARD. One button carries one consent, and the consent it carries
@@ -290,9 +317,14 @@ public class PrivacyViewModelTests
     /// calendar answers 0 as well — while a fix stamped at 23:00 the day
     /// BEFORE that is one local day back, not two.
     ///
-    /// Written against a fixed offset rather than the machine's own zone: a
-    /// test that reads TimeZoneInfo.Local proves whatever the developer's
-    /// clock happens to be set to.
+    /// Written against the machine's own offset and anchored to ITS midnight,
+    /// which is what makes the three answers below the same in every time
+    /// zone. Hard-coding a UTC stamp and a UTC "now" would not: 23:00 UTC and
+    /// 09:00 UTC the next morning are one local day apart in Istanbul and the
+    /// same local day in Honolulu, so a pair of fixed instants proves
+    /// whatever the developer's clock happens to be set to. Reading
+    /// TimeZoneInfo.Local to BUILD the instants is the opposite of reading it
+    /// to decide what to expect.
     [Fact]
     public void TheDayCount_IsCountedInLocalCalendarDays()
     {
@@ -319,6 +351,37 @@ public class PrivacyViewModelTests
         var now = new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc);
         Assert.Equal(0, ReadBackRow.DaysAgo(
             new DateTime(2999, 1, 1, 0, 0, 0, DateTimeKind.Utc), now));
+    }
+
+    /// What that floor looks like ON SCREEN, which is where it matters and
+    /// where nothing was reading it.
+    ///
+    /// Two different machines reach zero — a fix applied earlier today, and a
+    /// stamp from a clock that has moved — and the line they produce is the
+    /// same one. That is the deliberate outcome and not an accident: brisk
+    /// does not know which of the two readings is wrong on the second
+    /// machine, so it says the smallest true thing rather than picking. What
+    /// this pins is that the sentence is the ordinary one with a zero in it,
+    /// not a stray "-355155 days ago" or an empty argument, in both cases.
+    ///
+    /// Both stamps are expressed as an offset FROM the same instant rather
+    /// than as calendar dates, for the reason the day-count test above gives:
+    /// a fixed date and a fixed "now" six hours apart are the same local day
+    /// in Istanbul and two different ones in Honolulu, and a test that reads
+    /// differently in two time zones proves whichever one it was run in.
+    [Theory]
+    [InlineData(0)]               // applied at this very instant — today
+    [InlineData(24 * 3650)]       // a clock that has moved, ten years ahead
+    public async Task AZeroDayCount_RendersTheOrdinarySentence(int hoursAhead)
+    {
+        var loc = EnglishLoc();
+        var now = new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var row = await OneReadBackRow(
+            new ReadBackResult("advertising-id", ReadBackState.Held,
+                now.AddHours(hoursAhead)), now);
+
+        Assert.Equal(loc.F("readback.held", 0), row.Text);
     }
 
     /// The lines are the journal's, newest fix first — the same order every
@@ -424,12 +487,19 @@ public class PrivacyViewModelTests
             "suppressing it on privacy rows says nothing");
     }
 
-    /// The read-back dot's colour is a theme KEY resolved at render time
-    /// through ThemeBrush, not a {DynamicResource} literal in the XAML — so
-    /// ResourceKeyTests, which reads those literals out of the markup, cannot
-    /// see it. A key that is not in the dictionary resolves to null and the
-    /// dot paints nothing: no exception, no binding error, and a read-back
-    /// line that has quietly lost its verdict colour.
+    /// The read-back dot's colour is a theme KEY the row chooses and the
+    /// installed theme resolves — bound through ThemeFill, not written into
+    /// the XAML as a {DynamicResource} literal — so ResourceKeyTests, which
+    /// reads those literals out of the markup, cannot see it. A key that is
+    /// not in the dictionary resolves to nothing and the dot paints nothing:
+    /// no exception, no binding error, and a read-back line that has quietly
+    /// lost its verdict colour.
+    ///
+    /// This asks whether the key EXISTS in each dictionary and nothing more.
+    /// Whether the dot re-resolves it when the theme changes is a different
+    /// question, and both dictionaries carried every key the whole time the
+    /// answer to that one was no — EveryReadBackDot_WearsTheThemeThatIs
+    /// InstalledNow is what asks it, by driving the real page across a swap.
     ///
     /// Driven off the enum rather than off a list here, so a fifth state
     /// arrives with a colour nobody checked and fails, and read from BOTH
@@ -447,7 +517,7 @@ public class PrivacyViewModelTests
         foreach (var theme in new[] { "Dark.xaml", "Light.xaml" })
             Assert.True(ThemeSource.Keys(theme).Contains(row.StateBrushKey),
                 $"{state} paints its dot from \"{row.StateBrushKey}\" and " +
-                $"{theme} has no such key — the converter resolves it to null " +
+                $"{theme} has no such key — the reference resolves to nothing " +
                 "and the dot renders as nothing at all");
     }
 
@@ -479,6 +549,113 @@ public class PrivacyViewModelTests
             "a consequence-free switch grew a named loss — the one button's " +
             "caption promises it takes nothing away");
         Assert.Equal("", row.CostText);
+    }
+
+    // ---- The one row brisk points somewhere else for --------------------
+
+    /// The spec's own sentence about Recall, in both places it appears:
+    /// "Recall appears here as state only, WITH A LINK TO WINDOWS' OWN
+    /// SETTING". The state shipped with the page; the link did not, and
+    /// nothing on the page, in this file or in the report said it was
+    /// missing — the row rendered as an ordinary advice card and the whole
+    /// second half of the sentence was absent without a word.
+    ///
+    /// Both halves are asserted together, because the link only means what
+    /// it says while the other one holds. RecallStatusRule is Advise — the
+    /// consent level FixRunner declines to apply a fix for — precisely
+    /// because the surface is new, differs between builds, and a fix brisk
+    /// cannot check afterwards is the one thing this project refuses to
+    /// ship. A link sitting beside a Fix button would be brisk offering the
+    /// change it just declined to make.
+    ///
+    /// The URI is asserted by SCHEME rather than by page, and the two
+    /// assertions say different things: the scheme is the claim — this
+    /// opens Windows' own Settings app and nothing brisk runs — and the
+    /// equality is that the click carries what the row advertises, so the
+    /// button cannot open one thing while the row names another.
+    [Fact]
+    public async Task RecallStatus_LinksToWindowsOwnSetting_AndOffersNoFix()
+    {
+        var opened = new List<string>();
+        var (vm, host, state) = Build(openWindowsSetting: uri =>
+        {
+            opened.Add(uri);
+            return true;
+        });
+        host.NextSnapshot = TestData.Snapshot(WholeTopic());
+        await state.ScanAsync();
+
+        var row = Assert.Single(
+            vm.DisclosureRows.Where(r => r.RuleId == "recall-status"));
+        Assert.False(row.CanFix,
+            "the Recall row offers a fix. brisk reports this one and does not " +
+            "change it — the setting is new and differs between builds — and a " +
+            "link to Windows' own setting beside a Fix button is brisk offering " +
+            "the change it just declined to make");
+        Assert.True(row.HasWindowsSettingAction,
+            "the Recall row carries no link to Windows' own setting, and the " +
+            "spec says it appears here as state only WITH one");
+
+        row.OpenWindowsSettingCommand.Execute(null);
+
+        var uri = Assert.Single(opened);
+        Assert.StartsWith("ms-settings:", uri, StringComparison.Ordinal);
+        Assert.Equal(row.WindowsSettingUri, uri);
+    }
+
+    /// The control. Every other disclosure on this page is report-only too,
+    /// and none of them grows a link — the link belongs to the one rule
+    /// whose own advice string points at a setting Windows owns, not to
+    /// "advice rows" as a class.
+    [Fact]
+    public async Task ADisclosureBriskPointsNowhereFor_CarriesNoLink()
+    {
+        var (vm, host, state) = Build(openWindowsSetting: _ => true);
+        host.NextSnapshot = TestData.Snapshot(WholeTopic());
+        await state.ScanAsync();
+
+        var row = Assert.Single(
+            vm.DisclosureRows.Where(r => r.RuleId == "usb-history"));
+
+        Assert.False(row.HasWindowsSettingAction,
+            "the USB-history row offers to open a Windows setting. brisk has " +
+            "no setting to point at for it, so the link would open the " +
+            "Settings app on something the row never mentioned");
+        Assert.Equal("", row.WindowsSettingUri);
+    }
+
+    /// The other half of the same flag: a row nobody wired an opener for
+    /// withholds the control rather than rendering a button that swallows
+    /// the click. Same shape and same reason as HasStorageAction, which is
+    /// false on every page that never handed FindingRow a way to navigate.
+    [Fact]
+    public void ARecallRow_WithNobodyToOpenTheSetting_WithholdsTheLink()
+    {
+        var row = Row(Disclosure("recall-status", "Off"));
+
+        Assert.False(row.HasWindowsSettingAction,
+            "a Recall row built with no opener behind it still advertises the " +
+            "link, and clicking it would reach nothing at all");
+    }
+
+    /// Windows refusing to open its own settings is reported, not swallowed.
+    /// The click is the row's only action, so a silent failure is a control
+    /// that did nothing and said nothing — the dead affordance this branch
+    /// has shipped once already, wearing a different coat.
+    [Fact]
+    public async Task WhenWindowsSettingsDoNotOpen_ThePageSaysSo()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build(openWindowsSetting: _ => false);
+        host.NextSnapshot = TestData.Snapshot(WholeTopic());
+        await state.ScanAsync();
+
+        var row = Assert.Single(
+            vm.DisclosureRows.Where(r => r.RuleId == "recall-status"));
+        row.OpenWindowsSettingCommand.Execute(null);
+
+        Assert.Equal(loc["privacy.setting.failed"], vm.Message);
+        Assert.NotEqual("privacy.setting.failed", vm.Message);
     }
 
     // ---- Helpers --------------------------------------------------------
@@ -519,12 +696,26 @@ public class PrivacyViewModelTests
                 $"rule.{ruleId}.headline.value", new[] { value },
                 $"rule.{ruleId}.headline.caption", Array.Empty<string>()));
 
-    /// The same rule on a machine where its read found nothing: no Headline,
-    /// which is the disclosure family's own way of saying it has no reading
-    /// to lead with.
-    private static DiagnosticFinding Unreadable(string ruleId) =>
-        TestData.Finding(ruleId, Severity.Info, RuleCategory.Advise, stars: 1,
-            canFix: false, kind: FindingKind.Notice);
+    /// The same rule on a machine where its read found nothing. TWO things
+    /// make it that, and this fixture carried only one of them until now: no
+    /// Headline, which is the disclosure family's own way of saying it has no
+    /// reading to lead with and what routes the row into the page's "could
+    /// not read" band — and the rule's OWN unread title key, which is a
+    /// different sentence from its readable one.
+    ///
+    /// TestData.Finding builds "rule.<id>.title", the READABLE one, so a row
+    /// built with it renders "Windows uploaded data from this machine to
+    /// other machines this month" under the heading saying brisk could not
+    /// read it: a claim the real page never makes. The snapshot fixture was
+    /// corrected for exactly this when the photograph showed it; this one was
+    /// left as it was, and two fixtures for one shape is how the corrected
+    /// half stops protecting the other.
+    private static DiagnosticFinding Unreadable(string ruleId) => new(
+        ruleId, $"rule.{ruleId}.title.unread", $"unread {ruleId}",
+        $"evidence {ruleId}", Severity.Info, RuleCategory.Advise,
+        ImpactStars: 1, CanFix: false, FixDescription: null,
+        EvidenceKey: $"rule.{ruleId}.evidence.unread", EvidenceArgs: null,
+        Headline: null, Kind: FindingKind.Notice);
 
     private static FindingRow Row(DiagnosticFinding finding) =>
         new(finding, EnglishLoc(), canUndo: false, _ => { }, _ => { });
@@ -539,13 +730,18 @@ public class PrivacyViewModelTests
         return Assert.Single(vm.ReadBackRows);
     }
 
+    /// `openWindowsSetting` defaults to a stub that claims success and does
+    /// nothing, so a test that never clicks the link cannot start the real
+    /// Settings app; a test that DOES click passes its own and reads what it
+    /// was handed.
     private static (PrivacyViewModel Vm, FakeEngineHost Host, AppState State) Build(
-        Func<DateTime>? utcNow = null)
+        Func<DateTime>? utcNow = null, Func<string, bool>? openWindowsSetting = null)
     {
         var host = new FakeEngineHost();
         var loc = EnglishLoc();
         var state = new AppState(host, loc);
-        var vm = new PrivacyViewModel(state, host, loc, () => false, utcNow,
+        var vm = new PrivacyViewModel(state, host, loc, () => false,
+            openWindowsSetting ?? (_ => true), utcNow,
             morphPause: () => Task.CompletedTask);
         return (vm, host, state);
     }
