@@ -167,8 +167,18 @@ public sealed class ReportCardModel
     /// finding rows' 12px bottom margin rather than the 6px the small rows
     /// use — an UNDER-CHARGE of 6.00px, and the whole of why the worst card
     /// clears the frame by less than one row rather than by six pixels more.
-    /// Changing that margin to 6 would make both terms even; it is a live
-    /// decision, not an oversight, and it is Task 10's to take.
+    ///
+    /// THE REMEDY IS KNOWN AND DELIBERATELY NOT TAKEN HERE. It is one number:
+    /// FindingsMore in Views/ReportCard.xaml wears Margin="0,0,0,12" and the
+    /// unread and fix rows beside it wear "0,0,0,6"; matching them makes both
+    /// terms of the trade even. It is not taken in the commit that wrote this
+    /// paragraph because that commit changed no card geometry at all, and a
+    /// pixel change to the shipped card belongs in a commit somebody would
+    /// think to look for it in. Whoever takes it changes that one attribute and
+    /// nothing else, and TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDoc
+    /// Claims goes red until this paragraph moves with it — which is the whole
+    /// reason that test measures the gap as a number rather than trusting the
+    /// prose.
     ///
     /// Every figure above is measured and guarded:
     /// TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims re-measures

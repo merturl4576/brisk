@@ -277,7 +277,12 @@ public class ReportCardModelTests
     /// the findings' overflow line is 34.61px and is charged the same single
     /// row. See FixBudget for the 6.00px that under-charge costs and where it
     /// shows up. What is asserted here is the ROW arithmetic, which is exact;
-    /// the pixels it stands on are the frame test's to hold.
+    /// the three heights it stands on are re-measured on the real control by
+    /// ReportCardRenderTests' TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgets
+    /// DocClaims. NOT by the frame test: WorstCaseCard_FitsInsideTheFrameItIs
+    /// DrawnInto asserts `wanted <= given` and holds no row height at all, so a
+    /// sentence sending a reader there for these figures sends them where the
+    /// figures are not.
     [Theory]
     [InlineData(0, 0, 9)]    // nothing above took an extra line
     [InlineData(4, 0, 5)]    // four probes could not read their source
