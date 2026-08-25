@@ -119,10 +119,16 @@ public class PrivacyRedLineTests
     /// so RevelationPicker — and the report card, which picks through it —
     /// skip it as well.
     ///
-    /// This is a tripwire, not an aspiration. Three of the last four defects
-    /// on this task were sentences written in the present tense about a page
-    /// nobody has built; when the page IS built, this test fails, and every
-    /// comment that had to say "will" gets to say "does" in the same commit.
+    /// What this guarantees, exactly: these two view models, wired the way
+    /// App.xaml.cs wires them, put a privacy finding on neither page. It is
+    /// NOT a tripwire for the privacy page being built — it constructs its own
+    /// two HealthViewModels over IsHealth and IsPerformance and asserts only
+    /// about those, so a third page can be added beside them and every
+    /// assertion here still passes untouched. What it does catch is the
+    /// regression: either filter widening to take a privacy finding back onto
+    /// a page that grades the machine. Whoever builds the privacy page still
+    /// has to walk the comments that say "will" by hand — nothing here does
+    /// it for them.
     ///
     /// What it does NOT claim: that a privacy finding is invisible. The
     /// "{n} findings" figure on the overview and the flyout counts every
