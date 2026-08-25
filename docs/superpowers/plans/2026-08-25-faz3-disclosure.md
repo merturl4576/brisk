@@ -98,7 +98,7 @@ Create `src/Brisk.Tests/PrivacyRedLineTests.cs`:
     [Fact]
     public void NoPrivacyFinding_LowersTheHealthScore()
     {
-        var withoutPrivacy = HealthScore.For(new[] { TestData.Finding("power-plan") });
+        var withoutPrivacy = HealthScore.For(new[] { TestData.Finding("power-plan") });   // NOTE: no such method
         var withPrivacy = HealthScore.For(new[]
         {
             TestData.Finding("power-plan"),
@@ -354,6 +354,32 @@ The whole mechanism, stated so nobody invents a scheduler:
 - journal has an entry **and** `Detect` returns a finding **and** the value brisk wrote is **gone** → `Reverted`. Something put it back.
 - journal has an entry **and** `Detect` returns a finding **and** the value brisk wrote is **still there** → `WrittenButIgnored`. This is the Home-edition case, and it is the most important sentence in the wave: brisk reporting that its own fix did not take.
 
+> **This plan was wrong here, and Task 6 proved it. Corrected 2026-08-26; the
+> original is left above because it is what the implementer was handed.**
+>
+> **The third branch is unreachable.** Every switch's `Detect` reads *exactly*
+> the values its `Fix` writes, so "Detect fires while brisk's write is still
+> there" is a contradiction for all six rules — and this plan's own worked
+> example (policy=1, effective=3) yields `Detect == null`, which under these
+> three branches returns `Held`. The mechanism was falsified by the example
+> printed beside it.
+>
+> `WrittenButIgnored` can only come from a **second** read of an effective key.
+> `diagnostic-level` has one; `activity-history` deliberately does not, because
+> Task 3 refused to invent a registry path brisk could not vouch for. So the
+> states are not equally knowable across the six rules, and a three-state design
+> would have reported *"still off"* on exactly the Home machine where the policy
+> is ignored and Timeline still runs — the read-back lying in the one case it
+> exists to catch.
+>
+> **Shipped: four states.** The fourth, `WrittenButUnverified`, says brisk does
+> not know. Also corrected by it: branch 1 as written grants `Held` on
+> `Detect`-null alone, even with the effective level at 3.
+>
+> A second defect in this section: `HealthScore.For` (line 101) does not exist —
+> the entry point is `HealthScore.Compute`. Task 1 caught it because its dispatch
+> said to use the real signature rather than the plan's.
+
 That third branch is why `TelemetrySwitchRule` exposes its `Values` — the read-back needs to ask "is what I wrote still written?" separately from "is the setting on?".
 
 - [ ] **Step 1: Write all three tests, and watch each fail**
@@ -479,7 +505,7 @@ This task exists because the spec's four red lines are the product, and a red li
 
 - [ ] **Step 1: No copy claims anything about what Microsoft can see**
 
-Parse both resx files. For every key beginning `rule.` whose id is in `PrivacyRuleIds.All`, plus every `readback.*` key, assert the value contains none of: `Microsoft` in the same sentence as a seeing/receiving verb, `göremez`, `görmüyor`, `artık göremez`, `no longer see`, `can't see`, `cannot see`, `stops sending`, `veri gitmiyor`. Keep the banned list in the test file with a comment naming the spec section, so the next person adding a string learns the rule from the failure message.
+Parse both resx files. For every key beginning `rule.` whose id is in `PrivacyRuleIds.All`, plus every `readback.*` key — **and, corrected 2026-08-26, every `privacy.*` key: the page's own copy, which this parse as written missed, and which is where Task 7's deferred heading decision lived. Widened in Task 9's dispatch before it ran** — assert the value contains none of: `Microsoft` in the same sentence as a seeing/receiving verb, `göremez`, `görmüyor`, `artık göremez`, `no longer see`, `can't see`, `cannot see`, `stops sending`, `veri gitmiyor`. Keep the banned list in the test file with a comment naming the spec section, so the next person adding a string learns the rule from the failure message.
 
 Write the failure message to name the offending key **and** the offending phrase. A guard whose message does not name what it found sends the reader hunting, and this branch has shipped that four times.
 
