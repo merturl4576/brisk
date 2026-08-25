@@ -114,7 +114,7 @@ public partial class App : Application
                     // sourcing the tray from the palette was meant to stop.
                     _tray?.SetAccent(SignatureAccent());
                 },
-                Loc.Instance.SetLanguage);
+                state.SetLanguage);
 
             _flyout = new FlyoutWindow(flyoutVm);
             _main = new MainWindow(state, overviewVm, healthVm, perfVm, startupVm,

@@ -219,6 +219,23 @@ public sealed class AppState : ViewModelBase
 
     public event Action? Changed;
 
+    /// The one entry point for a language change, and the reason it lives
+    /// here rather than on Loc: Loc's own notification reaches only the
+    /// bindings XAML resolves for itself, so the window's own strings follow
+    /// a switch while every sentence a view model COMPUTED at scan time stays
+    /// in the language it was computed in. A switch changes how the scan
+    /// reads, never what it measured, so no re-scan is owed — Changed is the
+    /// re-projection each view model already subscribes to, and a deliberate
+    /// language change earns it for the same reason a new snapshot does.
+    /// Deliberate is the whole point: MainWindow re-announces the language
+    /// unconditionally to keep the caption button's name, from a thread that
+    /// is not the window's, and that republish must stay as cheap as it was.
+    public void SetLanguage(string setting)
+    {
+        _loc.SetLanguage(setting);
+        _toUi(() => Changed?.Invoke());
+    }
+
     public Task ScanAsync()
     {
         // A caller arriving mid-scan is handed the run already in flight, not
