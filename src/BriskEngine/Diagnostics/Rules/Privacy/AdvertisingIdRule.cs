@@ -19,11 +19,11 @@ public sealed class AdvertisingIdRule : TelemetrySwitchRule
     protected override string Title => "The advertising ID is not switched off";
 
     protected override string Evidence =>
-        "brisk read the advertising ID switch on this machine: it is set to " +
-        "on, or it is not set at all, and neither of those reads as off. " +
-        "brisk reads the setting itself and nothing past it — what any app " +
-        "does with it is not something brisk can see from here. Switching it " +
-        "off writes one value and can be undone.";
+        "brisk read the advertising ID switch on this machine and it does not " +
+        "read as off: the value is either something other than off, or not " +
+        "set at all. brisk reads the setting itself and nothing past it; what " +
+        "any app does with it is not something brisk can see from here. " +
+        "Switching it off writes one value and can be undone.";
 
     protected override string FixDescription =>
         "Switch the advertising ID off (undoable)";

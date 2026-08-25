@@ -188,27 +188,40 @@ public class TelemetrySwitchRuleTests
             "where nothing existed before the fix");
     }
 
-    /// A number that is neither the on value nor the off value. An exact
-    /// match on the on value read this as protection and said nothing, which
-    /// is the silent direction: brisk cannot tell what an unrecognised
-    /// number means, and "I could not read this as off" is not "this is
-    /// off". advertising-id carries it because Enabled is documented as a
-    /// two-state flag, so 2 is exactly the case nobody planned for.
-    [Fact]
-    public void AnUnrecognisedNumber_ReadsAsOn_NotAsProtection()
+    /// A number that is neither the on value nor the off value — the THIRD
+    /// state, and the one an exact match on OnValue used to read as
+    /// protection and say nothing about. That is the silent direction:
+    /// brisk cannot tell what an unrecognised number means, and "I could not
+    /// read this as off" is not "this is off".
+    ///
+    /// Run over all three flag switches, not just advertising-id, because a
+    /// subclass can narrow the read back by overriding ReadsAsOn and one of
+    /// them already does. diagnostic-level is the exception and is left out
+    /// on purpose: its override is a threshold, so every number it can read
+    /// is either at or above Enhanced (on) or below it (off) and no third
+    /// state exists for it to mishandle.
+    [Theory]
+    [InlineData("advertising-id")]
+    [InlineData("tailored-experiences")]
+    [InlineData("speech-typing")]
+    public void AnUnrecognisedNumber_ReadsAsOn_NotAsProtection(string id)
     {
         var (ctx, reg) = Context();
-        reg.SetInt(AdvertisingIdRule.KeyPath, AdvertisingIdRule.ValueName, 2);
-        var rule = new AdvertisingIdRule();
+        var rule = Rule(id);
+        // 7 is neither OnValue nor OffValue for any of the three: their pairs
+        // are (1, 0) and (0, 1).
+        foreach (var v in rule.Values) reg.SetInt(v.KeyPath, v.ValueName, 7);
 
         Assert.True(rule.IsOn(ctx),
-            $"{AdvertisingIdRule.ValueName} reads 2, which is neither on nor " +
-            "off, and IsOn reported it as off");
+            $"{id}: every value reads 7, which is neither its on number nor " +
+            "its off number, and IsOn reported the switch as off");
         Assert.NotNull(rule.Detect(ctx));
 
         rule.Undo(ctx, rule.Fix(ctx));
-        Assert.True(reg.GetInt(AdvertisingIdRule.KeyPath, AdvertisingIdRule.ValueName) == 2,
-            "undo did not put the unrecognised number back");
+        foreach (var v in rule.Values)
+            Assert.True(reg.GetInt(v.KeyPath, v.ValueName) == 7,
+                $"{id}: {v.KeyPath}\\{v.ValueName} came back as " +
+                $"{Read(reg, v)}, not the unrecognised 7 that was there");
     }
 
     /// AllowTelemetry 0 is Security — stricter than the 1 the fix writes. A

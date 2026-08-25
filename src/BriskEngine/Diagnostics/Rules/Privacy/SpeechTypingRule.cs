@@ -4,9 +4,10 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 
 /// Speech and typing personalisation. The only switch in this family with two
 /// values, and the only one whose numbers run the other way: here 1 is the
-/// restricted state the fix writes and 0 — or nothing at all — reads as on.
-/// Either value left permissive is a finding, so a machine where somebody
-/// restricted text and never touched ink still reads as on.
+/// restricted state the fix writes, and anything else — 0, some other number,
+/// or nothing at all — reads as on. Either value not reading as restricted is
+/// a finding, so a machine where somebody restricted text and never touched
+/// ink still reads as on.
 public sealed class SpeechTypingRule : TelemetrySwitchRule
 {
     public const string KeyPath = @"HKCU\Software\Microsoft\InputPersonalization";
@@ -25,11 +26,11 @@ public sealed class SpeechTypingRule : TelemetrySwitchRule
         "Speech and typing personalisation is not restricted";
 
     protected override string Evidence =>
-        "brisk read the two values this setting uses on this machine: at " +
-        "least one of them allows personalisation, or is not set at all, and " +
-        "neither of those reads as restricted. brisk reads the settings " +
-        "themselves and nothing past them. Restricting it writes two values " +
-        "and can be undone.";
+        "brisk read the two values this setting uses on this machine and at " +
+        "least one of them does not read as restricted: that value is either " +
+        "something other than the restricted number, or not set at all. brisk " +
+        "reads the settings themselves and nothing past them. Restricting it " +
+        "writes two values and can be undone.";
 
     protected override string FixDescription =>
         "Restrict speech and typing personalisation (undoable)";

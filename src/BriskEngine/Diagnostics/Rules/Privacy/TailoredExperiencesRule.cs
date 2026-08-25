@@ -20,10 +20,10 @@ public sealed class TailoredExperiencesRule : TelemetrySwitchRule
     protected override string Title => "Tailored experiences is not switched off";
 
     protected override string Evidence =>
-        "brisk read the tailored experiences switch on this machine: it is " +
-        "set to on, or it is not set at all, and neither of those reads as " +
-        "off. brisk reads the setting itself and nothing past it. Switching " +
-        "it off writes one value and can be undone.";
+        "brisk read the tailored experiences switch on this machine and it " +
+        "does not read as off: the value is either something other than off, " +
+        "or not set at all. brisk reads the setting itself and nothing past " +
+        "it. Switching it off writes one value and can be undone.";
 
     protected override string FixDescription =>
         "Switch tailored experiences off (undoable)";

@@ -534,7 +534,17 @@ public sealed class OverviewViewModel : ViewModelBase
         }
         // Three-state headline driven by the same predicate as the fix-all
         // button: work to do → attention; only recommendations left →
-        // positive with a count; nothing at all → plain good news.
+        // positive with a count; neither → plain good news.
+        //
+        // "Neither" is not "nothing found". HasWork stopped seeing privacy
+        // findings when they were excluded from the button, so a machine
+        // whose only fixable findings are the four telemetry switches reads
+        // "good shape" here and suppresses the {n} findings line below with
+        // it. That is the wave's red line working as written — the health
+        // score grades speed and hygiene and does not grade privacy, and a
+        // fast clean machine reads 100 whether or not telemetry is on. The
+        // privacy findings are not lost, only invisible to THIS sentence:
+        // they route to their own page by rule id.
         var hasWork = _fixAll.HasWork(snapshot);
         var advise = snapshot.Findings.Count(f => f.Category == RuleCategory.Advise);
         StatusText = hasWork ? _loc["overview.status.attention"]
