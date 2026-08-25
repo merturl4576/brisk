@@ -84,9 +84,24 @@ public class LocTests
             loc.Title("rule.not-a-rule.title", "Engine English"));
     }
 
-    /// EN+TR parity for the reassurance-round keys: the indexer returns the
-    /// key itself when a culture is missing a value, so this fails loudly if
-    /// either resx falls behind.
+    /// The reassurance-round keys LOAD — which is less than "EN+TR parity",
+    /// and the difference is the whole reason the test above exists.
+    ///
+    /// Loc's indexer answers through ResourceManager (Loc.cs:17), and
+    /// ResourceManager falls back to the NEUTRAL resource. So this theory
+    /// fails on one gap only: a key missing from Strings.resx, where the
+    /// indexer's `?? key` hands back the key itself and both passes below
+    /// see it. A key present in English and missing from Turkish renders the
+    /// English sentence in a Turkish GUI — silently, never the raw key — and
+    /// both passes below stay green over it. ResxFiles_ExposeTheSameKeySet
+    /// is what sees that one, and 7e64eb4 put it on this branch's record:
+    /// the missing Turkish caption keys were caught by the key-set test and
+    /// waved through by this one.
+    ///
+    /// Measured both ways by deleting `nav.overview` from one file at a time:
+    /// gone from Strings.resx, this theory failed its `en` pass with
+    /// Actual: "nav.overview"; gone from Strings.tr.resx, it stayed green and
+    /// only the key-set test failed.
     [Theory]
     [InlineData("overview.status.advise")]
     [InlineData("overview.report.live")]
@@ -187,23 +202,33 @@ public class LocTests
     [InlineData("overview.report.card.saved.fileonly")]
     [InlineData("overview.report.card.failed")]
     // The heading over the findings brisk can only report. It labels a whole
-    // band on two pages, so a miss in either language would print the raw key
+    // band on two pages, so a miss in the ENGLISH resx would print the raw key
     // above the cards instead of the sentence that explains why they carry no
-    // button.
+    // button. A Turkish-only gap prints the English sentence there instead and
+    // this row stays green over it — see the theory's comment above.
     [InlineData("health.notice.section")]
     // The window's own caption controls. Windows used to name these buttons
-    // in the user's language; brisk draws them itself now, so a miss here
-    // announces a private-use-area glyph to a screen reader and shows the raw
-    // key in the tooltip. Restore is listed beside Maximize because the middle
-    // button carries both names, one per window state.
+    // in the user's language; brisk draws them itself now, and both the
+    // AutomationProperties.Name and the tooltip read through this indexer — so
+    // a miss in the ENGLISH resx puts "chrome.close" into the name a screen
+    // reader speaks and into the tooltip a mouse user sees. (The private-use-
+    // area glyph a reader used to announce was the state BEFORE 7e64eb4 bound
+    // a name at all; with a name bound, a miss is a raw key, not a glyph.) A
+    // Turkish-only gap gives both the English name, silently, and this row
+    // cannot see it.
+    // Restore is listed beside Maximize because the middle button carries both
+    // names, one per window state.
     [InlineData("chrome.minimize")]
     [InlineData("chrome.maximize")]
     [InlineData("chrome.restore")]
     [InlineData("chrome.close")]
     // The first nav tile's name. It used to borrow [app.name] and show
     // "brisk", so the entry could not miss — there was nothing to miss. Now
-    // that it says where it goes, a gap in either language would put
-    // "nav.overview" at the top of the nav, above four tiles that read fine.
+    // that it says where it goes, a gap in the ENGLISH resx would put
+    // "nav.overview" at the top of the nav, above four tiles that read fine,
+    // and this row is what fails. A Turkish gap alone puts "Overview" there
+    // instead — English above four Turkish tiles, and green here; the key-set
+    // test is the one that fails on it, measured with this very key.
     [InlineData("nav.overview")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {

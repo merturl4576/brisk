@@ -299,8 +299,29 @@ public sealed class PanelSourceTests
     ///     impossible to open from the keyboard.
     ///   * IsEnabled=False inherits, so it disables the subtree outright.
     ///
-    /// expander.IsTabStop stays as the third, since it is the one that
-    /// speaks for the expander itself.
+    /// The expander then speaks for itself, and that takes three properties
+    /// too. Tab does not stop on an element unless IsTabStop, Focusable and
+    /// IsEnabled ALL hold, and this guard asserted the first of the three
+    /// only — from the round that wrote it (7b56434), through the round that
+    /// widened the two panel-side directions and kept "the expander as the
+    /// third" (1134196), until the whole-branch review ruled it
+    /// must-fix-before-merge. A lone Focusable="False" on the ToggleButton is
+    /// the way in, and it is not hypothetical shape: this app's XAML carries
+    /// Focusable="False" on six elements today and exactly one of them says
+    /// IsTabStop="False" beside it, so the lone attribute is the common form
+    /// and this ToggleButton is one paste from wearing it — Tab unable to
+    /// open a single finding row, and the assertion below it green.
+    ///
+    /// Both new lines were watched red on that ToggleButton in Shared.xaml,
+    /// one plant each. Focusable="False" reported "the expander has
+    /// Focusable=False", with the IsTabStop assertion above it still passing:
+    /// the defect in one picture. IsEnabled="False" reported "the expander is
+    /// disabled", which the PANEL's IsEnabled line above does not see — that
+    /// one catches the value only when it arrives by inheritance.
+    ///
+    /// Visibility is a fourth condition and is deliberately not asserted: a
+    /// Collapsed expander would pass all three lines. Reasoned from WPF's
+    /// rules, not planted.
     [Fact]
     public void ThePanel_IsNoKeyboardStop_ButItsExpanderStillIs()
     {
@@ -332,10 +353,22 @@ public sealed class PanelSourceTests
                 "the panel is disabled " + Dash + "IsEnabled inherits, so the " +
                 "expander and both buttons under it went with it");
 
+            // Three assertions rather than one &&, each naming the attribute
+            // it reads, so the one that fails is the one the message names
+            // and the other two are still reported on the next run.
             var expander = Descendants(card).OfType<ToggleButton>().First();
             Assert.True(expander.IsTabStop,
-                "the expander is not a tab stop " + Dash + "the row can no " +
+                "the expander has IsTabStop=False " + Dash + "the row can no " +
                 "longer be opened from the keyboard at all");
+            Assert.True(expander.Focusable,
+                "the expander has Focusable=False " + Dash + "Tab does not " +
+                "stop on what cannot take focus, so IsTabStop above being " +
+                "true buys nothing and the row can no longer be opened from " +
+                "the keyboard at all");
+            Assert.True(expander.IsEnabled,
+                "the expander is disabled " + Dash + "a disabled control is " +
+                "not a tab stop either, and every finding's evidence sits " +
+                "behind this one control");
         });
     }
 
