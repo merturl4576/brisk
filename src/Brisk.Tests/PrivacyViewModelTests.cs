@@ -670,13 +670,23 @@ public class PrivacyViewModelTests
     /// entry cannot be added without saying what its button says.
     ///
     /// Driven off the map rather than off a list here, so an entry added
-    /// without a caption key — or with one no resx carries — fails. Both
-    /// languages, because either can be the live one and Loc's indexer
-    /// answers with the KEY when it has no string, which renders a button
-    /// captioned "finding.action.windowssetting".
+    /// without a caption key — or with one NO resx carries — fails: Loc's
+    /// indexer is `GetString(key, culture) ?? key` (Loc.cs:17) and hands the
+    /// key back, which would render a button captioned
+    /// "finding.action.windowssetting".
+    ///
+    /// The loop runs both languages and only the `en` pass can fail, which is
+    /// why this is not named for both. ResourceManager falls back to the
+    /// NEUTRAL resource, so a key present in English and missing from Turkish
+    /// returns the ENGLISH string to the `tr` pass and stays green — the exact
+    /// trap LocTests:88-104 measured on this branch, where the missing Turkish
+    /// caption keys were caught by the key-set test and waved through by a
+    /// theory shaped like this one. ResxFiles_ExposeTheSameKeySet is what
+    /// holds the both-languages end, and it holds it over every key in the two
+    /// files rather than over these.
     [Theory]
     [MemberData(nameof(EveryWindowsSettingRule))]
-    public void EveryWindowsSettingRule_NamesAPageAndACaptionBothLanguagesCarry(
+    public void EveryWindowsSettingRule_NamesAPageAndACaptionTheResxCarries(
         string ruleId, string uri, string captionKey)
     {
         Assert.StartsWith("ms-settings:", uri, StringComparison.Ordinal);

@@ -35,6 +35,7 @@ public sealed class ReportCardModel
     /// colouring the numeral the first time somebody renamed anything.
     public required string ScoreBrushKey { get; init; }
     public required IReadOnlyList<CardLine> Findings { get; init; }
+    public required string FindingsMoreText { get; init; }
     public required string FindingsEmptyText { get; init; }
     public required IReadOnlyList<string> Unread { get; init; }
     public required IReadOnlyList<string> Fixes { get; init; }
@@ -51,23 +52,39 @@ public sealed class ReportCardModel
     /// look equally tidy; the render test weighs the column's desired height
     /// against the height the Grid gives it instead.
     ///
-    /// The findings section is already bounded: the picker takes five at
-    /// most, and the render test covers that maximum. The fix list is not —
-    /// it comes from the journal, it is uncapped, and a machine that has run
-    /// fix-all can carry eight or ten entries. So this is the budget, in
-    /// ROWS: the last row is spent on "and N more" whenever there are more
-    /// fixes than fit, so nothing is dropped without being counted.
+    /// THE BUDGET IS SHARED, because the frame does not grow. Three sections
+    /// compete for the column and each of them can want more than it gets, so
+    /// each one counts what it dropped rather than losing it.
+    ///
+    /// This is the fix list's CEILING — what it gets on a card whose sections
+    /// above took the least they can: one unread sentence, and no findings
+    /// overflow. FixBudget is what it actually gets. The fix list is the
+    /// section that gives way because it comes from the journal, is uncapped,
+    /// and is the footnote on a card whose subject is the numbers above it.
     public const int MaxFixRows = 9;
+
+    /// How many measured numbers the card leads with; the rest are counted on
+    /// a line of their own. Five is the most the card could show before this
+    /// cap existed — not by design but because exactly five shipped rules
+    /// carried a headline, which is what "the picker takes five at most" used
+    /// to describe. This wave's disclosures brought that count to nine, and a
+    /// sixth row is 52px the frame does not always have: a card with a full
+    /// fix list measured 758px against the 715px the Grid gives it, and the
+    /// rows past the edge are cut away in silence.
+    public const int MaxFindingRows = 5;
 
     public static ReportCardModel Build(ScanSnapshot snapshot,
         IReadOnlyList<UndoableFix> undoable, Loc loc)
     {
         var picked = RevelationPicker.Pick(snapshot.Findings);
         var findings = picked
+            .Take(MaxFindingRows)
             .Select(f => new CardLine(
                 LocalizedText.Headline(f.Headline!, loc).Value,
                 loc.Title(f.TitleKey, f.Title)))
             .ToList();
+        var hiddenFindings = picked.Count - findings.Count;
+        var unread = UnreadLines(snapshot, loc);
 
         return new ReportCardModel
         {
@@ -77,10 +94,17 @@ public sealed class ReportCardModel
             Health = snapshot.Health,
             ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health),
             Findings = findings,
+            // The overview's key, and the right one here: its Turkish counts
+            // FINDINGS out loud, which under this heading is the noun the line
+            // is about. That same Turkish is what made it the wrong key for
+            // the fix list below.
+            FindingsMoreText = hiddenFindings > 0
+                ? loc.F("overview.revelation.more", hiddenFindings) : "",
             FindingsEmptyText = findings.Count > 0 ? "" :
                 loc.F("overview.revelation.none", DiagnosticRuleRegistry.All.Count),
-            Unread = new[] { UnreadLine(snapshot.Sensors, loc) },
-            Fixes = FixRows(undoable, loc),
+            Unread = unread,
+            Fixes = FixRows(undoable, loc,
+                FixBudget(unread.Count, hiddenFindings > 0)),
         };
     }
 
@@ -95,7 +119,7 @@ public sealed class ReportCardModel
     /// maintainer actually reads the app in. English parity is what hid it, so
     /// the fixes list has its own key and its own Turkish noun.
     private static IReadOnlyList<string> FixRows(
-        IReadOnlyList<UndoableFix> undoable, Loc loc)
+        IReadOnlyList<UndoableFix> undoable, Loc loc, int budget)
     {
         var rows = undoable
             .OrderByDescending(f => f.FixedAtUtc)
@@ -103,18 +127,58 @@ public sealed class ReportCardModel
                 + " · " + f.FixedAtUtc.ToLocalTime()
                     .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
             .ToList();
-        if (rows.Count <= MaxFixRows) return rows;
+        if (rows.Count <= budget) return rows;
 
         // One row short of the budget, because the count needs a row of its
         // own. Truncating to the budget and appending the line would put
-        // MaxFixRows + 1 rows on the card — the overflow this exists to stop.
-        var shown = rows.Take(MaxFixRows - 1).ToList();
+        // budget + 1 rows on the card — the overflow this exists to stop.
+        var shown = rows.Take(budget - 1).ToList();
         shown.Add(loc.F("report.fixes.more", rows.Count - shown.Count));
         return shown;
     }
 
-    /// One line, always, naming which sensor stayed silent. Whenever the CPU
-    /// temperature went unread — alone or alongside the GPU — the line also
+    /// What the fix list may spend on this particular card. An unread
+    /// sentence, a fix line and the findings' overflow line are the same
+    /// height here — 29px each on the real control, against 52px for a
+    /// finding row — so a line taken by either section above costs the fix
+    /// list exactly one row, and the arithmetic is a trade rather than an
+    /// estimate.
+    ///
+    /// Never below one. A card carrying fixes that showed none of them and
+    /// said nothing about it would be the silent drop this whole budget
+    /// exists to stop; at a budget of one the single row IS the count.
+    private static int FixBudget(int unreadLines, bool findingsOverflowed) =>
+        Math.Max(1, MaxFixRows - (unreadLines - 1) - (findingsOverflowed ? 1 : 0));
+
+    /// What brisk could not read, from the sensors and from the findings, in
+    /// that order. The sensor line is always here; a disclosure that reached
+    /// its source and came back with nothing joins it below.
+    ///
+    /// ONE CHANNEL. The disclosures arrive by the same predicate the Gizlilik
+    /// page bands its unreadable rows with, so the card and the page cannot
+    /// come to disagree about which probe went unread — the alternative was a
+    /// second list of "the unreadable ones" kept here, which is exactly the
+    /// drift the page refused to introduce.
+    ///
+    /// The rule's TITLE, which is rule-authored static text and carries no
+    /// reading, so the section obeys the same ban as the rest of the card:
+    /// this model reads headlines and titles and nothing else a finding
+    /// carries. Ordered by rule id, ordinal — the order the page's unreadable
+    /// band already falls into, since every row in it shares the floor that
+    /// page sorts on and its tie-break is all that decides them.
+    private static IReadOnlyList<string> UnreadLines(ScanSnapshot snapshot, Loc loc)
+    {
+        var lines = new List<string> { UnreadLine(snapshot.Sensors, loc) };
+        lines.AddRange(snapshot.Findings
+            .Where(PrivacyViewModel.IsUnreadableDisclosure)
+            .OrderBy(f => f.RuleId, StringComparer.Ordinal)
+            .Select(f => loc.Title(f.TitleKey, f.Title)));
+        return lines;
+    }
+
+    /// The SENSOR line — one of them, always, naming which sensor stayed
+    /// silent. Whenever the CPU temperature went unread — alone or alongside
+    /// the GPU — the line also
     /// carries the measured memory-integrity state, because that is the one
     /// reason brisk can actually name for a silent CPU sensor. A GPU-only
     /// silence carries no reason: a blocked kernel driver is not why a GPU

@@ -180,8 +180,14 @@ public sealed class FindingRow : ViewModelBase
     /// The page of Windows' own Settings app the link opens, and "" for every
     /// row that points nowhere.
     public string WindowsSettingUri { get; }
-    /// What the link's button says, in the user's language — from the same
-    /// entry that names the URI, so the two cannot describe different pages.
+    /// What the link's button says, in the user's language — declared in the
+    /// same entry that names the URI, so a caption and a destination that
+    /// describe different pages are visible in one place rather than sitting
+    /// in two files. One declaration site is not a consistency check:
+    /// ("ms-settings:bluetooth", "finding.action.windowssetting") compiles and
+    /// renders "Open Windows privacy settings" over a button that opens
+    /// Bluetooth. What the entry makes impossible is adding a destination
+    /// without saying what its button says.
     public string WindowsSettingCaption { get; }
     public bool HasHeadline { get; }
     /// The lead value in the user's language ("57 sn"); "" when the finding

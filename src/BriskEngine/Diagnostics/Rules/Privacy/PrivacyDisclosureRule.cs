@@ -30,8 +30,11 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// The Headline is also what makes these unlike the six switches beside them:
 /// RevelationPicker takes findings that carry one, so a disclosure with a
 /// real reading is eligible to lead a scan's presentation where a switch
-/// never was. Where in that order they belong is a later task of this wave;
-/// today they sort after RevelationPicker.Priority's five named rules.
+/// never was. Where in that order they belong is settled and it is not one
+/// answer for all four: usb-history is named third on RevelationPicker's
+/// declared list, ahead of every rule but boot time and refresh rate, and the
+/// other three are left off it, which is the tail rank. The reasoning for
+/// both halves is at the list itself.
 ///
 /// WHAT A ZERO MEANS IS THE SUBCLASS'S OWN CALL. The three that count what
 /// Windows wrote down report every count they can make, and an empty read is

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Brisk.Services;
@@ -111,8 +112,80 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
         SubKeys.TryGetValue(keyPath, out var s) ? s : (System.Collections.Generic.IReadOnlyList<string>)Array.Empty<string>();
 }
 
+/// The other eleven probes a DiagnosticContext takes, for a test that runs a
+/// rule reading the registry and nothing else.
+///
+/// EVERY MEMBER THROWS. The tempting alternative — answer null, empty, zero —
+/// would let a rule that reached one of these run to completion over a reading
+/// nobody arranged, and the test built on it would pass while measuring a
+/// machine the fixture never described. A NotSupportedException naming the
+/// member is the loud version of the same answer.
+public sealed class NoOtherProbes
+    : IPowercfgProbe, IProcessInfoProbe, ISensorProbe, IDisplayProbe,
+        IEventLogProbe, IHardwareProbe, IDiskInfoProbe, IFileProbe,
+        IProcessLister, IMemoryIntegrityProbe, IDeliveryOptimizationProbe
+{
+    private static T No<T>([CallerMemberName] string member = "") =>
+        throw new NotSupportedException(
+            $"{member} was asked of a fixture that answers the registry and " +
+            "nothing else — see NoOtherProbes");
+
+    public (Guid Id, string Name) GetActiveScheme() => No<(Guid, string)>();
+    public IReadOnlyList<(Guid Id, string Name)> ListSchemes() =>
+        No<IReadOnlyList<(Guid, string)>>();
+    public void SetActive(Guid id) => No<bool>();
+
+    public IReadOnlyList<(string Name, long WorkingSetBytes)> TopByMemory(int count) =>
+        No<IReadOnlyList<(string, long)>>();
+    public double MemoryLoadPercent() => No<double>();
+
+    public double? CpuTempC() => No<double?>();
+    public double? GpuTempC() => No<double?>();
+    public int GpuCount() => No<int>();
+
+    public IReadOnlyList<DisplayInfo> Displays() => No<IReadOnlyList<DisplayInfo>>();
+    public void SetRefreshRate(string deviceName, int hz) => No<bool>();
+    public void PersistCurrentModes() => No<bool>();
+
+    public IReadOnlyList<BootRecord> RecentBoots(int count) =>
+        No<IReadOnlyList<BootRecord>>();
+
+    public IReadOnlyList<MemoryModule> MemoryModules() => No<IReadOnlyList<MemoryModule>>();
+
+    public long FreeBytes(string driveRoot) => No<long>();
+    public long TotalBytes(string driveRoot) => No<long>();
+
+    public bool FileExists(string path) => No<bool>();
+    public string? ReadAllText(string path) => No<string?>();
+    public void WriteAllText(string path, string content) => No<bool>();
+    public IReadOnlyList<string> ListFiles(string directory) => No<IReadOnlyList<string>>();
+    public long DirectorySizeBytes(string path) => No<long>();
+    public DateTime? NewestWriteUtc(string path, int limit = 1500) => No<DateTime?>();
+
+    public bool IsRunning(string processName) => No<bool>();
+
+    public bool? IsOn() => No<bool?>();
+
+    public long? BytesUploadedToPeers() => No<long?>();
+}
+
 public static class TestData
 {
+    /// A context for a rule that reads the registry and nothing else. The data
+    /// directory names a path under the system temp directory that nothing
+    /// here creates, so a rule that went looking for the history store would
+    /// find no store — the same "not arranged for" the probes throw about,
+    /// said in the one place a string cannot throw. Nothing is written there:
+    /// the suite must not litter the machine it tests on.
+    public static DiagnosticContext RegistryContext(IRegistryProbe registry)
+    {
+        var none = new NoOtherProbes();
+        return new DiagnosticContext(none, registry, none, none, none, none, none,
+            none, none, none, none, none,
+            System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                "brisk-registry-only-context"));
+    }
+
     public static DiagnosticFinding Finding(string ruleId, Severity sev = Severity.Warning,
         RuleCategory cat = RuleCategory.Auto, int stars = 3, bool canFix = true,
         string? evidenceKey = null, IReadOnlyList<string>? evidenceArgs = null,

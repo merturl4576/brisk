@@ -186,6 +186,22 @@ public sealed class PrivacyViewModel : ViewModelBase
         FindingSections.IsPrivacy(finding) && finding.CanFix
         && finding.Category == RuleCategory.Confirm;
 
+    /// A privacy finding that reports no reading at all. The absence of a
+    /// Headline is what says so — the disclosure family's own contract, since
+    /// a headline is what a finding leads with and leading with a reading that
+    /// never arrived is the same lie in a larger font — and the two tiers
+    /// above are asked first, because the six switches carry no headline
+    /// either and none of them attempted a reading to fail at.
+    ///
+    /// Public and static for the same reason IsConsequenceFree is: the report
+    /// card's own "what brisk could not read" section is fed from here too, so
+    /// the card and this page answer the question once instead of keeping two
+    /// lists that can drift.
+    public static bool IsUnreadableDisclosure(DiagnosticFinding finding) =>
+        FindingSections.IsPrivacy(finding)
+        && !IsConsequenceFree(finding) && !CostsTheUserSomething(finding)
+        && finding.Headline is null;
+
     /// The numbers, largest first — and only over the readings that ARE
     /// numbers. See TheDisclosureRows_LeadWithTheLargestNumber for why this
     /// stops there: 47 devices, 1284 records and 1.2 GB uploaded are not the
@@ -428,10 +444,14 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// would be described as unreadable by a page that never asked. Flagged rather than guarded: the alternative is a list of
     /// "the unreadable ones" maintained beside the rules, which is the second
     /// channel this page was built to avoid.
+    ///
+    /// That last band is asked through IsUnreadableDisclosure rather than
+    /// inline, because the report card's own unread section asks the same
+    /// question and the two surfaces must not come to answer it differently.
     private ObservableCollection<FindingRow> Band(DiagnosticFinding finding) =>
         IsConsequenceFree(finding) ? SafeSwitchRows
         : CostsTheUserSomething(finding) ? CostlySwitchRows
-        : finding.Headline is null ? UnreadableRows
+        : IsUnreadableDisclosure(finding) ? UnreadableRows
         : DisclosureRows;
 
     /// The number a disclosure leads with, for "largest first", and

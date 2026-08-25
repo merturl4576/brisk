@@ -198,6 +198,27 @@ Disclosure findings appear on the card under the existing rule: counts, never
 contents. The card's "okuyamadıklarım" section gains any probe that could not
 read its source.
 
+**Corrected 2026-08-26, after Task 8 shipped.** Two things this section did not
+say. The second was a live defect rather than a gap in the prose.
+
+- **The card leads with five numbers and counts the rest** on a line of its
+  own. "Appear on the card" was written while exactly five shipped rules
+  carried a headline and all five fitted; this wave brought that count to nine.
+- **A sixth was being drawn past the frame's edge and never seen** on any card
+  whose other sections were full: measured at 758px against the 715px the body
+  column gets. The card is a fixed 1600x900 with nothing in it that scrolls,
+  and that column had no bound at all — the comment that claimed one was
+  describing a coincidence, not a mechanism. Task 8 put the bound in the model: five finding rows, then a
+  counted line, and the fix list gives up one row for every line the sections
+  above it take, because an unread sentence and a fix row are the same height.
+
+The lottery placement, which this section did not name either: `usb-history`
+is third on `RevelationPicker.Priority`, after `boot-degradation` and
+`display-refresh`. brisk leads with a measurement the user can act on today,
+and those two are; the USB count is the strongest number brisk owns that the
+user can do nothing about, so it leads the moment nothing actionable outranks
+it. The other three disclosures stay off the list, which is the tail rank.
+
 ## Guards
 
 The red lines above are tests, not comments:

@@ -146,6 +146,27 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <!-- What the rows above could not hold, counted. The
+                         card's frame is fixed and nothing in it scrolls, so
+                         one row too many is drawn past the Grid's edge and
+                         never seen; this line is how the reader learns there
+                         was one. Collapsed the same way the empty line below
+                         is, so a card whose findings all fit measures exactly
+                         as it did before. -->
+                    <TextBlock x:Name="FindingsMore"
+                               FontSize="17" TextWrapping="Wrap" Margin="0,0,0,12"
+                               Foreground="{StaticResource HeroMuted}"
+                               Text="{Binding FindingsMoreText}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FindingsMoreText}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock FontSize="17" TextWrapping="Wrap"
                                Foreground="{StaticResource HeroMuted}"
                                Text="{Binding FindingsEmptyText}">

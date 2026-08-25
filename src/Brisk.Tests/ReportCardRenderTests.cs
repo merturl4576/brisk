@@ -248,9 +248,11 @@ public class ReportCardRenderTests
         Assert.True(banded < 100, $"the numeral is wearing its band: {banded} pixels");
     }
 
-    /// The worst card brisk can build: five findings (the picker's maximum),
-    /// both sensors silent with a measured reason (the longest unread
-    /// sentence), and far more fixes than the frame holds.
+    /// The worst card the model will build: the findings section over its cap
+    /// so the overflow line is on the card, every disclosure reporting that it
+    /// read nothing, both sensors silent with no measured reason (the longest
+    /// unread sentence in both languages — the measured variants say less,
+    /// because brisk knows more), and far more fixes than the frame holds.
     ///
     /// The card is a fixed 1600x900 with nothing in it that scrolls, wraps or
     /// shrinks. What actually happens to a body column taller than its Grid is
@@ -268,6 +270,21 @@ public class ReportCardRenderTests
     /// Both languages, because the card is rendered in the one the install is
     /// set to and a Turkish sentence that wrapped onto a third line would be a
     /// row of fixes off the bottom of a card nobody had tested.
+    ///
+    /// This fixture used to be five findings, called "the picker's maximum".
+    /// The picker has no maximum — it takes every finding that carries a
+    /// headline, and five was only how many shipped rules carried one. The
+    /// model has a maximum now, and this is measured against that.
+    ///
+    /// WHAT THE tr PASS DOES NOT COVER: the three section headings. They bind
+    /// Loc.Instance in the markup rather than the Loc the model was built
+    /// with, and Loc.Instance is a process-lifetime singleton this harness
+    /// leaves in English — putting it in Turkish would hand Turkish strings to
+    /// every test class running beside this one. So the tr card is measured
+    /// with Turkish body text under English headings. Each heading is one
+    /// short line in both languages and the photographed card clears the frame
+    /// by a wide margin, which is why this is recorded rather than worked
+    /// around.
     [Theory]
     [InlineData("en")]
     [InlineData("tr")]
@@ -279,20 +296,28 @@ public class ReportCardRenderTests
             .Select(i => new UndoableFix($"rule-{i:00}",
                 new DateTime(2026, 8, 21, 9, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
             .ToArray();
-        // MemoryIntegrityOn null is the LONGEST unread sentence in both
-        // languages: the measured variants say less, because brisk knows more.
         var model = ReportCardModel.Build(
-            TestData.Snapshot(LongTitledFindings(), new SensorStatus(false, false, null))
+            TestData.Snapshot(WorstCaseFindings(loc), new SensorStatus(false, false, null))
                 with { Health = 35 },
             manyFixes, loc);
-        Assert.Equal(ReportCardModel.MaxFixRows, model.Fixes.Count);
 
         var (wanted, given) = MeasureBody(model);
 
         Assert.True(wanted <= given,
             $"the body column wants {wanted:F0}px and the frame gives it {given:F0}px "
-            + $"— {ReportCardModel.MaxFixRows} fix rows do not fit and the ones past "
+            + $"— {model.Findings.Count} finding rows, {model.Unread.Count} unread "
+            + $"lines and {model.Fixes.Count} fix rows do not fit, and the ones past "
             + "the edge are clipped away without a word");
+        // The fixture IS the worst case, asserted after the measurement so a
+        // budget regression reports the pixels rather than the shape.
+        Assert.NotEqual("", model.FindingsMoreText);
+        Assert.Equal(ReportCardModel.MaxFindingRows, model.Findings.Count);
+        Assert.Equal(1 + UnreadableDisclosureIds.Length, model.Unread.Count);
+        // What the sections above left it: one row for each unread line past
+        // the sensor's, and one for the overflow line.
+        Assert.Equal(
+            ReportCardModel.MaxFixRows - UnreadableDisclosureIds.Length - 1,
+            model.Fixes.Count);
     }
 
     /// The quiet card at the other end, so the frame check is not passing on
@@ -307,24 +332,94 @@ public class ReportCardRenderTests
             $"the body column wants {wanted:F0}px, the frame gives {given:F0}px");
     }
 
-    /// Five findings wearing titles as long as the real registry's longest,
-    /// because the finding text wraps and TestData's "Title aa-fake" does not
-    /// measure what a shipped rule puts on the card.
-    private static List<DiagnosticFinding> LongTitledFindings()
+    /// The overflow line is a TextBlock whose Text and whose collapse trigger
+    /// both bind the same model property, and a misspelled path there fails
+    /// the way this card has already been bitten once: silently, rendering an
+    /// empty row that eats the budget and says nothing. So this reads the
+    /// rendered string off the control and holds it to the model's, in both
+    /// directions — visible and carrying the count when findings were dropped,
+    /// collapsed when none were.
+    [Fact]
+    public void TheOverflowLine_CarriesTheModelsCount_AndGoesAwayWhenNothingWasDropped()
     {
-        var titles = new[]
-        {
-            "Windows is taking noticeably longer to start than it used to",
-            "The display is running below the refresh rate it supports",
-            "Too many programs are starting with Windows and slowing the login",
-            "Storage Sense is off, so temporary files are never cleared for you",
-            "Memory is running below the speed the installed modules are rated for",
-        };
-        return titles.Select((title, i) => new DiagnosticFinding(
-                $"long-{i}", $"rule.long-{i}.title", title, $"Evidence long-{i}",
-                Severity.Warning, RuleCategory.Advise, 3, CanFix: false,
-                FixDescription: null, Headline: H($"{i}00 ms")))
+        var loc = new Brisk.Localization.Loc();
+        loc.SetLanguage("en");
+        var over = ReportCardModel.Build(
+            TestData.Snapshot(WorstCaseFindings(loc), new SensorStatus(true, true, null)),
+            Array.Empty<UndoableFix>(), loc);
+        var exactly = ReportCardModel.Build(
+            TestData.Snapshot(
+                WorstCaseFindings(loc).Where(f => f.Headline is not null)
+                    .Take(ReportCardModel.MaxFindingRows).ToList(),
+                new SensorStatus(true, true, null)),
+            Array.Empty<UndoableFix>(), loc);
+
+        var (overText, overVisible) = ReadOverflowLine(over);
+        var (exactlyText, exactlyVisible) = ReadOverflowLine(exactly);
+
+        Assert.True(overVisible, "the overflow line is not on a card that dropped rows");
+        Assert.Equal(over.FindingsMoreText, overText);
+        Assert.False(exactlyVisible,
+            $"the overflow line is on a card that dropped nothing, reading '{exactlyText}'");
+    }
+
+    /// The four report-only disclosures, which are the ids that can report
+    /// having read nothing. Hardcoded here and held to four elsewhere:
+    /// PrivacyRedLineTests.EveryPrivacyDisclosureRule_ShipsAnIdThePrivacyList
+    /// Carries asserts the shipped count, so a fifth arrives as a failure
+    /// there rather than as a worst case this file quietly stopped covering.
+    private static readonly string[] UnreadableDisclosureIds =
+    {
+        "usb-history", "run-history", "recall-status", "delivery-optimization",
+    };
+
+    /// One row over the findings cap AND every disclosure unreadable at once.
+    /// No machine produces both today: six findings that lead with a number
+    /// needs at least one disclosure to have read something, and this fixture
+    /// has all four reporting that they read nothing. The model accepts the
+    /// combination, though, and the frame is measured against what the model
+    /// accepts rather than against what today's registry happens to allow.
+    private static List<DiagnosticFinding> WorstCaseFindings(Brisk.Localization.Loc loc)
+    {
+        var findings = LongestTitledRuleIds(loc, ReportCardModel.MaxFindingRows + 1)
+            .Select((id, i) => TestData.Finding(id, cat: RuleCategory.Advise,
+                canFix: false, headline: H($"{i}00 ms")))
             .ToList();
+        findings.AddRange(UnreadableDisclosureIds.Select(id => new DiagnosticFinding(
+            id, $"rule.{id}.title.unread", $"unread {id}", $"Evidence {id}",
+            Severity.Info, RuleCategory.Advise, 1, CanFix: false,
+            FixDescription: null, Headline: null, Kind: FindingKind.Notice)));
+        return findings;
+    }
+
+    /// The longest titles the shipped registry actually holds, in the language
+    /// under test — asked of the resx rather than guessed at, so a title
+    /// rewritten longer than the frame allows fails here instead of shipping.
+    /// The old fixture wrote its own sentences, which measured whatever the
+    /// author imagined and left the Turkish pass measuring English, because
+    /// "rule.long-0.title" is a key neither resx defines.
+    private static IReadOnlyList<string> LongestTitledRuleIds(
+        Brisk.Localization.Loc loc, int count) =>
+        DiagnosticRuleRegistry.All.Select(r => r.Id)
+            .OrderByDescending(id => loc.Title($"rule.{id}.title", id).Length)
+            .ThenBy(id => id, StringComparer.Ordinal)
+            .Take(count).ToList();
+
+    /// Lays the card out and answers what its overflow line actually rendered.
+    private static (string Text, bool Visible) ReadOverflowLine(ReportCardModel model)
+    {
+        var text = "";
+        var visible = false;
+        OnStaThread(() =>
+        {
+            var card = new ReportCard { DataContext = model };
+            card.Measure(new Size(ReportCardRenderer.Width, ReportCardRenderer.Height));
+            card.Arrange(new Rect(0, 0, ReportCardRenderer.Width, ReportCardRenderer.Height));
+            card.UpdateLayout();
+            text = card.FindingsMore.Text;
+            visible = card.FindingsMore.Visibility == Visibility.Visible;
+        });
+        return (text, visible);
     }
 
     /// Lays the real ReportCard out at its real size on an STA thread and
