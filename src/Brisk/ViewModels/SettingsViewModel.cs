@@ -1,10 +1,51 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using Brisk.Localization;
 using Brisk.Services;
 
 namespace Brisk.ViewModels;
 
-public sealed record ChoiceOption(string Value, string LabelKey);
+/// One instance per option for the life of the page, with a label that
+/// ANNOUNCES a change rather than being replaced.
+///
+/// The obvious fix — rebuild both lists in the new language — is the one that
+/// does not work here, and a real ComboBox says why twice over. Keep the label
+/// out of the value and the two lists compare EQUAL, so a Selector handed the
+/// new selection keeps the OLD object and the closed box goes on drawing
+/// "Koyu" under an English page. Put the label INTO the value and they stop
+/// comparing equal, so replacing the list makes the ComboBox lose the
+/// selection outright — SelectedItem goes null, and SelectedValue is bound
+/// TwoWay in SettingsPage, so the null would be written back over the stored
+/// setting. Both were seen on a real ComboBox in ChoiceComboBoxTests.
+///
+/// So nothing is replaced. The same object stays selected and simply reports
+/// that its label now reads differently, which is what the template's binding
+/// is already listening for.
+public sealed class ChoiceOption : INotifyPropertyChanged
+{
+    private readonly Loc _loc;
+
+    public ChoiceOption(string value, string labelKey, Loc loc)
+    {
+        Value = value;
+        LabelKey = labelKey;
+        _loc = loc;
+    }
+
+    public string Value { get; }
+    public string LabelKey { get; }
+
+    /// Read live rather than stored: the key is the same string in every
+    /// language, so a converter bound to it never re-evaluates. This is the
+    /// end that moves.
+    public string Label => _loc[LabelKey];
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public void Relabel() =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Label)));
+}
 
 public sealed class SettingsViewModel : ViewModelBase
 {
@@ -13,16 +54,31 @@ public sealed class SettingsViewModel : ViewModelBase
     private readonly StartupLauncher _launcher;
     private readonly Action<string> _applyTheme;
     private readonly Action<string> _applyLanguage;
+    private readonly Loc _loc;
     private bool _startupFailed;
 
     public SettingsViewModel(Settings settings, string settingsPath,
-        StartupLauncher launcher, Action<string> applyTheme, Action<string> applyLanguage)
+        StartupLauncher launcher, Action<string> applyTheme,
+        Action<string> applyLanguage, Loc? loc = null)
     {
         _settings = settings;
         _settingsPath = settingsPath;
         _launcher = launcher;
         _applyTheme = applyTheme;
         _applyLanguage = applyLanguage;
+        _loc = loc ?? Loc.Instance;
+        LanguageOptions = new[]
+        {
+            new ChoiceOption("system", "settings.value.system", _loc),
+            new ChoiceOption("en", "settings.value.en", _loc),
+            new ChoiceOption("tr", "settings.value.tr", _loc),
+        };
+        ThemeOptions = new[]
+        {
+            new ChoiceOption("system", "settings.value.system", _loc),
+            new ChoiceOption("light", "settings.value.light", _loc),
+            new ChoiceOption("dark", "settings.value.dark", _loc),
+        };
         // The Startup page can turn brisk's autostart off too. One backing
         // truth is not enough on its own: WPF caches a bound value until
         // something raises PropertyChanged, so without this the checkbox kept
@@ -43,31 +99,9 @@ public sealed class SettingsViewModel : ViewModelBase
         };
     }
 
-    /// Both lists are REBUILT on a language change rather than declared once.
-    /// The labels are resolved by a converter bound to LabelKey, and that key
-    /// is the same in every language, so nothing re-runs the conversion and
-    /// WPF keeps the string it built the first time. A fresh list rebuilds the
-    /// item containers, which is what asks the converter again. Seen live: an
-    /// English settings page with "Koyu" still in the Theme box.
-    public IReadOnlyList<ChoiceOption> LanguageOptions { get; private set; }
-        = BuildLanguageOptions();
+    public IReadOnlyList<ChoiceOption> LanguageOptions { get; }
 
-    public IReadOnlyList<ChoiceOption> ThemeOptions { get; private set; }
-        = BuildThemeOptions();
-
-    private static IReadOnlyList<ChoiceOption> BuildLanguageOptions() => new[]
-    {
-        new ChoiceOption("system", "settings.value.system"),
-        new ChoiceOption("en", "settings.value.en"),
-        new ChoiceOption("tr", "settings.value.tr"),
-    };
-
-    private static IReadOnlyList<ChoiceOption> BuildThemeOptions() => new[]
-    {
-        new ChoiceOption("system", "settings.value.system"),
-        new ChoiceOption("light", "settings.value.light"),
-        new ChoiceOption("dark", "settings.value.dark"),
-    };
+    public IReadOnlyList<ChoiceOption> ThemeOptions { get; }
 
     public string Language
     {
@@ -78,13 +112,12 @@ public sealed class SettingsViewModel : ViewModelBase
             _settings.Language = value;
             Persist(nameof(Language));
             _applyLanguage(value);
-            // After the language is in force, never before: the rebuilt lists
-            // are what make the converter run again, and it reads the culture
-            // that _applyLanguage just set.
-            LanguageOptions = BuildLanguageOptions();
-            ThemeOptions = BuildThemeOptions();
-            Raise(nameof(LanguageOptions));
-            Raise(nameof(ThemeOptions));
+            // After the language is in force, never before: Label is read live,
+            // so what each option announces is whatever _applyLanguage just
+            // made true. Nothing is replaced — see ChoiceOption for why
+            // replacing is the fix that does not work here.
+            foreach (var option in LanguageOptions) option.Relabel();
+            foreach (var option in ThemeOptions) option.Relabel();
         }
     }
 

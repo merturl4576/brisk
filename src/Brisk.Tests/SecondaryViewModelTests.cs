@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine.Diagnostics;
@@ -192,26 +193,36 @@ public sealed class SecondaryViewModelTests : IDisposable
     }
 
     /// Seen in a live window: with Language switched to English the Theme box
-    /// still read "Koyu". Both dropdowns resolve their labels through a
-    /// converter bound to LabelKey — a key that never changes — so nothing
-    /// re-runs the conversion and WPF keeps the string it built once. The fix
-    /// is the only one available at this seam: republish the lists so the item
-    /// containers are rebuilt and the converter is asked again.
+    /// still read "Koyu". The labels were resolved by a converter bound to
+    /// LabelKey — the same string in every language — so the binding never
+    /// re-evaluated and WPF kept the text it built once. The label is read
+    /// live now, and each option announces that it reads differently.
+    ///
+    /// The list itself deliberately does NOT move; ChoiceComboBoxTests holds
+    /// both halves of why, on a real ComboBox.
     [Fact]
-    public void LanguageChange_RepublishesBothDropdowns()
+    public void LanguageChange_RelabelsBothDropdowns()
     {
+        var loc = new Loc();
+        loc.SetLanguage("en");
         var vm = new SettingsViewModel(new Settings(),
             Path.Combine(_root, "lang.json"),
             new StartupLauncher(new TaskStateRunner(), new FakeRegistry(),
                 @"C:\x\brisk-app.exe"),
-            _ => { }, _ => { });
-        var raised = new List<string>();
-        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+            _ => { }, loc.SetLanguage, loc);
+        var dark = vm.ThemeOptions.Single(o => o.Value == "dark");
+        var announced = 0;
+        dark.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ChoiceOption.Label)) announced++;
+        };
+        Assert.Equal("Dark", dark.Label);
 
         vm.Language = "tr";
 
-        Assert.Contains(nameof(vm.LanguageOptions), raised);
-        Assert.Contains(nameof(vm.ThemeOptions), raised);
+        Assert.Equal("Koyu", dark.Label);
+        Assert.Equal(1, announced);
+        Assert.Equal("Türkçe", vm.LanguageOptions.Single(o => o.Value == "tr").Label);
     }
 
     /// ...and a schtasks that refuses must not leave settings.json claiming an
