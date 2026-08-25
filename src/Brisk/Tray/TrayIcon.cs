@@ -13,8 +13,11 @@ public sealed class TrayIcon : IDisposable
     private static extern bool DestroyIcon(IntPtr handle);
 
     private readonly NotifyIcon _notify;
-    private readonly Icon _icon;
-    private readonly IntPtr _iconHandle;
+    // Not readonly: the mark is redrawn when the theme changes, because
+    // brisk's signature is the palette's and the palette moves. See
+    // SetAccent.
+    private Icon _icon;
+    private IntPtr _iconHandle;
 
     public event Action? LeftClick;
     public event Action? OpenRequested;
@@ -42,10 +45,32 @@ public sealed class TrayIcon : IDisposable
         };
     }
 
+    /// Redraw the mark in a new accent. Called when the theme changes: the
+    /// title bar and the tray icon are the same mark in two places, and a
+    /// switch that moved one and not the other would leave them describing
+    /// different themes.
+    ///
+    /// The new icon is handed to the NotifyIcon BEFORE the old one is
+    /// destroyed — Icon.FromHandle does not own its handle, so the HICON has
+    /// to be released by hand, and releasing one the shell is still drawing
+    /// from is how a tray icon turns into a black square.
+    public void SetAccent(Color accent)
+    {
+        var (icon, handle) = DrawIcon(accent);
+        var (oldIcon, oldHandle) = (_icon, _iconHandle);
+        (_icon, _iconHandle) = (icon, handle);
+        _notify.Icon = icon;
+        oldIcon.Dispose();
+        DestroyIcon(oldHandle);
+    }
+
     public void UpdateTooltip(string text) =>
         _notify.Text = text.Length <= 63 ? text : text[..63];
 
-    private static (Icon Icon, IntPtr Handle) DrawIcon(Color accent)
+    /// Internal rather than private so the mark's colour can be asserted:
+    /// what a 16x16 tray icon is filled with is otherwise only checkable by
+    /// looking at the notification area.
+    internal static (Icon Icon, IntPtr Handle) DrawIcon(Color accent)
     {
         using var bmp = new Bitmap(16, 16);
         using var g = Graphics.FromImage(bmp);

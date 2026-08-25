@@ -1,6 +1,5 @@
 using System;
 using System.Windows;
-using System.Windows.Media;
 using Microsoft.Win32;
 
 namespace Brisk.Theming;
@@ -9,17 +8,17 @@ public sealed class ThemeManager
 {
     private const string Personalize =
         @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-    private const string Dwm = @"Software\Microsoft\Windows\DWM";
 
     public string Current { get; private set; } = "dark";
 
     public void Apply(string setting)
     {
+        // The registry read that stays: which theme the user is in. brisk
+        // follows Windows here, because dark-or-light is the user's setting
+        // about their whole desktop and not a claim about their machine.
         Current = ThemeResolver.Resolve(setting, () =>
             Registry.CurrentUser.OpenSubKey(Personalize)
                 ?.GetValue("AppsUseLightTheme") as int?);
-        var accent = ThemeResolver.AccentFrom(
-            Registry.CurrentUser.OpenSubKey(Dwm)?.GetValue("ColorizationColor") as int?);
 
         var dictionaries = Application.Current.Resources.MergedDictionaries;
         dictionaries.Clear();
@@ -31,11 +30,28 @@ public sealed class ThemeManager
         {
             Source = new Uri("pack://application:,,,/Theming/Shared.xaml"),
         });
-        // Real system accent wins over the dictionary's fallback value. In dark
-        // mode a light accent needs dark text on it and vice versa.
-        Application.Current.Resources["AccentBrush"] = new SolidColorBrush(accent);
-        var luminance = 0.299 * accent.R + 0.587 * accent.G + 0.114 * accent.B;
-        Application.Current.Resources["AccentTextBrush"] = new SolidColorBrush(
-            luminance > 140 ? Color.FromRgb(0x0B, 0x0B, 0x0B) : Colors.White);
+
+        // And the read that is GONE, deliberately: the Windows accent colour
+        // used to be injected over AccentBrush and AccentTextBrush here, so
+        // the dictionary's value was a fallback nobody with a configured
+        // desktop ever saw. It is the dictionary's value now, in both themes,
+        // and that is a decision rather than a simplification.
+        //
+        // In brisk a colour carries a claim. Severity is a claim; the
+        // signature is decoration. Letting Windows choose the signature meant
+        // brisk could not know what its own decoration was saying — a user
+        // whose accent is red would have had the critical-claim colour on
+        // decorative brackets, the horizon glow and the selected nav tile,
+        // and a user whose accent is the default blue put it a ΔE of 11 from
+        // SeverityInfo, which is the exact two-surfaces-one-colour collision
+        // the palette was retuned to end. Following the system and then
+        // deriving the glow from it does not help: it keeps the collision and
+        // only hides where it came from.
+        //
+        // So the signature is pinned. Turquoise in dark, the same teal
+        // darkened for light. The cost is honest and small — brisk no longer
+        // colour-matches the taskbar — and what is bought is that every
+        // decorative surface in the app is a colour brisk chose and can
+        // therefore keep out of the severity vocabulary.
     }
 }

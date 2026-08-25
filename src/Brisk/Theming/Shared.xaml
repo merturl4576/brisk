@@ -26,11 +26,161 @@
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
     </Style>
+    <!-- The micro-label, and it stays a micro-label. It sits above a combo
+         box on Ayarlar and beside a button on Depolama, where a banded
+         heading would be furniture — PanelHeader below is what opens a
+         SECTION, and the two are deliberately different jobs. -->
     <Style x:Key="SectionLabel" TargetType="TextBlock" BasedOn="{StaticResource Body}">
         <Setter Property="FontSize" Value="10.5" />
         <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
         <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
         <Setter Property="Margin" Value="14,8,14,2" />
+    </Style>
+
+    <!-- ==================================================================
+         THE PANEL LANGUAGE
+
+         One sentence, three keys: a panel is a Surface fill inside a
+         Hairline edge wearing four lit corner brackets, and a section of
+         panels opens with a SurfaceHi header strip.
+
+         They live HERE rather than on the pages on purpose. The cards on
+         Sağlık, Performans and Depolama are FindingCard and CompletionReport
+         further down this same file, so pointing those two at these keys is
+         what let three pages change their look without any of the three
+         being restructured. A page that writes Background and BorderBrush
+         out by hand has left the language and will drift out of it; the ones
+         that still did — Depolama's three cards — name the panel now.
+         ================================================================== -->
+
+    <!-- One corner, drawn once; the other three are this geometry mirrored,
+         so there is a single set of numbers and four corners that cannot
+         drift apart. DRAWN, never lifted: the concept this came from is a
+         picture, and a raster corner in a theme dictionary cannot follow a
+         palette, a DPI or a theme switch.
+
+         14 along each arm with a 3-radius elbow, and the 3 is arithmetic
+         rather than taste. The panel's corner is an 8-radius arc under a 1px
+         edge, so the INSIDE of that corner turns at 7; a mark held 4 in from
+         it stays concentric with it only if it turns at 7 − 4. It is inset
+         by its own Margin for the same reason — a right-angled bracket drawn
+         ON a rounded corner pokes out through it.
+
+         This is also the one thing this round adds that emits light, so it
+         carries its own contrast check (PanelSourceTests) rather than
+         leaning on the atmosphere's, which was spent at the tuning gate. It
+         never touches that budget: a bracket is only ever drawn on the
+         opaque Surface fill of the panel it belongs to, never on bare sky. -->
+    <Style x:Key="PanelBracket" TargetType="Path">
+        <Setter Property="Data" Value="M 0,14 L 0,3 A 3,3 0 0 1 3,0 L 14,0" />
+        <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="StrokeThickness" Value="1.2" />
+        <Setter Property="Stretch" Value="None" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+    </Style>
+
+    <!-- The four corners as one line. A Control carrying nothing but a
+         template is how XAML lends a SET of elements to more than one
+         parent: a resource is one instance and an instance has one parent,
+         so a shared Grid of four Paths could be used in exactly one panel. -->
+    <ControlTemplate x:Key="PanelBrackets" TargetType="Control">
+        <Grid>
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Path.RenderTransform>
+                    <ScaleTransform ScaleX="-1" />
+                </Path.RenderTransform>
+            </Path>
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                <Path.RenderTransform>
+                    <ScaleTransform ScaleY="-1" />
+                </Path.RenderTransform>
+            </Path>
+            <Path Style="{StaticResource PanelBracket}"
+                  HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <Path.RenderTransform>
+                    <ScaleTransform ScaleX="-1" ScaleY="-1" />
+                </Path.RenderTransform>
+            </Path>
+        </Grid>
+    </ControlTemplate>
+
+    <!-- A panel: the fill, the edge, the corner and the brackets, as one
+         thing. It is a templated ContentControl rather than a Style on
+         Border because a Style cannot give an element children, and a panel
+         whose brackets had to be remembered separately at every use site
+         would be a panel that arrives without them somewhere.
+
+         Padding sits on the CONTENT, not on the Border, which is what keeps
+         the brackets on the panel's edge: a Border's Padding pushes its
+         whole child in, and the brackets are part of that child.
+
+         Hairline, not BorderBrushKey. The two carry the same value today and
+         different jobs — the dark palette names Hairline as the panel edge
+         and BorderBrushKey as the control edge, and they are expected to
+         part the first time either is tuned.
+
+         Focusable and IsTabStop are the price of the ContentControl, and
+         they are not optional. Control OVERRIDES Focusable to true and
+         IsTabStop defaults true, so every panel below would otherwise be
+         a keyboard tab stop wearing the dotted marching-ants rectangle
+         that round 11 wrote Win11FocusVisual to remove — six of them,
+         each standing between a keyboard user and a control that does
+         something. A plain Border was none of that, so this is behaviour
+         changed by a reskin, and it shipped once already. Nothing here
+         touches the panel CONTENTS: Focusable does not inherit, so the
+         expander, the buttons and the journal rows keep their focus. -->
+    <Style x:Key="CockpitPanel" TargetType="ContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border CornerRadius="8"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                            <Control Template="{StaticResource PanelBrackets}"
+                                     Focusable="False" IsTabStop="False"
+                                     IsHitTestVisible="False" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The header strip: a SurfaceHi band the width of the content column,
+         in large light type, opening a section of panels.
+
+         It is NOT BasedOn Body, and that is the whole of the wrap guard.
+         Body sets TextTrimming="CharacterEllipsis", so the obvious build of
+         this style would have inherited an ellipsis — and the header carries
+         the widest text in the panel, in the language that runs longest:
+         "brisk'in yalnızca bildirebildikleri" against "What brisk can only
+         report". A trimming header eats the end of that sentence and nothing
+         in the file says so, which is why PanelSourceTests walks the whole
+         BasedOn chain instead of reading one setter. -->
+    <Style x:Key="PanelHeader" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="FontSize" Value="14.5" />
+        <Setter Property="FontWeight" Value="Light" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceHi}" />
+        <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Margin" Value="0,16,0,8" />
+        <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
     <!-- Round 11: Windows 11-style focus ring in place of WPF's dotted
@@ -252,7 +402,7 @@
     </Style>
 
     <!-- Default WPF chrome (Aero2) assumes a light ground; on the cockpit's
-         graphite it would glare. These implicit styles rebuild the three
+         navy it would glare. These implicit styles rebuild the three
          stock controls the app still uses — ComboBox, ScrollBar, ToolTip —
          from the theme brushes, so they follow light AND dark. Flat
          surfaces, hairline borders, no gloss. -->
@@ -260,7 +410,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
         <Setter Property="FontSize" Value="12.5" />
-        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -295,7 +445,7 @@
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}"
                                Placement="Bottom" AllowsTransparency="True"
                                PopupAnimation="Fade" Focusable="False">
-                            <Border Background="{DynamicResource BgElevated}"
+                            <Border Background="{DynamicResource Surface}"
                                     BorderBrush="{DynamicResource BorderBrushKey}"
                                     BorderThickness="1" CornerRadius="6"
                                     Margin="0,4,0,4" Padding="4"
@@ -441,7 +591,7 @@
          Aero2 menu chrome (gradients, icon gutter) would glare on the
          cockpit and is more furniture than one action needs. -->
     <Style TargetType="ContextMenu">
-        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -486,7 +636,7 @@
     </Style>
 
     <Style TargetType="ToolTip">
-        <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <Setter Property="Background" Value="{DynamicResource Surface}" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushKey}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
@@ -532,9 +682,19 @@
     <!-- The hero is an always-dark instrument panel in BOTH       -->
     <!-- themes — under the explicit light theme these keys are    -->
     <!-- what keep it dark, so they must not follow the theme      -->
-    <!-- dictionaries. Since round 8 the global DARK palette       -->
-    <!-- speaks the same language (Bg/BgElevated = this graphite,  -->
-    <!-- Good/SeverityWarning/SeverityCritical = these brights).   -->
+    <!-- dictionaries. That is why the Hero* colours below are     -->
+    <!-- LITERALS rather than {DynamicResource}: the family speaks -->
+    <!-- the dark palette's vocabulary — its Surface, its Bg, its  -->
+    <!-- signature turquoise — and it has to go on speaking it     -->
+    <!-- while the light dictionary is the one loaded. The brights -->
+    <!-- (Good/SeverityWarning/SeverityCritical) it shares         -->
+    <!-- outright; the grounds and the accent it copies, and each  -->
+    <!-- copy names below the key it copies. The rest is the       -->
+    <!-- hero's own and did not move: HeroText is opaque, and the  -->
+    <!-- translucent lifts (HeroMuted, HeroUnlit, HeroHairline,    -->
+    <!-- HeroPodFill, HeroOrbit) compose over whatever fill is     -->
+    <!-- under them, so they followed the grounds by standing      -->
+    <!-- still.                                                    -->
     <!-- ======================================================== -->
     <Color x:Key="HeroGoodColor">#4ADE80</Color>
     <Color x:Key="HeroWarnColor">#FBBF24</Color>
@@ -547,21 +707,55 @@
     <SolidColorBrush x:Key="HeroUnlit" Color="#1FFFFFFF" />
     <SolidColorBrush x:Key="HeroHairline" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="HeroPodFill" Color="#0AFFFFFF" />
-    <Color x:Key="HeroAccentColor">#4CC2FF</Color>
+    <!-- The instrument's own accent, and it is brisk's signature turquoise:
+         the same value the dark palette holds as AccentBrush, copied here
+         rather than bound, for the reason the block above gives. Bound, the
+         light dictionary would hand this panel its own AccentBrush — a teal
+         darkened until white ink sits on it, which measures 2.70:1 on the
+         fill below and 1.98:1 at the strength the CPU arc draws at, under
+         the 3:1 a graphical object has to clear. Its AccentDim, the QUIETER
+         voice, measures 6.20:1 on the same fill: bind the theme's pair here
+         and the echo comes out louder than the arc it echoes. -->
+    <Color x:Key="HeroAccentColor">#5FD4E8</Color>
     <SolidColorBrush x:Key="HeroAccent" Color="{StaticResource HeroAccentColor}" />
     <!-- Living-cockpit motion paints (overview only): the orbit's hairline
-         dashes (13% white) and the inner CPU ring's 70%-opacity accent. -->
+         dashes (13% white) and the inner CPU ring's 70%-opacity accent.
+         The accent is spelled out again with its alpha rather than layered
+         on the Color key above, because a brush that carried the alpha as
+         Opacity would read from source as full strength, and the arcs'
+         contrast checks read from source. -->
     <SolidColorBrush x:Key="HeroOrbit" Color="#21FFFFFF" />
-    <SolidColorBrush x:Key="HeroAccentRing" Color="#B34CC2FF" />
+    <SolidColorBrush x:Key="HeroAccentRing" Color="#B35FD4E8" />
+    <!-- The inner RAM arc: the SAME hero accent at half strength, so the two
+         live arcs read as one voice and its quieter echo. It is deliberately
+         not a second hue and emphatically not a semantic colour — the outer
+         health ring is the instrument's only claim-carrying element, and a
+         RAM arc that turned amber at 80% would be a threshold judgment no
+         rule in this app has made. At 50% it measures 3.36:1 on the panel's
+         brightest ground against the CPU arc's 5.26:1 — clearly the second
+         arc, and still clear of the 3:1 floor a graphical object has to
+         hold. Those two figures are arithmetic written down beside the values
+         and nothing checks them. What IS checked is the floor:
+         InstrumentSourceTests reads these brushes and the ground under them
+         out of source and fails if either arc drops through 3:1.
+
+         Lightening the panel is what spends this arc's margin, and the margin
+         is wider than the round that set it advertised: at half strength this
+         turquoise still clears the floor on #12293B (3.29:1) and does not
+         cross it until roughly #183853 (2.95:1). Re-measure before moving the
+         fill; the figure that matters is this arc's, not the CPU arc's. -->
+    <SolidColorBrush x:Key="HeroAccentRingDim" Color="#805FD4E8" />
 
     <!-- The ONE permitted gradient: a soft radial vignette, a touch lighter
-         behind the ring and settling into deep graphite at the edges (~3–4%
-         luminance shift, not a spotlight). The stops are exactly
-         BgElevated → Bg of the dark palette. -->
+         behind the ring and settling into the page's own night at the edges
+         (a small shift, not a spotlight). The stops are the dark palette's
+         Surface and Bg — the relationship this gradient always had, restored:
+         it held that palette's graphite Surface and Bg until the cockpit
+         retune turned the palette navy and left the instrument behind. -->
     <RadialGradientBrush x:Key="HeroSurface" Center="0.25,0.5"
                          GradientOrigin="0.25,0.5" RadiusX="0.75" RadiusY="1.2">
-        <GradientStop Color="#151A21" Offset="0" />
-        <GradientStop Color="#0E1116" Offset="1" />
+        <GradientStop Color="#0C2434" Offset="0" />
+        <GradientStop Color="#0A1626" Offset="1" />
     </RadialGradientBrush>
 
     <!-- Digital numerals: the score in mono, colored by the shared
@@ -623,20 +817,70 @@
         <Setter Property="FontSize" Value="11" />
     </Style>
 
-    <!-- One finding card, shared by the Sağlık and Performans lists. -->
+    <!-- The satellites: temperature and free space, standing on their own
+         pools of light beneath the instrument. Neither value has a natural
+         0–100 range, so neither gets an arc — a full sweep would have to be
+         invented, and every candidate makes a claim brisk does not make.
+         They are readouts, and they keep the product's dash convention.
+
+         The floor is the one LIT element this page adds after the tuning
+         gate, and it obeys the gate's rule by construction: the pool is
+         drawn INSIDE the instrument panel, on that panel's own opaque fill,
+         so no atmosphere pixel is ever brightened by it. What it still owes
+         is its own contrast check, and InstrumentSourceTests reads the fill
+         key, the peak opacity and the panel underneath out of source rather
+         than being told them.
+
+         AccentGlow, so a theme decides whether there is a glow at all: the
+         light dictionary holds that key fully transparent and the pool
+         simply is not there. The fade is an OpacityMask rather than a
+         gradient of the colour itself, because a colour gradient running to
+         Transparent interpolates through black and would ring each
+         satellite with a dark halo — the same trap AtmosphereLayer's
+         horizon glow documents. -->
+    <Style x:Key="SatelliteFloor" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{DynamicResource AccentGlow}" />
+        <Setter Property="Opacity" Value="0.16" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="OpacityMask">
+            <Setter.Value>
+                <RadialGradientBrush>
+                    <GradientStop Color="#FFFFFFFF" Offset="0" />
+                    <GradientStop Color="#66FFFFFF" Offset="0.6" />
+                    <GradientStop Color="#00FFFFFF" Offset="1" />
+                </RadialGradientBrush>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="SatelliteValue" TargetType="TextBlock"
+           BasedOn="{StaticResource HeroPodValue}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="SatelliteCaption" TargetType="TextBlock"
+           BasedOn="{StaticResource HeroPodCaption}">
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,1,0,0" />
+    </Style>
+
+    <!-- One finding card, shared by the Sağlık and Performans lists — and the
+         reason two pages could change their look without either of them
+         changing. Its STRUCTURE is untouched: marker at the left, headline,
+         expander. What moved is the dress, from three brush attributes
+         written out here to the panel every panel in the app now wears. -->
     <DataTemplate x:Key="FindingCard">
-        <Border CornerRadius="8" Margin="0,0,0,8"
-                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Background" Value="{DynamicResource BgElevated}" />
+        <ContentControl Margin="0,0,0,8">
+            <ContentControl.Style>
+                <!-- BasedOn, not a copy: the hover fill is the only thing a
+                     card says about itself that the panel does not say. -->
+                <Style TargetType="ContentControl" BasedOn="{StaticResource CockpitPanel}">
                     <Style.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{DynamicResource BgHover}" />
                         </Trigger>
                     </Style.Triggers>
                 </Style>
-            </Border.Style>
+            </ContentControl.Style>
             <StackPanel>
                 <ToggleButton IsChecked="{Binding IsExpanded}" Cursor="Hand" MinHeight="44">
                     <ToggleButton.Template>
@@ -827,7 +1071,7 @@
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </ContentControl>
         <DataTemplate.Triggers>
             <!-- Working (fixing or undoing): buttons rest, the severity dot
                  pulses. This is the app's only looping animation and it stops
@@ -948,13 +1192,11 @@
          looking, invisible to everyone else. The whole block collapses
          while both faces are empty, so there is never an empty frame. -->
     <DataTemplate x:Key="CompletionReport">
-        <Border x:Name="ReportChrome" CornerRadius="8" Margin="0,14,0,14"
-                Background="{DynamicResource BgElevated}"
-                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
-                Padding="16,14">
-            <Border.RenderTransform>
+        <ContentControl x:Name="ReportChrome" Margin="0,14,0,14" Padding="16,14"
+                        Style="{StaticResource CockpitPanel}">
+            <ContentControl.RenderTransform>
                 <TranslateTransform />
-            </Border.RenderTransform>
+            </ContentControl.RenderTransform>
             <!-- A 2px Good rule on the left edge — the same accent-rule
                  vocabulary the hero pods speak, worn in the report's own
                  color. Identity, not ornament. -->
@@ -1089,7 +1331,7 @@
                     </StackPanel>
                 </StackPanel>
             </DockPanel>
-        </Border>
+        </ContentControl>
         <DataTemplate.Triggers>
             <DataTrigger Binding="{Binding ReportLines.Count}" Value="0">
                 <Setter TargetName="SessionBlock" Property="Visibility"
@@ -1139,56 +1381,89 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
-    <!-- Nav item on the rail. Tag carries an optional Segoe Fluent glyph
-         (iconography, not a localizable string); items without one — the
-         brand — collapse the icon slot. Hover and the checked pill both use
-         BgElevated, the one fill that reads on the recessed BgRail in both
-         themes; selection is carried by the accent bar and the text weight,
-         the Win11 nav-view way. -->
+    <!-- A nav tile. Round 14 took the recessed rail away, so these no longer
+         sit IN anything: they float directly on the window's atmosphere, and
+         a floating tile has to carry its own edge and its own answer to
+         "which page am I on".
+
+         At rest it is an empty hairline outline on the night. Hovered it
+         fills with SurfaceHi and takes the soft glow. Selected it fills the
+         same way but takes the STRONG glow, the accent on its border and on
+         its glyph, and the text weight — so hover and selection are never the
+         same picture. That distinction is not decoration: between round 13
+         and here, the checked pill and the rail behind it were both painted
+         Surface, and the app spent two commits unable to say which page was
+         showing.
+
+         Tag carries the tile's Segoe Fluent glyph (iconography, not a
+         localizable string), and EVERY tile has one now. There used to be an
+         exception — a wordmark tile with its icon slot collapsed — and it
+         was the one nav entry with no name of its own: it wore [app.name],
+         which put "brisk" on the screen twice. The wordmark kept the title
+         bar, where names live, and the nav is five destinations with five
+         labels and five pictures. The label sits UNDER the glyph and WRAPS
+         rather than clips: Turkish runs longer than English ("Performans",
+         "Depolama"), and an icon-only nav in an app whose whole point is
+         being understandable would be a regression. -->
     <Style x:Key="NavRadio" TargetType="RadioButton">
         <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
         <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
         <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
-        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="FontSize" Value="11" />
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Margin" Value="0,0,0,10" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Grid Margin="8,2">
-                        <Border x:Name="Chrome" CornerRadius="5" MinHeight="34"
-                                Background="Transparent">
-                            <StackPanel Orientation="Horizontal" Margin="12,0"
-                                        VerticalAlignment="Center">
-                                <!-- FontWeight pinned: the checked state's
-                                     SemiBold must not fake-bold the icon font. -->
-                                <TextBlock x:Name="Glyph" Margin="0,0,10,0"
-                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                           FontSize="14" FontWeight="Normal"
-                                           VerticalAlignment="Center"
-                                           Text="{TemplateBinding Tag}" />
-                                <ContentPresenter VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-                        <Rectangle x:Name="Indicator" Width="3" Height="14"
-                                   RadiusX="1.5" RadiusY="1.5"
-                                   HorizontalAlignment="Left" VerticalAlignment="Center"
-                                   Fill="{DynamicResource AccentBrush}"
-                                   Visibility="Collapsed" />
-                    </Grid>
+                    <Border x:Name="Tile" Width="88" MinHeight="70" CornerRadius="10"
+                            Background="Transparent"
+                            BorderBrush="{DynamicResource Hairline}"
+                            BorderThickness="1">
+                        <StackPanel Margin="7,10" VerticalAlignment="Center">
+                            <!-- FontWeight pinned: the checked state's
+                                 SemiBold must not fake-bold the icon font. -->
+                            <TextBlock x:Name="Glyph" Margin="0,0,0,7"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="19" FontWeight="Normal"
+                                       HorizontalAlignment="Center"
+                                       Text="{TemplateBinding Tag}" />
+                            <!-- A ContentPresenter handed a string builds a
+                                 TextBlock that never wraps, so the label is
+                                 given a template that does. Colour, size and
+                                 weight arrive by inheritance from the tile,
+                                 which is what lets the triggers below move
+                                 all three at once. -->
+                            <ContentPresenter HorizontalAlignment="Center">
+                                <ContentPresenter.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" TextWrapping="Wrap"
+                                                   TextAlignment="Center" />
+                                    </DataTemplate>
+                                </ContentPresenter.ContentTemplate>
+                            </ContentPresenter>
+                        </StackPanel>
+                    </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="Tag" Value="{x:Null}">
-                            <Setter TargetName="Glyph" Property="Visibility"
-                                    Value="Collapsed" />
-                        </Trigger>
+                        <!-- Hover first, selection second: a trigger declared
+                             later wins, so the tile the pointer is over while
+                             it is also the selected one still reads selected. -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource BgElevated}" />
+                            <Setter TargetName="Tile" Property="Background"
+                                    Value="{DynamicResource SurfaceHi}" />
+                            <Setter TargetName="Tile" Property="Effect"
+                                    Value="{DynamicResource GlowSoft}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Text}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Chrome" Property="Background"
-                                    Value="{DynamicResource BgElevated}" />
-                            <Setter TargetName="Indicator" Property="Visibility"
-                                    Value="Visible" />
+                            <Setter TargetName="Tile" Property="Background"
+                                    Value="{DynamicResource SurfaceHi}" />
+                            <Setter TargetName="Tile" Property="BorderBrush"
+                                    Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Tile" Property="Effect"
+                                    Value="{DynamicResource GlowStrong}" />
+                            <Setter TargetName="Glyph" Property="Foreground"
+                                    Value="{DynamicResource AccentBrush}" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>
@@ -1198,11 +1473,61 @@
         </Setter>
     </Style>
 
-    <!-- The "brisk" nav item: the app identity, still clearly a nav entry. -->
-    <Style x:Key="NavBrand" TargetType="RadioButton" BasedOn="{StaticResource NavRadio}">
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <!-- The caption controls of brisk's own title bar. Windows no longer
+         paints minimize/maximize/close for us — WindowChrome hands the
+         caption strip back to the app — so these three are ordinary Buttons,
+         and every one of them needs WindowChrome.IsHitTestVisibleInChrome at
+         its use site or the caption swallows the click before WPF sees it.
+         Flat and transparent at rest: the atmosphere is the title bar's
+         ground and a filled button would cut a hole in it.
+
+         Tag is this template's second slot, the way it is the glyph slot on
+         NavRadio — here it carries the foreground the button takes WHILE
+         hovered, so close can go white on red without a second template. -->
+    <Style x:Key="CaptionButton" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource Win11FocusVisual}" />
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="44" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+        <Setter Property="Background" Value="{DynamicResource BgHover}" />
+        <Setter Property="Tag" Value="{DynamicResource Text}" />
+        <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome" Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background"
+                                    Value="{Binding Background,
+                                        RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Setter Property="Foreground"
+                                    Value="{Binding Tag,
+                                        RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Close, which by every platform's convention goes red under the
+         pointer. White ink on it in both themes: SeverityCritical is a
+         strong fill in each, and the theme's own Text would be black on red
+         in light. -->
+    <Style x:Key="CaptionClose" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+        <Setter Property="Background" Value="{DynamicResource SeverityCritical}" />
+        <Setter Property="Tag">
+            <Setter.Value>
+                <SolidColorBrush Color="White" />
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>

@@ -46,6 +46,26 @@ public static class NumeralTick
         Tick(tb);
     }
 
+    /// Park a ticking numeral at the value it is travelling towards.
+    ///
+    /// A still frame wants the resting state, not a frame of the journey —
+    /// the same rule SegmentedGauge's ignition sweep follows, and for the
+    /// same reason: offscreen there is no frame loop, so whatever moment the
+    /// shutter catches is arbitrary. Here it is arbitrary AND dim, because a
+    /// 170 ms fade photographed at 16 ms is a numeral at a quarter opacity.
+    ///
+    /// Dropping the clocks is all it takes. Both animations run TO the
+    /// property's base value — opacity 0 to 1 where the base is 1, slide 5 to
+    /// 0 where a fresh TranslateTransform is already 0 — so removing them
+    /// reverts to exactly where the tick was going to land. Nothing has to be
+    /// assigned, which also means nothing here can disagree with Tick below.
+    internal static void Settle(TextBlock tb)
+    {
+        tb.BeginAnimation(UIElement.OpacityProperty, null);
+        if (tb.RenderTransform is TranslateTransform slide)
+            slide.BeginAnimation(TranslateTransform.YProperty, null);
+    }
+
     private static void Tick(TextBlock tb)
     {
         if (tb.RenderTransform is not TranslateTransform slide)

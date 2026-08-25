@@ -29,11 +29,7 @@ public static class ReportCardRenderer
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
         var card = new ReportCard { DataContext = model };
-        card.Measure(new Size(Width, Height));
-        card.Arrange(new Rect(0, 0, Width, Height));
-        card.UpdateLayout();
-        SettleGauges(card);
-        card.UpdateLayout();
+        OffscreenLayout.LayOut(card, new Size(Width, Height));
 
         var bitmap = new RenderTargetBitmap(
             Width * 2, Height * 2, 192, 192, PixelFormats.Pbgra32);
@@ -43,26 +39,6 @@ public static class ReportCardRenderer
 
         using var stream = File.Create(path);
         encoder.Save(stream);
-    }
-
-    /// The ring's ignition sweep is motion for a live window: SegmentedGauge
-    /// animates LitCount up from zero whenever Score changes, and an
-    /// animation clock only advances while a dispatcher is pumping frames.
-    /// Offscreen there is no frame loop, so the clock never leaves zero and
-    /// the lit arc comes out EMPTY — a dead grey ring on the one image whose
-    /// whole subject is the score. A still frame wants the resting value, so
-    /// the clock is dropped and the count is set to where the sweep would
-    /// have landed. Recursive because the two layers sit inside the card's
-    /// tree, not on a name the renderer could reach for.
-    private static void SettleGauges(DependencyObject node)
-    {
-        if (node is SegmentedGauge gauge)
-        {
-            gauge.BeginAnimation(SegmentedGauge.LitCountProperty, null);
-            gauge.LitCount = SegmentedGauge.LitCountFor(gauge.Score);
-        }
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
-            SettleGauges(VisualTreeHelper.GetChild(node, i));
     }
 
     /// WPF objects demand an STA thread; the console face and the test

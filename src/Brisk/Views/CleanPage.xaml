@@ -9,12 +9,16 @@
     <DockPanel Margin="18,16">
         <!-- Every docked band and the scroll content share the app's one
              content column (see ContentMaxWidth in Shared.xaml). -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource BgElevated}"
-                BorderBrush="{DynamicResource BorderBrushKey}" BorderThickness="1"
-                MaxWidth="{StaticResource ContentMaxWidth}"
-                CornerRadius="8" Padding="16,12" Margin="0,0,0,10"
-                Visibility="{Binding HasBanner,
-                    Converter={x:Static Brisk:BoolToVis.Instance}}">
+        <!-- The fill, the edge and the corner used to be written out here,
+             three attributes at a time, in three places on this page.
+             They name the panel now, which is what puts Depolama in the
+             same language as the cards on Sağlık and Performans — brackets
+             and all, since the panel carries its own. -->
+        <ContentControl DockPanel.Dock="Top" Style="{StaticResource CockpitPanel}"
+                        MaxWidth="{StaticResource ContentMaxWidth}"
+                        Padding="16,12" Margin="0,0,0,10"
+                        Visibility="{Binding HasBanner,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}">
             <DockPanel>
                 <TextBlock Style="{StaticResource Body}" VerticalAlignment="Center"
                            Text="{Binding BannerText}" />
@@ -58,7 +62,7 @@
                             Content="{Binding [clean.dismiss], Source={x:Static loc:Loc.Instance}}" />
                 </StackPanel>
             </DockPanel>
-        </Border>
+        </ContentControl>
         <!-- Round 16: this used to carry the engine's raw path-by-path
              English dump, above the hero and OUTSIDE the scroll viewer, so
              a level clean with two dozen held files pushed the page off
@@ -139,9 +143,8 @@
                      three-level list waits behind "Gelişmiş" below.
                      Presentation only — the button runs exactly today's
                      safe-level defaults (CleanService.CleanSafe). -->
-                <Border Background="{DynamicResource BgElevated}"
-                        BorderBrush="{DynamicResource BorderBrushKey}"
-                        BorderThickness="1" CornerRadius="8" Padding="20,16">
+                <ContentControl Style="{StaticResource CockpitPanel}"
+                                Padding="20,16">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,10">
                             <Button DockPanel.Dock="Right" Padding="20,8"
@@ -320,7 +323,7 @@
                                    Text="{Binding [clean.simple.hint],
                                        Source={x:Static loc:Loc.Instance}}" />
                     </StackPanel>
-                </Border>
+                </ContentControl>
 
                 <!-- Power users: the full technical list, exactly as before,
                      behind one quiet fold. -->
@@ -368,10 +371,8 @@
                                   Converter={x:Static Brisk:BoolToVis.Instance}}">
                     <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{DynamicResource BgElevated}"
-                                BorderBrush="{DynamicResource BorderBrushKey}"
-                                BorderThickness="1" CornerRadius="8"
-                                Margin="0,0,0,8" Padding="16,14">
+                        <ContentControl Style="{StaticResource CockpitPanel}"
+                                        Margin="0,0,0,8" Padding="16,14">
                             <StackPanel>
                                 <DockPanel>
                                     <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold"
@@ -458,7 +459,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
-                        </Border>
+                        </ContentControl>
                     </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

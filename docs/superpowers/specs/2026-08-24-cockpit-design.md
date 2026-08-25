@@ -225,9 +225,20 @@ the header-strip style — no new strings.
 meaning, and it remains the only claim-carrying element of the instrument. The
 centre carries the score in large thin numerals.
 
-**Inner arcs: CPU and RAM only**, rendered in `Accent`/`AccentDim` and **never**
-in semantic colors. A RAM arc that turned amber at 80% would be a threshold
-judgment no rule in this app has made.
+**Inner arcs: CPU and RAM only**, rendered in the hero family's turquoise and
+dim turquoise — which are set equal to the dark theme's accent values — and
+**never** in semantic colors. A RAM arc that turned amber at 80% would be a
+threshold judgment no rule in this app has made.
+
+An earlier draft of this clause said the arcs bind the theme's `Accent` and
+`AccentDim` keys. **They cannot, and the reason is structural rather than
+incidental.** The hero panel is deliberately theme-independent: it stays dark
+in the light theme, so light's `AccentBrush` — the `#0F6E7E` dark teal chosen
+at the tuning gate — is unusable on it. The arcs therefore bind the hero
+family's own accent, which carries the signature turquoise `#5FD4E8` and is
+numerically identical to the dark theme's accent. The result is visually what
+the original clause intended, honest about the mechanism, and it keeps the
+instrument speaking one colour vocabulary rather than borrowing another's.
 
 **No reading, no arc.** This is a correction to existing behaviour, not only a
 rule for new code. `OverviewViewModel.LiveCpuPercent` today documents itself as
