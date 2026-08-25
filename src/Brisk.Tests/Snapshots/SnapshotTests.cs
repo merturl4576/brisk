@@ -12,6 +12,7 @@ using Brisk.Theming;
 using Brisk.ViewModels;
 using Brisk.Views;
 using Brisk.Windows;
+using BriskEngine.Diagnostics;
 using BriskEngine.Models;
 using Xunit;
 // WinForms is on in this project, so these six bare names are ambiguous.
@@ -286,15 +287,20 @@ public class SnapshotTests
     private static FrameworkElement OverviewPageOf(FrameworkElement element) =>
         (FrameworkElement)((Window)element).FindName("OverviewView")!;
 
-    /// The panel language, on the three pages it was supposed to reach.
-    /// This is where that bet is settled, and the three do not settle it the
-    /// same way. Sağlık and Performans get it for nothing: their cards ARE
+    /// The panel language, on the pages it was supposed to reach. This is
+    /// where that bet is settled, and they do not settle it the same way.
+    /// Sağlık, Performans and Gizlilik get it for nothing: their cards ARE
     /// FindingCard and CompletionReport, both of which live in Shared.xaml,
-    /// so the panel reached them without a line moving on either page.
+    /// so the panel reached them without a line moving on any of the three.
     /// Depolama writes its own three cards, and had to be pointed at the
     /// panel by hand — a style attribute each, no structure touched, but not
     /// free, and this is the image that says which of the two stories a page
     /// is telling.
+    ///
+    /// Gizlilik is the one that also writes a card of its own: the read-back
+    /// lines are not findings and there was no template for them, so they
+    /// take CockpitPanel directly. Its row here is what says whether that
+    /// card joined the language or quietly went its own way.
     ///
     /// The nav TILE is set rather than the page's Visibility, because that is
     /// the only route the app itself has — Nav_Checked is what shows a page,
@@ -304,6 +310,7 @@ public class SnapshotTests
     [InlineData("NavHealth", "HealthView", "page-health")]
     [InlineData("NavPerf", "PerfView", "page-performance")]
     [InlineData("NavClean", "CleanView", "page-storage")]
+    [InlineData("NavPrivacy", "PrivacyView", "page-privacy")]
     public void APage_PhotographsWearingThePanels(
         string tile, string page, string name)
     {
@@ -324,6 +331,88 @@ public class SnapshotTests
             $"the page render has {colors} distinct colours — the whole window " +
             "photographed as a flat fill, which is what a window that never " +
             "laid out looks like");
+    }
+
+    /// The Gizlilik page is the tallest thing in the app — three blocks and
+    /// ten possible cards — and at the window's own 700 px the third block is
+    /// below the fold. page-privacy.png stays at that size so it can be
+    /// compared with its siblings; this is the same page in a frame tall
+    /// enough for a human to read the whole of it, which is the only way the
+    /// read-back block gets looked at at all.
+    ///
+    /// The PAGE is photographed rather than the window, and that is forced
+    /// rather than chosen: a shown window is clamped by Windows to the
+    /// monitor it is on, so the first version of this asked for 1500 px,
+    /// got a 1085 px cockpit with 400 px of white under it, and cut the last
+    /// read-back line off anyway. A page on the atmosphere has no HWND and no
+    /// ceiling — the same reason OverviewPage_LaysOutAndRendersSomething
+    /// photographs a page rather than a window. What it costs is the nav and
+    /// the title bar, which page-privacy.png has.
+    ///
+    /// The assertion is about the block that only this frame can see: a
+    /// read-back line per journal entry, each with a sentence under its
+    /// title. The count comes from the view model rather than from a number
+    /// written here, so a fixture that grows a fifth line does not need this
+    /// edited — what would fail is the block going empty or losing its text.
+    /// Enough for the fixture's ten cards and three headings with room to
+    /// spare. Not a magic number to be tuned when the picture crops: the
+    /// assertion inside the capture is what fails if a line stops reaching
+    /// the image, and the answer to that is a taller frame, not a smaller
+    /// claim.
+    private const int TallEnoughForTheWholePage = 1500;
+
+    [Fact]
+    public void ThePrivacyPage_PhotographsAllThreeBlocks()
+    {
+        PrivacyViewModel? vm = null;
+        var path = SnapshotRenderer.Capture(
+            () =>
+            {
+                // The window is built for its composition, not to be shown:
+                // it is what wires a PrivacyViewModel exactly the way
+                // App.xaml.cs does. A second PrivacyPage over the same view
+                // model is what gets photographed.
+                var window = CockpitWindow();
+                vm = (PrivacyViewModel)
+                    ((FrameworkElement)window.FindName("PrivacyView")!).DataContext;
+                var page = new PrivacyPage();
+                page.Bind(vm);
+                return OnAtmosphere(page);
+            },
+            new Size(1100, TallEnoughForTheWholePage), "page-privacy-full",
+            inspect: element =>
+            {
+                Assert.True(vm!.ReadBackRows.Count > 0,
+                    "the read-back block has no lines at all, so the third " +
+                    "block of this page is a heading over nothing");
+
+                // Visibility AND a laid-out height, not IsVisible: nothing
+                // here is attached to a shown window, and IsVisible answers
+                // false for every element of a tree with no presentation
+                // source whatever the layout did. Visibility alone would
+                // count a collapsed block's text; a block with height is one
+                // that was measured, arranged and had somewhere to draw.
+                var drawn = Descendants(element).OfType<TextBlock>()
+                    .Where(t => t.Visibility == Visibility.Visible
+                        && t.ActualHeight > 0)
+                    .Select(t => t.Text)
+                    .ToHashSet(StringComparer.Ordinal);
+                foreach (var row in vm.ReadBackRows)
+                {
+                    Assert.True(drawn.Contains(row.Title),
+                        $"'{row.RuleId}' is in the read-back block and its " +
+                        "title is nowhere in the picture");
+                    Assert.True(drawn.Contains(row.Text),
+                        $"'{row.RuleId}' is in the read-back block and its " +
+                        $"{row.State} sentence is nowhere in the picture");
+                }
+            });
+
+        Assert.True(File.Exists(path));
+        var colors = SnapshotRenderer.DistinctColors(path);
+        Assert.True(colors > 16,
+            $"the tall privacy render has {colors} distinct colours — the " +
+            "page photographed as a flat fill");
     }
 
     /// What DistinctColors cannot say about a page of panels: whether any
@@ -402,7 +491,9 @@ public class SnapshotTests
                     TestData.Finding("startup-heavy", cat: RuleCategory.Auto, canFix: true),
                     TestData.Finding("thermals", Severity.Info, RuleCategory.Advise,
                         canFix: false),
-                },
+                }.Concat(PrivacyTopic()).ToArray(),
+                new SensorStatus(false, false, null),
+                ReRead(),
                 TestData.Target("user-temp", CleanupLevel.Safe, 2048)),
         };
         var loc = new Loc();
@@ -431,7 +522,18 @@ public class SnapshotTests
         var settingsVm = new SettingsViewModel(settings,
             Path.Combine(Path.GetTempPath(), "brisk-snapshot-settings.json"),
             launcher, _ => { }, _ => { });
+        var privacy = new PrivacyViewModel(state, host, loc, notDryRun,
+            // A frozen clock, so "3 days ago" in the photograph is a fact
+            // about the fixture and not about the day the picture was taken.
+            () => new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc));
 
+        // EVERY view model above this line, and not one below it. A page
+        // populates itself from AppState.Changed, so one built after the scan
+        // has subscribed to an event that has already been raised and
+        // photographs empty — measured, the first time this one was built
+        // three lines lower: the panel count on the Gizlilik render came back
+        // 0 and the image was a blank page under a live nav.
+        //
         // A window photographed before the scan is a picture of an empty
         // cockpit — no score on the ring, no rows on any page. AppState's
         // scan yields once, and this thread has no message loop to resume it
@@ -445,8 +547,83 @@ public class SnapshotTests
         finally { SynchronizationContext.SetSynchronizationContext(saved); }
 
         return new MainWindow(state, overview, health, performance, startup,
-            clean, settingsVm, new ThemeManager());
+            clean, privacy, settingsVm, new ThemeManager());
     }
+
+    /// The privacy topic, as ONE COHERENT MACHINE rather than as a list of
+    /// every row the page can draw.
+    ///
+    /// A telemetry switch reports a finding exactly while it reads as ON, and
+    /// the read-back below speaks about the journal — so a switch can be a
+    /// finding here and Reverted there, and it cannot be a finding here and
+    /// Held, WrittenButIgnored or WrittenButUnverified there. A fixture that
+    /// ignored that would photograph a machine that cannot exist, and the
+    /// picture is what this whole harness is for.
+    ///
+    /// With six switches the two cannot both be filled to the brim: three
+    /// switches read as on here, which leaves three for the three read-back
+    /// states that require a switch reading off. What that costs is the
+    /// second card in the costly tier — "Timeline ends" is not in this
+    /// photograph, and ACostlySwitch_NamesWhatItCosts asserts it for both
+    /// rules instead.
+    private static DiagnosticFinding[] PrivacyTopic() => new[]
+    {
+        Disclosure("run-history", "1284"),
+        Disclosure("usb-history", "47"),
+        Unreadable("delivery-optimization"),
+        TestData.Finding("advertising-id", Severity.Info, RuleCategory.Auto,
+            stars: 1, canFix: true, kind: FindingKind.Notice),
+        TestData.Finding("speech-typing", Severity.Info, RuleCategory.Auto,
+            stars: 1, canFix: true, kind: FindingKind.Notice),
+        // Reads as on, and the read-back says brisk turned it off once: this
+        // is the Reverted machine, and the two halves are the same fact.
+        TestData.Finding("location", Severity.Info, RuleCategory.Confirm,
+            stars: 1, canFix: true, kind: FindingKind.Notice),
+    };
+
+    /// The same rule on a machine whose read found nothing. Two things make
+    /// it that: no Headline — the disclosure family's own way of saying it
+    /// has no reading to lead with, and what routes it into the page's
+    /// "could not read" band — and the rule's OWN unread title key, which is
+    /// a different sentence from its readable one. A fixture that kept the
+    /// readable title photographed "Windows uploaded data from this machine
+    /// to other machines this month" under the heading saying brisk could not
+    /// read it: a claim in the picture that the real page never makes.
+    private static DiagnosticFinding Unreadable(string ruleId) => new(
+        ruleId, $"rule.{ruleId}.title.unread", $"unread {ruleId}",
+        $"evidence {ruleId}", Severity.Info, RuleCategory.Advise,
+        ImpactStars: 1, CanFix: false, FixDescription: null,
+        EvidenceKey: $"rule.{ruleId}.evidence.unread", EvidenceArgs: null,
+        Headline: null, Kind: FindingKind.Notice);
+
+    private static DiagnosticFinding Disclosure(string ruleId, string value) =>
+        TestData.Finding(ruleId, Severity.Info, RuleCategory.Advise, stars: 1,
+            canFix: false, kind: FindingKind.Notice,
+            headline: new Headline(value, $"caption {ruleId}",
+                $"rule.{ruleId}.headline.value", new[] { value },
+                $"rule.{ruleId}.headline.caption", Array.Empty<string>()));
+
+    /// What brisk found when it looked again — one line in each of the four
+    /// states, so the block is photographed saying all four things rather
+    /// than the one a tidy fixture would produce. Each rule is in the state
+    /// this build can actually put it in: only diagnostic-level has a second
+    /// value brisk reads and never writes, so only it can reach
+    /// WrittenButIgnored, and activity-history has none, which is exactly
+    /// what WrittenButUnverified is for.
+    ///
+    /// Every rule here reads as OFF except location, which is a finding above
+    /// — see PrivacyTopic for why the two lists have to agree about that.
+    private static ReadBackResult[] ReRead() => new[]
+    {
+        new ReadBackResult("tailored-experiences", ReadBackState.Held,
+            new DateTime(2026, 8, 12, 9, 0, 0, DateTimeKind.Utc)),
+        new ReadBackResult("location", ReadBackState.Reverted,
+            new DateTime(2026, 8, 2, 9, 0, 0, DateTimeKind.Utc)),
+        new ReadBackResult("diagnostic-level", ReadBackState.WrittenButIgnored,
+            new DateTime(2026, 8, 9, 9, 0, 0, DateTimeKind.Utc)),
+        new ReadBackResult("activity-history", ReadBackState.WrittenButUnverified,
+            new DateTime(2026, 8, 5, 9, 0, 0, DateTimeKind.Utc)),
+    };
 
     /// One canned reading, so the live tiles photograph as numbers rather
     /// than as the em dashes a machine with no sensors would show. A caller

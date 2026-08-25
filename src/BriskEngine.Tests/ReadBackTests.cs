@@ -496,7 +496,9 @@ public class ReadBackTests
     /// Nothing in the read-back reads a clock. A stamp in the future is
     /// carried through exactly as the journal has it, and the state is decided
     /// by the registry alone — "23 days ago" is arithmetic for whatever
-    /// renders the line, and no surface renders one yet.
+    /// renders the line. ReadBackRow is what renders it, and what a future
+    /// stamp does on SCREEN is settled there rather than here:
+    /// AStampInTheFuture_RendersAsToday_RatherThanAsANegative.
     [Fact]
     public void AStampInTheFuture_IsCarriedThrough_BecauseNothingHereReadsAClock()
     {
@@ -567,9 +569,11 @@ public class ReadBackTests
     // ---- The sentences -----------------------------------------------
 
     /// The four sentences, in both languages, keyed the way the wave keys
-    /// everything else. Nothing renders them yet: the Privacy page that will
-    /// is a later task of this wave, and until it lands these keys are read
-    /// by this file alone.
+    /// everything else. The Privacy page's read-back block renders all four,
+    /// one per ReadBackState. This file reads them off disk to pin what they
+    /// SAY; that the renderer hands each one the argument it takes is a
+    /// different claim and is pinned on the other side, by
+    /// PrivacyViewModelTests.EachRow_RendersItsOwnSentenceWithItsOwnArgument.
     [Theory]
     [InlineData("readback.held")]
     [InlineData("readback.reverted")]

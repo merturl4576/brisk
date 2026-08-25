@@ -178,10 +178,9 @@ public class TelemetrySwitchRuleTests
     }
 
     /// A rule brisk never runs is a rule that never fires. The id is matched
-    /// as a literal because the list a later task will route the privacy page
-    /// on lives in the Brisk project, which BriskEngine cannot see —
-    /// PrivacyRedLineTests reads the shipped rules against that list from the
-    /// other side.
+    /// as a literal because the list the privacy page routes on lives in the
+    /// Brisk project, which BriskEngine cannot see — PrivacyRedLineTests
+    /// reads the shipped rules against that list from the other side.
     [Theory]
     [MemberData(nameof(AllSwitches))]
     public void EachSwitch_IsRegisteredExactlyOnce(string id)
@@ -511,9 +510,10 @@ public class TelemetrySwitchRuleTests
     /// never as 0.
     ///
     /// DiagnosticLevelRule.EffectOfTheWrite is what reads this value, and
-    /// ReadBackTests plants the two numbers against each other. No surface
-    /// prints the resulting line yet — the Privacy page that will is a later
-    /// task of this wave.
+    /// ReadBackTests plants the two numbers against each other. The Privacy
+    /// page's read-back block prints the resulting line — WrittenButIgnored,
+    /// the state only this rule can reach, and the one the whole wave was
+    /// built around.
     [Fact]
     public void DiagnosticLevel_ReadsTheConsumerValue_AndTheFixNeverWritesIt()
     {

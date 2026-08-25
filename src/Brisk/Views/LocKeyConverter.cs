@@ -25,6 +25,30 @@ public sealed class BoolToVis : IValueConverter
         CultureInfo culture) => throw new NotSupportedException();
 }
 
+/// A theme key, resolved to the brush the installed theme holds under it.
+///
+/// It exists so that a view model which already decides something per state
+/// — ReadBackRow.StateBrushKey, which throws on a state it has no colour for
+/// — does not have to have that decision written out a second time as a wall
+/// of DataTriggers in markup. Two copies of one mapping is two chances to
+/// drift, and the markup copy is the one that fails SILENTLY: a state with no
+/// trigger simply keeps the default.
+///
+/// This fails silently too, differently: a key that is not in the dictionary
+/// resolves to null and paints nothing. ResourceKeyTests cannot see it,
+/// because it reads {DynamicResource} literals out of the XAML and there is
+/// no literal here. EveryReadBackColour_IsAKeyBothThemesCarry is what covers
+/// that, driven off the enum rather than off a list.
+public sealed class ThemeBrush : IValueConverter
+{
+    public static readonly ThemeBrush Instance = new();
+    public object? Convert(object? value, Type targetType, object? parameter,
+        CultureInfo culture) => value is string key
+            ? System.Windows.Application.Current?.TryFindResource(key) : null;
+    public object ConvertBack(object? value, Type targetType, object? parameter,
+        CultureInfo culture) => throw new NotSupportedException();
+}
+
 public sealed class NullToVis : IValueConverter
 {
     public static readonly NullToVis Instance = new();

@@ -133,40 +133,41 @@ public class PrivacyRedLineTests
                 "PrivacyRuleIds.All matches it — its findings would route to Sağlık");
     }
 
-    /// THE STATE OF THIS BUILD, pinned so that changing it is deliberate.
-    /// There is no privacy page yet: App.xaml.cs builds exactly two findings
-    /// pages, IsHealth and IsPerformance, and both exclude these ids, so a
-    /// privacy finding reaches no row on either. The finding planted below
-    /// also carries no Headline, so RevelationPicker — and the report card,
-    /// which picks through it — skip THAT one as well. That is a fact about
-    /// this planted finding and no longer a fact about privacy findings: the
-    /// report-only disclosures ship a Headline when they have a reading to
-    /// lead with, and RevelationPicker takes findings that carry one, so on a
-    /// real machine a privacy finding can reach the overview band and the
-    /// report card's picked list while still reaching no row on either page.
-    /// The band shows the number and the claim, and withholds one control in
-    /// itself: no "see the evidence" link, because no page hosts the finding.
-    /// That is not the empty band's silence — the empty band hides its whole
-    /// DockPanel. OpenFinding_OverAPrivacyRevelation_OffersNoLinkAtAll holds
-    /// that end.
+    /// WHERE A PRIVACY FINDING GOES, over all three findings pages at once.
     ///
-    /// What this guarantees, exactly: these two view models, wired the way
-    /// App.xaml.cs wires them, put a privacy finding on neither page. It is
-    /// NOT a tripwire for the privacy page being built — it constructs its own
-    /// two HealthViewModels over IsHealth and IsPerformance and asserts only
-    /// about those, so a third page can be added beside them and every
-    /// assertion here still passes untouched. What it does catch is the
-    /// regression: either filter widening to take a privacy finding back onto
-    /// a page that grades the machine. Whoever builds the privacy page still
-    /// has to walk the comments that say "will" by hand — nothing here does
-    /// it for them.
+    /// This used to assert that it reached NEITHER page, and that was true
+    /// and nearly worthless: it built its own two HealthViewModels over
+    /// IsHealth and IsPerformance and asserted only about those, so a third
+    /// page could be added beside them and every assertion here would still
+    /// pass untouched — green by construction, with only its prose going
+    /// false, silently. Task 7 built that third page, so this is the test
+    /// that changed rather than the guard that survived: it builds all THREE
+    /// the way App.xaml.cs wires them, and asserts where the finding LANDS as
+    /// well as where it does not.
     ///
-    /// What it does NOT claim: that a privacy finding is invisible. The
-    /// "{n} findings" figure on the overview and the flyout counts every
-    /// finding in the snapshot, privacy included — only the row, the title
-    /// and the evidence have nowhere to appear.
+    /// Both directions, because each catches a different regression. A
+    /// privacy finding on Sağlık or Performans is a disclosure sitting on a
+    /// page that grades the machine. A privacy finding on NO page is the
+    /// state this branch shipped for six commits, where the overview counted
+    /// findings the GUI could not show. The control is the complement: a
+    /// performance finding still lands on Performans and stays off Gizlilik,
+    /// so a filter that had simply stopped answering could not pass this.
+    ///
+    /// What it does NOT claim: that the "{n} findings" figure changed. That
+    /// count always included privacy and still does — see OverviewViewModel,
+    /// where the arithmetic was deliberately left alone. What changed is that
+    /// every finding it counts now has a row somewhere.
+    ///
+    /// The planted finding carries no Headline, so RevelationPicker skips it;
+    /// that is a fact about THIS finding and not about privacy findings. The
+    /// report-only disclosures ship a Headline when they have a reading, and
+    /// on a real machine one of them can lead the overview band — with a live
+    /// "see the evidence" link now, because a page hosts it.
+    /// OpenFinding_OverAPrivacyRevelation_OffersTheLinkAndCarriesTheId holds
+    /// that end, and ShellRoutingTests drives the real window to prove the
+    /// link lands on Gizlilik.
     [Fact]
-    public async Task OnThisBuild_APrivacyFinding_ReachesNeitherFindingsPage()
+    public async Task APrivacyFinding_ReachesGizlilik_AndNoPageThatGradesTheMachine()
     {
         var host = new FakeEngineHost
         {
@@ -188,6 +189,10 @@ public class PrivacyRedLineTests
         var perf = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsPerformance, doneFilter: FindingSections.IsPerformance,
             crossLinkKey: "performance.crosslink", morphPause: () => Task.CompletedTask);
+        // The third page, wired the way App.xaml.cs wires it. Building it
+        // here is what stops this test passing by never asking about it.
+        var privacy = new PrivacyViewModel(state, host, loc, () => false,
+            morphPause: () => Task.CompletedTask);
 
         await state.ScanAsync();
 
@@ -199,11 +204,25 @@ public class PrivacyRedLineTests
                 $"advertising-id reached the {name} page, which grades the " +
                 "machine and must not carry a privacy finding");
         }
-        // The control: the same wiring does show a non-privacy finding, so a
-        // page that rendered nothing at all could not pass this by accident.
+
+        var onPrivacy = privacy.DisclosureRows.Concat(privacy.UnreadableRows)
+            .Concat(privacy.SafeSwitchRows).Concat(privacy.CostlySwitchRows)
+            .Select(r => r.RuleId).ToArray();
+        Assert.True(onPrivacy.Contains("advertising-id"),
+            "advertising-id reached no page at all. It is off both pages that " +
+            "grade the machine, which is right, and off the one built to show " +
+            "it, which is the state this branch shipped for six commits: a " +
+            "finding the overview counted and no surface could show");
+
+        // The control, both ways: the same wiring shows a non-privacy finding
+        // on the page that owns it and keeps it off Gizlilik, so a filter
+        // that had stopped answering could not pass this by accident.
         Assert.Contains("power-plan",
             perf.Rows.Concat(perf.AdviseRows).Concat(perf.NoticeRows)
                 .Select(r => r.RuleId));
+        Assert.False(onPrivacy.Contains("power-plan"),
+            "power-plan reached Gizlilik, which shows the privacy topic and " +
+            "nothing else");
 
         // About the finding planted above, which has no Headline — not about
         // privacy findings in general. See the note on this test.

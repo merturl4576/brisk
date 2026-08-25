@@ -1292,7 +1292,7 @@ public class HealthViewModelTests
         host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
             new ScanResult(Array.Empty<TargetScanResult>()), health,
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-            new SensorStatus(false, false, null));
+            new SensorStatus(false, false, null), Array.Empty<ReadBackResult>());
         var state = new AppState(host);
         var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
             new FixAllService(host));

@@ -180,7 +180,7 @@ public class OverviewViewModelTests
         host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
             new ScanResult(Array.Empty<TargetScanResult>()), 95,
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-            new SensorStatus(false, false, null));
+            new SensorStatus(false, false, null), Array.Empty<ReadBackResult>());
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);
@@ -917,31 +917,37 @@ public class OverviewViewModelTests
         vm.OpenFindingCommand.Execute(null);
 
         Assert.Equal("zz-fake", requested);
-        // The control for the privacy case below: a finding a page hosts
-        // still gets a link, and the link is still enabled.
+        // A finding a page hosts gets a link, and the link is enabled.
         Assert.True(vm.HasRevelationLink,
             "a finding the findings pages carry was offered no link");
         Assert.True(vm.OpenFindingCommand.CanExecute(null),
             "the link is shown and the command behind it refuses the click");
     }
 
-    /// The three report-only disclosures carry a Headline, so one of them can
-    /// lead this band on a real machine — and MainWindow sends anything that
-    /// is not a performance rule to Sağlık, whose filter excludes the privacy
-    /// ids. "See the evidence" would select a page that does not carry the
-    /// finding and expand nothing.
+    /// A privacy revelation now has somewhere to go, and this is the test
+    /// that changed to say so.
     ///
-    /// So no link is offered. Both halves are asserted because stopping the
-    /// navigation alone once left a visible, enabled Button that swallowed
-    /// the click: HasRevelationLink is what collapses it in OverviewPage.xaml,
-    /// and CanExecute is what a Button bound to this command asks before it
-    /// lets itself be pressed. The band still shows its number — the row that
-    /// would have carried the link is not the band, and the band is not
-    /// hidden the way an empty one is.
+    /// It used to assert the opposite, and the opposite was right at the
+    /// time: the disclosures carry a Headline, so one of them can lead this
+    /// band on a real machine, and MainWindow sent everything that was not a
+    /// performance rule to Sağlık, whose filter excludes the privacy ids. The
+    /// link changed the page and opened nothing, so no link was offered. The
+    /// Gizlilik page and MainWindow's third routing arm are what make the
+    /// link honest, and they land in the same commit as this rewrite.
     ///
-    /// When a page hosts these findings, this is the test that has to change.
+    /// Both halves are still asserted, because the failure this pair was
+    /// built for cuts both ways: HasRevelationLink is what OverviewPage.xaml
+    /// binds the Button's Visibility to, and CanExecute is what a Button asks
+    /// before it lets itself be pressed. A link that is shown over a command
+    /// that refuses the click is the same dead affordance as a link that is
+    /// hidden over a command that would have worked.
+    ///
+    /// What is NOT asserted here is that the click lands on Gizlilik — this
+    /// view model raises a rule id and knows nothing about pages. That half
+    /// is MainWindow's, and TheBandsLink_OverAPrivacyFinding_OpensTheGizlilikPage
+    /// drives the real window for it.
     [Fact]
-    public async Task OpenFinding_OverAPrivacyRevelation_OffersNoLinkAtAll()
+    public async Task OpenFinding_OverAPrivacyRevelation_OffersTheLinkAndCarriesTheId()
     {
         var (vm, host, state) = Build();
         host.NextSnapshot = TestData.Snapshot(new[]
@@ -960,15 +966,13 @@ public class OverviewViewModelTests
 
         Assert.True(vm.HasRevelation, "the privacy finding did not reach the band at all");
         Assert.Equal("47", vm.RevelationValue);
-        Assert.False(vm.HasRevelationLink,
-            "the band rendered a \"see the evidence\" link over a privacy " +
-            "finding, and no page this build shows carries one");
-        Assert.False(vm.OpenFindingCommand.CanExecute(null),
-            "the command behind that link accepts the click over a privacy " +
-            "finding — a Button bound to it would render enabled");
-        Assert.True(requested is null,
-            $"the band offered to open '{requested}', and no page this build " +
-            "shows carries a privacy finding");
+        Assert.True(vm.HasRevelationLink,
+            "the band withheld its \"see the evidence\" link over a privacy " +
+            "finding, and the Gizlilik page carries one");
+        Assert.True(vm.OpenFindingCommand.CanExecute(null),
+            "the link is shown over a privacy finding and the command behind " +
+            "it refuses the click");
+        Assert.Equal("usb-history", requested);
     }
 
     /// The half of the fix that lives in markup, and the half nothing else

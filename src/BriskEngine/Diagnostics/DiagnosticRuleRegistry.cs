@@ -14,12 +14,12 @@ public static class DiagnosticRuleRegistry
         new StaleDevCachesRule(), new VisualEffectsRule(), new StorageSenseRule(),
         new DisplayRefreshRule(), new SearchWebResultsRule(),
         new BootDegradationRule(), new MemorySpeedRule(),
-        // The telemetry switches. Their ids are what a later task of this
-        // wave will route the privacy page on; the list to be routed against
-        // lives in the Brisk project, which this assembly cannot see —
-        // PrivacyRedLineTests reads the two against each other from the side
-        // that can. Today those ids only keep these findings OFF the two
-        // pages that exist.
+        // The telemetry switches. Their ids are what the privacy page routes
+        // on; the list routed against lives in the Brisk project, which this
+        // assembly cannot see — PrivacyRedLineTests reads the two against
+        // each other from the side that can. Those ids do two jobs now: they
+        // keep these findings off the two pages that grade the machine, and
+        // they are what puts them on the one that does not.
         new AdvertisingIdRule(), new DiagnosticLevelRule(),
         new TailoredExperiencesRule(), new SpeechTypingRule(),
         // The two that cost the user something. They are Confirm rather than

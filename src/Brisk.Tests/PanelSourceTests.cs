@@ -541,6 +541,51 @@ public sealed class PanelSourceTests
         return Collapse(inline is null ? chain : chain.Prepend(inline));
     }
 
+    /// The half of the impact-meter suppression that lives in markup, and the
+    /// half nothing else can see.
+    ///
+    /// FindingRow.ShowsImpact is only worth anything if the card actually
+    /// binds the meter's visibility to it. A binding path that still names
+    /// IsAdvise, or names nothing, fails SILENTLY in WPF: the trigger never
+    /// matches, the Setter never runs, and ●○○○○ goes on rendering over every
+    /// privacy row — a meter claiming a measurement nobody made, on the one
+    /// page whose subject is brisk not claiming what it did not read.
+    ///
+    /// Named as a property, not merely "some trigger": the reflection line is
+    /// what survives the day the view-model tests stop holding the name for
+    /// the compiler. Watched red by pointing the trigger back at IsAdvise:
+    /// `the card collapses its impact meter on "IsAdvise", not on ShowsImpact`.
+    [Fact]
+    public void TheImpactMeter_BindsItsVisibilityToThePropertyThatDecidesIt()
+    {
+        const string property = "ShowsImpact";
+
+        Assert.True(typeof(FindingRow).GetProperty(property) is { } p
+                    && p.PropertyType == typeof(bool),
+            $"FindingRow exposes no bool {property} for the card to bind");
+
+        var dots = SharedResource("DataTemplate", "FindingCard").Descendants()
+            .Single(e => (string?)e.Attribute(X + "Name") == "ImpactDots");
+        var collapses = dots.Descendants()
+            .Where(e => e.Name.LocalName == "DataTrigger")
+            .Where(t => t.Elements().Any(s => s.Name.LocalName == "Setter"
+                && (string?)s.Attribute("Property") == "Visibility"
+                && (string?)s.Attribute("Value") == "Collapsed"))
+            .ToArray();
+
+        // Counted rather than Single()d: "none" and "two" are different
+        // mistakes, and Single throws where it should report.
+        Assert.True(collapses.Length == 1,
+            $"the impact meter has {collapses.Length} triggers that collapse " +
+            "it, and exactly one property decides whether a row has an impact " +
+            "reading to show");
+        var binding = (string?)collapses[0].Attribute("Binding") ?? "";
+        Assert.True(binding.Contains(property, StringComparison.Ordinal),
+            $"the card collapses its impact meter on \"{binding}\", not on " +
+            $"{property} — a binding path WPF cannot resolve never matches, " +
+            "so the meter keeps rendering and nothing fails");
+    }
+
     private static XElement SharedResource(string kind, string key) =>
         SharedXaml().Elements().Single(e =>
             e.Name.LocalName == kind && (string?)e.Attribute(X + "Key") == key);

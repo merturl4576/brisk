@@ -19,13 +19,14 @@ public sealed record FixAllResult(
 /// must never be bundled in here.
 ///
 /// Neither is a privacy setting. This button is about speed and hygiene, and
-/// the disclosure spec's action model is two-tier: a later task of this wave
-/// WILL add a privacy page with its own button for the four consequence-free
-/// switches, and its own per-switch controls for the two that cost the user
-/// something (Find my device, Timeline) with the loss named beside them.
-/// Neither surface exists on this build, and this exclusion does not wait for
-/// them: a generic button cannot carry either consent, so it does not reach a
-/// privacy finding whether or not anything else can.
+/// the disclosure spec's action model is two-tier: the Privacy page carries
+/// its own button over the four consequence-free switches
+/// (PrivacyViewModel.IsConsequenceFree), and its own per-switch control for
+/// each of the two that cost the user something (Find my device, Timeline)
+/// with the loss named beside it. This exclusion never waited for those
+/// surfaces and does not lean on them now: a generic button cannot carry
+/// either consent, so it does not reach a privacy finding whether or not
+/// anything else can.
 public sealed class FixAllService
 {
     /// StartupBloatRule.Fix is exactly "disable every enabled known-heavy

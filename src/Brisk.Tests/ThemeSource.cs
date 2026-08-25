@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -27,6 +28,18 @@ internal static class ThemeSource
             XDocument.Load(Path.Combine(ThemingDir(), file)).Root!
                 .Elements().Single(e => (string?)e.Attribute(X + "Key") == key)
                 .Attribute("Color")!.Value)!;
+
+    /// Every key a dictionary declares, whatever kind of thing it holds —
+    /// for a test asking whether a key EXISTS rather than what colour it is.
+    /// A key resolved at runtime from a string, rather than written into the
+    /// XAML as a {DynamicResource} literal, is invisible to ResourceKeyTests
+    /// and paints nothing when it is missing.
+    internal static IReadOnlyCollection<string> Keys(string file) =>
+        XDocument.Load(Path.Combine(ThemingDir(), file)).Root!
+            .Elements()
+            .Select(e => (string?)e.Attribute(X + "Key"))
+            .Where(key => key is not null)
+            .ToHashSet(StringComparer.Ordinal)!;
 
     private static string ThemingDir()
     {

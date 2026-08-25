@@ -46,8 +46,8 @@ public enum WriteEffect
     Unread,
 }
 
-/// The six switches this wave gives brisk, on a privacy page that does not
-/// exist yet. Five of them share one shape: a handful of registry values, a
+/// The six switches this wave gives brisk, on the Privacy page that shows
+/// them in two tiers. Five of them share one shape: a handful of registry values, a
 /// number that reads as on, a number the fix writes, and an undo that restores
 /// every value a COMPLETED fix recorded. Not every value a fix touched:
 /// FixRunner journals the prior state only after Fix returns, so a multi-value

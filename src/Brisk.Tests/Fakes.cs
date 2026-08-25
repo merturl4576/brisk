@@ -145,14 +145,31 @@ public static class TestData
     /// Every test that cares passes its own.
     private static readonly SensorStatus NothingAnswered = new(false, false, null);
 
+    /// The fixture journals no fix, so there is nothing for a read-back to
+    /// re-read — stated the same way and for the same reason as the sensors
+    /// above. A test about the read-back passes its own rows; this default is
+    /// what the fixture's own machine would produce, not a shrug.
+    private static readonly ReadBackResult[] NothingReRead = Array.Empty<ReadBackResult>();
+
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
         params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);
 
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
-        SensorStatus sensors, params TargetScanResult[] targets) => new(
+        SensorStatus sensors, params TargetScanResult[] targets) =>
+        Snapshot(findings, sensors, NothingReRead, targets);
+
+    public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
+        SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
+        params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-        sensors);
+        sensors, readBack);
+
+    /// A snapshot whose only distinguishing feature is what brisk found when
+    /// it looked again — the shape most read-back tests want.
+    public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
+        IReadOnlyList<ReadBackResult> readBack) =>
+        Snapshot(findings, NothingAnswered, readBack);
 }
 
 public sealed class FakeEngineHost : IEngineHost
@@ -182,7 +199,18 @@ public sealed class FakeEngineHost : IEngineHost
         return Task.FromResult(NextSnapshot);
     }
 
-    public FixOutcome Fix(string ruleId) { Fixed.Add(ruleId); return new(true, ruleId); }
+    /// Mirrors OnUndo below: lets a test model a fix that REFUSES —
+    /// diagnostic-level writes under HKLM and fails cleanly through FixRunner
+    /// on an unelevated machine, which is the ordinary outcome of the privacy
+    /// page's one button on a standard account. Runs after the record, so a
+    /// refused fix is still an attempted one.
+    public Func<string, FixOutcome>? OnFix { get; set; }
+
+    public FixOutcome Fix(string ruleId)
+    {
+        Fixed.Add(ruleId);
+        return OnFix?.Invoke(ruleId) ?? new FixOutcome(true, ruleId);
+    }
     /// Mirrors OnClean: lets a test model the display rescue's unhappy paths —
     /// an undo that throws, or one whose effect changes what the next scan
     /// sees — without another whole decorator host. Runs before the record.

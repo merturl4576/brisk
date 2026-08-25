@@ -72,12 +72,19 @@ public sealed class EngineHost : IEngineHost
                 // A broken probe must never kill the scan (spec: degrade gracefully).
             }
         }
+        // The read-back rides the scan, in the same pass over the same
+        // context that produced the findings above — see ScanSnapshot for why
+        // it is not a second call the page makes for itself. It reads the
+        // journal here rather than taking ListUndoable()'s answer from
+        // somewhere else for the same reason.
+        var readBack = ReadBack.For(_ctx, _journal.ListUndoable(), _rules);
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
             HealthScore.Compute(findings), DateTime.UtcNow,
             new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
-                MemoryIntegrityOn: integrityOn));
+                MemoryIntegrityOn: integrityOn),
+            readBack);
     }, ct);
 
     private sealed class SyncProgressAdapter : IProgress<ScanProgress>

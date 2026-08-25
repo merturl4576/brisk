@@ -298,12 +298,17 @@
                                        Foreground="{StaticResource HeroMuted}"
                                        Text="{Binding RevelationEvidence}" />
                             <!-- The link is offered only when some page hosts
-                                 the finding the band is showing; a privacy
-                                 revelation has no host on this build, so the
-                                 Button is collapsed rather than left live and
-                                 inert. Its gap to the "and n more" line is its
-                                 OWN right margin, so the line stays flush with
-                                 the text above when the Button is gone. -->
+                                 the finding the band is showing, and it is
+                                 COLLAPSED rather than left live and inert
+                                 otherwise — a Button that renders enabled and
+                                 swallows the click is the defect this binding
+                                 was added for. Every rule id routes to one of
+                                 the three findings pages today, privacy
+                                 included, so the collapsed state is the guard
+                                 rather than the ordinary case. Its gap to the
+                                 "and n more" line is its OWN right margin, so
+                                 the line stays flush with the text above when
+                                 the Button is gone. -->
                             <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
                                 <Button Style="{StaticResource LinkButton}"
                                         Margin="0,0,12,0"

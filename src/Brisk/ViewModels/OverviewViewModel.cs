@@ -546,21 +546,22 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationMoreText = revelations.Count > 1
                 ? _loc.F("overview.revelation.more", revelations.Count - 1) : "";
             RevelationEmptyText = "";
-            // The band shows every picked finding's number; the LINK only
-            // works for a finding some page hosts. MainWindow sends anything
-            // that is not a performance rule to Sağlık, and Sağlık's filter
-            // excludes the privacy ids — so a privacy finding leading the
-            // band would select a page that does not carry it and expand
-            // nothing. Until a page hosts them there is no target, and no
-            // link is offered: the band still shows the number, the caption,
-            // the claim and the evidence, and the row that would have held
-            // the link holds only the "and n more" line, which is itself
-            // empty when there is nothing more.
+            // Every picked finding has a page that hosts it, so every one of
+            // them gets a link. FindingSections routes a rule id to exactly
+            // one of the three findings pages — IsPerformance and IsPrivacy
+            // are the named topics, Sağlık is what is left — and MainWindow's
+            // handler has an arm for each.
             //
-            // This is NOT the empty band's silence — that hides the whole
-            // DockPanel (HasRevelation false). This case shows the band and
-            // withholds one control in it.
-            RevelationTarget(FindingSections.IsPrivacy(top) ? "" : top.RuleId);
+            // It was not always so. A privacy revelation used to be given an
+            // empty target and no link: MainWindow sent everything that was
+            // not a performance rule to Sağlık, whose filter excludes the
+            // privacy ids, so the link changed the page and opened nothing.
+            // The MECHANISM stays exactly where it was — a band with nowhere
+            // to send a reader still has to withhold the control rather than
+            // render a Button that swallows the click, which is the defect it
+            // was built for — and what changed is that a privacy finding now
+            // has somewhere to go.
+            RevelationTarget(top.RuleId);
         }
         else
         {
@@ -582,14 +583,16 @@ public sealed class OverviewViewModel : ViewModelBase
         // score grades speed and hygiene and does not grade privacy, and a
         // fast clean machine reads 100 whether or not telemetry is on.
         //
-        // Where those findings DO show on this build: in the raw "{n}
-        // findings" figure, which counts the whole snapshot. Where they do
-        // not: any row anywhere. Both findings pages exclude them by rule id
-        // and they carry no headline, so the revelation band and the report
-        // card skip them too. A later task of this wave adds the page that
-        // will render them; until it lands they are a number and nothing
-        // more, and PrivacyRedLineTests pins that state so the day it changes
-        // is a day this comment gets rewritten.
+        // The "{n} findings" figure below counts the WHOLE snapshot, privacy
+        // included, and it always did. What changed with the Gizlilik page is
+        // that the count stopped promising rows nobody could reach: on a
+        // machine with one power-plan finding and four telemetry switches
+        // this said "5 findings · 1 one-click fixable", both numbers true and
+        // four of the five with no surface anywhere. The figure was left
+        // exactly as it is — the page is what made it honest, not an
+        // adjustment to the arithmetic, because subtracting privacy from the
+        // total would have understated what brisk found in order to match a
+        // gap in the GUI.
         var hasWork = _fixAll.HasWork(snapshot);
         var advise = snapshot.Findings.Count(f => f.Category == RuleCategory.Advise);
         StatusText = hasWork ? _loc["overview.status.attention"]

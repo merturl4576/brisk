@@ -40,6 +40,22 @@ public sealed class FindingRow : ViewModelBase
             ? LocalizedText.Headline(headline, loc).Value : "";
         ImpactText = new string('●', finding.ImpactStars)
                    + new string('○', 5 - finding.ImpactStars);
+        // Whether the meter above is a reading at all. ImpactStars is
+        // documented 1..5 and measures expected PERFORMANCE impact — so the
+        // privacy rules, which cost no speed, all report ONE, and they report
+        // it because zero is outside the range rather than because anything
+        // was measured. Both engine families say so in as many words
+        // (TelemetrySwitchRule.Detect, PrivacyDisclosureRule.Disclosure).
+        // Rendered, that is ●○○○○ on every privacy row: a meter claiming a
+        // measurement nobody made, on the one page whose whole subject is
+        // brisk not claiming what it did not read.
+        //
+        // Advise rows lose it for a different reason — "how big is the
+        // problem" is the wrong frame for advice — and one property answers
+        // for both, because the question the card asks is the same one: does
+        // this row have an impact reading worth showing?
+        ShowsImpact = finding.Category != RuleCategory.Advise
+            && !FindingSections.IsPrivacy(finding);
         // Kind is read BEFORE Severity, and that order is the claim: Severity
         // still says how bad the thing is, but Kind says whether brisk is in a
         // position to call it a problem at all. v0.4 took the score penalty off
@@ -64,6 +80,15 @@ public sealed class FindingRow : ViewModelBase
         var hasAdviceKey = !string.Equals(advice, adviceKey, StringComparison.Ordinal);
         AdviceText = IsAdvise && hasAdviceKey ? advice : Evidence;
         HasDetails = IsAdvise && hasAdviceKey;
+        // What this switch takes away, in the rule's own words, for the rows
+        // that sit on the Privacy page's second tier. Same shape as the
+        // advice key above: a rule that declares no cost simply has no key,
+        // and the indexer answering with the key itself is what says so. No
+        // list of "the costly ones" lives here — the rule declares its own.
+        var costKey = $"rule.{finding.RuleId}.cost";
+        var cost = loc[costKey];
+        HasCost = !string.Equals(cost, costKey, StringComparison.Ordinal);
+        CostText = HasCost ? cost : "";
         HasStorageAction = IsAdvise && onOpenStorage is not null
             && StorageAdviceRules.Contains(finding.RuleId);
         FixCommand = new RelayCommand(() => onFix(this), () => CanFix);
@@ -80,9 +105,17 @@ public sealed class FindingRow : ViewModelBase
     public string Evidence { get; }
     public string AdviceText { get; }
     public string ImpactText { get; }
+    /// Whether ImpactText is a reading rather than a placeholder — see the
+    /// constructor. The card binds the meter's visibility to this.
+    public bool ShowsImpact { get; }
     public string SeverityKey { get; }
     public string CategoryText { get; }
     public bool IsAdvise { get; }
+    /// The named loss beside a switch that costs the user something
+    /// ("Find my device stops working"), and false for every rule that
+    /// declares none.
+    public bool HasCost { get; }
+    public string CostText { get; }
     public bool CanFix { get; }
     public bool CanUndo { get; }
     public bool HasDetails { get; }

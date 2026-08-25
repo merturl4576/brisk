@@ -15,10 +15,13 @@ namespace BriskEngine.Diagnostics;
 /// state. This is the join between the two.
 ///
 /// Nothing here reads a clock either. FixedAtUtc is carried through from the
-/// journal untouched, so "23 days ago" is arithmetic for whatever renders the
-/// line — and nothing renders one yet. The Privacy page that will show these
-/// rows is a later task of this wave; until it lands, For is called by its
-/// tests and by nothing else.
+/// journal untouched, so "23 days ago" is arithmetic for WHATEVER RENDERS THE
+/// LINE, and Brisk's ReadBackRow is what does it: it converts the stamp to
+/// local time, counts the days in local calendar days, and hands each state
+/// the argument its own sentence takes — a day count for two of them, a date
+/// for one, nothing for the fourth. For is called by EngineHost.ScanAsync,
+/// which puts these rows on the snapshot in the same pass that produced the
+/// findings, and by the tests below.
 ///
 /// WHAT IT DELIBERATELY DOES NOT DO: it does not walk a rule's Values
 /// collection. That was the obvious way to ask "is what I wrote still

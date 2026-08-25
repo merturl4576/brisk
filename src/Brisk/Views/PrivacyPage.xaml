@@ -1,0 +1,236 @@
+<UserControl x:Class="Brisk.Views.PrivacyPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Brisk.Localization"
+             xmlns:Brisk="clr-namespace:Brisk.Views">
+    <DockPanel Margin="18,16">
+        <!-- The page hero, and the one thing it deliberately does NOT carry:
+             a score. Sağlık and Performans lead with the health ring because
+             the health score is about them. Privacy is a second axis — every
+             finding on this page is a Notice and none of them moves that
+             number — so a ring here would be a reading nobody took, which is
+             the same defect as the impact meter this page suppresses. What
+             leads instead is the sentence saying so. -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource HeroStrip}"
+                MaxWidth="{StaticResource ContentMaxWidth}" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock Style="{StaticResource HeroStripCaption}"
+                           Text="{Binding [privacy.title], Source={x:Static loc:Loc.Instance}}" />
+                <TextBlock Margin="0,5,0,0" TextWrapping="Wrap"
+                           FontFamily="Segoe UI Variable Text, Segoe UI"
+                           FontSize="14" Foreground="{StaticResource HeroText}"
+                           Text="{Binding [privacy.hero.note], Source={x:Static loc:Loc.Instance}}" />
+            </StackPanel>
+        </Border>
+        <!-- No HorizontalAlignment here: the one content column works by
+             MaxWidth + default Stretch (see HealthPage for the regression
+             this note comes from). -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14"
+                    MaxWidth="{StaticResource ContentMaxWidth}">
+            <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
+                    Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10"
+                    MaxWidth="{StaticResource ContentMaxWidth}"
+                    Visibility="{Binding State.IsScanning,
+                        Converter={x:Static Brisk:BoolToVis.Instance}}">
+            <ProgressBar IsIndeterminate="True" Height="3" BorderThickness="0"
+                         Background="{DynamicResource Divider}"
+                         Foreground="{DynamicResource AccentBrush}" />
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Style="{StaticResource Muted}"
+                           Text="{Binding [flyout.scanning], Source={x:Static loc:Loc.Instance}}" />
+                <TextBlock Style="{StaticResource Faint}" Margin="6,0,0,0"
+                           Text="{Binding State.ProgressText}" />
+            </StackPanel>
+        </StackPanel>
+        <!-- What the last action reported, including a switch that refused.
+             Collapsed while there is nothing to say. -->
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
+                   MaxWidth="{StaticResource ContentMaxWidth}"
+                   Text="{Binding Message}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Message}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
+                <!-- BLOCK 1: the numbers. -->
+                <TextBlock Style="{StaticResource PanelHeader}" Margin="0,0,0,0"
+                           Text="{Binding [privacy.disclosure.section],
+                               Source={x:Static loc:Loc.Instance}}" />
+                <ItemsControl ItemsSource="{Binding DisclosureRows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
+                <!-- The spec's fourth red line, given a place to stand: a
+                     probe that could not read its source is never a silent
+                     zero. The heading is the report card's own key, not a
+                     second one saying the same thing — the card and this page
+                     make one claim, so they say it in one string. -->
+                <TextBlock Text="{Binding [report.section.unread],
+                               Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource PanelHeader}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UnreadableRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding UnreadableRows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
+
+                <!-- BLOCK 2: the switches, in the maintainer's two tiers. -->
+                <TextBlock Style="{StaticResource PanelHeader}"
+                           Text="{Binding [privacy.switches.section],
+                               Source={x:Static loc:Loc.Instance}}" />
+                <!-- The heading names the topic; this names what brisk
+                     actually read. It sits directly under it so the two are
+                     never read apart: brisk reads a switch on this machine
+                     and has no sight of what leaves it. -->
+                <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
+                           Margin="2,0,0,10"
+                           Text="{Binding [privacy.switches.note],
+                               Source={x:Static loc:Loc.Instance}}" />
+                <!-- Tier one: ONE button for the four with no visible
+                     consequence. The caption carries the count, and the
+                     sentence beside it carries the promise the count is
+                     good for. -->
+                <StackPanel Margin="0,0,0,10">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SafeSwitchRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
+                               Margin="2,0,0,8"
+                               Text="{Binding [privacy.switches.safe.note],
+                                   Source={x:Static loc:Loc.Instance}}" />
+                    <Button x:Name="TurnOffSafeButton" HorizontalAlignment="Left"
+                            Command="{Binding TurnOffSafeCommand}"
+                            Content="{Binding TurnOffSafeText}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding SafeSwitchRows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
+                <!-- Tier two: one control each, and the loss named on the
+                     card itself (FindingCard binds CostText). No shared
+                     button reaches these — the consent for "this takes
+                     nothing away" cannot cover a switch that does. -->
+                <TextBlock Text="{Binding [privacy.switches.costly.section],
+                               Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource PanelHeader}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CostlySwitchRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding CostlySwitchRows}"
+                              ItemTemplate="{StaticResource FindingCard}" />
+                <!-- Nothing to switch off is good news and is said, rather
+                     than left as an empty gap between two headings. -->
+                <TextBlock TextWrapping="Wrap" Margin="2,0,0,4"
+                           Text="{Binding [privacy.switches.none],
+                               Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasSwitches}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- BLOCK 3: what brisk turned off, when, and whether it
+                     held. This is the page's report block, and it is the only
+                     one: the journal is rendered here and nowhere else on
+                     this page, so one fix cannot appear twice saying two
+                     things. Undo lives in each row's context menu, the same
+                     quiet gesture the journal report rows carry. -->
+                <TextBlock Text="{Binding [privacy.readback.section],
+                               Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource PanelHeader}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ReadBackRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding ReadBackRows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ContentControl Style="{StaticResource CockpitPanel}"
+                                            Margin="0,0,0,8" Padding="16,12"
+                                            Focusable="False">
+                                <ContentControl.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Command="{Binding UndoCommand}"
+                                                  Header="{Binding [health.undo],
+                                                      Source={x:Static loc:Loc.Instance}}" />
+                                    </ContextMenu>
+                                </ContentControl.ContextMenu>
+                                <DockPanel>
+                                    <Ellipse DockPanel.Dock="Left" Width="8" Height="8"
+                                             VerticalAlignment="Top" Margin="0,6,12,0"
+                                             Fill="{Binding StateBrushKey,
+                                                 Converter={x:Static Brisk:ThemeBrush.Instance}}" />
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Body}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding Title}" />
+                                        <TextBlock Style="{StaticResource Muted}"
+                                                   TextWrapping="Wrap" Margin="0,3,0,0"
+                                                   Text="{Binding Text}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </ContentControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

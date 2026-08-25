@@ -14,7 +14,8 @@ public partial class MainWindow : Window
 
     public MainWindow(AppState state, OverviewViewModel overview, HealthViewModel health,
         HealthViewModel performance, StartupViewModel startup,
-        CleanViewModel clean, SettingsViewModel settings, ThemeManager theme)
+        CleanViewModel clean, PrivacyViewModel privacy, SettingsViewModel settings,
+        ThemeManager theme)
     {
         _theme = theme;
         _overview = overview;
@@ -27,6 +28,7 @@ public partial class MainWindow : Window
         HealthView.Bind(health);
         PerfView.Bind(performance, startup);
         CleanView.DataContext = clean;
+        PrivacyView.Bind(privacy);
         SettingsView.DataContext = settings;
         SourceInitialized += (_, _) => ApplyTitleBar();
         // An advise card's "Open Storage" lands on the Depolama page, from
@@ -40,12 +42,27 @@ public partial class MainWindow : Window
         // The band's "see the evidence" goes to the page that HOSTS the
         // finding — the boot finding lives on Performans, and sending its
         // reader to Sağlık was the first defect live use found.
+        //
+        // Three destinations, because there are three findings pages and
+        // FindingSections routes to exactly one of them: IsPerformance and
+        // IsPrivacy are the named topics and Sağlık is what is LEFT. The
+        // privacy arm is not a nicety — for five commits this was an
+        // if/else, so a privacy id fell into the else and opened Sağlık,
+        // whose own filter excludes those ids: the page changed and no card
+        // opened. That is why the band withheld its link over a privacy
+        // finding at all, and why the link comes back in the same commit
+        // this arm does.
         overview.OpenFindingRequested += ruleId =>
         {
             if (FindingSections.IsPerformance(ruleId))
             {
                 NavPerf.IsChecked = true;
                 performance.ExpandFinding(ruleId);
+            }
+            else if (FindingSections.IsPrivacy(ruleId))
+            {
+                NavPrivacy.IsChecked = true;
+                privacy.ExpandFinding(ruleId);
             }
             else
             {
@@ -153,6 +170,7 @@ public partial class MainWindow : Window
         HealthView.Visibility = sender == NavHealth ? Visibility.Visible : Visibility.Collapsed;
         PerfView.Visibility = sender == NavPerf ? Visibility.Visible : Visibility.Collapsed;
         CleanView.Visibility = sender == NavClean ? Visibility.Visible : Visibility.Collapsed;
+        PrivacyView.Visibility = sender == NavPrivacy ? Visibility.Visible : Visibility.Collapsed;
         SettingsView.Visibility = sender == NavSettings ? Visibility.Visible : Visibility.Collapsed;
     }
 

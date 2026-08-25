@@ -1,0 +1,403 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
+using Brisk.Localization;
+using Brisk.Services;
+using BriskEngine.Diagnostics;
+using BriskEngine.Models;
+
+namespace Brisk.ViewModels;
+
+/// One line of the read-back: a switch brisk turned off, and what looking
+/// again found. The verdict is the engine's (ReadBackState); everything here
+/// is rendering — which sentence it takes, what argument that sentence needs,
+/// and the arithmetic ReadBack deliberately does not do.
+public sealed class ReadBackRow
+{
+    public ReadBackRow(ReadBackResult result, Loc loc, DateTime nowUtc,
+        Func<ReadBackRow, Task> undo)
+    {
+        RuleId = result.RuleId;
+        // The PAST-TENSE label, not the rule's finding title. A finding title
+        // is a sentence about the switch being ON — "The advertising ID is
+        // not switched off" — and over a line that reads "you switched this
+        // off 3 days ago; it still reads as off" it contradicts the sentence
+        // under it. DoneLabel is what the journal report and the report card
+        // already put on a fix brisk applied, so all three surfaces name one
+        // act one way.
+        Title = DoneLabel.For(loc, result.RuleId,
+            $"rule.{result.RuleId}.title", result.RuleId);
+        State = result.State;
+        Text = Sentence(result, loc, nowUtc);
+        StateBrushKey = BrushKeyFor(result.State);
+        UndoCommand = new RelayCommand(() => _ = undo(this));
+    }
+
+    public string RuleId { get; }
+    public string Title { get; }
+    public ReadBackState State { get; }
+    public string Text { get; }
+    /// The dot beside the line. Held is the only good news here; a write that
+    /// was taken away and a write this edition is not acting on both want the
+    /// reader's attention, and the state where brisk cannot tell gets the
+    /// quiet colour rather than either of the two verdicts it did not reach.
+    public string StateBrushKey { get; }
+    public RelayCommand UndoCommand { get; }
+
+    /// Which key, and which argument. The four sentences do NOT take the same
+    /// one — `readback.reverted` takes a date, `readback.held` and
+    /// `readback.unverified` take a day count, and `readback.ignored` takes
+    /// nothing at all — so passing the wrong one renders "You switched this
+    /// off 2026-08-12 days ago" without failing anything. That is what
+    /// EachRow_RendersItsOwnSentenceWithItsOwnArgument pins.
+    ///
+    /// The final arm throws rather than picking a sentence, the same way
+    /// ReadBack.StateOf refuses to pick a state: a fifth member added to
+    /// ReadBackState without a line here would otherwise be rendered with
+    /// copy written for a different verdict.
+    private static string Sentence(ReadBackResult result, Loc loc, DateTime nowUtc) =>
+        result.State switch
+        {
+            ReadBackState.Held =>
+                loc.F("readback.held", DaysAgo(result.FixedAtUtc, nowUtc)),
+            ReadBackState.Reverted =>
+                loc.F("readback.reverted", LocalDate(result.FixedAtUtc)),
+            ReadBackState.WrittenButIgnored => loc["readback.ignored"],
+            ReadBackState.WrittenButUnverified =>
+                loc.F("readback.unverified", DaysAgo(result.FixedAtUtc, nowUtc)),
+            var unknown => throw new ArgumentOutOfRangeException(
+                nameof(result), unknown,
+                $"'{result.RuleId}' came back in a read-back state this row has " +
+                "no sentence for"),
+        };
+
+    private static string BrushKeyFor(ReadBackState state) => state switch
+    {
+        ReadBackState.Held => "Good",
+        ReadBackState.Reverted => "SeverityWarning",
+        ReadBackState.WrittenButIgnored => "SeverityWarning",
+        ReadBackState.WrittenButUnverified => "TextFaint",
+        var unknown => throw new ArgumentOutOfRangeException(
+            nameof(state), unknown, "no colour for this read-back state"),
+    };
+
+    /// "{0} gün önce" — counted in LOCAL CALENDAR DAYS, not in 24-hour ticks.
+    /// FixedAtUtc is UTC and the sentence a user reads is local, and the two
+    /// part company at the ends of a day: a fix applied at 23:00 local on
+    /// Monday is "yesterday" to the person reading it at 08:00 on Tuesday,
+    /// and a tick count would answer 0. So both sides are converted to local
+    /// time and reduced to their DATE before subtracting.
+    ///
+    /// Never negative. A stamp in the future is a machine whose clock moved —
+    /// ReadBack carries one through untouched on purpose — and "-3 days ago"
+    /// would be nonsense on screen, so it floors at today. That is a
+    /// rendering choice and not a correction: brisk has no idea which of the
+    /// two readings is the wrong one.
+    internal static int DaysAgo(DateTime fixedAtUtc, DateTime nowUtc)
+    {
+        var days = (nowUtc.ToLocalTime().Date - fixedAtUtc.ToLocalTime().Date).Days;
+        return days < 0 ? 0 : days;
+    }
+
+    /// The same date format the report card prints a journal entry with
+    /// (ReportCardModel.FixRows), so one fix cannot wear two spellings of its
+    /// own date across two brisk surfaces.
+    internal static string LocalDate(DateTime utc) => utc.ToLocalTime()
+        .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+}
+
+/// The Privacy page: what this machine has written down, what its switches
+/// currently read as, and what happened to the ones brisk turned off.
+///
+/// Built on HealthViewModel's shape rather than beside it — it subscribes to
+/// AppState.Changed, rebuilds in Refresh, and its finding rows are the same
+/// FindingRow with the same fix lifecycle. What differs is the GROUPING, and
+/// the grouping is the product decision this page exists to carry: the four
+/// switches with no visible consequence share ONE button, and the two that
+/// cost the user something get a switch each with the loss named beside them.
+///
+/// There is no score on this page and there is no gauge, deliberately.
+/// Privacy is a second axis: the health score grades speed and hygiene, every
+/// finding here is a Notice, and none of them moves it. A ring reading 100
+/// over a page of switches that are on would be a claim nobody measured — the
+/// same defect as the impact meter this page suppresses.
+public sealed class PrivacyViewModel : ViewModelBase
+{
+    private readonly AppState _state;
+    private readonly IEngineHost _host;
+    private readonly Loc _loc;
+    private readonly Func<bool> _isDryRun;
+    private readonly Func<DateTime> _utcNow;
+    private readonly Func<Task> _morphPause;
+    private string _message = "";
+    private string _turnOffSafeText = "";
+    private bool _busy;
+
+    public PrivacyViewModel(AppState state, IEngineHost host, Loc loc,
+        Func<bool> isDryRun, Func<DateTime>? utcNow = null,
+        Func<Task>? morphPause = null)
+    {
+        _state = state;
+        _host = host;
+        _loc = loc;
+        _isDryRun = isDryRun;
+        _utcNow = utcNow ?? (() => DateTime.UtcNow);
+        _morphPause = morphPause ?? (() => Task.Delay(HealthViewModel.FixedMorphMs));
+        _state.Changed += Refresh;
+        ScanCommand = new RelayCommand(() => _ = _state.ScanAsync());
+        // Enabled only while there is a consequence-free switch left to turn
+        // off, read off the same predicate the button's own walk uses — the
+        // caption counts what the click will do, so the count and the action
+        // cannot promise different things.
+        TurnOffSafeCommand = new RelayCommand(() => _ = TurnOffSafeAsync(),
+            () => SafeSwitchRows.Count > 0);
+    }
+
+    /// The four consequence-free switches, and the ONE button that turns them
+    /// off. Public and static because the caption counts them and the walk
+    /// acts on them, and those have to be the same question — the same reason
+    /// FixAllService.IsOneClickFixable is public.
+    ///
+    /// Auto is the consent level for "no visible consequence"; the two that
+    /// cost the user something override it to Confirm precisely so a button
+    /// carrying one consent cannot reach the other. That is why this asks the
+    /// category rather than naming four rule ids: a fifth consequence-free
+    /// switch joins the button by shipping as Auto, and a rule that starts
+    /// costing something leaves it by shipping as Confirm.
+    public static bool IsConsequenceFree(DiagnosticFinding finding) =>
+        FindingSections.IsPrivacy(finding) && finding.CanFix
+        && finding.Category == RuleCategory.Auto;
+
+    /// The other tier: a privacy switch brisk can flip whose consent level
+    /// says the user has to be told what it costs first.
+    public static bool CostsTheUserSomething(DiagnosticFinding finding) =>
+        FindingSections.IsPrivacy(finding) && finding.CanFix
+        && finding.Category == RuleCategory.Confirm;
+
+    /// The numbers, largest first — and only over the readings that ARE
+    /// numbers. See TheDisclosureRows_LeadWithTheLargestNumber for why this
+    /// stops there: 47 devices, 1284 records and 1.2 GB uploaded are not the
+    /// same kind of quantity, and a comparator that ranked them against each
+    /// other would be inventing an order nobody measured.
+    public ObservableCollection<FindingRow> DisclosureRows { get; } = new();
+
+    /// The disclosures that read nothing. They carry no Headline — the
+    /// disclosure family's own contract, because "a headline is what a
+    /// finding leads with, and leading with a reading that never arrived is
+    /// the same lie in a larger font" — and that absence is what puts them
+    /// here rather than a second list of ids maintained beside the rules.
+    /// The spec's fourth red line is why they get a place of their own at
+    /// all: what could not be read is never a silent zero.
+    public ObservableCollection<FindingRow> UnreadableRows { get; } = new();
+
+    /// The four the one button turns off.
+    public ObservableCollection<FindingRow> SafeSwitchRows { get; } = new();
+
+    /// The two that cost something, each on its own control, each with
+    /// FindingRow.CostText beside it.
+    public ObservableCollection<FindingRow> CostlySwitchRows { get; } = new();
+
+    /// What brisk found when it looked again at the switches it turned off,
+    /// newest fix first. Straight from the snapshot: the read-back was taken
+    /// in the same pass that produced the findings above, which is what lets
+    /// a reverted switch and a switch brisk is reporting again be the same
+    /// live read rather than two.
+    public ObservableCollection<ReadBackRow> ReadBackRows { get; } = new();
+
+    public AppState State => _state;
+    /// Whether either tier has anything on it. The page says "every switch
+    /// brisk reads here already reads as off" off this, rather than leaving
+    /// a gap between two headings that a reader has to interpret.
+    public bool HasSwitches => SafeSwitchRows.Count > 0 || CostlySwitchRows.Count > 0;
+    public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
+    public string Message { get => _message; private set => Set(ref _message, value); }
+
+    /// The one button's caption, carrying the count it will act on.
+    public string TurnOffSafeText
+    {
+        get => _turnOffSafeText;
+        private set => Set(ref _turnOffSafeText, value);
+    }
+
+    public RelayCommand ScanCommand { get; }
+    public RelayCommand TurnOffSafeCommand { get; }
+
+    /// The revelation band's "see the evidence", for a privacy finding.
+    /// Every band on this page is searched: which of the four a rule landed
+    /// in is this page's business and not the caller's.
+    public void ExpandFinding(string ruleId)
+    {
+        foreach (var row in DisclosureRows.Concat(UnreadableRows)
+                     .Concat(SafeSwitchRows).Concat(CostlySwitchRows))
+            if (string.Equals(row.RuleId, ruleId, StringComparison.OrdinalIgnoreCase))
+            {
+                row.IsExpanded = true;
+                return;
+            }
+    }
+
+    /// The one button. It walks THIS page's safe rows, which are the
+    /// snapshot's consequence-free privacy findings and nothing else, so a
+    /// Confirm switch cannot be reached from here however the page is driven.
+    ///
+    /// A refusal is reported rather than swallowed. diagnostic-level writes
+    /// under HKLM, so on an unelevated machine it fails cleanly through
+    /// FixRunner with Ok:false while the other three succeed — the ordinary
+    /// outcome of this button on a standard account, not an exotic one. The
+    /// batch keeps going, and the sentence afterwards says how many refused
+    /// and hands over exactly what the attempt reported.
+    public async Task TurnOffSafeAsync()
+    {
+        if (_busy || _state.IsAwaitingDisplayConfirmation) return;
+        IsBusy = true;                   // set before the first await — re-entry guard
+        try
+        {
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            var rows = SafeSwitchRows.ToList();
+            if (rows.Count == 0) return;
+            var refused = new List<string>();
+            foreach (var row in rows)
+            {
+                row.BeginFix();          // instant feedback, before any await
+                var outcome = await Task.Run(() => _host.Fix(row.RuleId));
+                row.CompleteFix(outcome.Ok);
+                if (!outcome.Ok) refused.Add(outcome.Message);
+            }
+            Message = refused.Count == 0 ? ""
+                : _loc.F("privacy.turnoff.refused", refused.Count,
+                    string.Join(" · ", refused));
+            if (refused.Count < rows.Count) await _morphPause();
+            await _state.ScanAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// One switch, from its own card — the route the two costly ones take,
+    /// and the route a safe one still offers for somebody who wants to pick.
+    public async Task FixAsync(FindingRow row)
+    {
+        if (_busy || _state.IsAwaitingDisplayConfirmation) return;
+        IsBusy = true;                   // set before the first await — re-entry guard
+        try
+        {
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            row.BeginFix();              // instant feedback, before any await
+            var outcome = await Task.Run(() => _host.Fix(row.RuleId));
+            row.CompleteFix(outcome.Ok);
+            Message = outcome.Ok ? "" : outcome.Message;
+            if (outcome.Ok) await _morphPause();
+            await _state.ScanAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// Undo, from a read-back line's context menu — the same quiet gesture
+    /// the journal report rows carry, and the page's answer to "all of it
+    /// reversible". A read-back line exists exactly where brisk has a
+    /// journalled fix to put back, so that is where the affordance sits.
+    public Task UndoAsync(ReadBackRow row) => UndoRuleAsync(row.RuleId);
+
+    /// The same undo reached from a finding card. One body behind both, so
+    /// the two routes cannot start meaning different things.
+    public Task UndoAsync(FindingRow row) => UndoRuleAsync(row.RuleId);
+
+    private async Task UndoRuleAsync(string ruleId)
+    {
+        if (_busy) return;
+        IsBusy = true;                   // set before the first await — re-entry guard
+        try
+        {
+            if (_isDryRun())
+            {
+                Message = _loc["dryrun.blocked"];
+                return;
+            }
+            var outcome = await Task.Run(() => _host.Undo(ruleId));
+            Message = outcome.Ok ? "" : outcome.Message;
+            await _state.ScanAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void Refresh()
+    {
+        var snapshot = _state.Snapshot;
+        if (snapshot is null) return;
+        var undoable = _host.ListUndoable().Select(u => u.RuleId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        DisclosureRows.Clear();
+        UnreadableRows.Clear();
+        SafeSwitchRows.Clear();
+        CostlySwitchRows.Clear();
+        // Ordered before it is split, so each band keeps the one order this
+        // page sorts by. The two switch bands are small and fixed; the
+        // disclosure band is where the order is the product decision, and
+        // LeadingNumber is what carries it.
+        foreach (var finding in snapshot.Findings
+                     .Where(FindingSections.IsPrivacy)
+                     .OrderByDescending(LeadingNumber)
+                     .ThenBy(f => f.RuleId, StringComparer.Ordinal))
+            Band(finding).Add(new FindingRow(finding, _loc,
+                undoable.Contains(finding.RuleId),
+                row => _ = FixAsync(row), row => _ = UndoAsync(row)));
+
+        ReadBackRows.Clear();
+        var now = _utcNow();
+        foreach (var result in snapshot.ReadBack.OrderByDescending(r => r.FixedAtUtc))
+            ReadBackRows.Add(new ReadBackRow(result, _loc, now, UndoAsync));
+
+        TurnOffSafeText = _loc.F("privacy.turnoff.safe", SafeSwitchRows.Count);
+        Raise(nameof(HasSwitches));
+        TurnOffSafeCommand.RaiseCanExecuteChanged();
+    }
+
+    /// Which band a privacy finding belongs in. The two switch tiers are
+    /// tested for and the disclosure band is what is LEFT — so a privacy
+    /// finding this page has no tier for still lands somewhere and is still
+    /// shown, rather than being dropped between three predicates. Report-only
+    /// is the honest description of that fallback: whatever it is, this page
+    /// is offering no button for it.
+    private ObservableCollection<FindingRow> Band(DiagnosticFinding finding) =>
+        IsConsequenceFree(finding) ? SafeSwitchRows
+        : CostsTheUserSomething(finding) ? CostlySwitchRows
+        : finding.Headline is null ? UnreadableRows
+        : DisclosureRows;
+
+    /// The number a disclosure leads with, for "largest first", and
+    /// long.MinValue for every reading that is not one.
+    ///
+    /// Headline.Value is the engine's own formatted English, and the counts
+    /// are written into it with the invariant culture, so "1284" parses here
+    /// whatever language the GUI is in. What deliberately does NOT parse is
+    /// "1.2 GB" and "Off": a byte amount and a policy word are not quantities
+    /// this page can rank against a device count, and inventing an order for
+    /// them would be exactly the unearned claim the impact meter was
+    /// suppressed for. They sort after every number, by rule id, which is an
+    /// order that says nothing rather than one that says something false.
+    private static long LeadingNumber(DiagnosticFinding finding) =>
+        finding.Headline is { } headline
+        && long.TryParse(headline.Value, NumberStyles.None,
+            CultureInfo.InvariantCulture, out var value)
+            ? value : long.MinValue;
+}

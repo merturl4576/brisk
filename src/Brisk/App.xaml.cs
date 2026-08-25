@@ -100,6 +100,13 @@ public partial class App : Application
                 Loc.Instance, isDryRun, composition.Launcher);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 safeClean, bin, Loc.Instance, isDryRun);
+            // The third findings page. It takes no FixAllService: "Fix all
+            // (safe)" excludes the whole privacy topic by rule id, and this
+            // page's own button carries a different consent over a different
+            // set — the four switches with no visible consequence, and never
+            // the two that cost the user something.
+            var privacyVm = new PrivacyViewModel(state, composition.Host,
+                Loc.Instance, isDryRun);
             var settingsVm = new SettingsViewModel(composition.Settings,
                 composition.SettingsPath, composition.Launcher,
                 themeSetting =>
@@ -118,7 +125,7 @@ public partial class App : Application
 
             _flyout = new FlyoutWindow(flyoutVm);
             _main = new MainWindow(state, overviewVm, healthVm, perfVm, startupVm,
-                cleanVm, settingsVm, theme);
+                cleanVm, privacyVm, settingsVm, theme);
             flyoutVm.OpenDetailsRequested += () =>
             {
                 _flyout.Hide();
