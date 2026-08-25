@@ -100,9 +100,17 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _revelationMoreText = "";
     private string _revelationEmptyText = "";
     private string _reportSavedText = "";
-    /// The rule id behind the revelation band; "" while the band is empty,
-    /// which is what keeps the link silent instead of navigating nowhere.
+    /// The rule id behind the revelation band, and "" for BOTH of the cases
+    /// with nowhere to go: no revelation at all, and a revelation no findings
+    /// page hosts. It used to say the empty id was "what keeps the link
+    /// silent" — it was not, and it never had been: the link was a Button on
+    /// a command with no canExecute, so it rendered enabled and swallowed the
+    /// click. HasRevelationLink is what withholds it now.
     private string _revelationRuleId = "";
+    /// Kept in step with _revelationRuleId by RevelationTarget and by nothing
+    /// else — the link's visibility, the command's CanExecute and the id the
+    /// click carries are three readings of one fact.
+    private bool _hasRevelationLink;
     /// Rule ids seen in the undoable list on the previous refresh; null until
     /// the first population so nothing animates at startup.
     private HashSet<string>? _seenUndoable;
@@ -138,10 +146,17 @@ public sealed class OverviewViewModel : ViewModelBase
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
         SaveReportCommand = new RelayCommand(SaveReport, () => HasSnapshot);
-        OpenFindingCommand = new RelayCommand(() =>
-        {
-            if (_revelationRuleId.Length > 0) OpenFindingRequested?.Invoke(_revelationRuleId);
-        });
+        // canExecute, not just a guard inside the body: a RelayCommand built
+        // without one answers CanExecute true forever, and the band's link is
+        // a Button bound to this command. A command that accepts the click
+        // and then does nothing is how the dead affordance got shipped once.
+        // Both arms read HasRevelationLink, so there is one fact and two
+        // readings of it rather than two predicates that can drift. Execute
+        // is guarded as well as CanExecute because a RelayCommand is a plain
+        // object: WPF asks first, a direct caller does not have to.
+        OpenFindingCommand = new RelayCommand(
+            () => { if (HasRevelationLink) OpenFindingRequested?.Invoke(_revelationRuleId); },
+            () => HasRevelationLink);
     }
 
     public ObservableCollection<ReportLine> ReportLines { get; } = new();
@@ -178,6 +193,15 @@ public sealed class OverviewViewModel : ViewModelBase
     public string RevelationMoreText { get => _revelationMoreText; private set => Set(ref _revelationMoreText, value); }
     public string RevelationEmptyText { get => _revelationEmptyText; private set => Set(ref _revelationEmptyText, value); }
     public RelayCommand OpenFindingCommand { get; }
+    /// Whether the band has anywhere to send a reader. The link's own
+    /// Visibility binds to this, so a revelation no page hosts shows the
+    /// number and the claim and NO link at all — rather than a live link
+    /// that swallows the click.
+    public bool HasRevelationLink
+    {
+        get => _hasRevelationLink;
+        private set => Set(ref _hasRevelationLink, value);
+    }
     /// Carries the rule id of the finding the band is showing: "see the
     /// evidence" has to open THAT card, so MainWindow routes to whichever
     /// page hosts the rule instead of to a fixed page name.
@@ -527,11 +551,16 @@ public sealed class OverviewViewModel : ViewModelBase
             // that is not a performance rule to Sağlık, and Sağlık's filter
             // excludes the privacy ids — so a privacy finding leading the
             // band would select a page that does not carry it and expand
-            // nothing. Until a page hosts them, the id is left empty, which
-            // is the same silence the band already uses when it has no
-            // finding to point at. The number, the claim and the evidence
-            // still show.
-            _revelationRuleId = FindingSections.IsPrivacy(top) ? "" : top.RuleId;
+            // nothing. Until a page hosts them there is no target, and no
+            // link is offered: the band still shows the number, the caption,
+            // the claim and the evidence, and the row that would have held
+            // the link holds only the "and n more" line, which is itself
+            // empty when there is nothing more.
+            //
+            // This is NOT the empty band's silence — that hides the whole
+            // DockPanel (HasRevelation false). This case shows the band and
+            // withholds one control in it.
+            RevelationTarget(FindingSections.IsPrivacy(top) ? "" : top.RuleId);
         }
         else
         {
@@ -539,7 +568,7 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationClaim = ""; RevelationEvidence = ""; RevelationMoreText = "";
             RevelationEmptyText = _loc.F("overview.revelation.none",
                 DiagnosticRuleRegistry.All.Count);
-            _revelationRuleId = "";
+            RevelationTarget("");
         }
         // Three-state headline driven by the same predicate as the fix-all
         // button: work to do → attention; only recommendations left →
@@ -588,5 +617,15 @@ public sealed class OverviewViewModel : ViewModelBase
         FixAllCommand.RaiseCanExecuteChanged();
         CleanSafeCommand.RaiseCanExecuteChanged();
         SaveReportCommand.RaiseCanExecuteChanged();
+    }
+
+    /// The one place _revelationRuleId is written, so the id, the link's
+    /// visibility and the command's enabled state cannot disagree. An empty
+    /// id means there is nowhere to go.
+    private void RevelationTarget(string ruleId)
+    {
+        _revelationRuleId = ruleId;
+        HasRevelationLink = ruleId.Length > 0;
+        OpenFindingCommand.RaiseCanExecuteChanged();
     }
 }

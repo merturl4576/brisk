@@ -18,11 +18,19 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// Three findings, and the test between them is what the value read as: the
 /// number that switches it off, the number that leaves it on, and anything
 /// brisk did not read as either of those. That third arm is reported as not
-/// established — a real answer, and the one this build gives on most
-/// machines, because the policy is new and differs between builds. It is
-/// never rounded down to "off": not being able to read a switch is not the
-/// switch being off, and that is this wave's standing rule applied to the one
-/// setting where the wrong answer would be the reassuring one.
+/// established — a real answer, and the one the machine this was written on
+/// gave. How common it is elsewhere is not something one machine measures, so
+/// nothing here says. It is never rounded down to "off": not being able to
+/// read a switch is not the switch being off, and that is this wave's
+/// standing rule applied to the one setting where the wrong answer would be
+/// the reassuring one.
+///
+/// The path below is UNVERIFIED against a machine that has the policy — this
+/// one does not, which is why the third arm is what it reports here. Both
+/// constants come from the task brief and only the fake has ever matched
+/// them. If brisk never reports either readable state on a machine where
+/// Windows shows Recall as switched off, these two are the first things to
+/// doubt.
 public sealed class RecallStatusRule : PrivacyDisclosureRule
 {
     public const string KeyPath = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI";

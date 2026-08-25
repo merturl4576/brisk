@@ -58,6 +58,37 @@ public class PrivacyDisclosureRuleTests
         return (TestContext.Empty() with { Registry = reg }, reg);
     }
 
+    /// EVERY state a rule can report, one plant each, ending with the empty
+    /// registry. The two resx theories walk this rather than one readable
+    /// reading and one empty one: a rule that names a different key per state
+    /// — and all three do — would otherwise have some of its keys checked
+    /// against the resx files and the rest checked against nothing. That is
+    /// how rule.recall-status.*.on and rule.usb-history.evidence.no-date sat
+    /// unguarded for a round.
+    private static IReadOnlyList<Action<FakeRegistry>> EveryStateItCanReport(string id) =>
+        id switch
+        {
+            "usb-history" => new Action<FakeRegistry>[]
+            {
+                reg => PlantSomethingReadable(reg, id),
+                // counted, with no date brisk could read
+                reg => PlantUsbDevice(reg, "Ven_A&Prod_Stick", "aaa"),
+                _ => { },
+            },
+            "run-history" => new Action<FakeRegistry>[]
+            {
+                reg => PlantSomethingReadable(reg, id),
+                _ => { },
+            },
+            "recall-status" => new Action<FakeRegistry>[]
+            {
+                reg => PlantSomethingReadable(reg, id),
+                reg => reg.SetInt(RecallStatusRule.KeyPath, RecallStatusRule.ValueName, 0),
+                _ => { },
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(id), id, "no plants for this id"),
+        };
+
     /// The reading each rule needs before it has anything to report. Kept in
     /// one place so the shape theories below run over a registry that answers
     /// rather than over the empty one, which has its own theory.
@@ -538,17 +569,16 @@ public class PrivacyDisclosureRuleTests
     }
 
     /// One claim, two sources: the engine ships English prose the CLI prints
-    /// verbatim, and a resx key the GUI renders instead. Both the readable
-    /// sentence and the unreadable one, because a machine that lands on the
-    /// second is a machine whose only sentence is that one — and it is the
+    /// verbatim, and a resx key the GUI renders instead. Over every state the
+    /// rule can report, including the unreadable one — a machine that lands
+    /// there is a machine whose only sentence is that one, and it is the
     /// sentence this task exists to get right.
     [Theory]
     [MemberData(nameof(AllDisclosures))]
     public void TheEnglishResx_SaysWhatTheEngineSays(string id)
     {
         var en = Resx("Strings.resx");
-        foreach (var plant in new Action<FakeRegistry>[]
-                 { reg => PlantSomethingReadable(reg, id), _ => { } })
+        foreach (var plant in EveryStateItCanReport(id))
         {
             var (ctx, reg) = Context();
             plant(reg);
@@ -577,8 +607,7 @@ public class PrivacyDisclosureRuleTests
         var files = new[] { "Strings.resx", "Strings.tr.resx" }
             .ToDictionary(f => f, Resx);
 
-        foreach (var plant in new Action<FakeRegistry>[]
-                 { reg => PlantSomethingReadable(reg, id), _ => { } })
+        foreach (var plant in EveryStateItCanReport(id))
         {
             var (ctx, reg) = Context();
             plant(reg);

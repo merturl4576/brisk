@@ -36,8 +36,16 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
 
     /// Below an instance key: the device property store, the property set
     /// Windows keeps device timestamps in, and the install-date property in
-    /// it. Its data is the value the key holds by default, which is what an
-    /// empty value name asks IRegistryProbe for.
+    /// it. The data is read as the value that key holds by default, which is
+    /// what an empty value name asks IRegistryProbe for.
+    ///
+    /// UNVERIFIED against real hardware, unlike the enum root and the two
+    /// levels above it, which were enumerated on this machine. This path and
+    /// that value name come from the task brief, and the machine this was
+    /// written on refuses the property key unelevated (see the class header),
+    /// so only the fake has ever exercised the layout. If the date never
+    /// appears on a machine that CAN open the key, this constant and
+    /// InstallDateValueName are the first two things to doubt.
     public const string InstallDateSubPath =
         @"Properties\{83da6326-97a6-4088-9453-a1923f573b29}\0064";
 

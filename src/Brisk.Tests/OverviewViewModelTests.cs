@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
@@ -915,17 +917,31 @@ public class OverviewViewModelTests
         vm.OpenFindingCommand.Execute(null);
 
         Assert.Equal("zz-fake", requested);
+        // The control for the privacy case below: a finding a page hosts
+        // still gets a link, and the link is still enabled.
+        Assert.True(vm.HasRevelationLink,
+            "a finding the findings pages carry was offered no link");
+        Assert.True(vm.OpenFindingCommand.CanExecute(null),
+            "the link is shown and the command behind it refuses the click");
     }
 
     /// The three report-only disclosures carry a Headline, so one of them can
     /// lead this band on a real machine — and MainWindow sends anything that
     /// is not a performance rule to Sağlık, whose filter excludes the privacy
     /// ids. "See the evidence" would select a page that does not carry the
-    /// finding and expand nothing. So the band shows the number and offers no
-    /// destination for it, which is the silence the empty band already uses.
+    /// finding and expand nothing.
+    ///
+    /// So no link is offered. Both halves are asserted because stopping the
+    /// navigation alone once left a visible, enabled Button that swallowed
+    /// the click: HasRevelationLink is what collapses it in OverviewPage.xaml,
+    /// and CanExecute is what a Button bound to this command asks before it
+    /// lets itself be pressed. The band still shows its number — the row that
+    /// would have carried the link is not the band, and the band is not
+    /// hidden the way an empty one is.
+    ///
     /// When a page hosts these findings, this is the test that has to change.
     [Fact]
-    public async Task OpenFinding_OverAPrivacyRevelation_SendsTheReaderNowhere()
+    public async Task OpenFinding_OverAPrivacyRevelation_OffersNoLinkAtAll()
     {
         var (vm, host, state) = Build();
         host.NextSnapshot = TestData.Snapshot(new[]
@@ -944,9 +960,65 @@ public class OverviewViewModelTests
 
         Assert.True(vm.HasRevelation, "the privacy finding did not reach the band at all");
         Assert.Equal("47", vm.RevelationValue);
+        Assert.False(vm.HasRevelationLink,
+            "the band rendered a \"see the evidence\" link over a privacy " +
+            "finding, and no page this build shows carries one");
+        Assert.False(vm.OpenFindingCommand.CanExecute(null),
+            "the command behind that link accepts the click over a privacy " +
+            "finding — a Button bound to it would render enabled");
         Assert.True(requested is null,
             $"the band offered to open '{requested}', and no page this build " +
             "shows carries a privacy finding");
+    }
+
+    /// The half of the fix that lives in markup, and the half nothing else
+    /// can see. HasRevelationLink is only worth anything if the Button
+    /// actually binds its Visibility to it: a typo'd binding path fails
+    /// SILENTLY in WPF — the binding resolves to nothing, the Visibility
+    /// setter never runs, and the link renders live again over a finding no
+    /// page hosts. Read off disk the way InstrumentSourceTests reads this
+    /// same page. Watched red by deleting the Visibility attribute:
+    /// `the band's link binds Visibility to "", not to HasRevelationLink`.
+    ///
+    /// The reflection line above it is NOT what catches a rename. The two
+    /// behaviour tests below read the property directly, so renaming it
+    /// breaks the build first — measured: `error CS1061: 'OverviewViewModel'
+    /// bir 'HasRevelationLink' tanımı içermiyor`. That line is there for the
+    /// day those tests change and the compiler stops holding the name.
+    [Fact]
+    public void TheBandsLink_BindsItsVisibilityToTheProperty_ThatDecidesIt()
+    {
+        const string property = "HasRevelationLink";
+
+        Assert.True(typeof(OverviewViewModel).GetProperty(property) is { } p
+                    && p.PropertyType == typeof(bool),
+            $"OverviewViewModel exposes no bool {property} for the page to bind");
+
+        var buttons = OverviewPageXaml().Descendants()
+            .Where(e => e.Name.LocalName == "Button"
+                && ((string?)e.Attribute("Command") ?? "").Contains("OpenFindingCommand",
+                    StringComparison.Ordinal))
+            .ToList();
+        // Counted rather than Single()d: Single throws where it should report,
+        // and "none" and "two" are different mistakes to have made.
+        Assert.True(buttons.Count == 1,
+            $"{buttons.Count} Buttons in OverviewPage.xaml bind OpenFindingCommand; " +
+            "the band's one link is what this test is about");
+
+        var visibility = (string?)buttons[0].Attribute("Visibility") ?? "";
+        Assert.True(visibility.Contains(property, StringComparison.Ordinal),
+            $"the band's link binds Visibility to \"{visibility}\", not to " +
+            $"{property} — it would render live over a finding no page hosts");
+    }
+
+    private static XElement OverviewPageXaml()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
+             dir = dir.Parent)
+            if (File.Exists(Path.Combine(dir.FullName, "brisk.sln")))
+                return XDocument.Load(Path.Combine(dir.FullName, "src", "Brisk",
+                    "Views", "OverviewPage.xaml")).Root!;
+        throw new InvalidOperationException("brisk.sln not found above test bin");
     }
 
     [Fact]

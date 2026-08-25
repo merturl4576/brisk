@@ -145,8 +145,11 @@ public class PrivacyRedLineTests
     /// succeeds, and RevelationPicker takes findings that carry one, so on a
     /// real machine a privacy finding can reach the overview band and the
     /// report card's picked list while still reaching no row on either page.
-    /// The band shows its number and offers no link — OpenFinding_OverA
-    /// PrivacyRevelation_SendsTheReaderNowhere holds that end.
+    /// The band shows the number and the claim, and withholds one control in
+    /// itself: no "see the evidence" link, because no page hosts the finding.
+    /// That is not the empty band's silence — the empty band hides its whole
+    /// DockPanel. OpenFinding_OverAPrivacyRevelation_OffersNoLinkAtAll holds
+    /// that end.
     ///
     /// What this guarantees, exactly: these two view models, wired the way
     /// App.xaml.cs wires them, put a privacy finding on neither page. It is
