@@ -55,13 +55,21 @@ user's configured language.
    > and prints a counted overflow line, which is selection logic. The
    > sentence is left quoted rather than deleted, because it is the sentence
    > that made the clipping invisible.
-2. **What brisk could not read** — the card's signature. Fed **when this was
-   written** by the sensor notice alone (the thermals story: which sensors did
-   not answer and the measured reason when brisk has one); Faz 3 added the
-   unreadable disclosure findings to the same section, deliberately through
-   one channel rather than two. This section NEVER drops; when
+2. **What brisk could not read** — the card's signature. Fed today by the
+   sensor notice (the thermals story: which sensors did not answer and the
+   measured reason when brisk has one). This section NEVER drops; when
    everything was readable it says so in one line. Honesty about the empty
    hand is the point of the section.
+
+   > **Corrected 2026-08-26, by the Faz 3 wave.** The word *"today"* above has
+   > expired. Faz 3 added the unreadable disclosure findings to this same
+   > section — deliberately through ONE channel rather than a second, because
+   > two channels for one claim is how the sensor notice and this card came to
+   > contradict each other once already. The sentence is quoted rather than
+   > rewritten, which is the correction this note is itself a correction of:
+   > the first version of this amendment edited that line in place, in a wave
+   > carrying a commit titled "the correction that condemned quiet rewrites
+   > gets corrected for quietly rewriting". Caught by a reviewer, not by me.
 3. **Applied fixes** — the fix journal's entries, newest first, title and
    date. When the journal is empty the section drops, header and all. The
    measured before/after effect belongs to a later wave; the row layout
@@ -90,13 +98,16 @@ side gets a smoke test — the PNG exists, has a valid header, and has
 non-trivial dimensions — run on an STA thread.
 
 > **Corrected 2026-08-26, by the Faz 3 wave.** The seam held; "a smoke test"
-> did not. The rendered side grew three jobs the model cannot do: the lit arc
-> and the finding-row template are read off the pixels, and the body column's
-> desired height is weighed against the height the Grid gives it — the one
-> failure no pixel count can see, because a clipped card and a card that fits
-> look equally tidy. Faz 3 added a fourth, the findings' overflow line, whose
-> text is read off the laid-out control because a misspelled binding there
-> renders an empty row instead of failing.
+> did not. The rendered side had already grown FOUR jobs the model cannot do
+> before this wave touched it: the lit arc, the finding-row template and the
+> score numeral's ink are read off the pixels, and the body column's desired
+> height is weighed against the height the Grid gives it — the one failure no
+> pixel count can see, because a clipped card and a card that fits look equally
+> tidy. Faz 3 added a fifth, the findings' overflow line, whose text is read off
+> the laid-out control because a misspelled binding there renders an empty row
+> instead of failing. **Four before, five after** — the first draft of this note
+> said three and four, having enumerated a set without counting it, which is the
+> same defect as the sentence it corrects.
 
 ## Surfaces — and the architectural constraint that shapes them
 

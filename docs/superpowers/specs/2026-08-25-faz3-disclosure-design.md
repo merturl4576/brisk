@@ -208,9 +208,25 @@ say. The second was a live defect rather than a gap in the prose.
   whose other sections were full: measured at 758px against the 715px the body
   column gets. The card is a fixed 1600x900 with nothing in it that scrolls,
   and that column had no bound at all — the comment that claimed one was
-  describing a coincidence, not a mechanism. Task 8 put the bound in the model: five finding rows, then a
-  counted line, and the fix list gives up one row for every line the sections
-  above it take, because an unread sentence and a fix row are the same height.
+  describing a coincidence, not a mechanism. Task 8 put the bound in the model:
+  five finding rows, then a counted line, and the fix list gives up one row for
+  every line the sections above it take, because an unread sentence and a fix
+  row are the same height (28.61px, measured).
+
+  **That trade has a floor, so it is not itself a bound**, and this paragraph
+  said it without the qualification the source file was made to carry. The fix
+  list is never taken below one row, so on a card also carrying the overflow
+  line the floor is reached at nine unread lines and the column grows again
+  past that. Unreachable on the shipped rules — the section's ceiling is the
+  sensor line plus one per report-only disclosure — and `TheTrade_HasHeadroom
+  ForEveryUnreadLineTheShippedRulesCanProduce` derives that ceiling from the
+  registry and fails when it stops fitting. One term of the trade is also not
+  even: the overflow line is 34.61px and is charged one 28.61px row, which is
+  why the worst card clears the frame by less than one row rather than by six
+  pixels more. Those figures are re-measured on the real control by
+  `TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims`, because a
+  measured number written down with nothing checking it is how this card's
+  clipping stayed invisible for a wave.
 
 The lottery placement, which this section did not name either: `usb-history`
 is third on `RevelationPicker.Priority`, after `boot-degradation` and

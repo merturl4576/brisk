@@ -269,10 +269,15 @@ public class ReportCardModelTests
     }
 
     /// THE BUDGET IS SHARED, because the frame does not grow when a probe goes
-    /// unread. An unread sentence, a fix line and the findings' overflow line
-    /// are the same height on this card, so the trade is one for one, and the
-    /// fix list is what gives: it is the section that already counts what it
-    /// drops rather than losing anything.
+    /// unread. The fix list is what gives, being the section that already
+    /// counts what it drops rather than losing anything.
+    ///
+    /// One row per line, and only ONE of those two lines is an even trade: an
+    /// unread sentence and a fix row are both 28.61px on the real control, but
+    /// the findings' overflow line is 34.61px and is charged the same single
+    /// row. See FixBudget for the 6.00px that under-charge costs and where it
+    /// shows up. What is asserted here is the ROW arithmetic, which is exact;
+    /// the pixels it stands on are the frame test's to hold.
     [Theory]
     [InlineData(0, 0, 9)]    // nothing above took an extra line
     [InlineData(4, 0, 5)]    // four probes could not read their source
@@ -469,10 +474,18 @@ public class ReportCardModelTests
         return TestData.Snapshot(findings, new SensorStatus(false, false, null));
     }
 
-    /// EVERYTHING THE CARD CAN PRINT, read off the model by reflection rather
-    /// than from a list somebody has to remember to extend. A property added
-    /// to the model is in reach by construction; the list version promised
-    /// that and could not keep it.
+    /// EVERY STRING THE MODEL EXPOSES, read off it by reflection rather than
+    /// from a list somebody has to remember to extend. A property added to the
+    /// model is in reach by construction; the list version promised that and
+    /// could not keep it.
+    ///
+    /// The model, NOT the card — and the narrower noun is deliberate, because
+    /// the broad one is what the list version over-claimed with. The card also
+    /// paints the "brisk" wordmark and its three section headings, which are
+    /// bound to Loc.Instance in the markup and never travel through this
+    /// model. They are rule-authored and product-authored static text, so
+    /// nothing a machine could name reaches the card through them; what this
+    /// helper covers is every string that carries a reading.
     ///
     /// A property whose type this cannot flatten THROWS. Stringifying it would
     /// contribute a type name, which reads as covered and is not — and a

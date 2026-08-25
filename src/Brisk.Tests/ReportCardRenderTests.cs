@@ -23,22 +23,29 @@ namespace Brisk.Tests;
 /// ReportCardModelTests, and everything here is about what the model cannot
 /// answer for.
 ///
-/// Two things are worth reading off the pixels, because they are the parts
-/// with no text to assert on. The ring is one: the first card this renderer
-/// produced came out with a full grey track and no lit arc at all — the
-/// gauge's ignition animation never advances without a dispatcher pumping
+/// THREE things are worth reading off the pixels, because they are the parts
+/// with no text to assert on. The ring is the first: the first card this
+/// renderer produced came out with a full grey track and no lit arc at all —
+/// the gauge's ignition animation never advances without a dispatcher pumping
 /// frames — and it was a perfectly valid 312 KB PNG. The finding rows are the
-/// other: they are a DataTemplate, and a template that silently renders
-/// nothing looks exactly like a machine that had nothing to report.
+/// second: they are a DataTemplate, and a template that silently renders
+/// nothing looks exactly like a machine that had nothing to report. The
+/// numeral's ink is the third, added by bbc28ea: HeroScore's triggers paint
+/// the score in its band colour, which is right in the cockpit and wrong
+/// inside a ring that already carries the band, and the only place that shows
+/// is the pixels.
 ///
-/// Two more things are read off the laid-out CONTROL rather than off the
-/// pixels, and neither has a model test that could see it. What the column
-/// asks for against what the Grid gives it is one — a clipped card and a card
-/// that fits look equally tidy, so no pixel count can tell them apart. The
-/// findings' overflow line is the other: its text and its collapse trigger
-/// bind the same model property, and a misspelled path there renders an empty
-/// row rather than failing, which is a defect the model is incapable of
-/// having.
+/// TWO more are read off the laid-out CONTROL rather than off the pixels, and
+/// neither has a model test that could see it. What the column asks for
+/// against what the Grid gives it is one — a clipped card and a card that fits
+/// look equally tidy, so no pixel count can tell them apart. The findings'
+/// overflow line is the other, and the only one of the five this wave added:
+/// its text and its collapse trigger bind the same model property, and a
+/// misspelled path there renders an empty row rather than failing, which is a
+/// defect the model is incapable of having.
+///
+/// Five jobs, then, and the count is written down because the last two
+/// versions of this paragraph each enumerated a set that had already grown.
 public class ReportCardRenderTests
 {
     /// Straight from Theming/Shared.xaml: the three lit-arc colours, and the
@@ -300,16 +307,7 @@ public class ReportCardRenderTests
     [InlineData("tr")]
     public void WorstCaseCard_FitsInsideTheFrameItIsDrawnInto(string language)
     {
-        var loc = new Brisk.Localization.Loc();
-        loc.SetLanguage(language);
-        var manyFixes = Enumerable.Range(0, 16)
-            .Select(i => new UndoableFix($"rule-{i:00}",
-                new DateTime(2026, 8, 21, 9, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
-            .ToArray();
-        var model = ReportCardModel.Build(
-            TestData.Snapshot(WorstCaseFindings(loc), new SensorStatus(false, false, null))
-                with { Health = 35 },
-            manyFixes, loc);
+        var model = WorstCaseModel(language);
 
         var (wanted, given) = MeasureBody(model);
 
@@ -371,6 +369,90 @@ public class ReportCardRenderTests
         Assert.Equal(over.FindingsMoreText, overText);
         Assert.False(exactlyVisible,
             $"the overflow line is on a card that dropped nothing, reading '{exactlyText}'");
+    }
+
+    /// THE NUMBERS FixBudget's DOC STANDS ON, measured on the real control
+    /// rather than asserted in prose.
+    ///
+    /// The budget trades the fix list one row per line the sections above it
+    /// take, and that is only sound while those rows are the heights the doc
+    /// claims. It said all three were the same 29px. Two are; the findings'
+    /// overflow line is six pixels taller, because it wears the finding rows'
+    /// 12px bottom margin rather than the 6px the small rows use — so that
+    /// term of the trade under-charges, which is the whole of why the worst
+    /// card clears the frame by under one row instead of by nine pixels.
+    ///
+    /// A comment carrying a measured figure with nothing checking it is the
+    /// exact shape that hid this card's clipping for a whole wave. This is
+    /// that comment's guard, and it is deliberately the one test that fails
+    /// when somebody changes that margin: the change is correct and the doc
+    /// has to move with it.
+    [Fact]
+    public void TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims()
+    {
+        var findingRow = HeightOf(HeadlineFindings(5)) - HeightOf(HeadlineFindings(4));
+        var smallRow = HeightOf(WithUnreadable(2)) - HeightOf(WithUnreadable(1));
+        var overflowLine = HeightOf(HeadlineFindings(ReportCardModel.MaxFindingRows + 1))
+            - HeightOf(HeadlineFindings(ReportCardModel.MaxFindingRows));
+
+        Assert.Equal(51.90, findingRow, 2);
+        Assert.Equal(28.61, smallRow, 2);
+        Assert.Equal(34.61, overflowLine, 2);
+        // The term that is NOT an even trade, as a number so it cannot grow
+        // quietly: the overflow line is charged one small row and costs more.
+        Assert.Equal(6.00, overflowLine - smallRow, 2);
+
+        // And what that costs the frame, which is the reason any of this is
+        // written down. Bounded rather than pinned: the claim is "less than
+        // one row of room left, and more than none", which stays true under a
+        // harmless layout tweak and goes false the moment the under-charge
+        // grows into a clipped card.
+        var (wanted, given) = MeasureBody(WorstCaseModel("en"));
+        Assert.InRange(given - wanted, 0.0, smallRow);
+    }
+
+    /// n findings that lead with a number, nothing else — short titles, so the
+    /// difference between two of these is one row and never a wrap.
+    private static ScanSnapshot HeadlineFindings(int count) => TestData.Snapshot(
+        Enumerable.Range(0, count)
+            .Select(i => TestData.Finding($"rule-{i:00}", cat: RuleCategory.Advise,
+                canFix: false, headline: H($"{i}")))
+            .ToList(),
+        new SensorStatus(true, true, null));
+
+    /// The sensor line plus n disclosures that read nothing. The sensor
+    /// variant is the SHORT one — everything answered — so the difference
+    /// between two of these is one unread row and never a wrap.
+    private static ScanSnapshot WithUnreadable(int count) => TestData.Snapshot(
+        UnreadableDisclosureIds.Take(count).Select(id => new DiagnosticFinding(
+            id, $"rule.{id}.title.unread", $"unread {id}", $"Evidence {id}",
+            Severity.Info, RuleCategory.Advise, 1, CanFix: false,
+            FixDescription: null, Headline: null, Kind: FindingKind.Notice)).ToList(),
+        new SensorStatus(true, true, null));
+
+    private static double HeightOf(ScanSnapshot snapshot)
+    {
+        var loc = new Brisk.Localization.Loc();
+        loc.SetLanguage("en");
+        return MeasureBody(ReportCardModel.Build(
+            snapshot, Array.Empty<UndoableFix>(), loc)).Wanted;
+    }
+
+    /// The worst card the model will build, in one place because two tests
+    /// weigh it: the frame check, and the row-height guard that says how much
+    /// room the under-charged overflow line leaves it.
+    private static ReportCardModel WorstCaseModel(string language)
+    {
+        var loc = new Brisk.Localization.Loc();
+        loc.SetLanguage(language);
+        var manyFixes = Enumerable.Range(0, 16)
+            .Select(i => new UndoableFix($"rule-{i:00}",
+                new DateTime(2026, 8, 21, 9, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
+            .ToArray();
+        return ReportCardModel.Build(
+            TestData.Snapshot(WorstCaseFindings(loc), new SensorStatus(false, false, null))
+                with { Health = 35 },
+            manyFixes, loc);
     }
 
     /// The four report-only disclosures, which are the ids that can report

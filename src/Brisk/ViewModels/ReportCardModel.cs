@@ -59,16 +59,20 @@ public sealed class ReportCardModel
     /// budgeted and counts what it dropped. The section between them does
     /// NEITHER: the spec's fourth red line says an unreadable probe is never a
     /// silent zero, so every line it has is printed, and the fix list is what
-    /// pays for them — one row given up per line taken, since those two rows
-    /// are the same height.
+    /// pays for them — one row given up per line taken, since an unread
+    /// sentence and a fix row are the same 28.61px. FixBudget has the measured
+    /// figures and the one term of it that is not an even trade.
     ///
     /// THAT TRADE HAS A FLOOR AND IS THEREFORE NOT A BOUND. FixBudget will not
-    /// take the fix list below one row, so once the unread section passes nine
-    /// lines nothing is left to pay and the column grows past the frame again.
-    /// Unreachable on the shipped rules — the ceiling there is the sensor line
-    /// plus one per report-only disclosure — and stated rather than assumed:
+    /// take the fix list below one row. On a card carrying the findings'
+    /// overflow line that floor is reached AT nine unread lines — 9 - (9-1) -
+    /// 1 = 0, clamped to 1 — and at ten without it; past those, nothing is
+    /// left to pay and the column grows again. Unreachable on the shipped
+    /// rules, where the ceiling is the sensor line plus one per report-only
+    /// disclosure, and stated rather than assumed:
     /// TheTrade_HasHeadroomForEveryUnreadLineTheShippedRulesCanProduce derives
-    /// that ceiling from the registry and fails when it stops fitting. Said
+    /// that ceiling from the registry, builds its card WITH the overflow line
+    /// — the stricter of the two — and fails when it stops fitting. Said
     /// plainly because the last sentence in this file that claimed a mechanism
     /// it did not have hid a live clipping defect for a whole wave.
     ///
@@ -153,12 +157,29 @@ public sealed class ReportCardModel
         return shown;
     }
 
-    /// What the fix list may spend on this particular card. An unread
-    /// sentence, a fix line and the findings' overflow line are the same
-    /// height here — 29px each on the real control, against 52px for a
-    /// finding row — so a line taken by either section above costs the fix
-    /// list exactly one row, and the arithmetic is a trade rather than an
-    /// estimate.
+    /// What the fix list may spend on this particular card, in ROWS, measured
+    /// on the real control: a finding row is 51.90px, an unread sentence and a
+    /// fix line are 28.61px each, and the findings' overflow line is 34.61px.
+    ///
+    /// So ONE of the two terms is an even trade and the other is not. An
+    /// unread line costs the fix list exactly the row it takes. The overflow
+    /// line costs 34.61 and is charged one 28.61px row, because it wears the
+    /// finding rows' 12px bottom margin rather than the 6px the small rows
+    /// use — an UNDER-CHARGE of 6.00px, and the whole of why the worst card
+    /// clears the frame by less than one row rather than by six pixels more.
+    /// Changing that margin to 6 would make both terms even; it is a live
+    /// decision, not an oversight, and it is Task 10's to take.
+    ///
+    /// Every figure above is measured and guarded:
+    /// TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims re-measures
+    /// all three heights and the 6.00 gap on the real control, and bounds what
+    /// the worst card has left. This paragraph carried "29px each" for a whole
+    /// round with nothing checking it, which is the same shape as the sentence
+    /// that hid the clipping.
+    ///
+    /// The under-charge is in the SAFE direction only because the frame test
+    /// measures the real control and fails at build time. It is not a rounding
+    /// allowance, and nothing else in this file may lean on it.
     ///
     /// Never below one. A card carrying fixes that showed none of them and
     /// said nothing about it would be the silent drop this whole budget
