@@ -542,9 +542,16 @@ public sealed class OverviewViewModel : ViewModelBase
         // "good shape" here and suppresses the {n} findings line below with
         // it. That is the wave's red line working as written — the health
         // score grades speed and hygiene and does not grade privacy, and a
-        // fast clean machine reads 100 whether or not telemetry is on. The
-        // privacy findings are not lost, only invisible to THIS sentence:
-        // they route to their own page by rule id.
+        // fast clean machine reads 100 whether or not telemetry is on.
+        //
+        // Where those findings DO show on this build: in the raw "{n}
+        // findings" figure, which counts the whole snapshot. Where they do
+        // not: any row anywhere. Both findings pages exclude them by rule id
+        // and they carry no headline, so the revelation band and the report
+        // card skip them too. A later task of this wave adds the page that
+        // will render them; until it lands they are a number and nothing
+        // more, and PrivacyRedLineTests pins that state so the day it changes
+        // is a day this comment gets rewritten.
         var hasWork = _fixAll.HasWork(snapshot);
         var advise = snapshot.Findings.Count(f => f.Category == RuleCategory.Advise);
         StatusText = hasWork ? _loc["overview.status.attention"]

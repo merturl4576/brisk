@@ -131,9 +131,10 @@ public class FixAllServiceTests
     }
 
     /// THE GENERIC BUTTON DOES NOT REACH A PRIVACY SETTING. "Fix all (safe)"
-    /// is about speed and hygiene; the only thing allowed to turn a privacy
-    /// switch off is the Privacy page's own button, or — for the two that
-    /// cost the user something — that switch's own control. The predicate
+    /// is about speed and hygiene; the only thing the spec will allow to turn
+    /// a privacy switch off is the privacy page's own button, or — for the two
+    /// that cost the user something — that switch's own control, neither of
+    /// which is built yet. The exclusion does not wait for them. The predicate
     /// here was `Category != Advise && CanFix`, which is category-blind: the
     /// four telemetry switches are Auto and fixable, so they rode the button
     /// the moment they entered the registry, and `location` and

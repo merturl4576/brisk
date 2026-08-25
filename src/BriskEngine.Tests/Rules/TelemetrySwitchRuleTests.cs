@@ -11,7 +11,8 @@ using Xunit;
 
 namespace BriskEngine.Tests.Rules;
 
-/// The four switches the Privacy page turns off with one button. One thing
+/// The four switches a later task of this wave will turn off behind one
+/// button, on a privacy page that does not exist on this build. One thing
 /// makes them unlike every other fixable rule brisk ships, and it is asserted
 /// here rather than described: a value that is ABSENT reads as ON. A machine
 /// nobody has touched has nothing written at any of these paths, and Windows
@@ -151,9 +152,10 @@ public class TelemetrySwitchRuleTests
     }
 
     /// A rule brisk never runs is a rule that never fires. The id is matched
-    /// as a literal because the list the Privacy page routes on lives in the
-    /// Brisk project, which BriskEngine cannot see — PrivacyRedLineTests
-    /// reads the shipped rules against that list from the other side.
+    /// as a literal because the list a later task will route the privacy page
+    /// on lives in the Brisk project, which BriskEngine cannot see —
+    /// PrivacyRedLineTests reads the shipped rules against that list from the
+    /// other side.
     [Theory]
     [MemberData(nameof(AllSwitches))]
     public void EachSwitch_IsRegisteredExactlyOnce(string id)
@@ -251,10 +253,11 @@ public class TelemetrySwitchRuleTests
     }
 
     /// The edition trap. A diagnostic data level is recorded under two keys,
-    /// and the read-back's "written but ignored" sentence exists because they
-    /// can disagree. So brisk reads the second one and never writes it: a fix
-    /// that wrote the number it later reads back would turn the read-back
-    /// into a mirror. Absent reads as null, never as 0.
+    /// and the "written but ignored" sentence a later task of this wave will
+    /// print depends on their being able to disagree. So brisk reads the
+    /// second one and never writes it: a fix that wrote the number it later
+    /// reads back would leave that task comparing brisk's number with itself.
+    /// Absent reads as null, never as 0.
     [Fact]
     public void DiagnosticLevel_ReadsTheConsumerValue_AndTheFixNeverWritesIt()
     {
@@ -270,8 +273,8 @@ public class TelemetrySwitchRuleTests
 
         rule.Fix(ctx);
         Assert.True(rule.EffectiveLevel(ctx) == 3,
-            "the fix wrote the value it reads back — the read-back would then " +
-            "be reading brisk's own number back to itself");
+            "the fix wrote the value it reads back — the read-back a later " +
+            "task adds would then be comparing brisk's number with itself");
         Assert.Equal(1, reg.GetInt(DiagnosticLevelRule.KeyPath,
             DiagnosticLevelRule.ValueName));
     }

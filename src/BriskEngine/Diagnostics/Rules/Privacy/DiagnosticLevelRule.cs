@@ -13,9 +13,12 @@ public sealed class DiagnosticLevelRule : TelemetrySwitchRule
     public const string ValueName = "AllowTelemetry";
 
     /// The second key a diagnostic data level is recorded under. brisk reads
-    /// it and never writes it: the read-back's "written but ignored" sentence
-    /// rests on these two numbers being able to disagree, and a fix that
-    /// wrote both would only ever read its own number back to itself.
+    /// it and never writes it. Nothing consumes this read yet: the read-back
+    /// that will compare the two numbers and say "written but ignored" is a
+    /// later task of this wave. The reason to read one and write the other
+    /// from the start is that the comparison only means anything while the
+    /// numbers can disagree — a fix that wrote both would leave that later
+    /// task reading brisk's own number back to itself.
     public const string EffectiveKeyPath =
         @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection";
 

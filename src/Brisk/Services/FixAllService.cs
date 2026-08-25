@@ -19,11 +19,13 @@ public sealed record FixAllResult(
 /// must never be bundled in here.
 ///
 /// Neither is a privacy setting. This button is about speed and hygiene, and
-/// the disclosure spec's action model is two-tier: the four consequence-free
-/// switches are turned off by the Privacy page's own button, and the two that
-/// cost the user something (Find my device, Timeline) by their own controls
-/// with the loss named beside them. A generic button cannot carry either
-/// consent, so it does not reach them at all.
+/// the disclosure spec's action model is two-tier: a later task of this wave
+/// WILL add a privacy page with its own button for the four consequence-free
+/// switches, and its own per-switch controls for the two that cost the user
+/// something (Find my device, Timeline) with the loss named beside them.
+/// Neither surface exists on this build, and this exclusion does not wait for
+/// them: a generic button cannot carry either consent, so it does not reach a
+/// privacy finding whether or not anything else can.
 public sealed class FixAllService
 {
     /// StartupBloatRule.Fix is exactly "disable every enabled known-heavy
@@ -56,10 +58,11 @@ public sealed class FixAllService
     /// two places that COUNT the button's work for the "{n} one-click
     /// fixable" line. Public for that reason — the count and the action have
     /// to be the same question, or the sentence beside the button promises
-    /// clicks the button declines. Category is a consent level, not a topic:
-    /// Confirm covers the two privacy switches that cost the user something
-    /// as surely as Auto covers the four that cost nothing, so the topic has
-    /// to be excluded by rule id.
+    /// clicks the button declines. Category is a consent level, not a topic,
+    /// and excluding by category would not do the job: the four switches that
+    /// ship today are Auto, and the two that cost the user something are
+    /// Confirm when a later task adds them. Both are inside the topic, so the
+    /// topic has to be excluded by rule id.
     public static bool IsOneClickFixable(DiagnosticFinding f) =>
         f.Category != RuleCategory.Advise && f.CanFix
         && !FindingSections.IsPrivacy(f);

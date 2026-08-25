@@ -5,7 +5,8 @@ using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.Rules.Privacy;
 
-/// The switches the Privacy page turns off with one button. Four rules share
+/// The four switches a later task of this wave will turn off behind one
+/// button on a privacy page that does not exist yet. Four rules share
 /// one shape: a handful of registry values, a number that reads as on, a
 /// number the fix writes, and an undo that restores every value a COMPLETED
 /// fix recorded. Not every value a fix touched: FixRunner journals the prior
@@ -45,14 +46,17 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
 
     public abstract string Id { get; }
 
-    /// Auto is a consent level, not a topic. These four are the ones that
-    /// cost the user nothing visible, which is why they sit behind one
-    /// button; the privacy rules that cost something are Confirm.
+    /// Auto is a consent level, not a topic. These four cost the user nothing
+    /// visible, which is why a later task of this wave can put them behind a
+    /// single button; the privacy rules that cost something will be Confirm
+    /// and are not written yet. Nothing acts on this category for a privacy
+    /// finding today — FixAllService excludes the topic outright.
     public RuleCategory Category => RuleCategory.Auto;
 
-    /// Public because the read-back asks a second question of the same
-    /// values — "is the number brisk wrote still the number that is there?"
-    /// — and IsOn, which answers only "does this read as on", cannot.
+    /// Public because the read-back a later task of this wave adds will ask a
+    /// second question of the same values — "is the number brisk wrote still
+    /// the number that is there?" — and IsOn, which answers only "does this
+    /// read as on", cannot. Nothing outside this class reads it today.
     public abstract IReadOnlyList<RegistryValue> Values { get; }
 
     /// English, and pinned identical to this rule's English resx entry by

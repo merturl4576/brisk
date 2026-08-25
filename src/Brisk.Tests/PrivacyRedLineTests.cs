@@ -1,4 +1,7 @@
 using System.Linq;
+using System.Threading.Tasks;
+using Brisk.Localization;
+using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules.Privacy;
@@ -97,7 +100,7 @@ public class PrivacyRedLineTests
     /// switches; the six privacy rules still to be written need the same line
     /// extended to whatever base class or marker they arrive with.
     [Fact]
-    public void EveryTelemetrySwitchRule_ShipsAnIdThePrivacyPageRoutes()
+    public void EveryTelemetrySwitchRule_ShipsAnIdThePrivacyListCarries()
     {
         var switches = DiagnosticRuleRegistry.All
             .OfType<TelemetrySwitchRule>().ToList();
@@ -107,6 +110,66 @@ public class PrivacyRedLineTests
             Assert.True(FindingSections.IsPrivacy(rule.Id),
                 $"rule '{rule.Id}' is a telemetry switch, but no id in " +
                 "PrivacyRuleIds.All matches it — its findings would route to Sağlık");
+    }
+
+    /// THE STATE OF THIS BUILD, pinned so that changing it is deliberate.
+    /// There is no privacy page yet: App.xaml.cs builds exactly two findings
+    /// pages, IsHealth and IsPerformance, and both exclude these ids, so a
+    /// privacy finding reaches no row on either. It also carries no Headline,
+    /// so RevelationPicker — and the report card, which picks through it —
+    /// skip it as well.
+    ///
+    /// This is a tripwire, not an aspiration. Three of the last four defects
+    /// on this task were sentences written in the present tense about a page
+    /// nobody has built; when the page IS built, this test fails, and every
+    /// comment that had to say "will" gets to say "does" in the same commit.
+    ///
+    /// What it does NOT claim: that a privacy finding is invisible. The
+    /// "{n} findings" figure on the overview and the flyout counts every
+    /// finding in the snapshot, privacy included — only the row, the title
+    /// and the evidence have nowhere to appear.
+    [Fact]
+    public async Task OnThisBuild_APrivacyFinding_ReachesNeitherFindingsPage()
+    {
+        var host = new FakeEngineHost
+        {
+            NextSnapshot = TestData.Snapshot(new[]
+            {
+                TestData.Finding("advertising-id", cat: RuleCategory.Auto,
+                    canFix: true, kind: FindingKind.Notice),
+                TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            }),
+        };
+        var loc = new Loc();
+        loc.SetLanguage("en");
+        var state = new AppState(host, loc);
+        var fixAll = new FixAllService(host);
+        // Wired exactly as App.xaml.cs:91-98 wires the only two it builds.
+        var health = new HealthViewModel(state, host, loc, () => false, fixAll,
+            FindingSections.IsHealth, doneFilter: FindingSections.IsHealth,
+            crossLinkKey: "health.crosslink", morphPause: () => Task.CompletedTask);
+        var perf = new HealthViewModel(state, host, loc, () => false, fixAll,
+            FindingSections.IsPerformance, doneFilter: FindingSections.IsPerformance,
+            crossLinkKey: "performance.crosslink", morphPause: () => Task.CompletedTask);
+
+        await state.ScanAsync();
+
+        foreach (var (name, vm) in new[] { ("Saglik", health), ("Performans", perf) })
+        {
+            var shown = vm.Rows.Concat(vm.AdviseRows).Concat(vm.NoticeRows)
+                .Select(r => r.RuleId).ToArray();
+            Assert.False(shown.Contains("advertising-id"),
+                $"advertising-id reached the {name} page, which grades the " +
+                "machine and must not carry a privacy finding");
+        }
+        // The control: the same wiring does show a non-privacy finding, so a
+        // page that rendered nothing at all could not pass this by accident.
+        Assert.Contains("power-plan",
+            perf.Rows.Concat(perf.AdviseRows).Concat(perf.NoticeRows)
+                .Select(r => r.RuleId));
+
+        Assert.Empty(RevelationPicker.Pick(state.Snapshot!.Findings)
+            .Where(f => FindingSections.IsPrivacy(f)));
     }
 
     /// The list itself, pinned in the order the spec names it. The theory
