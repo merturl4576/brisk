@@ -26,8 +26,15 @@ public sealed class FindingRow : ViewModelBase
     /// RecallStatusRule reports the policy and refuses to write it, because
     /// the surface is new, it differs between builds, and a fix brisk cannot
     /// check afterwards is the one thing this project refuses to ship. The
-    /// spec's answer to that refusal is this link, in as many words: "Recall
-    /// appears here as state only, with a link to Windows' own setting."
+    /// spec's answer to that refusal is this link, in as many words: the row
+    /// shows "state only, with a link to Windows' own setting".
+    ///
+    /// The spec said that as "Recall appears HERE as state only, with a link
+    /// to Windows' own setting", under the switches block, and the "here" was
+    /// struck from that block: the page never put the row there, because
+    /// PrivacyViewModel.Band sends a finding carrying a Headline to the
+    /// disclosure band. The LINK half — the half this comment rests on — is
+    /// unchanged, and the spec's UI correction records both.
     ///
     /// THE URI IS THE PRIVACY ROOT AND NOT A RECALL PAGE, deliberately.
     /// "ms-settings:privacy" is Privacy & security, which every Windows brisk

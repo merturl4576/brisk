@@ -308,18 +308,22 @@ public class PrivacyRedLineTests
     /// comment says why.
     private sealed record BannedPhrase(string Pattern, string Why);
 
-    /// Why the first half of the list is banned — red line 1's own sentence.
+    /// Why the first half of the list is banned — red line 1's own sentence,
+    /// said in terms of the RECORD it would need.
     private const string CannotPromiseIt =
-        "brisk read a value on this machine and observed nothing about what " +
-        "anybody receives, so it cannot promise that anybody stopped seeing " +
-        "anything";
+        "brisk holds no record of what anybody receives — it read a setting, " +
+        "and a setting is not a record of what moved — so it cannot promise " +
+        "that anybody stopped seeing anything";
 
-    /// Why the second half is — the same claim with the sign flipped, which
-    /// is this task's decision rather than the spec's sentence. See the note
-    /// on NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees.
+    /// Why the second half is: the same principle pointing the other way.
+    /// NOT "brisk never names a transmission" — one rule in this topic holds
+    /// a record of one and says so. See the note on
+    /// NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees.
     private const string CannotAssertItEither =
-        "brisk read a value on this machine and observed no transmission, so " +
-        "it cannot assert one either";
+        "brisk holds no record of a transmission here, and a claim needs the " +
+        "same record whichever way it points; the rule that DOES hold one is " +
+        "delivery-optimization, off Windows' own upload counter, and its " +
+        "vocabulary is deliberately absent from this list";
 
     private static readonly BannedPhrase[] Banned =
     {
@@ -340,6 +344,12 @@ public class PrivacyRedLineTests
         // NoDisclosureCopy_ClaimsAnythingAboutWhoReceivesWhat already bans
         // the bare word over part of the same copy, so this is the house
         // reading rather than a new one.
+        //
+        // WHAT IS DELIBERATELY NOT HERE: upload, uploaded, yükle. Those are
+        // delivery-optimization's words, and it holds the counter that earns
+        // them — putting one on this list turns the ban red on shipped copy
+        // that is right. TheOneTransmissionClaimBriskHasARecordOf_IsNotBanned
+        // is what stops that being an accident nobody notices.
         new(@"Microsoft", CannotAssertItEither),
         new(@"\bsends?\b", CannotAssertItEither),
         new(@"\bsending\b", CannotAssertItEither),
@@ -379,20 +389,37 @@ public class PrivacyRedLineTests
     /// is `privacy.setting.failed`. This test reads it — for what it says,
     /// not for whether it resolves, which is still unguarded.)
     ///
-    /// THE BAN RUNS BOTH WAYS, and that half is a decision this task took
-    /// rather than a line the spec wrote. Red line 1 forbids the assurance;
-    /// the reason it gives for forbidding it — brisk reads a machine and has
-    /// no sight of what anybody receives — is equally a reason brisk may not
-    /// assert the opposite. The switches heading was asserting it: "What gets
-    /// sent to Windows" / "Windows'a ne gönderiliyor", shipped from the
-    /// spec's own UI section by Task 7, which flagged the collision and left
-    /// the call here.
+    /// THE PRINCIPLE IS "NO TRANSMISSION CLAIM WITHOUT A RECORD OF ONE", and
+    /// stating it that way is a decision this task took rather than a line
+    /// the spec wrote. Red line 1 forbids the assurance, and the reason it
+    /// gives is that brisk reads a machine and has no visibility into what
+    /// Microsoft receives. That is a statement about EVIDENCE, so it cuts
+    /// both ways: a denial needs the same record an assertion does, and a
+    /// switch is not a record of what moved. The switches heading was
+    /// asserting a transmission brisk had no record of — "What gets sent to
+    /// Windows" / "Windows'a ne gönderiliyor", shipped from the spec's own UI
+    /// section by Task 7, which flagged the collision and left the call here.
+    ///
+    /// IT DOES NOT SAY "brisk never names a transmission", which is what an
+    /// earlier draft of this reasoning amounted to and which brisk's own copy
+    /// refutes. delivery-optimization reads Windows' running count of the
+    /// bytes uploaded from this machine, and a claim standing on a counter
+    /// brisk read is a claim brisk earned. That is why the upload vocabulary
+    /// is missing from the list above by decision, and why
+    /// TheOneTransmissionClaimBriskHasARecordOf_IsNotBanned exists.
     ///
     /// Three things settled it, and the third is the one that is not a hedge.
-    /// (1) That heading was the ONLY string in all three families, in either
-    /// language, that named a transmission at all; everything else brisk's
-    /// privacy copy says is a reading or a denial. (2) The sentence directly
-    /// beneath it said the opposite in as many words — "what leaves this
+    /// (1) It was the only string in all three families, in either language,
+    /// asserting a transmission BRISK HOLDS NO RECORD OF, and the only one
+    /// naming WINDOWS AS THE RECIPIENT of one. Not the only one naming a
+    /// transmission: rule.delivery-optimization.* names one in six English
+    /// strings and their six Turkish twins, off a counter brisk read, and
+    /// names "other machines" as the recipient rather than Windows. An
+    /// earlier draft of this paragraph claimed the heading was the only
+    /// transmission claim in the topic at all, and that was false — the
+    /// distinction the refinement carries is the whole principle, so losing
+    /// it lost the argument. (2) The sentence directly beneath it said the
+    /// opposite in as many words — "what leaves this
     /// machine is not something those reads can tell you" — so the mitigation
     /// worked by contradicting the heading it mitigated. (3) It was wrong
     /// about the switches it headed. An advertising ID is a number apps on
@@ -414,6 +441,22 @@ public class PrivacyRedLineTests
     /// whole topic's copy in two languages. The engine's lists are also blind
     /// to `privacy.*` and to PrivacyRuleIds.All, which BriskEngine cannot
     /// see.
+    ///
+    /// THE RESX BAN REACHES THE ENGINE'S OWN PROSE, which matters because
+    /// that prose is concatenated C# and a phrase split across a `+` is
+    /// invisible to any matcher. It does not have to be visible here.
+    /// TheEnglishResx_SaysWhatTheEngineSays — which exists in THREE engine
+    /// files, between them covering all six switches, the three registry
+    /// disclosures and delivery-optimization — asserts the English resx
+    /// string EQUALS the concatenated whole, so a banned phrase assembled
+    /// from fragments in a rule's Title or Evidence arrives in this file in
+    /// one piece. The Turkish side needs no such bridge: this reads that file
+    /// directly.
+    ///
+    /// The residual is FixDescription. Nothing pins its wording to a resx key
+    /// and nothing scans it, so a claim made there is made where neither this
+    /// guard nor any other is looking. Only the six switches carry one; the
+    /// four disclosures ship it null.
     ///
     /// Every offence is collected before the assertion, so one run names
     /// every key and every phrase rather than the first one and a rerun.
@@ -482,6 +525,57 @@ public class PrivacyRedLineTests
         Assert.True(Match(Resx("Strings.tr.resx")["privacy.hero.note"], "ayarları").Success,
             "the Turkish page note does not contain the Turkish word this " +
             "control looks for, so the ban above may be matching nothing at all");
+    }
+
+    /// THE ONE TRANSMISSION CLAIM BRISK HAS EARNED, and the reason the
+    /// principle is "no transmission claim without a record of one" rather
+    /// than "no transmission claim".
+    ///
+    /// rule.delivery-optimization.* says this machine uploaded data to other
+    /// machines — a transmission, stated plainly, in six English strings and
+    /// their six Turkish twins. It is not banned and must not be: brisk read
+    /// Windows' own running counter of those bytes, which is the only record
+    /// of a TRANSMISSION anything in this topic holds. Every other privacy
+    /// rule reads a SETTING, and a setting is not a record of what moved.
+    /// This copy also names no recipient brisk did not read — "other
+    /// machines", never Windows and never a company — which is exactly what
+    /// the heading this task replaced did name.
+    ///
+    /// BOTH DIRECTIONS ARE LIVE HERE. Put "upload" or "yükle" on the banned
+    /// list and the ban above goes red on shipped copy that is right; rewrite
+    /// this rule's copy so it no longer names a transmission and THIS goes
+    /// red instead, which is when the reasoning on the ban is describing copy
+    /// that is gone. Without it the exception is an absence from a list, and
+    /// an absence records no decision.
+    [Theory]
+    [InlineData("Strings.resx", "uploaded")]
+    [InlineData("Strings.tr.resx", "yükle")]
+    public void TheOneTransmissionClaimBriskHasARecordOf_IsNotBanned(
+        string file, string namesATransmission)
+    {
+        var counterBacked = Resx(file)
+            .Where(pair => pair.Key.StartsWith("rule.delivery-optimization.",
+                StringComparison.Ordinal))
+            .ToList();
+
+        Assert.True(counterBacked.Count > 0,
+            $"{file} carries no rule.delivery-optimization.* string at all, so " +
+            "the one transmission claim the ban deliberately allows is not " +
+            "there to allow");
+        Assert.True(
+            counterBacked.Any(pair => Match(pair.Value, namesATransmission).Success),
+            $"no rule.delivery-optimization.* string in {file} says " +
+            $"\"{namesATransmission}\" any more. This rule's copy is the one " +
+            "transmission claim the ban allows, and the reasoning on the ban " +
+            "is written about copy that names one");
+
+        foreach (var (key, text) in counterBacked)
+            Assert.False(ClaimsIn(text).Any(),
+                $"{key} in {file} trips the copy ban. This rule read Windows' " +
+                "own upload counter, so it is the one place in this topic with " +
+                "a record of a transmission and the one place that may say so " +
+                "— a banned phrase reaching it means the list has grown past " +
+                "its own principle");
     }
 
     /// Every string the privacy topic ships, in the three families named on

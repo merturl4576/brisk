@@ -553,12 +553,19 @@ public class PrivacyViewModelTests
 
     // ---- The one row brisk points somewhere else for --------------------
 
-    /// The spec's own sentence about Recall, in both places it appears:
-    /// "Recall appears here as state only, WITH A LINK TO WINDOWS' OWN
-    /// SETTING". The state shipped with the page; the link did not, and
+    /// The spec's own requirement for Recall, quoted here and in
+    /// HealthViewModel: the row shows STATE ONLY, WITH A LINK TO WINDOWS' OWN
+    /// SETTING. The state shipped with the page; the link did not, and
     /// nothing on the page, in this file or in the report said it was
     /// missing — the row rendered as an ordinary advice card and the whole
-    /// second half of the sentence was absent without a word.
+    /// second half of the requirement was absent without a word.
+    ///
+    /// The spec said it as "Recall appears HERE as state only, with a link to
+    /// Windows' own setting", under the switches block. The "here" was struck
+    /// from that block, because the page never put the row there — Band sends
+    /// a finding carrying a Headline to the disclosure band, which is exactly
+    /// where the assertion below goes looking for it, and has since this test
+    /// was written. The LINK half is unchanged and is what this asserts.
     ///
     /// Both halves are asserted together, because the link only means what
     /// it says while the other one holds. RecallStatusRule is Advise — the

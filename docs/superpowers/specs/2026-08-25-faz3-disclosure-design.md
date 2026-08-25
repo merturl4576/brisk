@@ -185,8 +185,6 @@ A sixth nav tile, **Gizlilik**, holding three blocks:
    something** (location, activity history) sit on their own switches with the
    loss named beside them — *"'Cihazımı bul' çalışmaz"*, *"Timeline biter"*.
    All of it reversible.
-   Recall appears here as state only, with a link to Windows' own setting, for
-   the reason given under Rules.
 3. **Read-back** — what brisk turned off, when, and whether it held.
 
 **Corrected 2026-08-26, after Task 9 shipped.** Item 2's heading was
@@ -195,19 +193,48 @@ reads **"Windows'un kendi gizlilik anahtarları"** / *"Windows' own privacy
 switches"*. Task 7 shipped the original, flagged that it and red line 1 pull
 against each other, and left the call to Task 9, which took it.
 
-The reason red line 1 gives for forbidding *"Microsoft can no longer see
-this"* — brisk reads a machine and has no visibility into what Microsoft
-receives — is equally a reason brisk may not assert the opposite, and the old
-heading asserted it. Two further facts settled it. It was the only string in
-the whole privacy topic, in either language, that named a transmission at all,
-and the sentence directly beneath it says *"what leaves this machine is not
-something those reads can tell you"* — so the mitigation worked by
-contradicting the heading it mitigated. And it was **wrong about the switches
-it headed**: an advertising ID is a number apps on this machine read, tailored
-experiences is Windows using data it already holds, and the location consent
-governs what apps here may ask for. Three of the six are not about anything
-being sent to Windows, so the heading did not merely outrun its evidence, it
-mislabelled half of its own block.
+The principle is **"no transmission claim without a record of one."** Red line
+1 forbids the assurance — *"Microsoft can no longer see this"* — and the reason
+it gives is that brisk reads a machine and has no visibility into what
+Microsoft receives. That is a statement about EVIDENCE, so it cuts both ways: a
+denial needs the same record an assertion does, and a switch is not a record of
+what moved. The old heading asserted a transmission brisk had no record of.
+
+Two further facts settled it. It was the only string in the whole topic, in
+either language, asserting a transmission **brisk holds no record of**, and the
+only one naming **Windows as the recipient** of one — while the sentence
+directly beneath it says *"what leaves this machine is not something those
+reads can tell you"*, so the mitigation worked by contradicting the heading it
+mitigated. And it was **wrong about the switches it headed**: an advertising ID
+is a number apps on this machine read, tailored experiences is Windows using
+data it already holds, and the location consent governs what apps here may ask
+for. Three of the six are not about anything being sent to Windows, so the
+heading did not merely outrun its evidence, it mislabelled half of its own
+block.
+
+**What the principle does NOT say**, because the first draft of this block said
+it and brisk's own copy refutes it: it does not say brisk never names a
+transmission. `rule.delivery-optimization.*` names one in six English strings
+and their six Turkish twins — *"Windows uploaded data from this machine to
+other machines this month"* — and is right to. brisk read Windows' own running
+counter of those bytes, and that copy names *"other machines"* as the
+recipient, never Windows and never a company. **A claim standing on a counter
+brisk read is a claim brisk earned.** So the upload vocabulary is absent from
+the ban by decision, not by oversight, and
+`PrivacyRedLineTests.TheOneTransmissionClaimBriskHasARecordOf_IsNotBanned`
+makes that decision checkable in both directions: put "upload" on the list and
+the ban goes red on six shipped strings that are right; take the transmission
+out of this rule's copy and the control goes red instead.
+
+**Item 2 also said** *"Recall appears here as state only, with a link to
+Windows' own setting"*, and that clause is struck above because the page does
+not put it here. `PrivacyViewModel.Band` sends a finding carrying a Headline to
+the disclosure band and a headless one to "what brisk could not read";
+`recall-status` carries one whenever its policy reads either way, so it lands
+in **block 1** with the numbers, and in the unreadable band when brisk cannot
+read the policy. The link to Windows' own setting rides on that row wherever it
+lands, and the reason brisk shows the state without offering to change it is
+unchanged and still given under Rules.
 
 `privacy.switches.note` lost its opening sentence with it — *"These are the
 switches Windows keeps for it"* pointed at the claim that is gone. The limit
@@ -268,12 +295,16 @@ because a guard nobody can find is a guard the next reader writes a second
 copy of:
 
 - no string this topic ships — rule copy, read-back sentence or page heading,
-  in either language — contains a claim about what Microsoft can or cannot
-  see, **nor the same claim with the sign flipped**:
+  in either language — makes **a transmission claim brisk holds no record of**.
+  Not *"Microsoft can no longer see this"*, and not the assertion either, since
+  a denial needs the same record an assertion does:
   `PrivacyRedLineTests.NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees`,
   over every `rule.<privacy id>.*`, `readback.*` and `privacy.*` key in both
   resx files, with `ThePrivacyCopyGuard_ReachesAllThreeFamilies_AndCanFire` as
-  its control in both directions
+  its control in both directions. The one claim that DOES have a record —
+  delivery-optimization's, off Windows' own upload counter — is deliberately
+  allowed, and `TheOneTransmissionClaimBriskHasARecordOf_IsNotBanned` holds
+  that exception open so it stays a decision rather than a gap
 - no finding produced by this wave lowers the health score:
   `PrivacyRedLineTests.EveryPrivacyRule_ReportsANoticeAndCostsTheScoreNothing`,
   over `DiagnosticRuleRegistry.All` intersected with `PrivacyRuleIds.All`, so
