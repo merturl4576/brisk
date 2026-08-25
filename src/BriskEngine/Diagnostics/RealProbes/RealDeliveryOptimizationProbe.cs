@@ -14,9 +14,10 @@ namespace BriskEngine.Diagnostics.RealProbes;
 /// rather than a preference. The plan said
 /// `Get-DeliveryOptimizationPerfSnap` and `BytesToPeers`. Run on the machine
 /// this was written on, that cmdlet answers with no field of that name at
-/// all — its upload figures are `TotalBytesUploaded`, `FilesUploaded` and
-/// `AverageUploadSize`, and `TotalBytesUploaded` read 0 in the same minute
-/// that the month counter read 302 MB. A probe built to the plan's letter
+/// all: Get-Member lists 32 properties on its output, several of them about
+/// uploads and not one of them called that. The closest,
+/// `TotalBytesUploaded`, read 0 in the same minute that the month counter
+/// read 302 MB. A probe built to the plan's letter
 /// would have reported "unreadable" forever on a machine whose number was
 /// sitting there. `Get-DeliveryOptimizationPerfSnapThisMonth` is the cmdlet
 /// that carries it, and its name is also where the word "month" in brisk's
@@ -32,6 +33,12 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
     /// reached over the local network, and peers reached over the internet.
     internal const string LanField = "UploadLanBytes";
     internal const string InternetField = "UploadInternetBytes";
+
+    /// The window marker, and the only thing in the code that stands behind
+    /// the words "current calendar month" in brisk's copy. Without it that
+    /// clause rested on the cmdlet's NAME alone — a sentence about a period
+    /// nothing in the read had checked.
+    internal const string MonthField = "MonthStartDate";
 
     /// try/catch/exit 1 is the shape this repo already uses to run PowerShell
     /// (EngineHost.CreateRestorePoint), and it is here for a second reason:
@@ -86,8 +93,15 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
             // until the child closes the pipe, so reading first and waiting
             // second is how the repo's runner does it — but that read is
             // itself unbounded, and a timeout that only bounds the wait would
-            // bound nothing. The read runs as a task so the bound is on the
-            // process, which is the thing that can hang.
+            // bound nothing. The read runs as a task so the bound falls on
+            // the process instead.
+            //
+            // WHAT THE BOUND STILL DOES NOT COVER: the read after a wait
+            // that SUCCEEDED. If a grandchild inherited the stdout handle
+            // and outlived its parent, the pipe stays open and that read
+            // waits with nothing on it. Nothing here has been seen do
+            // that, and nothing here has watched for it either; the gap is
+            // named rather than covered.
             var stdout = process.StandardOutput.ReadToEndAsync();
             if (!process.WaitForExit(TimeoutMs))
             {
@@ -106,11 +120,12 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
     /// The sum of the two upload fields, or null for output brisk does not
     /// recognise as that shape.
     ///
-    /// BOTH FIELDS ARE REQUIRED. Summing whichever one is present would let a
-    /// snapshot missing the internet half report the local half as the whole
-    /// total — a number that is wrong in the direction that reassures, which
-    /// is the direction this wave refuses to be wrong in. A shape brisk only
-    /// half recognises is a counter brisk did not read.
+    /// BOTH UPLOAD FIELDS ARE REQUIRED, and so is the month marker. Summing
+    /// whichever half is present would let a snapshot missing the internet
+    /// half report the local half as the whole total — a number wrong in the
+    /// direction that reassures, which is the direction this wave refuses to
+    /// be wrong in. A shape brisk only half recognises is a counter brisk did
+    /// not read.
     ///
     /// A total below zero is not a count of bytes, so it is not reported as
     /// one either.
@@ -121,6 +136,15 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
         {
             using var document = JsonDocument.Parse(json);
             if (document.RootElement.ValueKind != JsonValueKind.Object) return null;
+            // WHAT THIS CHECKS AND WHAT IT DOES NOT: that the snapshot
+            // carries a month marker at all, not what date it holds. Windows
+            // writes that marker as a timestamp — on this machine it decodes
+            // to 2026-08-01 00:00:00 local, the first of the current
+            // calendar month — and brisk reads the field's presence rather
+            // than parsing it, so a stale marker would pass. It is still the
+            // difference between quoting a window the read saw and quoting
+            // one taken from a cmdlet's name.
+            if (!document.RootElement.TryGetProperty(MonthField, out _)) return null;
             var lan = Field(document.RootElement, LanField);
             var internet = Field(document.RootElement, InternetField);
             if (lan is null || internet is null) return null;

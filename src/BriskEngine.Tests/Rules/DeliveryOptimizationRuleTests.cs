@@ -291,6 +291,17 @@ public class DeliveryOptimizationRuleTests
 
     // ---- the probe behind it --------------------------------------------
 
+    /// Windows writes a month marker into every snapshot from this cmdlet
+    /// and the parser requires one, so every fixture in this section carries
+    /// it. Without that, a case meant to prove a missing upload half is
+    /// refused would pass because the MARKER was missing instead — green for
+    /// a reason it does not name, which is the failure a fixture helper like
+    /// this one exists to prevent.
+    private const string MonthMarker =
+        ",\"MonthStartDate\":\"\\/Date(1785531600008)\\/\"";
+
+    private static string WithMonth(string fields) => "{" + fields + MonthMarker + "}";
+
     /// The half of the real probe that can be tested without a machine that
     /// uploads anything: what it makes of the text the cmdlet printed. The
     /// sample below is the real output of
@@ -314,7 +325,7 @@ public class DeliveryOptimizationRuleTests
             RealDeliveryOptimizationProbe.ParseUploadedBytes(RealSnapshotJson));
 
         var both = RealDeliveryOptimizationProbe.ParseUploadedBytes(
-            "{\"UploadLanBytes\":10,\"UploadInternetBytes\":7}");
+            WithMonth("\"UploadLanBytes\":10,\"UploadInternetBytes\":7"));
         Assert.True(both == 17,
             "10 bytes to the local network and 7 over the internet is 17 bytes " +
             $"uploaded, and the parser read {both?.ToString() ?? "nothing at all"}");
@@ -322,32 +333,54 @@ public class DeliveryOptimizationRuleTests
 
     /// A snapshot carrying one half is a shape brisk only half recognises,
     /// and reporting the half it got would under-report in the direction that
-    /// reassures. Unread, not a total.
+    /// reassures. Unread, not a total. Each case carries the month marker, so
+    /// the only thing missing is the half it names.
     [Theory]
-    [InlineData("{\"UploadLanBytes\":10}")]
-    [InlineData("{\"UploadInternetBytes\":10}")]
-    [InlineData("{\"UploadLanBytes\":10,\"UploadInternetBytes\":\"seven\"}")]
-    public void ASnapshotMissingEitherHalf_IsNotATotal(string json)
+    [InlineData("\"UploadLanBytes\":10")]
+    [InlineData("\"UploadInternetBytes\":10")]
+    [InlineData("\"UploadLanBytes\":10,\"UploadInternetBytes\":\"seven\"")]
+    public void ASnapshotMissingEitherHalf_IsNotATotal(string fields)
     {
-        Assert.True(RealDeliveryOptimizationProbe.ParseUploadedBytes(json) is null,
-            $"{json} was read as " +
-            $"{RealDeliveryOptimizationProbe.ParseUploadedBytes(json)} bytes uploaded, " +
-            "and brisk only read one of the two figures that make up that total");
+        var read = RealDeliveryOptimizationProbe.ParseUploadedBytes(WithMonth(fields));
+
+        Assert.True(read is null,
+            $"{WithMonth(fields)} was read as {read} bytes uploaded, and brisk " +
+            "only read one of the two figures that make up that total");
+    }
+
+    /// brisk's copy says "for the current calendar month". Until this check
+    /// existed that clause rested on the cmdlet's name and on nothing the
+    /// read had seen — a snapshot carrying both upload halves and no month
+    /// marker would have been reported as a month's total. It is not.
+    [Fact]
+    public void ASnapshotWithNoMonthMarker_IsNotAMonthsTotal()
+    {
+        var read = RealDeliveryOptimizationProbe.ParseUploadedBytes(
+            "{\"UploadLanBytes\":10,\"UploadInternetBytes\":7}");
+
+        Assert.True(read is null,
+            $"a snapshot with no {RealDeliveryOptimizationProbe.MonthField} was read " +
+            $"as {read} bytes uploaded this month, which is a window brisk never saw");
     }
 
     /// Nothing the cmdlet could print, or fail to print, becomes a number.
+    /// The last case is a whole, well-formed month snapshot whose total comes
+    /// out below zero, so it carries the marker: what it tests is the total,
+    /// not the shape.
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("not json at all")]
     [InlineData("[1,2,3]")]
-    [InlineData("{\"UploadLanBytes\":-2,\"UploadInternetBytes\":1}")]
+    [InlineData("{\"UploadLanBytes\":-2,\"UploadInternetBytes\":1," +
+                "\"MonthStartDate\":\"\\/Date(1785531600008)\\/\"}")]
     public void OutputItCannotRead_IsNotZero(string? json)
     {
-        Assert.True(RealDeliveryOptimizationProbe.ParseUploadedBytes(json) is null,
-            $"the parser turned {json ?? "no output at all"} into " +
-            $"{RealDeliveryOptimizationProbe.ParseUploadedBytes(json)}");
+        var read = RealDeliveryOptimizationProbe.ParseUploadedBytes(json);
+
+        Assert.True(read is null,
+            $"the parser turned {json ?? "no output at all"} into {read}");
     }
 
     /// The cmdlet the probe actually asks for, pinned as a literal. The plan
@@ -371,6 +404,7 @@ public class DeliveryOptimizationRuleTests
             $"the command can stop for a prompt or load a user profile: {args}");
         Assert.Equal("UploadLanBytes", RealDeliveryOptimizationProbe.LanField);
         Assert.Equal("UploadInternetBytes", RealDeliveryOptimizationProbe.InternetField);
+        Assert.Equal("MonthStartDate", RealDeliveryOptimizationProbe.MonthField);
     }
 
     /// The one thing about the real probe that no fake can establish, and the

@@ -30,6 +30,15 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// reading to lead with — and no digit anywhere a reader can see one.
 public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
 {
+    /// THE SAME STRING IS ALSO A CLEANUP TARGET ID. CleanupTargetRegistry
+    /// has a `delivery-optimization` target: the Delivery Optimization cache
+    /// folder. Nothing collides — rule ids and target ids live in separate
+    /// registries, `--rule` and `--target` read different sets, and the resx
+    /// keys are `rule.*` against `clean.target.*` — but `brisk rules` and
+    /// `brisk targets` both print this string now, meaning different things.
+    /// They are also not two views of one thing: emptying that cache frees
+    /// disk and does NOT move the counter this rule reports, which is a
+    /// monthly total of bytes already uploaded.
     public override string Id => "delivery-optimization";
 
     public override DiagnosticFinding? Detect(DiagnosticContext ctx) =>
