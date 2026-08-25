@@ -291,12 +291,16 @@ public class DeliveryOptimizationRuleTests
 
     // ---- the probe behind it --------------------------------------------
 
-    /// Windows writes a month marker into every snapshot from this cmdlet
-    /// and the parser requires one, so every fixture in this section carries
-    /// it. Without that, a case meant to prove a missing upload half is
-    /// refused would pass because the MARKER was missing instead — green for
-    /// a reason it does not name, which is the failure a fixture helper like
-    /// this one exists to prevent.
+    /// The parser requires a month marker, so every fixture in this section
+    /// carries one. Without that, a case meant to prove a missing upload
+    /// half is refused would pass because the MARKER was missing instead —
+    /// green for a reason it does not name, which is the failure a fixture
+    /// helper like this one exists to prevent.
+    ///
+    /// The value is the one this machine's snapshot carried. Whether every
+    /// Windows build writes such a marker is not something one machine
+    /// establishes — and if one does not, brisk reports that counter as
+    /// unread, which is the cost this check accepts.
     private const string MonthMarker =
         ",\"MonthStartDate\":\"\\/Date(1785531600008)\\/\"";
 

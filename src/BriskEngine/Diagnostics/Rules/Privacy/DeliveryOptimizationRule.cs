@@ -36,9 +36,10 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
     /// registries, `--rule` and `--target` read different sets, and the resx
     /// keys are `rule.*` against `clean.target.*` — but `brisk rules` and
     /// `brisk targets` both print this string now, meaning different things.
-    /// They are also not two views of one thing: emptying that cache frees
-    /// disk and does NOT move the counter this rule reports, which is a
-    /// monthly total of bytes already uploaded.
+    /// They are also not two views of one thing. REASONED, NOT OBSERVED:
+    /// this rule's number is a monthly total of bytes already uploaded, so
+    /// emptying that cache frees disk and should not move it — nobody has
+    /// emptied it and re-read the counter here to confirm that.
     public override string Id => "delivery-optimization";
 
     public override DiagnosticFinding? Detect(DiagnosticContext ctx) =>
