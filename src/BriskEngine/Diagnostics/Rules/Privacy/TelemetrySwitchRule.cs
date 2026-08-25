@@ -127,14 +127,30 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     /// re-establish that.
     ///
     /// It may NOT assume the value the fix wrote is the value sitting there.
-    /// Those two coincide only while a rule keeps the default ReadsAsOn,
-    /// which treats exactly OffValue as off, and TWO rules do not:
-    /// DiagnosticLevelRule reads a THRESHOLD, so a machine somebody else set
-    /// to 0 reads as off with brisk's 1 gone; LocationRule matches its word
-    /// without regard to case, so "deny" reads as off where the fix wrote
-    /// "Deny". Both are reachable, both are planted in ReadBackTests, and
-    /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite is what fails if
-    /// a third rule joins them without this paragraph being read.
+    /// Those two coincide only for a rule that keeps BOTH default reads: the
+    /// default IsOn, which walks Values, AND the default ReadsAsOn, which
+    /// treats exactly OffValue as off. Replacing either is enough to part
+    /// them, and one rule has replaced each:
+    ///
+    ///   DiagnosticLevelRule overrides READSASON with a threshold, so a
+    ///   machine somebody else set to 0 reads as off with brisk's 1 gone.
+    ///
+    ///   LocationRule keeps the default ReadsAsOn and parts them anyway. It
+    ///   overrides ISON to match a word without regard to case and ships an
+    ///   empty Values, so "deny" reads as off where the fix wrote "Deny".
+    ///
+    /// The second is why the question is not "did I keep ReadsAsOn?". IsOn is
+    /// the read this family EXPECTS a subclass to replace — the comment on it
+    /// says so in as many words — so the override that parts them is the
+    /// COMMON one, and a criterion naming only ReadsAsOn answers "safe" for
+    /// the rule that already does it.
+    ///
+    /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite runs over every
+    /// TelemetrySwitchRule DiagnosticRuleRegistry ships, so a seventh switch
+    /// fails there until somebody records which side of this it falls on, and
+    /// a switch it cannot plant a state for fails rather than reporting one it
+    /// never checked. What it does NOT do is prove a rule cannot part them: it
+    /// plants a BOUNDED set of states and reports what it found among those.
     public virtual WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
         WriteEffect.NotAPolicy;
 

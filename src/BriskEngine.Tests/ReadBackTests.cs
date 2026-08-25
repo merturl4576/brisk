@@ -42,9 +42,17 @@ public class ReadBackTests
         "location", "activity-history",
     };
 
-    /// The four whose value IS the setting. Nothing sits between what brisk
-    /// wrote and what the switch reads, so "still written" and "still off"
-    /// are the same sentence for them.
+    /// The four that are SETTINGS rather than policies: brisk writes the value
+    /// the setting itself is kept in, so nothing sits between the write and
+    /// the setting for an edition of Windows to ignore, and Held is the strong
+    /// form for all four.
+    ///
+    /// NOT "what brisk wrote is what is there" — a different claim, and false
+    /// for location, which is on this list: it matches its word without regard
+    /// to case, so "deny" reads as off where the fix wrote "Deny". What this
+    /// list is, is the switches that are not policies.
+    /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite is where the
+    /// other question is answered, and it answers it differently.
     private static readonly string[] SettingIds =
         { "advertising-id", "tailored-experiences", "speech-typing", "location" };
 
@@ -750,50 +758,124 @@ public class ReadBackTests
     /// rests on, pinned so it cannot drift back into an assumption.
     ///
     /// "The switch reads as off" and "the value brisk wrote is the value
-    /// there" are the same statement only while a rule keeps the default
-    /// ReadsAsOn, which treats exactly OffValue as off. TWO rules break that,
-    /// in two different alphabets:
+    /// there" are the same statement only for a rule that keeps BOTH default
+    /// reads — the default IsOn, which walks Values, and the default
+    /// ReadsAsOn, which treats exactly OffValue as off. One rule has replaced
+    /// each, and they are not the same rule:
     ///
-    ///   diagnostic-level  reads a THRESHOLD, so 0 (Security) reads as off
-    ///                     while the fix writes 1
-    ///   location          matches its WORD without regard to case, so "deny"
-    ///                     reads as off while the fix writes "Deny"
+    ///   diagnostic-level  overrides READSASON with a threshold, so 0
+    ///                     (Security) reads as off while the fix writes 1
+    ///   location          keeps the default ReadsAsOn and parts them anyway:
+    ///                     it overrides ISON to match a word without regard to
+    ///                     case, so "deny" reads as off while the fix wrote
+    ///                     "Deny", and its Values is empty
     ///
-    /// The other four compare against the exact number their own fix writes
-    /// and have no such state. This theory looks for a witness rather than
-    /// asserting from a list: it walks candidate states, keeps any that reads
-    /// as off and is not what the fix wrote, and reports the one it found.
+    /// So "did it keep ReadsAsOn?" is the WRONG question — it answers "safe"
+    /// for location. The question is whether it kept both.
+    ///
+    /// WHAT THIS THEORY GIVES AND WHAT IT DOES NOT. It runs over every
+    /// TelemetrySwitchRule DiagnosticRuleRegistry ships, not over a list kept
+    /// here, so a seventh switch arrives as a row with no recorded answer and
+    /// fails until somebody works one out. And a switch this file cannot plant
+    /// a state for fails too, rather than reporting "no witness" for a rule it
+    /// never touched — the silent answer that would otherwise cover a future
+    /// word-valued rule, which is the shape location already is.
+    ///
+    /// What it does NOT do is prove a rule cannot part them. The search is
+    /// BOUNDED — six candidate numbers, six candidate words — so a recorded
+    /// false means "none among the states this file plants", never "none
+    /// exists". A rule whose off-reading set were 0 and 42 would be missed.
     [Theory]
-    [InlineData("advertising-id", false)]
-    [InlineData("tailored-experiences", false)]
-    [InlineData("speech-typing", false)]
-    [InlineData("activity-history", false)]
-    [InlineData("diagnostic-level", true)]
-    [InlineData("location", true)]
-    public void WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite(
-        string id, bool hasOne)
+    [MemberData(nameof(EverySwitchThisBuildShips))]
+    public void WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite(string id)
     {
-        var witness = WitnessThatReadsAsOffWithoutBeingBrisksWrite(id);
+        var rule = ShippedSwitch(id);
 
-        Assert.True((witness is not null) == hasOne,
-            hasOne
-                ? $"{id}: no state was found that reads as off without being what " +
-                  "the fix writes, and this rule is recorded as having one — the " +
-                  "docs that say \"the switch reads as off\" rather than \"brisk's " +
-                  "write is there\" were written for it"
-                : $"{id}: {witness} reads as off and is not what the fix writes, so " +
-                  "\"reads as off\" and \"my write is still there\" have come apart " +
-                  "for a rule recorded as keeping them together");
+        Assert.True(DivergesFromItsOwnWrite.TryGetValue(id, out var recorded),
+            $"'{id}' is a telemetry switch this build ships and nothing here " +
+            "records whether it can read as off at a state its own fix did not " +
+            "write. Read TelemetrySwitchRule.EffectOfTheWrite's contract, work " +
+            "the answer out for this rule, and add a row — an unrecorded switch " +
+            "is one the read-back's documented criterion has never been checked " +
+            "against.");
+
+        var (outcome, witness) =
+            SearchForAStateThatReadsAsOffWithoutBeingBrisksWrite(rule);
+
+        Assert.True(outcome != StateSearch.CouldNotPlantAnyState,
+            $"'{id}' carries no RegistryValue and is not a rule this file knows " +
+            "how to write a state for, so nothing was planted and nothing was " +
+            "checked. Add a fork beside the LocationRule one — reporting no " +
+            "witness for a rule that was never planted is the silent answer this " +
+            "test exists to refuse.");
+
+        var found = outcome == StateSearch.FoundOne;
+        Assert.True(found == recorded, found
+            ? $"{id}: {witness} reads as off and is not what the fix writes, so " +
+              "\"reads as off\" and \"my write is still there\" have come apart " +
+              "for a rule recorded as keeping them together"
+            : $"{id}: no state this file can plant reads as off without being " +
+              "what the fix writes, and this rule is recorded as having one — " +
+              "the docs that say \"the switch reads as off\" rather than " +
+              "\"brisk's write is there\" were written for it");
     }
 
-    /// A printable description of a state that reads as off and is NOT what
-    /// the rule's fix writes, or null when the rule has none. location is
-    /// handled by its own word because it has no number — the same reason
-    /// every other helper in this file forks on it.
-    private static string? WitnessThatReadsAsOffWithoutBeingBrisksWrite(string id)
+    /// Every telemetry switch the BUILD ships, read from the registry rather
+    /// than from a list in this file. That is the whole point: a seventh
+    /// switch appears here on its own and fails the theory above until
+    /// somebody records what it does.
+    public static TheoryData<string> EverySwitchThisBuildShips()
     {
-        var rule = Rule(id);
-        if (id == "location")
+        var data = new TheoryData<string>();
+        foreach (var rule in DiagnosticRuleRegistry.All.OfType<TelemetrySwitchRule>())
+            data.Add(rule.Id);
+        return data;
+    }
+
+    private static TelemetrySwitchRule ShippedSwitch(string id) =>
+        DiagnosticRuleRegistry.All.OfType<TelemetrySwitchRule>()
+            .Single(r => string.Equals(r.Id, id, StringComparison.Ordinal));
+
+    /// What this file has ESTABLISHED, per switch, by looking. Not a
+    /// description of the family and not a substitute for the search — the
+    /// theory runs the search and compares against this — but the record that
+    /// somebody worked the answer out for that rule and wrote it down. An id
+    /// shipped without a row here fails rather than being assumed either way.
+    private static readonly Dictionary<string, bool> DivergesFromItsOwnWrite =
+        new(StringComparer.Ordinal)
+        {
+            ["advertising-id"] = false,
+            ["tailored-experiences"] = false,
+            ["speech-typing"] = false,
+            ["activity-history"] = false,
+            // Overrides ReadsAsOn with a threshold.
+            ["diagnostic-level"] = true,
+            // Overrides IsOn and matches its word without regard to case.
+            ["location"] = true,
+        };
+
+    /// Three outcomes, and the third is the one that matters: a rule this file
+    /// cannot plant a state for is NOT a rule with no witness. Collapsing
+    /// those two into one null is exactly how a future word-valued rule would
+    /// be waved through, so they are separate answers and the caller fails on
+    /// the third.
+    private enum StateSearch
+    {
+        FoundOne,
+        NoneInTheStatesThisFileCanPlant,
+        CouldNotPlantAnyState,
+    }
+
+    /// Looks for a state that reads as off while NOT being what the rule's fix
+    /// writes. Forked on LocationRule by TYPE rather than by id, so a rename
+    /// cannot quietly send it down the numeric branch — and any OTHER rule
+    /// with an empty Values falls through to CouldNotPlantAnyState instead of
+    /// walking an empty loop and answering "nothing wrong here", which is the
+    /// same empty-collection hazard the whole read-back was built around.
+    private static (StateSearch Outcome, string? Witness)
+        SearchForAStateThatReadsAsOffWithoutBeingBrisksWrite(TelemetrySwitchRule rule)
+    {
+        if (rule is LocationRule)
         {
             foreach (var word in new[] { "deny", "DENY", "dEnY", "Allow", "Prompt", "" })
             {
@@ -801,19 +883,22 @@ public class ReadBackTests
                 reg.SetString(LocationRule.KeyPath, LocationRule.ValueName, word);
                 if (!rule.IsOn(ctx) &&
                     !string.Equals(word, LocationRule.Denied, StringComparison.Ordinal))
-                    return $"the word \"{word}\"";
+                    return (StateSearch.FoundOne, $"the word \"{word}\"");
             }
-            return null;
+            return (StateSearch.NoneInTheStatesThisFileCanPlant, null);
         }
+
+        if (rule.Values.Count == 0)
+            return (StateSearch.CouldNotPlantAnyState, null);
 
         foreach (var candidate in new[] { -1, 0, 1, 2, 3, 7 })
         {
             var (ctx, reg) = Context();
             foreach (var v in rule.Values) reg.SetInt(v.KeyPath, v.ValueName, candidate);
             if (!rule.IsOn(ctx) && rule.Values.Any(v => v.OffValue != candidate))
-                return $"the number {candidate}";
+                return (StateSearch.FoundOne, $"the number {candidate}");
         }
-        return null;
+        return (StateSearch.NoneInTheStatesThisFileCanPlant, null);
     }
 
     /// The positive half of the correction above: the sentence names the read
