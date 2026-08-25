@@ -93,32 +93,34 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
 
     /// True when any one of the switch's values does not read as off.
     ///
-    /// Virtual because a rule whose state is not a number has no values to
-    /// read here and would answer "off" for every machine ever built. A public
-    /// read that says off while Detect fires is the rule contradicting itself,
-    /// so a subclass that overrides Detect overrides this with it.
+    /// Virtual, and it is the ONLY read a subclass has to replace. A rule
+    /// whose state is not a number has no values to walk here and would
+    /// answer "off" for every machine ever built; Detect dispatches through
+    /// this, so overriding it is what makes Detect right for that rule too.
+    /// A public read that says off while Detect fires would be the rule
+    /// contradicting itself.
     public virtual bool IsOn(DiagnosticContext ctx) =>
         Values.Any(v => ReadsAsOn(ctx.Registry.GetInt(v.KeyPath, v.ValueName), v));
 
     /// Anything that does not explicitly read as off reads as on. That
-    /// covers absence, which is the permissive state on all of these paths —
-    /// a machine nobody has touched reads as on — and it covers a number
-    /// that is neither the on nor the off value, which an exact match on
-    /// OnValue used to report as protection. Reporting an unrecognised
-    /// number as off is the silent direction, and this wave's standing rule
-    /// is that what cannot be read as off is not reported as off.
+    /// covers absence — brisk cannot read an unwritten value as off, and it
+    /// does not know what Windows does with one, so it does not report one as
+    /// off — and it covers a number that is neither the on nor the off value,
+    /// which an exact match on OnValue used to report as protection.
+    /// Reporting an unrecognised number as off is the silent direction, and
+    /// this wave's standing rule is that what cannot be read as off is not
+    /// reported as off.
     protected virtual bool ReadsAsOn(int? actual, RegistryValue value) =>
         actual != value.OffValue;
 
-    public virtual DiagnosticFinding? Detect(DiagnosticContext ctx) =>
-        IsOn(ctx) ? Finding() : null;
-
-    /// The family's finding, built in one place so that a subclass which reads
-    /// its own state — LocationRule does — cannot drift into reporting
-    /// different keys, a different kind or a different star count from the
-    /// five beside it.
-    protected DiagnosticFinding Finding()
+    /// Not virtual, and neither is the finding below it factored out for a
+    /// subclass to reuse. Both were, for one commit, to serve a LocationRule
+    /// override that turned out to be byte-identical to this: IsOn is the
+    /// only read that differs, IsOn is virtual, and this dispatches through
+    /// it. An override that does nothing is a second place to drift.
+    public DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
+        if (!IsOn(ctx)) return null;
         return new DiagnosticFinding(
             Id, $"rule.{Id}.title", Title, Evidence,
             // Info, one star. The impact scale measures expected PERFORMANCE

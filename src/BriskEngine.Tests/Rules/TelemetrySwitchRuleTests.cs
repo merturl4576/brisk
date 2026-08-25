@@ -217,9 +217,10 @@ public class TelemetrySwitchRuleTests
     /// in both languages, or the switch is a trap. Read off disk from both
     /// resx files, and from the ENGINE's own prose too — `brisk scan` prints
     /// every finding's title and evidence, and `brisk fix --rule <id>` prints
-    /// them again before it asks for --yes; neither prints advice, and the
-    /// word appears nowhere in the CLI. A loss named only in the advice is a
-    /// loss no CLI user is ever shown.
+    /// them again before it asks for --yes; neither prints advice, and
+    /// nothing in Brisk.Cli reads a rule.*.advice string at all —
+    /// HealthViewModel's adviceKey is the only reader of one in the repo.
+    /// A loss named only in the advice is a loss no CLI user is ever shown.
     ///
     /// This pins a phrasing, which usually goes stale on the next reword.
     /// Here the phrasing IS the requirement: these two sentences are what the
@@ -248,6 +249,53 @@ public class TelemetrySwitchRuleTests
                 Assert.True(text!.Contains(sentence, StringComparison.Ordinal),
                     $"{key} in {file} never says \"{sentence}\", so the switch " +
                     "costs something the copy does not name");
+            }
+        }
+    }
+
+    /// A policy is the one kind of setting an edition of Windows can ignore,
+    /// and activity-history is a policy whose fix brisk cannot verify: it
+    /// re-reads the two values it wrote and nothing else, so after a
+    /// successful fix the finding ALWAYS clears, on an edition that honoured
+    /// the policy and on one that did not. Copy that said only "Timeline
+    /// ends" would be brisk reporting a consequence it did not achieve.
+    ///
+    /// So the hedge is required, and it is required in the EVIDENCE and not
+    /// only in the advice, for the same reason the loss is: the CLI prints
+    /// evidence and never prints advice. The closing clause is word for word
+    /// the one rule.diagnostic-level.advice already uses, which is what makes
+    /// a grep for it find every place brisk makes this admission.
+    ///
+    /// diagnostic-level is deliberately not in this theory. It carries the
+    /// English sentence in its advice only, not in its evidence — a gap this
+    /// task found and did not close, because that string was settled in an
+    /// earlier round and reopening it was not this task's to do.
+    [Theory]
+    [InlineData("activity-history",
+        "whether this edition of Windows acts on that policy is not something " +
+        "that read can tell you",
+        "bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez")]
+    public void ThePolicySwitch_DoesNotPromiseTheEditionObeyedIt(
+        string id, string english, string turkish)
+    {
+        var (ctx, _) = Context();
+        var finding = Rule(id).Detect(ctx)!;
+        Assert.True(finding.Evidence.Contains(english, StringComparison.Ordinal),
+            $"the engine's evidence for {id} promises the loss and never admits " +
+            "brisk re-reads only the policy it wrote — and the CLI prints " +
+            "evidence, never advice");
+
+        foreach (var (file, sentence) in new[]
+                 { ("Strings.resx", english), ("Strings.tr.resx", turkish) })
+        {
+            var strings = Resx(file);
+            foreach (var key in new[] { $"rule.{id}.evidence", $"rule.{id}.advice" })
+            {
+                Assert.True(strings.TryGetValue(key, out var text),
+                    $"{key} is missing from {file}");
+                Assert.True(text!.Contains(sentence, StringComparison.Ordinal),
+                    $"{key} in {file} never says \"{sentence}\", so brisk " +
+                    "promises a policy took effect that it cannot see took effect");
             }
         }
     }

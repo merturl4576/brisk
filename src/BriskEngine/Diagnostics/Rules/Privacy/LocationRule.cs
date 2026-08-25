@@ -10,9 +10,10 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// off stops it working. That sentence is in the rule's own Evidence as well
 /// as in both resx files, not in the advice alone. `brisk scan` prints every
 /// finding's title and evidence, and `brisk fix --rule location` prints them
-/// again before it asks for --yes; neither prints advice, and the word appears
-/// nowhere in the CLI. A loss named only in the advice is a loss no CLI user
-/// is ever shown.
+/// again before it asks for --yes; neither prints advice, and nothing in
+/// Brisk.Cli reads a rule.*.advice string at all — HealthViewModel's
+/// adviceKey is the only reader of one in the repo. A loss named only in
+/// the advice is a loss no CLI user is ever shown.
 ///
 /// Windows records this consent as a WORD — "Allow" or "Deny" — where the rest
 /// of the family uses a number. RegistryValue carries an on number and an off
@@ -64,12 +65,10 @@ public sealed class LocationRule : TelemetrySwitchRule
         !string.Equals(ctx.Registry.GetString(KeyPath, ValueName), Denied,
             StringComparison.OrdinalIgnoreCase);
 
-    /// Overridden because the read is a word rather than a number; the finding
-    /// itself is still the family's, so this rule cannot drift into carrying
-    /// different keys, a different kind or a different star count.
-    public override DiagnosticFinding? Detect(DiagnosticContext ctx) =>
-        IsOn(ctx) ? Finding() : null;
-
+    /// Detect is NOT overridden, deliberately. The base's dispatches through
+    /// the virtual IsOn above, so it already asks this rule's question and
+    /// builds the family's finding from the answer; an override would have
+    /// been byte-identical to it and a second place to drift.
     public override string Fix(DiagnosticContext ctx)
     {
         var prior = new Prior(ctx.Registry.GetString(KeyPath, ValueName));

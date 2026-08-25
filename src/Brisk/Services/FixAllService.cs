@@ -59,10 +59,10 @@ public sealed class FixAllService
     /// fixable" line. Public for that reason — the count and the action have
     /// to be the same question, or the sentence beside the button promises
     /// clicks the button declines. Category is a consent level, not a topic,
-    /// and excluding by category would not do the job: the four switches that
-    /// ship today are Auto, and the two that cost the user something are
-    /// Confirm when a later task adds them. Both are inside the topic, so the
-    /// topic has to be excluded by rule id.
+    /// and excluding by category would not do the job: all six of the wave's
+    /// privacy switches ship today, the four consequence-free ones as Auto
+    /// and the two that cost the user something as Confirm. Both levels are
+    /// inside the topic, so the topic has to be excluded by rule id.
     public static bool IsOneClickFixable(DiagnosticFinding f) =>
         f.Category != RuleCategory.Advise && f.CanFix
         && !FindingSections.IsPrivacy(f);
