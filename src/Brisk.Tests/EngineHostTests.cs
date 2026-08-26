@@ -180,11 +180,12 @@ file sealed class NullMemoryIntegrity : IMemoryIntegrityProbe
     public bool? IsOn() => null;
 }
 
-/// Answers nothing, which is what an unread counter looks like. Not zero:
-/// these host tests say nothing about what this machine uploaded.
+/// Answers nothing, which is what an unread counter looks like. Not a
+/// PeerUpload of zeroes: these host tests say nothing about what this
+/// machine uploaded.
 file sealed class NullDeliveryOptimization : IDeliveryOptimizationProbe
 {
-    public long? BytesUploadedToPeers() => null;
+    public PeerUpload? UploadedToPeers() => null;
 }
 
 file sealed class NullDisk : IDiskInfoProbe

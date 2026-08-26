@@ -166,7 +166,7 @@ public sealed class NoOtherProbes
 
     public bool? IsOn() => No<bool?>();
 
-    public long? BytesUploadedToPeers() => No<long?>();
+    public PeerUpload? UploadedToPeers() => No<PeerUpload?>();
 }
 
 public static class TestData

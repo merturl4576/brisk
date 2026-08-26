@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
@@ -175,12 +175,12 @@ public sealed class FakeMemoryIntegrity : IMemoryIntegrityProbe
 
 /// Null by default: a test that never speaks to Delivery Optimization says
 /// nothing about what this machine uploaded, and null is how the probe says
-/// it could not ask. Zero would be a reading, and a test that never
-/// mentioned this probe has not taken one.
+/// it could not ask. A PeerUpload of two zeroes would be a reading, and a
+/// test that never mentioned this probe has not taken one.
 public sealed class FakeDeliveryOptimization : IDeliveryOptimizationProbe
 {
-    public long? Bytes;
-    public long? BytesUploadedToPeers() => Bytes;
+    public PeerUpload? Upload;
+    public PeerUpload? UploadedToPeers() => Upload;
 }
 
 public static class TestContext

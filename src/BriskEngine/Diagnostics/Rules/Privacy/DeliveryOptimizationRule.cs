@@ -45,19 +45,28 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
     public override DiagnosticFinding? Detect(DiagnosticContext ctx) =>
         Uploaded(ctx) switch
         {
-            0 => null,
-            > 0 and var bytes => Reported(bytes),
             // Anything the probe hands back that is not a count of bytes
             // brisk can report. null is the probe's own way of saying it
             // could not read the counter, and a figure below zero is not a
             // quantity of anything; neither is rounded into the answer that
             // would reassure, and neither is the whole of what lands here.
-            _ => Unread(),
+            //
+            // THREE FIGURES ARE CHECKED WHERE THERE USED TO BE ONE, because
+            // the probe now hands back two halves and their sum rather than a
+            // single number. Each half in its own right — a half below zero
+            // is not a quantity even when the other half hides it in the
+            // total — and the total in its own right too, which is not
+            // implied by the halves: two halves large enough to wrap the sum
+            // negative are each individually non-negative.
+            null or { LanBytes: < 0 } or { InternetBytes: < 0 } or { Total: < 0 }
+                => Unread(),
+            { Total: 0 } => null,
+            { } upload => Reported(upload),
         };
 
-    private DiagnosticFinding Reported(long bytes)
+    private DiagnosticFinding Reported(PeerUpload upload)
     {
-        var amount = Fmt.Bytes(bytes);
+        var amount = Fmt.Bytes(upload.Total);
         return Disclosure(
             $"rule.{Id}.title",
             "Windows uploaded data from this machine to other machines this month",
@@ -91,9 +100,9 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
     /// catch-all, which drops the whole finding without a word — and the
     /// reading brisk would then never make is the unreadable one, which is
     /// the reading this rule exists to make.
-    private static long? Uploaded(DiagnosticContext ctx)
+    private static PeerUpload? Uploaded(DiagnosticContext ctx)
     {
-        try { return ctx.DeliveryOptimization.BytesUploadedToPeers(); }
+        try { return ctx.DeliveryOptimization.UploadedToPeers(); }
         catch (Exception) { return null; }
     }
 }

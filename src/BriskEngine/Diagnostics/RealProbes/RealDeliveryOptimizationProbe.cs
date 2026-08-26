@@ -66,7 +66,7 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
     /// ProcessStartInfo exactly and puts the bound here instead.
     private const int TimeoutMs = 10_000;
 
-    public long? BytesUploadedToPeers() => ParseUploadedBytes(Snapshot());
+    public PeerUpload? UploadedToPeers() => ParseUploaded(Snapshot());
 
     /// Whatever the cmdlet printed, or null if brisk never got that far. A
     /// failure anywhere in this method becomes that null rather than an
@@ -117,19 +117,22 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
         }
     }
 
-    /// The sum of the two upload fields, or null for output brisk does not
+    /// The two upload fields, kept apart, or null for output brisk does not
     /// recognise as that shape.
     ///
-    /// BOTH UPLOAD FIELDS ARE REQUIRED, and so is the month marker. Summing
+    /// BOTH UPLOAD FIELDS ARE REQUIRED, and so is the month marker. Reporting
     /// whichever half is present would let a snapshot missing the internet
     /// half report the local half as the whole total — a number wrong in the
     /// direction that reassures, which is the direction this wave refuses to
     /// be wrong in. A shape brisk only half recognises is a counter brisk did
     /// not read.
     ///
-    /// A total below zero is not a count of bytes, so it is not reported as
-    /// one either.
-    internal static long? ParseUploadedBytes(string? json)
+    /// A HALF BELOW ZERO is not a count of bytes, so it is not reported as
+    /// one either. That refusal used to be made about the sum, which is where
+    /// the sum was made; the halves are what this reads now, so it is made
+    /// about each of them. It is the stricter of the two — a pair like
+    /// (-2, +3) summed to a plausible 1 and passed the old check.
+    internal static PeerUpload? ParseUploaded(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         try
@@ -148,8 +151,8 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
             var lan = Field(document.RootElement, LanField);
             var internet = Field(document.RootElement, InternetField);
             if (lan is null || internet is null) return null;
-            var total = lan.Value + internet.Value;
-            return total < 0 ? null : total;
+            if (lan < 0 || internet < 0) return null;
+            return new PeerUpload(lan.Value, internet.Value);
         }
         catch (JsonException)
         {

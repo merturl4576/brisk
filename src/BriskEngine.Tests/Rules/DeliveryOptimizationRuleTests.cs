@@ -34,12 +34,21 @@ public class DeliveryOptimizationRuleTests
 
     /// The whole fixture: a context whose Delivery Optimization probe
     /// answers exactly what a test plants, including by not answering.
-    private static DiagnosticContext Context(long? bytes) =>
+    private static DiagnosticContext Context(PeerUpload? upload) =>
         TestContext.Empty() with
-        { DeliveryOptimization = new FakeDeliveryOptimization { Bytes = bytes } };
+        { DeliveryOptimization = new FakeDeliveryOptimization { Upload = upload } };
 
-    private static DiagnosticFinding? Detect(long? bytes) =>
-        new DeliveryOptimizationRule().Detect(Context(bytes));
+    private static DiagnosticFinding? Detect(PeerUpload? upload) =>
+        new DeliveryOptimizationRule().Detect(Context(upload));
+
+    /// [InlineData] carries constants and a PeerUpload is not one, so the
+    /// theories that plant "a reading or no reading" plant a total and this
+    /// puts the whole of it on the local-network side. Which side is nothing
+    /// those theories read: they ask about Kind, impact stars and resx keys,
+    /// none of which the rule decides by looking at either half. Every test
+    /// that reads a half builds its own record.
+    private static DiagnosticFinding? DetectTotal(long? total) =>
+        Detect(total is { } bytes ? new PeerUpload(bytes, 0) : null);
 
     /// Every string a finding can put in front of a user, arguments
     /// included: an argument is as visible as the sentence it lands in.
@@ -72,7 +81,7 @@ public class DeliveryOptimizationRuleTests
     [Fact]
     public void ARealNumber_LeadsWithThatNumber_FormattedAsBytes()
     {
-        var finding = Detect(Total);
+        var finding = Detect(new PeerUpload(Lan, Internet));
 
         Assert.NotNull(finding);
         Assert.True(finding!.Headline is not null,
@@ -91,7 +100,7 @@ public class DeliveryOptimizationRuleTests
     [Fact]
     public void NothingUploaded_IsNoFindingAtAll()
     {
-        var finding = Detect(0);
+        var finding = Detect(new PeerUpload(0, 0));
 
         Assert.True(finding is null,
             "the counter read zero — nothing to disclose — and the rule still " +
@@ -127,20 +136,31 @@ public class DeliveryOptimizationRuleTests
         Assert.Equal($"rule.{Id}.evidence.unread", unread.EvidenceKey);
     }
 
-    /// A total below zero is not a count of bytes, so it is not reported as
+    /// A figure below zero is not a count of bytes, so it is not reported as
     /// one — and it is not quietly rounded into "nothing uploaded" either,
     /// which would turn a reading brisk cannot make sense of into the most
     /// reassuring sentence available.
+    ///
+    /// EACH HALF IN ITS OWN RIGHT, AND THE TOTAL IN ITS OWN RIGHT. The rule
+    /// used to receive one number and had one figure to check; it now
+    /// receives two halves and their sum, and neither range follows from the
+    /// other. Rows 3 and 4 are the pair that says so: (-2, 3) totals a
+    /// perfectly plausible 1 byte off a half that is not a quantity, and two
+    /// halves that are each the largest long there is total -2, because the
+    /// sum wraps. Both reach the reader as "brisk could not read the
+    /// counter", which is the only true thing left to say about them.
     [Theory]
-    [InlineData(-1L)]
-    [InlineData(long.MinValue)]
-    public void AnUploadFigureBelowZero_IsNotACount(long bytes)
+    [InlineData(-1L, 0L)]
+    [InlineData(long.MinValue, 0L)]
+    [InlineData(-2L, 3L)]
+    [InlineData(long.MaxValue, long.MaxValue)]
+    public void AnUploadFigureBelowZero_IsNotACount(long lan, long internet)
     {
-        var finding = Detect(bytes);
+        var finding = Detect(new PeerUpload(lan, internet));
 
         Assert.True(finding is not null && finding.TitleKey == $"rule.{Id}.title.unread",
-            $"{bytes} is not a count of bytes and the rule reported " +
-            $"\"{finding?.TitleKey ?? "no finding at all"}\"");
+            $"({lan}, {internet}) is not a pair of byte counts and the rule " +
+            $"reported \"{finding?.TitleKey ?? "no finding at all"}\"");
     }
 
     // ---- the shape the privacy disclosures share -------------------------
@@ -152,7 +172,7 @@ public class DeliveryOptimizationRuleTests
     public void TheDisclosure_IsAdviseAndCannotBeFixed()
     {
         var rule = new DeliveryOptimizationRule();
-        var finding = rule.Detect(Context(Total));
+        var finding = rule.Detect(Context(new PeerUpload(Lan, Internet)));
 
         Assert.True(rule.Category == RuleCategory.Advise,
             $"{Id} ships as {rule.Category}; a report-only disclosure is Advise");
@@ -170,7 +190,7 @@ public class DeliveryOptimizationRuleTests
     [InlineData(null)]
     public void TheFinding_IsANotice_AndCostsTheHealthScoreNothing(long? bytes)
     {
-        var finding = Detect(bytes)!;
+        var finding = DetectTotal(bytes)!;
 
         Assert.True(finding.Kind == FindingKind.Notice,
             $"{Id} ships as {finding.Kind}; every finding in this wave is a Notice");
@@ -187,7 +207,7 @@ public class DeliveryOptimizationRuleTests
     [InlineData(null)]
     public void TheFinding_ClaimsNoPerformanceImpact(long? bytes)
     {
-        var finding = Detect(bytes)!;
+        var finding = DetectTotal(bytes)!;
 
         Assert.True(finding.ImpactStars == 1,
             $"{Id} claims {finding.ImpactStars} stars of performance impact; " +
@@ -210,7 +230,7 @@ public class DeliveryOptimizationRuleTests
     [Fact]
     public void AReadableCount_LeadsWithItsOwnHeadlineKeys()
     {
-        var finding = Detect(Total)!;
+        var finding = Detect(new PeerUpload(Lan, Internet))!;
 
         Assert.Equal(Id, finding.RuleId);
         Assert.Equal($"rule.{Id}.headline.value", finding.Headline!.ValueKey);
@@ -231,7 +251,7 @@ public class DeliveryOptimizationRuleTests
     public void TheEnglishResx_SaysWhatTheEngineSays(long? bytes)
     {
         var en = PrivacyDisclosureRuleTests.Resx("Strings.resx");
-        var finding = Detect(bytes)!;
+        var finding = DetectTotal(bytes)!;
 
         Assert.True(en.TryGetValue(finding.TitleKey, out var title),
             $"{finding.TitleKey} is missing from Strings.resx");
@@ -252,7 +272,7 @@ public class DeliveryOptimizationRuleTests
     [InlineData(null)]
     public void EveryKeyTheRuleNames_IsInBothLanguages(long? bytes)
     {
-        var finding = Detect(bytes)!;
+        var finding = DetectTotal(bytes)!;
         var keys = new List<string>
             { finding.TitleKey, finding.EvidenceKey!, $"rule.{Id}.advice" };
         if (finding.Headline is { } h) { keys.Add(h.ValueKey); keys.Add(h.CaptionKey); }
@@ -318,21 +338,49 @@ public class DeliveryOptimizationRuleTests
         "\"DownloadFgRateKbps\":13312,\"DownloadBgRateKbps\":11530," +
         "\"UploadLimitReached\":false,\"MonthStartDate\":\"\\/Date(1785531600008)\\/\"}";
 
+    /// Windows keeps the counter in two halves — bytes to machines on this
+    /// local network, bytes to machines on the internet — and the parser
+    /// already REQUIRED both of them before it would report anything at all.
+    /// Having required them it then added them and threw away which was
+    /// which, so brisk held a distinction Windows had drawn for it and could
+    /// not say it. The halves now survive the read; the sum survives with
+    /// them, on the record rather than in place of them.
+    [Fact]
+    public void TheParser_CarriesBothHalves_NotJustTheirSum()
+    {
+        var read = RealDeliveryOptimizationProbe.ParseUploaded(
+            WithMonth("\"UploadLanBytes\":317000384,\"UploadInternetBytes\":1024"));
+
+        Assert.True(read is not null,
+            "a snapshot carrying both upload halves and a month marker was " +
+            "read as no counter at all");
+        Assert.True(read!.LanBytes == 317_000_384L,
+            $"the snapshot said 317000384 bytes went to machines on the local " +
+            $"network and the read carries {read.LanBytes}");
+        Assert.True(read.InternetBytes == 1024L,
+            $"the snapshot said 1024 bytes went to machines on the internet " +
+            $"and the read carries {read.InternetBytes}");
+        Assert.True(read.Total == 317_001_408L,
+            $"the two halves add to 317001408 bytes and the record totals " +
+            $"{read.Total}");
+    }
+
     /// Both halves, added. A parser that read only the local-network figure
     /// would have answered 302 MB on this machine and been right by accident,
     /// which is why the assertion below plants an internet figure the real
-    /// sample does not have.
+    /// sample does not have. The addition is the record's now rather than the
+    /// parser's, and it is still the figure the finding leads with.
     [Fact]
     public void TheParser_AddsBothUploadFigures()
     {
         Assert.Equal(317_000_384L,
-            RealDeliveryOptimizationProbe.ParseUploadedBytes(RealSnapshotJson));
+            RealDeliveryOptimizationProbe.ParseUploaded(RealSnapshotJson)?.Total);
 
-        var both = RealDeliveryOptimizationProbe.ParseUploadedBytes(
+        var both = RealDeliveryOptimizationProbe.ParseUploaded(
             WithMonth("\"UploadLanBytes\":10,\"UploadInternetBytes\":7"));
-        Assert.True(both == 17,
+        Assert.True(both?.Total == 17,
             "10 bytes to the local network and 7 over the internet is 17 bytes " +
-            $"uploaded, and the parser read {both?.ToString() ?? "nothing at all"}");
+            $"uploaded, and the parser read {both?.Total.ToString() ?? "nothing at all"}");
     }
 
     /// A snapshot carrying one half is a shape brisk only half recognises,
@@ -345,11 +393,11 @@ public class DeliveryOptimizationRuleTests
     [InlineData("\"UploadLanBytes\":10,\"UploadInternetBytes\":\"seven\"")]
     public void ASnapshotMissingEitherHalf_IsNotATotal(string fields)
     {
-        var read = RealDeliveryOptimizationProbe.ParseUploadedBytes(WithMonth(fields));
+        var read = RealDeliveryOptimizationProbe.ParseUploaded(WithMonth(fields));
 
         Assert.True(read is null,
-            $"{WithMonth(fields)} was read as {read} bytes uploaded, and brisk " +
-            "only read one of the two figures that make up that total");
+            $"{WithMonth(fields)} was read as {read?.Total} bytes uploaded, and " +
+            "brisk only read one of the two figures that make up that total");
     }
 
     /// brisk's copy says "for the current calendar month". Until this check
@@ -359,18 +407,25 @@ public class DeliveryOptimizationRuleTests
     [Fact]
     public void ASnapshotWithNoMonthMarker_IsNotAMonthsTotal()
     {
-        var read = RealDeliveryOptimizationProbe.ParseUploadedBytes(
+        var read = RealDeliveryOptimizationProbe.ParseUploaded(
             "{\"UploadLanBytes\":10,\"UploadInternetBytes\":7}");
 
         Assert.True(read is null,
             $"a snapshot with no {RealDeliveryOptimizationProbe.MonthField} was read " +
-            $"as {read} bytes uploaded this month, which is a window brisk never saw");
+            $"as {read?.Total} bytes uploaded this month, which is a window brisk " +
+            "never saw");
     }
 
     /// Nothing the cmdlet could print, or fail to print, becomes a number.
-    /// The last case is a whole, well-formed month snapshot whose total comes
-    /// out below zero, so it carries the marker: what it tests is the total,
-    /// not the shape.
+    /// The last two cases are whole, well-formed month snapshots carrying a
+    /// half below zero, so they carry the marker: what they test is the
+    /// figures, not the shape.
+    ///
+    /// THE SECOND OF THEM IS THE CASE THE OLD PARSER ADMITTED. It refused a
+    /// total below zero, computed after adding, and -2 and 3 add to 1 — so a
+    /// snapshot with a negative half reached the finding as a plausible one
+    /// byte. The refusal is made about each half now, which is where the
+    /// halves are.
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -379,9 +434,11 @@ public class DeliveryOptimizationRuleTests
     [InlineData("[1,2,3]")]
     [InlineData("{\"UploadLanBytes\":-2,\"UploadInternetBytes\":1," +
                 "\"MonthStartDate\":\"\\/Date(1785531600008)\\/\"}")]
+    [InlineData("{\"UploadLanBytes\":-2,\"UploadInternetBytes\":3," +
+                "\"MonthStartDate\":\"\\/Date(1785531600008)\\/\"}")]
     public void OutputItCannotRead_IsNotZero(string? json)
     {
-        var read = RealDeliveryOptimizationProbe.ParseUploadedBytes(json);
+        var read = RealDeliveryOptimizationProbe.ParseUploaded(json);
 
         Assert.True(read is null,
             $"the parser turned {json ?? "no output at all"} into {read}");
@@ -422,7 +479,7 @@ public class DeliveryOptimizationRuleTests
     {
         var probe = new RealDeliveryOptimizationProbe();
 
-        var thrown = Record.Exception(() => probe.BytesUploadedToPeers());
+        var thrown = Record.Exception(() => probe.UploadedToPeers());
 
         Assert.True(thrown is null,
             $"the real probe threw {thrown?.GetType().Name} into a scan: " +
