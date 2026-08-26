@@ -4,6 +4,7 @@ using System.Linq;
 using Brisk.Cli;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Logging;
 using Xunit;
 
@@ -141,6 +142,60 @@ public sealed class ProgramFixTests : IDisposable
                                    "tailored-experiences", "speech-typing" })
             Assert.True(selected.Contains(id),
                 $"`brisk fix --all` stopped reaching '{id}'");
+    }
+
+    /// `fix --rule <id> --yes` ACTED HAVING NAMED NO CONSEQUENCE. Without
+    /// --yes this path prints the finding's title and its evidence — which is
+    /// where the loss lives, in both languages, put there so that no CLI path
+    /// takes Find my device or Timeline away unwarned — and then asks for
+    /// --yes. With --yes it applied and printed "location: fixed" and nothing
+    /// else, so the one flag that makes the command act was the one that
+    /// removed the warning.
+    ///
+    /// location is the sharpest case and the one the ledger carried, but the
+    /// print is not conditional on the rule: the preview path it mirrors is
+    /// not either, and the finding is already in hand.
+    ///
+    /// The strings come off the SHIPPED rule rather than being quoted here,
+    /// and the order is asserted: a consequence printed after the write is
+    /// not a warning.
+    [Fact]
+    public void FixRule_WithYes_PrintsTheConsequence_BeforeItActs()
+    {
+        var registry = new FakeRegistry();
+        var ctx = TestContext.Empty() with { Registry = registry };
+        var finding = new LocationRule().Detect(ctx);
+        Assert.True(finding is not null,
+            "location reports nothing on an empty registry, so this test never " +
+            "reached the path that prints a finding");
+
+        var (code, output) = Capture(() => Program.Fix(
+            new CliCommand("fix", RuleId: "location", Yes: true), ctx, Runner()));
+
+        Assert.Equal(0, code);
+        Assert.Equal(LocationRule.Denied,
+            registry.GetString(LocationRule.KeyPath, LocationRule.ValueName));
+        Assert.Contains(finding!.Title, output);
+        Assert.Contains(finding.Evidence, output);
+        Assert.True(output.IndexOf(finding.Evidence, StringComparison.Ordinal)
+                < output.IndexOf("location: fixed", StringComparison.Ordinal),
+            "the consequence was printed after the write went in, which is a " +
+            $"record rather than a warning:{Environment.NewLine}{output}");
+    }
+
+    private static (int Code, string Output) Capture(Func<int> run)
+    {
+        var stdout = Console.Out;
+        var buffer = new StringWriter();
+        try
+        {
+            Console.SetOut(buffer);
+            return (run(), buffer.ToString());
+        }
+        finally
+        {
+            Console.SetOut(stdout);
+        }
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }

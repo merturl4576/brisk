@@ -10,10 +10,11 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// off stops it working. That sentence is in the rule's own Evidence as well
 /// as in both resx files, not in the advice alone. `brisk scan` prints every
 /// finding's title and evidence, and `brisk fix --rule location` prints them
-/// again before it asks for --yes; neither prints advice, and nothing in
-/// Brisk.Cli reads a rule.*.advice string at all — HealthViewModel's
-/// adviceKey is the only reader of one in the repo. A loss named only in
-/// the advice is a loss no CLI user is ever shown.
+/// again — before it asks for --yes, and before it applies on --yes; neither
+/// prints advice, and nothing in Brisk.Cli reads a rule.*.advice string at
+/// all — HealthViewModel's adviceKey is the only production reader of one in
+/// the repo (tests read advice values too). A loss named only in the advice
+/// is a loss no CLI user is ever shown.
 ///
 /// Windows records this consent as a WORD — "Allow" or "Deny" — where the rest
 /// of the family uses a number. RegistryValue carries an on number and an off

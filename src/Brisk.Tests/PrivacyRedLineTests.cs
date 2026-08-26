@@ -555,6 +555,43 @@ public class PrivacyRedLineTests
             "control looks for, so the ban above may be matching nothing at all");
     }
 
+    /// THE PRIVACY STRING NO RESX CARRIES. FixDescription is engine prose
+    /// with no key of its own, so the ban above — which reads the two resx
+    /// files — cannot see it, and it is named there as one of that guard's
+    /// two residuals. It renders on no GUI or CLI surface today, but
+    /// `scan --json` serialises the finding whole, so it does leave the
+    /// process. This runs the SAME predicate over it, off the shipped rules
+    /// at the machine where every switch and record this topic reads is on.
+    ///
+    /// The count of what was actually scanned is asserted first: the four
+    /// disclosures ship a null FixDescription, and a null is nothing to scan
+    /// rather than a string that passed. The other residual, Headline.Caption,
+    /// is not covered here either.
+    [Fact]
+    public void NoPrivacyFixDescription_ClaimsAnythingAboutWhatAnybodyElseSees()
+    {
+        var machine = EverythingReadsAsOn();
+        var offences = new List<string>();
+        var scanned = 0;
+        foreach (var ruleId in PrivacyRuleIds.All)
+        {
+            var text = ShippedRule(ruleId).Detect(machine)?.FixDescription;
+            if (text is null) continue;
+            scanned++;
+            foreach (var (phrase, banned) in ClaimsIn(text))
+                offences.Add(
+                    $"{ruleId}: FixDescription says \"{phrase}\" — {banned.Why}");
+        }
+
+        Assert.True(scanned > 0,
+            "not one privacy rule reported a FixDescription on a machine where " +
+            "every switch this topic reads is on, so this guard read nothing");
+        Assert.True(offences.Count == 0,
+            $"{offences.Count} of the {scanned} FixDescription(s) brisk ships " +
+            "make a claim about what another party sees:" + Environment.NewLine +
+            string.Join(Environment.NewLine, offences));
+    }
+
     /// THE ONE TRANSMISSION CLAIM BRISK HAS EARNED, and the reason the
     /// principle is "no transmission claim without a record of one" rather
     /// than "no transmission claim".

@@ -340,10 +340,19 @@ public static class Program
                 Console.WriteLine($"{rule.Id}: no live finding — nothing to fix");
                 return 0;
             }
+            // The consequence, on BOTH paths. The loss lives in Evidence —
+            // "Find my device stops working", "Timeline ends" — and it was
+            // put there so that no CLI path takes it away unwarned; with
+            // --yes this printed the outcome and nothing else, so the flag
+            // that makes the command act was the flag that removed the
+            // warning. For every rule and not only the two Confirm ones,
+            // because the preview it mirrors does not special-case either and
+            // the finding is already in hand; and BEFORE the write, because a
+            // consequence printed after it is a record rather than a warning.
+            Console.WriteLine($"[{rule.Id}] {finding.Title}");
+            Console.WriteLine($"    {finding.Evidence}");
             if (!cmd.Yes)
             {
-                Console.WriteLine($"[{rule.Id}] {finding.Title}");
-                Console.WriteLine($"    {finding.Evidence}");
                 Console.WriteLine("add --yes to apply");
                 return 0;
             }
