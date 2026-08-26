@@ -10,6 +10,10 @@ using Xunit;
 
 namespace BriskEngine.Tests;
 
+/// In the "console" collection because Capture swaps the process-global
+/// Console.Out, and xUnit runs classes outside a shared collection at the
+/// same time — see CliHelpSwitchTests, the other class that swaps it.
+[Collection("console")]
 public sealed class ProgramFixTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-pf-").FullName;

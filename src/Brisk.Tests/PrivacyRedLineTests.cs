@@ -461,10 +461,12 @@ public class PrivacyRedLineTests
     /// only FixDescription — a false universal about this guard's own
     /// coverage, in the file whose whole job is to stop those.
     ///
-    /// FixDescription. Nothing pins its wording to a resx key and nothing
-    /// scans it, so a claim made there is made where neither this guard nor
-    /// any other is looking. Only the six switches carry one; the four
-    /// disclosures ship it null.
+    /// FixDescription. Nothing pins its wording to a resx key, so a claim
+    /// made there is made where THIS guard cannot look — but no longer where
+    /// none is: NoPrivacyFixDescription_ClaimsAnythingAboutWhatAnybodyElseSees
+    /// below runs the same predicate over it off the shipped rules. What
+    /// remains of this residual is the missing key, not a missing scan. Only
+    /// the six switches carry one; the four disclosures ship it null.
     ///
     /// Headline.Caption, which has the same status and a sharper edge.
     /// Headline declares Caption as ENGLISH PROSE beside CaptionKey, on the
@@ -587,8 +589,8 @@ public class PrivacyRedLineTests
             "not one privacy rule reported a FixDescription on a machine where " +
             "every switch this topic reads is on, so this guard read nothing");
         Assert.True(offences.Count == 0,
-            $"{offences.Count} of the {scanned} FixDescription(s) brisk ships " +
-            "make a claim about what another party sees:" + Environment.NewLine +
+            $"{offences.Count} claim(s) about what another party sees, across " +
+            $"the {scanned} FixDescription(s) brisk ships:" + Environment.NewLine +
             string.Join(Environment.NewLine, offences));
     }
 
