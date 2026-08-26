@@ -259,6 +259,22 @@ public class LocTests
     [InlineData("privacy.turnoff.safe")]
     [InlineData("privacy.turnoff.refused")]
     [InlineData("privacy.readback.section")]
+    // The `privacy.*` key this list went without while the page's headings
+    // were added: what the page says when Windows refuses to open its own
+    // Settings app. It is not a heading — it is the whole of the message the
+    // row's only action leaves behind — so a gap in the ENGLISH resx prints
+    // "privacy.setting.failed" where the reason goes, on the one path a
+    // reader reaches by clicking something that then did nothing.
+    // WhenWindowsSettingsDoNotOpen_ThePageSaysSo already refuses an echoed
+    // key there, but only in the language it builds (en) and only on that one
+    // command's path; this row holds the same value from the load list, where
+    // the rest of the page's copy is held. Neither reads the TURKISH value —
+    // see this theory's comment above: a Turkish-only gap renders the English
+    // sentence and stays green here, and ResxFiles_ExposeTheSameKeySet is
+    // what fails on it. (Both directions were watched: deleting the key from
+    // Strings.resx failed this row with Actual: "privacy.setting.failed";
+    // deleting it from Strings.tr.resx left it green.)
+    [InlineData("privacy.setting.failed")]
     // The named loss beside each of the two switches that cost the user
     // something. FindingRow reads these through the indexer and treats a miss
     // as "this rule declares no cost" — so a gap here does not print a key,

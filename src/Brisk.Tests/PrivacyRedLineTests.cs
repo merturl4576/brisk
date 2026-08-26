@@ -311,10 +311,10 @@ public class PrivacyRedLineTests
     /// Why the first half of the list is banned — red line 1's own sentence,
     /// said in terms of the RECORD it would need.
     private const string CannotPromiseIt =
-        "brisk holds no record of what anybody receives — it read what this " +
-        "machine holds, a switch's value or a record Windows wrote down, and " +
-        "neither is a record of what moved — so it cannot promise that " +
-        "anybody stopped seeing anything";
+        "brisk holds no record of what anybody receives — the rest of the " +
+        "topic reads what this machine holds, a switch's value or a record " +
+        "Windows wrote down, and neither is a record of what moved — so it " +
+        "cannot promise that anybody stopped seeing anything";
 
     /// Why the second half is: the same principle pointing the other way.
     /// NOT "brisk never names a transmission" — one rule in this topic holds
@@ -383,12 +383,15 @@ public class PrivacyRedLineTests
     /// sentences the read-back block renders, and ReadBackTests bans a list
     /// over exactly those four. `privacy.*` IS THE PAGE'S OWN COPY — its
     /// headings, its buttons, the sentence under each block — and nothing
-    /// read what it CLAIMED until this test. LocTests names all but one of
-    /// the `privacy.*` keys and proves each LOADS, which is a different
+    /// read what it CLAIMED until this test. LocTests lists `privacy.*` keys
+    /// and proves each one it lists LOADS in English, which is a different
     /// question and the only one anything asked; nothing read a word of the
-    /// value. That is where the one live breach was. (The key LocTests misses
-    /// is `privacy.setting.failed`. This test reads it — for what it says,
-    /// not for whether it resolves, which is still unguarded.)
+    /// value. That is where the one live breach was. (Nothing here depends on
+    /// that list being complete. This test takes its keys from the resx by
+    /// predicate, so a `privacy.*` key nobody remembered to list is read for
+    /// what it says the moment it is written — `privacy.setting.failed` was
+    /// read here while it was still missing from LocTests, and LocTests names
+    /// it now.)
     ///
     /// THE PRINCIPLE IS "NO TRANSMISSION CLAIM WITHOUT A RECORD OF ONE", and
     /// stating it that way is a decision this task took rather than a line
