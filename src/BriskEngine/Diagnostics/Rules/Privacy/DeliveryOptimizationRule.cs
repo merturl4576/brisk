@@ -64,9 +64,25 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
             { } upload => Reported(upload),
         };
 
+    /// THE HEADLINE IS THE TOTAL AND THE SENTENCE IS THE SPLIT. Windows
+    /// counts these bytes in two halves — machines reached over this local
+    /// network, machines reached over the internet — and brisk used to add
+    /// them and report the sum alone, which told a reader that 302 MB left
+    /// this machine and not that every byte of it stopped at the router. The
+    /// two are different claims about one number and the split is the one
+    /// brisk read. The lead stays the total because a headline is one figure
+    /// and the number that answers "how much" is the sum of both halves.
+    ///
+    /// THE LAST CLAUSE IS NOT A LEFTOVER. Naming the two sides is not naming
+    /// the machines, and a reader handed a split is likelier to think brisk
+    /// knows where the bytes landed than one handed a total. So the sentence
+    /// that says brisk cannot say which machines those were survives the
+    /// widening, and the test on it says why it is there.
     private DiagnosticFinding Reported(PeerUpload upload)
     {
         var amount = Fmt.Bytes(upload.Total);
+        var lan = Fmt.Bytes(upload.LanBytes);
+        var internet = Fmt.Bytes(upload.InternetBytes);
         return Disclosure(
             $"rule.{Id}.title",
             "Windows uploaded data from this machine to other machines this month",
@@ -74,10 +90,11 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
             "Delivery Optimization is the part of Windows that uploads content " +
             "from this machine to other machines. Windows keeps a running count " +
             "of what it uploaded that way, and for the current calendar month " +
-            $"that counter reads {amount}. brisk reads the counter and nothing " +
-            "past it: which machines those bytes went to is not something that " +
-            "read can tell you.",
-            new[] { amount },
+            $"that counter reads {amount}: {lan} of it to machines on this local " +
+            $"network, {internet} to machines on the internet. brisk reads the " +
+            "counter and nothing past it: which machines those were is not " +
+            "something that read can tell you.",
+            new[] { amount, lan, internet },
             new Headline(
                 amount, "uploaded from this machine to other machines this month",
                 $"rule.{Id}.headline.value", new[] { amount },

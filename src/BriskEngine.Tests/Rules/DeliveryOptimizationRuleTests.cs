@@ -92,6 +92,42 @@ public class DeliveryOptimizationRuleTests
         Assert.Contains(Fmt.Bytes(Total), finding.Evidence, StringComparison.Ordinal);
     }
 
+    /// The headline stays one number and the sentence under it stops being
+    /// one. Windows counts these bytes in two halves and brisk had been
+    /// adding them and reporting the sum, so a reader was told that 302 MB
+    /// left this machine and not that every byte of it stopped at the router.
+    /// "302 MB went to other machines" and "302 MB of it went to machines in
+    /// this house, none of it further" are different sentences about the same
+    /// number, and only the second one is the reading brisk actually took.
+    ///
+    /// THE PLANTED READING IS THE MAINTAINER'S OWN MACHINE, read
+    /// 2026-08-26: UploadLanBytes 317000384, UploadInternetBytes 0. The
+    /// split is not a hypothetical the copy was written for.
+    ///
+    /// The literals are Fmt.Bytes' real rendering rather than a guess at it.
+    /// Its megabyte branch formats "F0", so 302.3125 MB prints "302 MB" with
+    /// no decimal, and anything under a kilobyte prints as a bare byte count.
+    [Fact]
+    public void TheEvidence_NamesBothDestinations_WithTheMeasuredSplit()
+    {
+        var finding = Detect(new PeerUpload(317_000_384, 0))!;
+
+        Assert.Equal(new[] { "302 MB", "302 MB", "0 B" }, finding.EvidenceArgs);
+        Assert.True(finding.Headline!.Value == "302 MB",
+            $"the headline is still the total and it leads with " +
+            $"\"{finding.Headline.Value}\"");
+        Assert.Contains("302 MB of it to machines on this local network",
+            finding.Evidence, StringComparison.Ordinal);
+        Assert.Contains("0 B to machines on the internet",
+            finding.Evidence, StringComparison.Ordinal);
+        Assert.True(
+            finding.Evidence.Contains("which machines those were is not " +
+                "something that read can tell you", StringComparison.Ordinal),
+            "the split says which SIDE the bytes went to and the sentence must " +
+            "keep saying that brisk cannot say WHICH MACHINES; the refusal is " +
+            "the red line still being told, not a leftover: " + finding.Evidence);
+    }
+
     /// Nothing uploaded is nothing to disclose: a row leading with "0 B"
     /// leads with a number no reader needs. This is the only report-only
     /// disclosure that stays silent on a reading it actually took, and the
