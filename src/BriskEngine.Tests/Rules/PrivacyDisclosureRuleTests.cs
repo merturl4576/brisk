@@ -116,18 +116,29 @@ public class PrivacyDisclosureRuleTests
     }
 
     /// One USB storage device the way Windows records one: the model under
-    /// the enum root, the instance under the model, and the install date in
-    /// the device property store below the instance as a Windows FILETIME.
+    /// the enum root, the instance under the model, and the dates in the
+    /// device property store below the instance, each as a Windows FILETIME.
+    ///
+    /// Each date is planted only when a caller asks for one, and the two are
+    /// asked for separately, because a record carrying one and not the other
+    /// is a state a real property store reaches — and it is the state
+    /// ReadDevices has to render without inventing the missing half.
     private static void PlantUsbDevice(FakeRegistry reg, string model, string instance,
-        DateTime? installedUtc = null)
+        DateTime? installedUtc = null, DateTime? lastArrivalUtc = null)
     {
         Sub(reg, UsbHistoryRule.KeyPath, model);
         Sub(reg, $@"{UsbHistoryRule.KeyPath}\{model}", instance);
+        var instanceKey = $@"{UsbHistoryRule.KeyPath}\{model}\{instance}";
         if (installedUtc is not null)
             reg.SetBytes(
-                $@"{UsbHistoryRule.KeyPath}\{model}\{instance}\{UsbHistoryRule.InstallDateSubPath}",
+                $@"{instanceKey}\{UsbHistoryRule.InstallDateSubPath}",
                 UsbHistoryRule.InstallDateValueName,
                 BitConverter.GetBytes(installedUtc.Value.ToFileTimeUtc()));
+        if (lastArrivalUtc is not null)
+            reg.SetBytes(
+                $@"{instanceKey}\{UsbHistoryRule.LastArrivalSubPath}",
+                UsbHistoryRule.InstallDateValueName,
+                BitConverter.GetBytes(lastArrivalUtc.Value.ToFileTimeUtc()));
     }
 
     private static void Sub(FakeRegistry reg, string parent, string child)
@@ -423,6 +434,86 @@ public class PrivacyDisclosureRuleTests
         Assert.Equal("rule.usb-history.evidence.no-date", finding.EvidenceKey);
     }
 
+    // ---- usb-history: the records themselves ---------------------------
+
+    /// WHAT DETECT THROWS AWAY, read for the one surface allowed to see it.
+    /// Detect counts instances and reports a number; this returns the model
+    /// name and the two dates behind each of those instances, for the
+    /// Gizlilik page — the owner's own screen, and nowhere else. That is the
+    /// spec's red line 2 as amended on 2026-08-26.
+    ///
+    /// ONE RECORD PER INSTANCE, which is what the count counts: two sticks of
+    /// one model are two records carrying that model's name twice, exactly as
+    /// Detect says two. The model is the MODEL-level subkey name; the
+    /// instance id below it is read to build the key path and goes nowhere,
+    /// the same way Detect treats it.
+    [Fact]
+    public void ReadDevices_ReturnsOneRecordPerInstance_CarryingItsModelAndBothDates()
+    {
+        var (ctx, reg) = Context();
+        PlantUsbDevice(reg, "Ven_Kingston&Prod_DataTraveler", "0123456789ABCD",
+            new DateTime(2021, 3, 4, 5, 6, 7, DateTimeKind.Utc),
+            new DateTime(2026, 8, 20, 9, 30, 0, DateTimeKind.Utc));
+        PlantUsbDevice(reg, "Ven_Kingston&Prod_DataTraveler", "SECONDSTICK");
+
+        var devices = UsbHistoryRule.ReadDevices(ctx);
+
+        Assert.Equal(
+            new[] { "Ven_Kingston&Prod_DataTraveler", "Ven_Kingston&Prod_DataTraveler" },
+            devices.Select(d => d.Model));
+        var dated = devices.Single(d => d.FirstSeen is not null);
+        Assert.Equal(new DateTime(2021, 3, 4, 5, 6, 7, DateTimeKind.Utc), dated.FirstSeen);
+        Assert.Equal(new DateTime(2026, 8, 20, 9, 30, 0, DateTimeKind.Utc), dated.LastSeen);
+        // The second instance carries no property store at all, and neither
+        // date is borrowed from the first one's.
+        var undated = devices.Single(d => d.FirstSeen is null);
+        Assert.Null(undated.LastSeen);
+    }
+
+    /// The two dates are read SEPARATELY, from two properties. A read that
+    /// took one stamp and filled both fields with it would pass the test
+    /// above and print a last-seen date brisk never read.
+    [Fact]
+    public void ReadDevices_ADeviceWithOnlyAnInstallDate_ClaimsNoLastArrival()
+    {
+        var (ctx, reg) = Context();
+        PlantUsbDevice(reg, "Ven_A&Prod_Stick", "aaa",
+            installedUtc: new DateTime(2017, 5, 9, 8, 30, 0, DateTimeKind.Utc));
+
+        var device = Assert.Single(UsbHistoryRule.ReadDevices(ctx));
+
+        Assert.Equal(new DateTime(2017, 5, 9, 8, 30, 0, DateTimeKind.Utc), device.FirstSeen);
+        Assert.True(device.LastSeen is null,
+            $"nothing was written at {UsbHistoryRule.LastArrivalSubPath} and brisk " +
+            $"read a last-arrival date of {device.LastSeen} out of it");
+    }
+
+    /// The refusal Detect survives by losing the date and keeping the count,
+    /// on the read that has a record to lose instead. A refused property key
+    /// costs that instance its two DATES; it never costs the record, and it
+    /// never costs the list — the model name is what the page exists to show,
+    /// and it is read a level above the ACL that refuses.
+    [Fact]
+    public void ReadDevices_ADatePropertyItIsRefused_CostsTheDatesAndNotTheRecord()
+    {
+        var reg = new FakeRegistry();
+        PlantUsbDevice(reg, "Ven_A&Prod_Stick", "aaa",
+            new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        PlantUsbDevice(reg, "Ven_B&Prod_Disk", "bbb");
+        var ctx = TestContext.Empty() with { Registry = new RefusesPropertyReads(reg) };
+
+        var devices = UsbHistoryRule.ReadDevices(ctx);
+
+        Assert.Equal(new[] { "Ven_A&Prod_Stick", "Ven_B&Prod_Disk" },
+            devices.Select(d => d.Model));
+        Assert.All(devices, device =>
+        {
+            Assert.Null(device.FirstSeen);
+            Assert.Null(device.LastSeen);
+        });
+    }
+
     /// A key the process is not allowed to open throws rather than answering
     /// empty — Registry.OpenSubKey raises SecurityException for that — and no
     /// fake in this suite does it, so the one that must is written here.
@@ -555,6 +646,9 @@ public class PrivacyDisclosureRuleTests
                      ("the install-date property below an instance",
                          @"Properties\{83da6326-97a6-4088-9453-a1923f573b29}\0064",
                          UsbHistoryRule.InstallDateSubPath),
+                     ("the last-arrival property below an instance",
+                         @"Properties\{83da6326-97a6-4088-9453-a1923f573b29}\0066",
+                         UsbHistoryRule.LastArrivalSubPath),
                      ("the first UserAssist count key",
                          @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" +
                          @"\UserAssist\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\Count",
