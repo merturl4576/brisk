@@ -91,11 +91,13 @@ public partial class App : Application
             var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
                 isDryRun, fixAllService, FindingSections.IsHealth,
                 doneFilter: FindingSections.IsHealth,
-                crossLinkKey: "health.crosslink");
+                crossLinkKey: "health.crosslink",
+                crossLinkFilter: FindingSections.IsPerformance);
             var perfVm = new HealthViewModel(state, composition.Host, Loc.Instance,
                 isDryRun, fixAllService, FindingSections.IsPerformance,
                 doneFilter: FindingSections.IsPerformance,
-                crossLinkKey: "performance.crosslink");
+                crossLinkKey: "performance.crosslink",
+                crossLinkFilter: FindingSections.IsHealth);
             var startupVm = new StartupViewModel(state, composition.Host,
                 Loc.Instance, isDryRun, composition.Launcher);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,

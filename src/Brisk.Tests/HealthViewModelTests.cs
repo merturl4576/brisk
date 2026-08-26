@@ -1155,6 +1155,42 @@ public class HealthViewModelTests
         Assert.Equal("", vm.ReportSummary);
     }
 
+    /// The maintainer's first live look at 0.6.0 (2026-08-26) found this:
+    /// with Gizlilik in the split, "more findings in <sibling>" counted
+    /// EVERYTHING not on this page — privacy included — so Sağlık and
+    /// Performans each promised 8 where their named target held 2. The
+    /// count must follow the label; a third page must not inflate it.
+    [Fact]
+    public async Task CrossLinks_CountThePageTheyName_NotEverythingElsewhere()
+    {
+        var loc = EnglishLoc();
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("storage-sense", cat: RuleCategory.Confirm, canFix: true),
+            TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("usb-history", cat: RuleCategory.Advise, canFix: false),
+        });
+        var state = new AppState(host);
+        var health = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsHealth,
+            crossLinkKey: "health.crosslink",
+            crossLinkFilter: FindingSections.IsPerformance);
+        var perf = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), FindingSections.IsPerformance,
+            crossLinkKey: "performance.crosslink",
+            crossLinkFilter: FindingSections.IsHealth);
+        await state.ScanAsync();
+
+        // Sağlık names Performans and counts ONLY it: the one performance
+        // finding, not one plus the two privacy findings beside it.
+        Assert.Equal(loc.F("health.crosslink", 1), health.CrossLinkText);
+        // Performans names Sağlık: its two, not two plus two.
+        Assert.Equal(loc.F("performance.crosslink", 2), perf.CrossLinkText);
+    }
+
     [Fact]
     public async Task CrossLinks_CountTheSiblingPagesFindings_AndHideAtZero()
     {
@@ -1169,11 +1205,13 @@ public class HealthViewModelTests
         var state = new AppState(host);
         var health = new HealthViewModel(state, host, loc, () => false,
             new FixAllService(host), FindingSections.IsHealth,
-            crossLinkKey: "health.crosslink");
+            crossLinkKey: "health.crosslink",
+            crossLinkFilter: FindingSections.IsPerformance);
         var perf = new HealthViewModel(state, host, loc, () => false,
             new FixAllService(host), FindingSections.IsPerformance,
             doneFilter: FindingSections.IsPerformance,
-            crossLinkKey: "performance.crosslink");
+            crossLinkKey: "performance.crosslink",
+            crossLinkFilter: FindingSections.IsHealth);
         await state.ScanAsync();
 
         // Sağlık points at the 1 performance finding; Performans at the 2

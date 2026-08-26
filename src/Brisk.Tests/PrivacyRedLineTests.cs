@@ -218,10 +218,14 @@ public class PrivacyRedLineTests
         // Wired exactly as App.xaml.cs:91-98 wires the only two it builds.
         var health = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsHealth, doneFilter: FindingSections.IsHealth,
-            crossLinkKey: "health.crosslink", morphPause: () => Task.CompletedTask);
+            crossLinkKey: "health.crosslink",
+            crossLinkFilter: FindingSections.IsPerformance,
+            morphPause: () => Task.CompletedTask);
         var perf = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsPerformance, doneFilter: FindingSections.IsPerformance,
-            crossLinkKey: "performance.crosslink", morphPause: () => Task.CompletedTask);
+            crossLinkKey: "performance.crosslink",
+            crossLinkFilter: FindingSections.IsHealth,
+            morphPause: () => Task.CompletedTask);
         // The third page. Building it here is what stops this test passing
         // by never asking about it.
         //

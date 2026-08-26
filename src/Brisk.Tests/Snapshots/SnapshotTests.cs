@@ -554,10 +554,12 @@ public class SnapshotTests
             new CannedLive(reading), loc, notDryRun);
         var health = new HealthViewModel(state, host, loc, notDryRun, fixAll,
             FindingSections.IsHealth, doneFilter: FindingSections.IsHealth,
-            crossLinkKey: "health.crosslink");
+            crossLinkKey: "health.crosslink",
+            crossLinkFilter: FindingSections.IsPerformance);
         var performance = new HealthViewModel(state, host, loc, notDryRun, fixAll,
             FindingSections.IsPerformance, doneFilter: FindingSections.IsPerformance,
-            crossLinkKey: "performance.crosslink");
+            crossLinkKey: "performance.crosslink",
+            crossLinkFilter: FindingSections.IsHealth);
         var startup = new StartupViewModel(state, host, loc, notDryRun, launcher);
         var clean = new CleanViewModel(state, host, cleanService, safeClean, bin,
             loc, notDryRun);

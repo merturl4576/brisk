@@ -46,11 +46,13 @@ public class UndoRoundTripTests
         var health = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsHealth, doneFilter: FindingSections.IsHealth,
             crossLinkKey: "health.crosslink",
+            crossLinkFilter: FindingSections.IsPerformance,
             morphPause: () => Task.CompletedTask);
         var perf = new HealthViewModel(state, host, loc, () => false, fixAll,
             FindingSections.IsPerformance,
             doneFilter: FindingSections.IsPerformance,
             crossLinkKey: "performance.crosslink",
+            crossLinkFilter: FindingSections.IsHealth,
             morphPause: () => Task.CompletedTask);
         await state.ScanAsync();
 

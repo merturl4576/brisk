@@ -248,6 +248,7 @@ public sealed class HealthViewModel : ViewModelBase
     private readonly Func<string, bool>? _doneFilter;
     private readonly Func<Task> _morphPause;
     private readonly string? _crossLinkKey;
+    private readonly Func<DiagnosticFinding, bool>? _crossLinkFilter;
     private string _scoreText = "—";
     private double _scoreValue;
     private string _scoreBrushKey = "";
@@ -266,9 +267,17 @@ public sealed class HealthViewModel : ViewModelBase
     /// and the rescan itself takes far longer than this on a real machine.
     internal const int FixedMorphMs = 400;
 
+    /// crossLinkKey and crossLinkFilter travel together: the key names the
+    /// sibling page, the filter is that page's OWN routing predicate, and
+    /// the count is taken from the filter so the sentence can never promise
+    /// findings its target does not show. Complementing this page's filter
+    /// instead is the shape that broke on the first live look at 0.6.0 —
+    /// with Gizlilik in the split, the complement counted a third page into
+    /// a label that names one.
     public HealthViewModel(AppState state, IEngineHost host, Loc loc, Func<bool> isDryRun,
         FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null,
         Func<string, bool>? doneFilter = null, string? crossLinkKey = null,
+        Func<DiagnosticFinding, bool>? crossLinkFilter = null,
         Func<Task>? morphPause = null)
     {
         _state = state;
@@ -279,6 +288,7 @@ public sealed class HealthViewModel : ViewModelBase
         _filter = filter;
         _doneFilter = doneFilter;
         _crossLinkKey = crossLinkKey;
+        _crossLinkFilter = crossLinkFilter;
         _morphPause = morphPause ?? (() => Task.Delay(FixedMorphMs));
         // The report block's two faces share one visibility contract; any
         // mutation of either collection re-evaluates it (and the lead line).
@@ -601,11 +611,15 @@ public sealed class HealthViewModel : ViewModelBase
                          .Where(f => _doneFilter(f.RuleId))
                          .OrderByDescending(f => f.FixedAtUtc))
                 DoneRows.Add(new UndoableRow(fix, _loc, UndoDoneAsync));
-        // The sibling findings page's count: this page's filter complemented.
-        // Answers "where did my finding go?" after the category split.
-        if (_crossLinkKey is not null && _filter is not null)
+        // The sibling findings page's count, from the sibling's own filter.
+        // Answers "where did my finding go?" after the category split. NOT
+        // this page's filter complemented: with three findings pages the
+        // complement counts Gizlilik into a sentence that names only the
+        // sibling — both pages read "8" over targets holding 2 on the first
+        // live look at 0.6.0.
+        if (_crossLinkKey is not null && _crossLinkFilter is not null)
         {
-            var elsewhere = snapshot.Findings.Count(f => !_filter(f));
+            var elsewhere = snapshot.Findings.Count(f => _crossLinkFilter(f));
             HasCrossLink = elsewhere > 0;
             CrossLinkText = elsewhere > 0 ? _loc.F(_crossLinkKey, elsewhere) : "";
         }
