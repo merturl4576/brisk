@@ -315,6 +315,8 @@
   <data name="privacy.title" xml:space="preserve"><value>Privacy on this machine</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>
+  <data name="privacy.usb.devices.title" xml:space="preserve"><value>What that record holds</value></data>
+  <data name="privacy.usb.device" xml:space="preserve"><value>{0} — first recorded {1} · last seen {2}</value></data>
   <data name="privacy.switches.section" xml:space="preserve"><value>Windows' own privacy switches</value></data>
   <data name="privacy.switches.note" xml:space="preserve"><value>brisk reads each switch and can write it, and nothing past that: what leaves this machine is not something those reads can tell you.</value></data>
   <data name="privacy.switches.safe.note" xml:space="preserve"><value>Switching these off takes nothing away that you use, and brisk can switch every one of them back on.</value></data>

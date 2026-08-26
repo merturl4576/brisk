@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
@@ -598,6 +599,63 @@ public class ReportCardModelTests
         Assert.DoesNotContain("DataTraveler", text);
         Assert.DoesNotContain("chrome.exe", text);
         Assert.DoesNotContain("puebzr", text);
+    }
+
+    /// THE AMENDED RED LINE 2, BOTH HALVES, OVER ONE SNAPSHOT. The spec's
+    /// second red line read "device names never", full stop. On 2026-08-26,
+    /// at his first live look at 0.6.0, the maintainer amended it: the model
+    /// and its dates are the user's OWN data, and the Gizlilik page — the one
+    /// surface nobody screenshots to share a result — may show the record in
+    /// full to its owner, behind a fold. Everything built to be shared keeps
+    /// the count alone. The spec quotes what it replaced, verbatim, beside
+    /// the amendment.
+    ///
+    /// ONE FIXTURE AND NOT TWO, because the two halves are one rule and a
+    /// rule split across two files can drift into disagreeing about which
+    /// surface is which. The same snapshot — the shipped UsbHistoryRule
+    /// reading a registry with a Kingston planted in it — is handed to the
+    /// page and to the card, and it is asked what each of them does with the
+    /// name that is demonstrably in reach of both.
+    ///
+    /// THE PAGE SIDE IS THE ONLY THING EXEMPTED, and only UsbDeviceRows. No
+    /// card-side assertion was weakened for this: TheCard_CarriesCounts_And
+    /// NeverADeviceOrAProgramName above asserts exactly what it asserted
+    /// before the amendment, and asserts it over a snapshot that now CARRIES
+    /// the names rather than merely having had them in reach.
+    ///
+    /// The headlines are read too. AllTextOn covers the card model; the
+    /// Overview's lead reads Headline off the finding directly, and a name in
+    /// a headline would reach a shareable surface by a route the card model
+    /// never touches.
+    [Fact]
+    public async Task TheDeviceName_RendersOnThePrivacyPage_AndOnNothingTheCardCarries()
+    {
+        var snapshot = SnapshotWithPlantedNames();
+        var loc = Loc("en");
+        var host = new FakeEngineHost { NextSnapshot = snapshot };
+        var state = new AppState(host, loc);
+        var page = new PrivacyViewModel(state, host, loc, () => false, _ => true);
+
+        await state.ScanAsync();
+
+        // PAGE-YES. Every one of the 47 records the rule read reaches its
+        // owner, and the recognisable one is among them by name.
+        Assert.Equal(47, page.UsbDeviceRows.Count);
+        Assert.Contains(page.UsbDeviceRows,
+            row => row.Contains("Ven_Kingston&Prod_DataTraveler", StringComparison.Ordinal));
+
+        // CARD-NEVER. The same snapshot, the same names, nothing printed.
+        var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), loc);
+        var text = AllTextOn(card);
+        Assert.DoesNotContain("Kingston", text);
+        Assert.DoesNotContain("DataTraveler", text);
+        Assert.DoesNotContain("Ven_", text);
+        foreach (var headline in snapshot.Findings
+                     .Select(f => f.Headline).Where(h => h is not null))
+        {
+            Assert.DoesNotContain("Kingston", headline!.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Kingston", headline.Caption, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     /// The card's "okuyamadıklarım" is fed from ONE channel. It used to read

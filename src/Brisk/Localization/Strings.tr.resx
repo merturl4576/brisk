@@ -315,6 +315,8 @@
   <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>
+  <data name="privacy.usb.devices.title" xml:space="preserve"><value>O kaydın tuttukları</value></data>
+  <data name="privacy.usb.device" xml:space="preserve"><value>{0} — ilk kayıt {1} · son görülme {2}</value></data>
   <data name="privacy.switches.section" xml:space="preserve"><value>Windows'un kendi gizlilik anahtarları</value></data>
   <data name="privacy.switches.note" xml:space="preserve"><value>brisk her anahtarı okur ve yazabilir, ötesini değil: bu makineden ne çıktığı, bu okumaların söyleyebileceği bir şey değil.</value></data>
   <data name="privacy.switches.safe.note" xml:space="preserve"><value>Bunları kapatmak kullandığın hiçbir şeyi götürmez; brisk hepsini geri açabilir.</value></data>

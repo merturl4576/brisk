@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Models;
 
 namespace Brisk.ViewModels;
@@ -218,6 +219,24 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// all: what could not be read is never a silent zero.
     public ObservableCollection<FindingRow> UnreadableRows { get; } = new();
 
+    /// WHAT THAT RECORD HOLDS: one line per USB storage instance Windows
+    /// wrote down, model and both dates, behind a fold on this page and
+    /// nowhere else in brisk.
+    ///
+    /// The spec's red line 2 said "device names never", and on 2026-08-26 the
+    /// maintainer amended it at his first live look: the model and its dates
+    /// are the user's own data, and the page only the user looks at may show
+    /// the record in full. Every surface built to be shared still carries the
+    /// count alone — and cannot carry more, because the names arrive here on
+    /// ScanSnapshot.UsbDevices and never on a DiagnosticFinding. The card is
+    /// not trusted with them; it is never handed them.
+    ///
+    /// Strings and not records, deliberately. The formatting is a rendering
+    /// decision — which sentence, which date spelling, what a date brisk did
+    /// not read looks like — and it belongs on the side of the split that
+    /// knows the language. What the markup binds is a list of lines.
+    public ObservableCollection<string> UsbDeviceRows { get; } = new();
+
     /// The four the one button turns off.
     public ObservableCollection<FindingRow> SafeSwitchRows { get; } = new();
 
@@ -411,6 +430,11 @@ public sealed class PrivacyViewModel : ViewModelBase
                 row => _ = FixAsync(row), row => _ = UndoAsync(row),
                 onOpenWindowsSetting: OpenWindowsSetting));
 
+        UsbDeviceRows.Clear();
+        foreach (var device in snapshot.UsbDevices)
+            UsbDeviceRows.Add(_loc.F("privacy.usb.device", device.Model,
+                Stamp(device.FirstSeen), Stamp(device.LastSeen)));
+
         ReadBackRows.Clear();
         var now = _utcNow();
         foreach (var result in snapshot.ReadBack.OrderByDescending(r => r.FixedAtUtc))
@@ -453,6 +477,25 @@ public sealed class PrivacyViewModel : ViewModelBase
         : CostsTheUserSomething(finding) ? CostlySwitchRows
         : IsUnreadableDisclosure(finding) ? UnreadableRows
         : DisclosureRows;
+
+    /// A date brisk read, or the dash this app prints where it has no
+    /// reading. Never a guess and never a blank, which an eye reads as a
+    /// zero: FirstSeen and LastSeen are null when the read was REFUSED or
+    /// unreadable, and "brisk did not read one" is what the dash says.
+    ///
+    /// NOT converted to local time, and that is the decision rather than an
+    /// oversight. The usb row directly above this fold prints "the oldest
+    /// date it could read among them is 2017-05-09" straight off the rule,
+    /// unconverted — so converting here would put two spellings of one
+    /// record's own date six lines apart on one page. ReadBackRow.LocalDate
+    /// converts because what it dates is an act the user performed at a wall
+    /// clock; what this dates is a stamp Windows wrote, and the rule that
+    /// reads it is the surface this has to agree with.
+    ///
+    /// yyyy-MM-dd invariant, the same shape the rule's evidence uses.
+    private static string Stamp(DateTime? utc) => utc is { } when
+        ? when.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        : "—";
 
     /// The number a disclosure leads with, for "largest first", and
     /// long.MinValue for every reading that is not one.
