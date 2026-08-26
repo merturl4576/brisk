@@ -130,8 +130,12 @@ public sealed class RealDeliveryOptimizationProbe : IDeliveryOptimizationProbe
     /// A HALF BELOW ZERO is not a count of bytes, so it is not reported as
     /// one either. That refusal used to be made about the sum, which is where
     /// the sum was made; the halves are what this reads now, so it is made
-    /// about each of them. It is the stricter of the two — a pair like
-    /// (-2, +3) summed to a plausible 1 and passed the old check.
+    /// about each of them. Stricter on real quantities — a pair like
+    /// (-2, +3) summed to a plausible 1 and passed the old check — but not
+    /// stricter outright: two huge halves wrapping their sum negative were
+    /// refused HERE by the old check and are admitted now, refused one step
+    /// later by the rule's Total < 0 arm. AnUploadFigureBelowZero_IsNotACount
+    /// pins both movements.
     internal static PeerUpload? ParseUploaded(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;

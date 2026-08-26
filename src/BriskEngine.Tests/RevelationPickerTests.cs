@@ -78,9 +78,10 @@ public class RevelationPickerTests
         Assert.Contains(picked, f => f.RuleId == "disk-breakdown");
     }
 
-    /// The other two report-only disclosures stay OFF the declared list, which
-    /// is the tail rank. That is as much a decision as usb-history's third
-    /// place: a count of program records and a total of uploaded bytes are not
+    /// The report-only disclosures stay OFF the declared list, which is the
+    /// tail rank — this theory drives two of the three that can lead at all,
+    /// recall-status being the third. That is as much a decision as
+    /// usb-history's old third place was: a count of program records and a total of uploaded bytes are not
     /// numbers this project wants a scan to open with, and leaving them
     /// unlisted is what puts them last. (usb-history has since gone
     /// further — NeverLeads — on the maintainer's call; these two stay

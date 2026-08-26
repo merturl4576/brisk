@@ -265,7 +265,9 @@ public class LocTests
     // itself — so a gap in the English resx does not print
     // "privacy.usb.device" once, it prints it once per device, with the
     // model name and both dates dropped on the floor. There is no louder
-    // failure and no other guard: nothing else reads this key's value.
+    // failure; the row key also has a second guard after all —
+    // PrivacyViewModelTests renders its real English value through a real
+    // Loc, so a break there lands twice.
     [InlineData("privacy.usb.devices.title")]
     [InlineData("privacy.usb.device")]
     // The `privacy.*` key this list went without while the page's headings

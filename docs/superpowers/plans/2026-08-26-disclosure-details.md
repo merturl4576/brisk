@@ -361,6 +361,16 @@ languages.
   is therefore STRICTER than what it replaced — the comment on it says so and
   names the pair it now catches.
 
+  **Correction (closing review, 2026-08-26):** "STRICTER than what it
+  replaced" — here and wherever this log says "strictly stronger" — was an
+  overclaim: the two refusal sets are incomparable. The old sum-check refused
+  a wrapped-negative pair AT THE PARSE that the per-half check admits; the
+  rule's `Total < 0` arm refuses it one step later, pinned in
+  `AnUploadFigureBelowZero_IsNotACount`. The system is stronger; the parse
+  alone is not. The comment at the parse now says exactly that (the fix
+  round following the closing review), which is this repo's second time
+  giving a plan's false claim the treatment it prescribed.
+
 **Found, not touched:**
 
 - The carve-out needed no change at all. `TheOneTransmissionClaimBrisk
