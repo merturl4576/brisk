@@ -434,8 +434,8 @@ public class SnapshotTests
                         ReferenceEquals(b.Command, recall.OpenWindowsSettingCommand));
                 Assert.True(link is not null,
                     "no control in the picture is bound to the Recall row's " +
-                    "link to Windows' own setting, and the spec says the row " +
-                    "appears here as state only WITH one");
+                    "link to Windows' own setting, and the spec requires that " +
+                    "row to show state only WITH one");
                 Assert.True(link!.Visibility == Visibility.Visible
                     && link.ActualWidth > 0,
                     "the Recall row's link is in the tree and not in the " +

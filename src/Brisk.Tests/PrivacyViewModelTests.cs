@@ -601,7 +601,7 @@ public class PrivacyViewModelTests
             "the change it just declined to make");
         Assert.True(row.HasWindowsSettingAction,
             "the Recall row carries no link to Windows' own setting, and the " +
-            "spec says it appears here as state only WITH one");
+            "spec requires this row to show state only WITH one");
 
         row.OpenWindowsSettingCommand.Execute(null);
 

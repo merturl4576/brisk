@@ -226,6 +226,21 @@ makes that decision checkable in both directions: put "upload" on the list and
 the ban goes red on six shipped strings that are right; take the transmission
 out of this rule's copy and the control goes red instead.
 
+**The warrant does not cover all six evenly**, and this block first claimed it
+for "six English strings" without saying so — the same absence one level down.
+`Reported()` builds `title`, `evidence` and `headline.caption`, and runs only
+when the probe returned a positive count: those three are written with the
+counter in brisk's hands. `Unread()` builds `title.unread` and
+`evidence.unread`, and is reached exactly when the counter could **not** be
+read. Those two are permitted on a different ground: they name the transmission
+only to say brisk could not measure it, and `evidence.unread` refuses the count
+in as many words — *"a machine that uploaded nothing and a machine brisk could
+not ask are different things, so brisk does not report a count of none."*
+Naming a quantity you failed to obtain asserts no transmission, so the
+principle is satisfied there rather than excepted. `advice` rides both rows,
+because `HealthViewModel` keys it on the rule id; it names the upload as what
+the counter *measures*, which is true either way.
+
 **Item 2 also said** *"Recall appears here as state only, with a link to
 Windows' own setting"*, and that clause is struck above because the page does
 not put it here. `PrivacyViewModel.Band` sends a finding carrying a Headline to
