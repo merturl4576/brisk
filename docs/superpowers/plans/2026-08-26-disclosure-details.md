@@ -206,7 +206,7 @@ public sealed record PeerUpload(long LanBytes, long InternetBytes)
 
 on the interface: `PeerUpload? UploadedToPeers();` REPLACING `long? BytesUploadedToPeers()` (no compatibility shim — one reader, the rule).
 
-- [ ] **Step 1: Failing engine tests** (probe parse + rule copy):
+- [x] **Step 1: Failing engine tests** (probe parse + rule copy):
 
 ```csharp
     [Fact]
@@ -233,8 +233,8 @@ on the interface: `PeerUpload? UploadedToPeers();` REPLACING `long? BytesUploade
 both-or-nothing and below-zero refusals — move them onto the record fields:
 either half below zero ⇒ null.)
 
-- [ ] **Step 2: Watch them fail.**
-- [ ] **Step 3: Implement.** Rule's `Reported` takes the record; headline stays `Fmt.Bytes(u.Total)`; evidence sentence becomes (EN — TR mirrors claim-for-claim):
+- [x] **Step 2: Watch them fail.**
+- [x] **Step 3: Implement.** Rule's `Reported` takes the record; headline stays `Fmt.Bytes(u.Total)`; evidence sentence becomes (EN — TR mirrors claim-for-claim):
 
 > "…for the current calendar month that counter reads {0}: {1} of it to machines
 > on this local network, {2} to machines on the internet. brisk reads the
@@ -245,11 +245,11 @@ Both resx `rule.delivery-optimization.evidence` values updated to three args.
 The last clause is deliberate: the split does NOT name machines, and the copy
 must keep saying so.
 
-- [ ] **Step 4: Full suite** — `PrivacyRedLineTests` in particular: the copy ban
+- [x] **Step 4: Full suite** — `PrivacyRedLineTests` in particular: the copy ban
 must still pass via the DO carve-out (verb+recipient needles per language — if
 a needle no longer matches, fix the needle to the new sentence, never widen the
 carve-out beyond rule id).
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ### Task 4: the USB records reach their owner — and only their owner
 
@@ -292,3 +292,66 @@ carve-out beyond rule id).
   `UsbDeviceRecord` produced and consumed in T4; T1/T2 share nothing.
 - Order: tasks are independent; T4 is last because it alone waits on the
   maintainer's OK for the spec sentence.
+
+## Execution log
+
+### T3 — the DO counter says where the bytes went (2026-08-26)
+
+**Commits** (branch `feat/disclosure-details`, on top of `bed1fb2`):
+
+- `316f782` the counter's two halves survive the read that always required them
+- `c2fd397` the DO counter's sentence says which side of the router the bytes stopped at
+
+**Reds watched:**
+
+1. `TheParser_CarriesBothHalves_NotJustTheirSum` —
+   `error CS0117: 'RealDeliveryOptimizationProbe' bir 'ParseUploaded' tanımı
+   içermiyor` (does not contain a definition for `ParseUploaded`). The right
+   reason: the test demands the renamed parse and nothing had written it.
+2. `TheEvidence_NamesBothDestinations_WithTheMeasuredSplit` —
+   `Assert.Equal() Failure: Collections differ ↓ (pos 1) Expected: ["302 MB",
+   "302 MB", "0 B"] Actual: ["302 MB"]`. The evidence still carried the total
+   alone. That failure is also where `Fmt.Bytes(317000384) == "302 MB"` was
+   read off the real formatter rather than guessed.
+
+**Counts:** baseline 1279 (597 + 682) → 1283 (601 + 682) after `316f782` →
+**1284 (602 + 682)** after `c2fd397`. 0 warnings, `dotnet test -c Release`.
+`PrivacyRedLineTests` run alone: **42/42 green**, and the carve-out theory
+`TheOneTransmissionClaimBriskHasARecordOf_IsNotBanned` green in both
+languages.
+
+**Deviations from the plan, and why:**
+
+- The plan's `"302.3 MB"` literal was a guess and is wrong: `Fmt.Bytes`
+  formats its megabyte branch `"F0"`, so 302.3125 MB renders `"302 MB"`. The
+  `"0 B"` guess was right. Both literals are now pinned to the real
+  rendering, and the test says which branch produces them.
+- Two commits rather than one — the type change and the copy change are each
+  green alone, and the first has its own red.
+- `Detect` gained a third range check nobody asked for and it is not
+  redundant: the probe hands back two halves AND their sum, and neither range
+  follows from the other. A half below zero hides inside a positive total
+  ((-2, +3) summed to a plausible 1 and passed the OLD parser, which checked
+  the sum), and two halves that are each `long.MaxValue` wrap their sum to
+  -2. Both are pinned as theory rows, in `AnUploadFigureBelowZero_IsNotACount`
+  and `OutputItCannotRead_IsNotZero`.
+- The parse's below-zero refusal moved onto the halves as the plan said, and
+  is therefore STRICTER than what it replaced — the comment on it says so and
+  names the pair it now catches.
+
+**Found, not touched:**
+
+- The carve-out needed no change at all. `TheOneTransmissionClaimBrisk
+  HasARecordOf_IsNotBanned` demands ONE `rule.delivery-optimization.*` string
+  carrying both a verb and a recipient; `rule.delivery-optimization.title`
+  satisfies it on its own, and the new evidence still carries "uploaded" +
+  "to other machines" / "yükle" + "başka makinelere" as well. No needle was
+  widened or moved.
+- Nothing outside the rule and its tests pins the old one-arg evidence
+  string. `LocalizedText.Resolve` passes `EvidenceArgs` through by array, the
+  CLI prints the engine's own English, and the Gizlilik page and report card
+  read the same two paths. The only other places naming the rule id assert
+  routing, ranking or the UNREAD sentence, none of which moved.
+- `RevelationPickerTests` and `OverviewViewModelTests` carry `"302 MB"` as a
+  planted headline value for this rule. Still correct, still the total, left
+  alone.
