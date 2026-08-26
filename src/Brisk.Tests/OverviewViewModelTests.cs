@@ -8,6 +8,7 @@ using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Models;
 using Xunit;
 
@@ -217,7 +218,8 @@ public class OverviewViewModelTests
         host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
             new ScanResult(Array.Empty<TargetScanResult>()), 95,
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-            new SensorStatus(false, false, null), Array.Empty<ReadBackResult>());
+            new SensorStatus(false, false, null), Array.Empty<ReadBackResult>(),
+            Array.Empty<UsbDeviceRecord>());
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);

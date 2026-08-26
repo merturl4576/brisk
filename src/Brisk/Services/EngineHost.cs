@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 
@@ -97,13 +98,38 @@ public sealed class EngineHost : IEngineHost
         {
             readBack = Array.Empty<ReadBackResult>();
         }
+        // The USB records, on the same pass and for the same reason the
+        // read-back is here: the Gizlilik page shows the COUNT off the
+        // finding above and the RECORDS off this list, and a page that asked
+        // for the records separately would be a second channel for one
+        // reading of one machine.
+        //
+        // WHAT THIS CATCH COVERS, said exactly. ReadDevices guards every read
+        // it makes — a refused model key costs that branch, a refused
+        // property read costs that field — so nothing known reaches here
+        // today. It is written anyway, because of where it sits rather than
+        // what it expects: this call is OUTSIDE the rule loop's catch, which
+        // is precisely where ReadBack.For sat when a SecurityException out of
+        // it took down the entire scan (d083da1). The failure mode at this
+        // seam is total — no snapshot, no Changed, a window left on the
+        // previous scan with nothing said — and the cost of a record nobody
+        // could read is a fold that does not open.
+        IReadOnlyList<UsbDeviceRecord> usbDevices;
+        try
+        {
+            usbDevices = UsbHistoryRule.ReadDevices(_ctx);
+        }
+        catch (Exception)
+        {
+            usbDevices = Array.Empty<UsbDeviceRecord>();
+        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
             HealthScore.Compute(findings), DateTime.UtcNow,
             new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
                 MemoryIntegrityOn: integrityOn),
-            readBack);
+            readBack, usbDevices);
     }, ct);
 
     private sealed class SyncProgressAdapter : IProgress<ScanProgress>

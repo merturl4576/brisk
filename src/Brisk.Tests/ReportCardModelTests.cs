@@ -525,6 +525,13 @@ public class ReportCardModelTests
     /// registry, never written here as literals: what these tests ask is
     /// whether a name a real rule had in its hands can reach the card, and a
     /// fixture that never held the name could not ask it.
+    ///
+    /// SINCE THE AMENDMENT, the snapshot also CARRIES the names, in
+    /// UsbDevices, off the same shipped rule reading the same registry. That
+    /// is a harder question than the one this fixture asked before and the
+    /// one worth asking now: the card is built over a snapshot with
+    /// "Kingston" in it, in a list, in reach of anything that walked the
+    /// snapshot — and prints no Kingston.
     private static ScanSnapshot SnapshotWithPlantedNames()
     {
         var reg = new FakeRegistry();
@@ -547,7 +554,9 @@ public class ReportCardModelTests
                 new UsbHistoryRule().Detect(ctx)!,
                 new RunHistoryRule().Detect(ctx)!,
             },
-            new SensorStatus(true, true, null));
+            new SensorStatus(true, true, null),
+            Array.Empty<ReadBackResult>(),
+            UsbHistoryRule.ReadDevices(ctx));
     }
 
     private static void PlantUsbInstance(FakeRegistry reg, string model, string instance)

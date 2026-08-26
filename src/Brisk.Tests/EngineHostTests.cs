@@ -346,6 +346,62 @@ public sealed class EngineHostTests : IDisposable
         Assert.Equal(64, snapshot.Cleaner.TotalBytes);
     }
 
+    /// THE DEVICE RECORDS RIDE THE SCAN, in the same pass over the same
+    /// context that produced the findings — the argument ScanSnapshot already
+    /// makes about the read-back, for the same reason. The Gizlilik page shows
+    /// the COUNT off the finding and the RECORDS off this list, and two
+    /// channels for one reading is how two surfaces come to disagree about one
+    /// machine. A page that asked the host for the devices after the scan
+    /// would be exactly that second channel.
+    ///
+    /// The count and the records are asserted together, off one registry: two
+    /// instances under one model is a finding that says 2 and a list of two
+    /// records naming that model twice.
+    [Fact]
+    public async Task ScanAsync_CarriesTheUsbDeviceRecords_FromTheSamePass()
+    {
+        var registry = new FakeRegistry();
+        PlantUsb(registry, "Ven_Kingston&Prod_DataTraveler", "0123456789ABCD");
+        PlantUsb(registry, "Ven_Kingston&Prod_DataTraveler", "SECONDSTICK");
+        var host = Host(registry, new UsbHistoryRule());
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.Equal("2", Assert.Single(snapshot.Findings).Headline!.Value);
+        Assert.Equal(
+            new[] { "Ven_Kingston&Prod_DataTraveler", "Ven_Kingston&Prod_DataTraveler" },
+            snapshot.UsbDevices.Select(d => d.Model));
+    }
+
+    /// A machine with nothing to read there gets an empty list, which is a
+    /// claim and the honest one: the record holds no device brisk could read.
+    /// It is not "no device was ever attached" — the rule's own finding is
+    /// what says brisk could not establish a count, and the page renders no
+    /// fold at all over an empty list.
+    [Fact]
+    public async Task ScanAsync_NoUsbRecordToRead_CarriesAnEmptyList()
+    {
+        var snapshot = await Host(new UsbHistoryRule()).ScanAsync();
+
+        Assert.Empty(snapshot.UsbDevices);
+    }
+
+    /// One instance of one USB storage device, the two levels deep Windows
+    /// records it at. No property store: this fixture is about the channel,
+    /// and the dates behind it are PrivacyDisclosureRuleTests' business.
+    private static void PlantUsb(FakeRegistry reg, string model, string instance)
+    {
+        Add(reg, UsbHistoryRule.KeyPath, model);
+        Add(reg, $@"{UsbHistoryRule.KeyPath}\{model}", instance);
+    }
+
+    private static void Add(FakeRegistry reg, string parent, string child)
+    {
+        if (!reg.SubKeys.TryGetValue(parent, out var children))
+            reg.SubKeys[parent] = children = new List<string>();
+        if (!children.Contains(child)) children.Add(child);
+    }
+
     [Fact]
     public void Fix_UnknownRule_Fails()
     {
