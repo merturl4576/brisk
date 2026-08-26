@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -114,6 +114,43 @@ public class OverviewViewModelTests
 
         Assert.Contains("3 findings", vm.SummaryText);
         Assert.Contains("1 one-click fixable", vm.SummaryText);
+    }
+
+    /// THE OTHER HALF, and the machine this wave was built for: findings on
+    /// it, and not one of them is work for the button beside this line.
+    /// "Good shape" stays — the score grades speed and hygiene and does not
+    /// grade privacy — but the COUNT rode hasWork out with the promise, so a
+    /// machine with three findings counted none of them anywhere on the app's
+    /// front page.
+    ///
+    /// The rule is the one FlyoutViewModel already states and ships for its
+    /// own copy of this line: the count stays and the promise goes.
+    [Fact]
+    public async Task Summary_StillCountsTheFindings_WhenTheButtonHasNoWork()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[]
+            {
+                TestData.Finding("advertising-id", cat: RuleCategory.Auto,
+                    canFix: true, kind: FindingKind.Notice),
+                TestData.Finding("location", cat: RuleCategory.Confirm,
+                    canFix: true, kind: FindingKind.Notice),
+                TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            },
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        await state.ScanAsync();
+
+        // Not vacuous: the button really has nothing to do on this snapshot,
+        // which is the state that used to erase the count with it.
+        Assert.False(vm.FixAllCommand.CanExecute(null));
+
+        Assert.Contains(loc.F("flyout.findings.only", 3), vm.SummaryText);
+        Assert.Equal("3 findings", loc.F("flyout.findings.only", 3));
+        // The promise still goes: "0 one-click fixable" reads as a failure
+        // rather than as the absence of a claim.
+        Assert.DoesNotContain("one-click", vm.SummaryText);
     }
 
     [Fact]

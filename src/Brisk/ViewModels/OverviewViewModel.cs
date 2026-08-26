@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -583,10 +583,11 @@ public sealed class OverviewViewModel : ViewModelBase
         // "Neither" is not "nothing found". HasWork stopped seeing privacy
         // findings when they were excluded from the button, so a machine
         // whose only fixable findings are the four telemetry switches reads
-        // "good shape" here and suppresses the {n} findings line below with
-        // it. That is the wave's red line working as written — the health
-        // score grades speed and hygiene and does not grade privacy, and a
-        // fast clean machine reads 100 whether or not telemetry is on.
+        // "good shape" here. That is the wave's red line working as written —
+        // the health score grades speed and hygiene and does not grade
+        // privacy, and a fast clean machine reads 100 whether or not
+        // telemetry is on. It no longer takes the {n} findings line below
+        // down with it: a count is not a grade.
         //
         // The "{n} findings" figure below counts the WHOLE snapshot, privacy
         // included, and it always did. What changed with the Gizlilik page is
@@ -604,10 +605,17 @@ public sealed class OverviewViewModel : ViewModelBase
             : advise > 0 ? _loc.F("overview.status.advise", advise)
             : _loc["overview.status.good"];
         // The "{m} one-click fixable" phrase only appears while it is a
-        // promise (m > 0); "0 tanesi düzelir" would read as failure. Here
-        // that is HasWork's doing rather than a test on m — the phrase rides
-        // the whole findings line, and HasWork is false exactly when this
-        // page's button would do nothing.
+        // promise; that is HasWork's doing rather than a test on m, since
+        // HasWork is false exactly when this page's button would do nothing,
+        // and "0 tanesi düzelir" would read as failure.
+        //
+        // The COUNT no longer rides with it. It did: both were one line under
+        // that one condition, so the machine this wave was built for — twelve
+        // findings on it, not one of them work for this button — read "good
+        // shape" and counted nothing anywhere on the app's front page. The
+        // count stays and the promise goes, which is the rule FlyoutViewModel
+        // states and ships for its own copy of this line, over the key it
+        // already has.
         //
         // The same predicate THIS page's button obeys, not a second copy of
         // it: "one-click fixable" counts what pressing "Fix all (safe)" will
@@ -618,6 +626,8 @@ public sealed class OverviewViewModel : ViewModelBase
         var parts = new List<string>();
         if (hasWork)
             parts.Add(_loc.F("flyout.findings", snapshot.Findings.Count, fixable));
+        else if (snapshot.Findings.Count > 0)
+            parts.Add(_loc.F("flyout.findings.only", snapshot.Findings.Count));
         // Honest figure (round 11): what the safe clean can take right now —
         // the summary line and the clean button's label share it.
         var reclaimable = CleanService.ReclaimableNowBytes(snapshot.Cleaner);
