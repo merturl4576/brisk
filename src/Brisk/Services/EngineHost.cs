@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -77,7 +77,26 @@ public sealed class EngineHost : IEngineHost
         // it is not a second call the page makes for itself. It reads the
         // journal here rather than taking ListUndoable()'s answer from
         // somewhere else for the same reason.
-        var readBack = ReadBack.For(_ctx, _journal.ListUndoable(), _rules);
+        //
+        // The catch is for the journal FILE and nothing else: ReadBack.For
+        // drops a switch whose own read throws, and FixJournal takes its gate
+        // around the read, so what is left is a handle this process does not
+        // control — the CLI mid-fix, a backup tool, a scanner — refusing
+        // File.ReadAllLines. No rows is the honest answer to that: the page
+        // shows no read-back lines, which is an absence rather than a claim
+        // that brisk has turned nothing off. What it replaces is a scan that
+        // died on the spot, leaving the window on the previous snapshot with
+        // nothing said — the same failure the rule loop's catch above exists
+        // to prevent.
+        IReadOnlyList<ReadBackResult> readBack;
+        try
+        {
+            readBack = ReadBack.For(_ctx, _journal.ListUndoable(), _rules);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            readBack = Array.Empty<ReadBackResult>();
+        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,

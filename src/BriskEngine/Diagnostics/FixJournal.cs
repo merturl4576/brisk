@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -56,15 +56,35 @@ public sealed class FixJournal
         lock (_gate) File.AppendAllText(_path, JsonSerializer.Serialize(entry) + "\n");
     }
 
+    /// Under the SAME gate as Append. Since the read-back shipped, a scan
+    /// reads this file on a background thread while a fix can be appending to
+    /// it, and File.ReadAllLines asks to open the file with FileShare.Read —
+    /// which a live append does not grant, so the read is refused outright
+    /// with an IOException.
+    ///
+    /// The gate is per-object, so what it serialises is the one journal
+    /// EngineHost hands to both the fix runner and the scan. A second process
+    /// holding the same path is outside anything a lock here can reach;
+    /// EngineHost carries a catch for that.
+    ///
+    /// The lines are read under the lock and parsed outside it. This was an
+    /// iterator, and a lazy read cannot hold a lock across its caller's loop.
     private IEnumerable<Entry> ReadAll()
     {
-        if (!File.Exists(_path)) yield break;
-        foreach (var line in File.ReadAllLines(_path))
+        string[] lines;
+        lock (_gate)
+        {
+            if (!File.Exists(_path)) return System.Array.Empty<Entry>();
+            lines = File.ReadAllLines(_path);
+        }
+        var entries = new List<Entry>();
+        foreach (var line in lines)
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
             var entry = TryDeserializeEntry(line);
-            if (entry is not null) yield return entry;
+            if (entry is not null) entries.Add(entry);
         }
+        return entries;
     }
 
     private Entry? TryDeserializeEntry(string line)

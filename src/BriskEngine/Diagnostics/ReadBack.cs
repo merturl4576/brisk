@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using BriskEngine.Diagnostics.Rules.Privacy;
@@ -43,6 +43,21 @@ public static class ReadBack
     /// mean anything about a power plan. That is an absence rather than a claim:
     /// the read-back speaks about what it re-read and about nothing else.
     ///
+    /// A row is also lost when the re-read THROWS. StateOf runs the rule's
+    /// own registry reads and nothing under them is wrapped — OpenSubKey
+    /// throws on a key this process may not open, and on one marked for
+    /// deletion — and this call rides EngineHost's scan, where an escaping
+    /// exception meant no snapshot at all rather than one switch unread. So a
+    /// throw costs that entry its row and costs nothing else, on the same
+    /// terms as the paragraph above: brisk says nothing about a switch it
+    /// could not re-read.
+    ///
+    /// The catch is untyped, which also swallows StateOf's own refusal to
+    /// name a state for a WriteEffect member nobody wrote a line for. That
+    /// refusal keeps what it exists for — no row is not a state — and loses
+    /// its loudness: a fifth member would arrive as switches quietly missing
+    /// from the page rather than as a scan that died.
+    ///
     /// Ids are matched without regard to case, because a journal file
     /// outlives the build that wrote it; the app's privacy list matches ids
     /// the same way, which PrivacyRuleIds_MatchWithoutRegardToCase pins from
@@ -60,7 +75,15 @@ public static class ReadBack
             var rule = rules.OfType<TelemetrySwitchRule>().FirstOrDefault(
                 r => string.Equals(r.Id, entry.RuleId, StringComparison.OrdinalIgnoreCase));
             if (rule is null) continue;
-            rows.Add(new ReadBackResult(rule.Id, StateOf(ctx, rule), entry.FixedAtUtc));
+            try
+            {
+                rows.Add(new ReadBackResult(
+                    rule.Id, StateOf(ctx, rule), entry.FixedAtUtc));
+            }
+            catch
+            {
+                // One switch brisk could not re-read, and no row for it.
+            }
         }
         return rows;
     }

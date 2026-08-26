@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Xml.Linq;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules.Privacy;
@@ -465,6 +466,78 @@ public class ReadBackTests
         var rows = Rows(ctx, Array.Empty<UndoableFix>());
         Assert.True(rows.Count == 0,
             $"the journal is empty and the read-back produced [{Describe(rows)}]");
+    }
+
+    /// A PROBE THAT REFUSES, in the middle of the read-back. StateOf re-runs
+    /// the rule's own registry reads, and nothing between here and the
+    /// registry wraps them: RegistryKey.OpenSubKey throws SecurityException
+    /// on a key this process may not open and IOException on one marked for
+    /// deletion, and RealRegistryProbe catches neither. Before the catch this
+    /// pins, one such key took the WHOLE SCAN with it — EngineHost calls For
+    /// outside the per-rule try whose own comment says "a broken probe must
+    /// never kill the scan" — so no snapshot was built at all.
+    ///
+    /// What the switch that could not be re-read gets is NO ROW, which is
+    /// what this file already gives a journal entry no rule matches: an
+    /// absence rather than a claim. The second switch is the control — it is
+    /// read through the same call and comes back with its state, so a
+    /// refusal that swallowed everything could not pass this by returning
+    /// nothing at all.
+    [Fact]
+    public void AProbeThatRefusesOneSwitch_CostsItItsRow_AndNothingElse()
+    {
+        var (ctx, reg) = Context();
+        new AdvertisingIdRule().Fix(ctx);
+        new SpeechTypingRule().Fix(ctx);
+        var refusing = ctx with
+        {
+            Registry = new RefusingRegistry(reg, AdvertisingIdRule.KeyPath),
+        };
+
+        var rows = Rows(refusing, Journal("advertising-id", "speech-typing"));
+
+        Assert.True(rows.All(r => r.RuleId != "advertising-id"),
+            "the read-back produced a row for a switch whose own read threw, " +
+            $"so it reported a state it never established: [{Describe(rows)}]");
+        Assert.True(
+            rows.Any(r => r.RuleId == "speech-typing"
+                && r.State == ReadBackState.Held),
+            "the switch every read of which answered lost its row as well, so " +
+            $"one refused key cost more than the row it belongs to: [{Describe(rows)}]");
+    }
+
+    /// Answers like the registry behind it until a key path is armed, and
+    /// then refuses every read under that path the way the real probe does:
+    /// SecurityException is what OpenSubKey throws for a key this process may
+    /// not open, and RealRegistryProbe passes it straight out. Writes are left
+    /// alone — what this plants is a read that fails, not a hive that is gone.
+    private sealed class RefusingRegistry : IRegistryProbe
+    {
+        private readonly IRegistryProbe _inner;
+        private readonly string _refused;
+
+        public RefusingRegistry(IRegistryProbe inner, string refusedKeyPath)
+        {
+            _inner = inner;
+            _refused = refusedKeyPath;
+        }
+
+        private void Refuse(string keyPath)
+        {
+            if (keyPath.StartsWith(_refused, StringComparison.OrdinalIgnoreCase))
+                throw new SecurityException(
+                    $"this process may not read '{keyPath}'");
+        }
+
+        public string? GetString(string k, string v) { Refuse(k); return _inner.GetString(k, v); }
+        public int? GetInt(string k, string v) { Refuse(k); return _inner.GetInt(k, v); }
+        public byte[]? GetBytes(string k, string v) { Refuse(k); return _inner.GetBytes(k, v); }
+        public IReadOnlyList<string> GetValueNames(string k) { Refuse(k); return _inner.GetValueNames(k); }
+        public IReadOnlyList<string> GetSubKeyNames(string k) { Refuse(k); return _inner.GetSubKeyNames(k); }
+        public void SetString(string k, string v, string value) => _inner.SetString(k, v, value);
+        public void SetInt(string k, string v, int value) => _inner.SetInt(k, v, value);
+        public void SetBytes(string k, string v, byte[] value) => _inner.SetBytes(k, v, value);
+        public void DeleteValue(string k, string v) => _inner.DeleteValue(k, v);
     }
 
     // ---- The shape of what comes back --------------------------------
