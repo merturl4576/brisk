@@ -513,3 +513,19 @@ them so).
 - **The instance id still goes nowhere.** It is a serial number — it
   identifies the stick rather than describing it — and neither the plan nor
   the amended red line asked for it.
+
+### Fix round + close state (2026-08-26, evening)
+
+Closing review (final-review-report.md): NOT READY — 1 Critical (T4 falsified
+usb-history's own copy at 8 sites: "never reads a device name" above a fold
+showing the names), 1 Important (parse comment's "stricter" overclaim), 3
+Minors, product flag (a) fold title. ALL taken in `7e11bc9` (copy truth at all
+8 sites + "USB kaydının tuttukları" title) and `6360e2e` (comment exactness,
+log correction appended above, LocTests/picker-doc wording, BOM strip).
+1299 green (605+694), 0 warnings, measured after each commit. The scoped
+re-verification agent was stopped by the maintainer to conserve session
+budget; the evidence standing in its place: every copy edit applied with
+asserted site counts, and the parity + red-line guards inside the measured
+green. Merge decision NOT taken — it is the maintainer's, pending his word.
+A self-contained win-x64 publish of THIS TIP (6360e2e) went to a USB for a
+field test on his father's machine.
