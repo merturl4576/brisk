@@ -96,6 +96,67 @@ public sealed class ShellSourceTests
         Assert.Contains("MaximizedMargin", margin!, StringComparison.Ordinal);
     }
 
+    /// Every nav tile has a page, and Nav_Checked knows about both.
+    ///
+    /// A tile is a RadioButton in a group and a page is an element in the
+    /// host Grid, and the ONLY thing joining them is a line inside
+    /// Nav_Checked. Add a tile and forget the line and the tile checks,
+    /// glows, and shows whatever page was already up; add a page and forget
+    /// it and the page never hides again. Neither fails anything: no
+    /// exception, no binding error, and the window still lays out. This is
+    /// read from source because the join is a hand-written switch over names
+    /// and there is nothing else in the app that can be asked about it.
+    ///
+    /// Watched red by deleting the PrivacyView line from Nav_Checked: `the
+    /// page host holds PrivacyView and Nav_Checked never mentions it`.
+    [Fact]
+    public void EveryNavTile_HasAPage_AndNav_CheckedKnowsAboutBoth()
+    {
+        var window = MainWindowXaml();
+        var body = MethodBody(
+            File.ReadAllText(Path.Combine(BriskDir(), "Windows", "MainWindow.xaml.cs")),
+            "private void Nav_Checked(");
+
+        var tiles = window.Descendants()
+            .Where(e => e.Name.LocalName == "RadioButton"
+                && (string?)e.Attribute("GroupName") == "nav")
+            .Select(e => (string)e.Attribute(X + "Name")!)
+            .ToArray();
+        Assert.True(tiles.Length >= 2,
+            $"the nav parsed as {tiles.Length} tiles, so this test is not " +
+            "reading the nav at all");
+
+        foreach (var tile in tiles)
+            Assert.True(body.Contains(tile, StringComparison.Ordinal),
+                $"the nav carries a tile named {tile} and Nav_Checked never " +
+                "mentions it — checking it would glow the tile and leave " +
+                "whatever page was already up on screen");
+
+        // The other direction. A page nothing hides is a page that stacks on
+        // top of the one the user asked for.
+        var pages = window.Descendants()
+            .Where(e => e.Name.NamespaceName.EndsWith("Brisk.Views", StringComparison.Ordinal)
+                && e.Attribute(X + "Name") is not null)
+            .Select(e => (string)e.Attribute(X + "Name")!)
+            .ToArray();
+        Assert.True(pages.Length == tiles.Length,
+            $"the nav has {tiles.Length} tiles and the page host holds " +
+            $"{pages.Length} pages: {string.Join(", ", pages)}");
+        foreach (var page in pages)
+            Assert.True(body.Contains(page, StringComparison.Ordinal),
+                $"the page host holds {page} and Nav_Checked never mentions " +
+                "it, so nothing ever hides it");
+    }
+
+    /// The braced body of the method that starts at `marker`, brace-balanced
+    /// the same way LambdaBody below is, so reformatting cannot fool it.
+    private static string MethodBody(string source, string marker)
+    {
+        var start = source.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"MainWindow.xaml.cs has no method \"{marker}\"");
+        return LambdaBody(source[start..], ")");
+    }
+
     /// The rail is gone, so a tile floats directly on the atmosphere and has
     /// to answer "which page am I on" by itself. Both answers — hover and
     /// selection — must differ from the tile's resting fill AND from the

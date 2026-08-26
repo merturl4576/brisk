@@ -1,13 +1,35 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using BriskEngine.Models;
 
 namespace Brisk.ViewModels;
 
+/// Which rule ids the UI routes as privacy. This is NOT the rules' source of
+/// truth and cannot be: the rules live in BriskEngine, which references
+/// nothing of Brisk, so each one hardcodes its own Id literal the way
+/// PowerPlanRule does. So this is a second copy that nothing cross-checks,
+/// and the mismatch fails SILENTLY rather than loudly — an id that matches no
+/// rule simply never fires, and a rule whose Id is missing here falls through
+/// to Sağlık like any unknown id. Read the two against each other by hand
+/// when adding a rule; the test pinning these ten is what makes a change to
+/// the list deliberate, not what makes it correct.
+public static class PrivacyRuleIds
+{
+    public static readonly ReadOnlyCollection<string> All = new(new[]
+    {
+        "advertising-id", "diagnostic-level", "tailored-experiences",
+        "speech-typing", "location", "activity-history",
+        "recall-status", "usb-history", "run-history",
+        "delivery-optimization",
+    });
+}
+
 /// Topical page routing for findings. RuleCategory is a consent level
 /// (Auto/Confirm/Advise), not a topic, so pages split by rule id instead:
 /// speed levers go to Performans, machine/disk condition to Sağlık.
-/// Unknown future rules default to Sağlık.
+/// Unknown future rules default to Sağlık; the privacy rule ids are the
+/// one named exception, and IsPrivacy claims them before that default.
 public static class FindingSections
 {
     private static readonly HashSet<string> Performance = new(
@@ -17,6 +39,9 @@ public static class FindingSections
                 "boot-degradation", "memory-speed" },
         StringComparer.OrdinalIgnoreCase);
 
+    private static readonly HashSet<string> Privacy = new(
+        PrivacyRuleIds.All, StringComparer.OrdinalIgnoreCase);
+
     public static bool IsPerformance(DiagnosticFinding finding) =>
         Performance.Contains(finding.RuleId);
 
@@ -24,8 +49,17 @@ public static class FindingSections
     /// each page's slice of the journal-driven done report.
     public static bool IsPerformance(string ruleId) => Performance.Contains(ruleId);
 
-    public static bool IsHealth(DiagnosticFinding finding) =>
-        !IsPerformance(finding);
+    public static bool IsPrivacy(DiagnosticFinding finding) =>
+        Privacy.Contains(finding.RuleId);
 
-    public static bool IsHealth(string ruleId) => !IsPerformance(ruleId);
+    public static bool IsPrivacy(string ruleId) => Privacy.Contains(ruleId);
+
+    /// Sağlık is the default page, so it has to name what it does NOT take:
+    /// without the privacy exclusion every disclosure finding lands on the
+    /// page that grades the machine's condition.
+    public static bool IsHealth(DiagnosticFinding finding) =>
+        !IsPerformance(finding) && !IsPrivacy(finding);
+
+    public static bool IsHealth(string ruleId) =>
+        !IsPerformance(ruleId) && !IsPrivacy(ruleId);
 }

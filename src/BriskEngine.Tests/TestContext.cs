@@ -173,6 +173,16 @@ public sealed class FakeMemoryIntegrity : IMemoryIntegrityProbe
     public bool? IsOn() => On;
 }
 
+/// Null by default: a test that never speaks to Delivery Optimization says
+/// nothing about what this machine uploaded, and null is how the probe says
+/// it could not ask. Zero would be a reading, and a test that never
+/// mentioned this probe has not taken one.
+public sealed class FakeDeliveryOptimization : IDeliveryOptimizationProbe
+{
+    public long? Bytes;
+    public long? BytesUploadedToPeers() => Bytes;
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -196,7 +206,7 @@ public static class TestContext
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
         new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeHardware(),
         new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
-        new FakeMemoryIntegrity(),
+        new FakeMemoryIntegrity(), new FakeDeliveryOptimization(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

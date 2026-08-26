@@ -3,10 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Threading.Tasks;
 using Brisk.Services;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 using BriskEngine.Safety;
@@ -33,6 +35,51 @@ file sealed class NullRegistry : IRegistryProbe
     public void SetInt(string k, string v, int value) { }
     public IReadOnlyList<string> GetValueNames(string k) => Array.Empty<string>();
     public IReadOnlyList<string> GetSubKeyNames(string k) => Array.Empty<string>();
+}
+
+/// A registry that keeps what is written to it and can be told, afterwards,
+/// to refuse every read under one key path — SecurityException, which is what
+/// RegistryKey.OpenSubKey throws for a key this process may not open and what
+/// RealRegistryProbe passes straight out. Armed after the fixes are applied,
+/// so the test plants a switch brisk really turned off and only then takes the
+/// read away from it.
+file sealed class ArmableRegistry : IRegistryProbe
+{
+    private readonly Dictionary<string, object> _values =
+        new(StringComparer.OrdinalIgnoreCase);
+    private string? _refused;
+
+    public void RefuseReadsUnder(string keyPath) => _refused = keyPath;
+
+    private static string K(string k, string v) => $"{k}::{v}";
+
+    private void Refuse(string keyPath)
+    {
+        if (_refused is not null && keyPath.StartsWith(
+                _refused, StringComparison.OrdinalIgnoreCase))
+            throw new SecurityException($"this process may not read '{keyPath}'");
+    }
+
+    private T? Get<T>(string k, string v) where T : class
+    {
+        Refuse(k);
+        return _values.TryGetValue(K(k, v), out var o) ? o as T : null;
+    }
+
+    public string? GetString(string k, string v) => Get<string>(k, v);
+    public byte[]? GetBytes(string k, string v) => Get<byte[]>(k, v);
+    public int? GetInt(string k, string v)
+    {
+        Refuse(k);
+        return _values.TryGetValue(K(k, v), out var o) ? o as int? : null;
+    }
+
+    public void SetString(string k, string v, string value) => _values[K(k, v)] = value;
+    public void SetBytes(string k, string v, byte[] value) => _values[K(k, v)] = value;
+    public void SetInt(string k, string v, int value) => _values[K(k, v)] = value;
+    public void DeleteValue(string k, string v) => _values.Remove(K(k, v));
+    public IReadOnlyList<string> GetValueNames(string k) { Refuse(k); return Array.Empty<string>(); }
+    public IReadOnlyList<string> GetSubKeyNames(string k) { Refuse(k); return Array.Empty<string>(); }
 }
 
 file sealed class NullProcessInfo : IProcessInfoProbe
@@ -133,6 +180,13 @@ file sealed class NullMemoryIntegrity : IMemoryIntegrityProbe
     public bool? IsOn() => null;
 }
 
+/// Answers nothing, which is what an unread counter looks like. Not zero:
+/// these host tests say nothing about what this machine uploaded.
+file sealed class NullDeliveryOptimization : IDeliveryOptimizationProbe
+{
+    public long? BytesUploadedToPeers() => null;
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -180,17 +234,27 @@ public sealed class EngineHostTests : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-eh-").FullName;
 
     private EngineHost Host(params IDiagnosticRule[] rules) =>
-        Host(new NullSensors(), rules);
+        Host(new NullSensors(), new NullRegistry(), rules);
 
     /// Same fixture with the sensor probe swapped — the context is built here,
     /// so a test that needs to watch the probes has to come in through this
     /// door rather than assemble a second one.
-    private EngineHost Host(ISensorProbe sensors, params IDiagnosticRule[] rules)
+    private EngineHost Host(ISensorProbe sensors, params IDiagnosticRule[] rules) =>
+        Host(sensors, new NullRegistry(), rules);
+
+    /// The same door for the registry, which the read-back reads a second
+    /// time after the rule loop has read it once.
+    private EngineHost Host(IRegistryProbe registry, params IDiagnosticRule[] rules) =>
+        Host(new NullSensors(), registry, rules);
+
+    private EngineHost Host(ISensorProbe sensors, IRegistryProbe registry,
+        params IDiagnosticRule[] rules)
     {
-        var ctx = new DiagnosticContext(new NullPowercfg(), new NullRegistry(),
+        var ctx = new DiagnosticContext(new NullPowercfg(), registry,
             new NullProcessInfo(), sensors, new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
-            new NothingRuns(), new NullMemoryIntegrity(), _root);
+            new NothingRuns(), new NullMemoryIntegrity(),
+            new NullDeliveryOptimization(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(_root, "fix-journal.jsonl"));
@@ -228,6 +292,57 @@ public sealed class EngineHostTests : IDisposable
         Assert.Equal(88, snapshot.Health);
         Assert.Equal(64, snapshot.Cleaner.TotalBytes);
         Assert.NotEmpty(progress);
+    }
+
+    /// THE READ-BACK IS PART OF THE SCAN, and it re-runs the same registry
+    /// reads the rule loop just ran — but it sat outside the try above, so
+    /// one key this process may not open threw out of ScanAsync itself: no
+    /// snapshot, no Changed, and a window still showing the previous scan
+    /// with nothing said. The rule loop's own comment is the standard this
+    /// pins for the second read of the same registry.
+    ///
+    /// The switch that could not be re-read gets no row — an absence, which
+    /// is what ReadBack already gives a journal entry it cannot match — and
+    /// the scan comes back whole: the other switch's row, and the cleaner's
+    /// bytes off the same pass.
+    [Fact]
+    public async Task ScanAsync_AReadBackReadThatRefuses_DoesNotKillTheScan()
+    {
+        var registry = new ArmableRegistry();
+        var host = Host(registry, new AdvertisingIdRule(), new SpeechTypingRule());
+        Assert.True(host.Fix("advertising-id").Ok);
+        Assert.True(host.Fix("speech-typing").Ok);
+        registry.RefuseReadsUnder(AdvertisingIdRule.KeyPath);
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.Equal("speech-typing", Assert.Single(snapshot.ReadBack).RuleId);
+        Assert.Equal(64, snapshot.Cleaner.TotalBytes);
+    }
+
+    /// The other end of the same defect, and the one a lock inside FixJournal
+    /// cannot close: the journal FILE, held by something outside this process
+    /// — the CLI mid-fix, a backup tool, an antivirus scanner — so
+    /// File.ReadAllLines cannot open it at all. ListUndoable throws before
+    /// ReadBack.For is reached, and the whole scan went with it.
+    ///
+    /// An empty read-back is the honest answer: brisk could not read the
+    /// journal, so it has nothing to say about what it turned off, and the
+    /// page shows no read-back rows. It is not "nothing was ever fixed" being
+    /// claimed — no row is a row nobody prints.
+    [Fact]
+    public async Task ScanAsync_TheJournalIsHeldByAnotherProcess_StillCompletes()
+    {
+        var host = Host(new AdvertisingIdRule());
+        Assert.True(host.Fix("advertising-id").Ok);
+        using var held = new FileStream(
+            Path.Combine(_root, "fix-journal.jsonl"),
+            FileMode.Open, FileAccess.Read, FileShare.None);
+
+        var snapshot = await host.ScanAsync();
+
+        Assert.Empty(snapshot.ReadBack);
+        Assert.Equal(64, snapshot.Cleaner.TotalBytes);
     }
 
     [Fact]

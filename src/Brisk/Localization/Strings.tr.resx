@@ -9,6 +9,7 @@
   <data name="nav.health" xml:space="preserve"><value>Sağlık</value></data>
   <data name="nav.performance" xml:space="preserve"><value>Performans</value></data>
   <data name="nav.clean" xml:space="preserve"><value>Depolama</value></data>
+  <data name="nav.privacy" xml:space="preserve"><value>Gizlilik</value></data>
   <data name="nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
   <data name="chrome.minimize" xml:space="preserve"><value>Küçült</value></data>
   <data name="chrome.maximize" xml:space="preserve"><value>Ekranı kapla</value></data>
@@ -42,6 +43,7 @@
   <data name="overview.report.card.failed" xml:space="preserve"><value>Kart kaydedilemedi: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
+  <data name="flyout.findings.only" xml:space="preserve"><value>{0} bulgu</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Son tarama: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Taranıyor…</value></data>
@@ -61,6 +63,7 @@
   <data name="health.notice.section" xml:space="preserve"><value>brisk'in yalnızca bildirebildikleri</value></data>
   <data name="finding.details" xml:space="preserve"><value>Ayrıntılar</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
+  <data name="finding.action.windowssetting" xml:space="preserve"><value>Windows gizlilik ayarlarını aç</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Düzeltiliyor…</value></data>
   <data name="finding.undoing" xml:space="preserve"><value>Geri alınıyor…</value></data>
   <data name="health.crosslink" xml:space="preserve"><value>Performans'ta {0} bulgu daha var →</value></data>
@@ -257,4 +260,78 @@
   <data name="report.unread.cpu" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Onu okuyan sürücü, bellek bütünlüğü açıkken yüklenmiyor; brisk bunun buradaki sebep olduğunu doğrulayamadı.</value></data>
   <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü açık; onu okuyan sürücü Microsoft'un güvenlik açığı listesinde.</value></data>
   <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU sıcaklığı — okunamadı. Bellek bütünlüğü kapalı, yani bilinen sebep bu değil; brisk sebebini buradan söyleyemez.</value></data>
+  <data name="rule.advertising-id.title" xml:space="preserve"><value>Reklam kimliği kapalı değil</value></data>
+  <data name="rule.advertising-id.evidence" xml:space="preserve"><value>brisk bu makinedeki reklam kimliği anahtarını okudu ve kapalı okunmuyor: değer ya kapalıdan başka bir şey ya da hiç ayarlanmamış. brisk yalnızca ayarın kendisini okur, ötesini değil; herhangi bir uygulamanın onunla ne yaptığı buradan görebileceği bir şey değil. Kapatmak tek bir değer yazar ve geri alınabilir.</value></data>
+  <data name="rule.advertising-id.advice" xml:space="preserve"><value>brisk bunu kapatabilir ve geri açabilir. brisk bunu, kapalı olması kullandığın hiçbir şeyi elinden almayan ayarlardan sayıyor.</value></data>
+  <data name="rule.diagnostic-level.title" xml:space="preserve"><value>Tanılama verisi seviyesi temel seviyede tutulmuyor</value></data>
+  <data name="rule.diagnostic-level.evidence" xml:space="preserve"><value>brisk bu makinedeki tanılama verisi ilkesini okudu: ya temel seviyenin üstünde ayarlı ya da hiç ayarlanmamış; ikisi de temel seviyede tutuluyor diye okunmuyor. brisk yalnızca ayarın kendisini okur, ötesini değil. Temel seviyede tutmak tek bir değer yazar, yönetici yetkisi ister ve geri alınabilir. brisk bir sonraki taramada kendi yazdığı ilke değerini yeniden okur; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="rule.diagnostic-level.advice" xml:space="preserve"><value>Bu seviyeyi ayarlamak yönetici yetkisi ister. brisk bir sonraki taramada kendi yazdığı ilke değerini yeniden okur; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="rule.tailored-experiences.title" xml:space="preserve"><value>Uyarlanmış deneyimler kapalı değil</value></data>
+  <data name="rule.tailored-experiences.evidence" xml:space="preserve"><value>brisk bu makinedeki uyarlanmış deneyimler anahtarını okudu ve kapalı okunmuyor: değer ya kapalıdan başka bir şey ya da hiç ayarlanmamış. brisk yalnızca ayarın kendisini okur, ötesini değil. Kapatmak tek bir değer yazar ve geri alınabilir.</value></data>
+  <data name="rule.tailored-experiences.advice" xml:space="preserve"><value>Windows bu ayara uyarlanmış deneyimler diyor. brisk bunu kapatabilir ve geri açabilir.</value></data>
+  <data name="rule.speech-typing.title" xml:space="preserve"><value>Konuşma ve yazma kişiselleştirmesi kısıtlanmamış</value></data>
+  <data name="rule.speech-typing.evidence" xml:space="preserve"><value>brisk bu ayarın kullandığı iki değeri okudu ve en az biri kısıtlanmış okunmuyor: o değer ya kısıtlı değerden başka bir şey ya da hiç ayarlanmamış. brisk yalnızca ayarların kendisini okur, ötesini değil. Kısıtlamak iki değer yazar ve geri alınabilir.</value></data>
+  <data name="rule.speech-typing.advice" xml:space="preserve"><value>Windows bu ayara mürekkep ve yazma kişiselleştirmesi diyor. brisk ayarın iki değerini de yazar ve geri yazabilir.</value></data>
+  <data name="rule.location.title" xml:space="preserve"><value>Konum erişimi kapalı değil</value></data>
+  <data name="rule.location.evidence" xml:space="preserve"><value>brisk bu makinedeki konum iznini okudu ve reddedildi diye okunmuyor. brisk yalnızca ayarın kendisini okur, ötesini değil; herhangi bir uygulamanın onunla ne yaptığı buradan görebileceği bir şey değil. Bu anahtarın bir bedeli var — kapatırsan 'Cihazımı bul' çalışmaz. Tek bir değer yazar ve geri alınabilir.</value></data>
+  <data name="rule.location.advice" xml:space="preserve"><value>Bu, brisk'in bedeli var saydığı iki anahtardan biri: 'Cihazımı bul' çalışmaz. Makine kaybolursa onu bulan özellik odur ve konuma ihtiyacı vardır. brisk konum erişimini kapatabilir ve geri açabilir.</value></data>
+  <data name="rule.location.cost" xml:space="preserve"><value>'Cihazımı bul' çalışmaz</value></data>
+  <data name="rule.activity-history.title" xml:space="preserve"><value>Etkinlik geçmişi kapalı değil</value></data>
+  <data name="rule.activity-history.evidence" xml:space="preserve"><value>brisk bu ilkenin kullandığı iki değeri bu makinede okudu ve en az biri kapalı okunmuyor. brisk yalnızca ayarların kendisini okur, ötesini değil. Bu anahtarın bir bedeli var — kapatırsan Timeline biter. İki değer yazar, yönetici yetkisi ister ve geri alınabilir. brisk bir sonraki taramada kendi yazdığı ilke değerini yeniden okur, yani yazma başarılı olunca bu anahtarı kapalı diye raporlar; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="rule.activity-history.advice" xml:space="preserve"><value>Bu, brisk'in bedeli var saydığı iki anahtardan biri: Timeline biter. Açık olanların geri kaydırıp bakabildiğin listesi odur; brisk o listeyi hiç okumaz. Kapatmak yönetici yetkisi ister. brisk bunu kapatabilir ve geri açabilir. Ama bu bir ilke: brisk bir sonraki taramada kendi yazdığı ilke değerini yeniden okur; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="rule.activity-history.cost" xml:space="preserve"><value>Timeline biter</value></data>
+  <data name="rule.usb-history.title" xml:space="preserve"><value>Windows bu makineye takılan USB depolama aygıtlarının kaydını tutuyor</value></data>
+  <data name="rule.usb-history.title.unread" xml:space="preserve"><value>Kayıtlı USB depolama aygıtı sayısı belirlenemedi</value></data>
+  <data name="rule.usb-history.evidence" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı; aralarında okuyabildiği en eski tarih {1}. brisk kayıtları yalnızca sayar, hiçbir aygıt adını okumaz.</value></data>
+  <data name="rule.usb-history.evidence.no-date" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı ve bu kayıtların hiçbirinden tarih okuyamadı; bu yüzden kaydın ne kadar geriye gittiğini söylemiyor. brisk kayıtları yalnızca sayar, hiçbir aygıt adını okumaz.</value></data>
+  <data name="rule.usb-history.evidence.unread" xml:space="preserve"><value>brisk Windows'un USB depolama kaydını tuttuğu yere baktı ve sayacak bir şey bulamadı. İçi boş bir kayıt ile brisk'in okuyamadığı bir kayıt buradan aynı görünür; bu yüzden brisk 'hiç yok' diye bir sayı bildirmiyor.</value></data>
+  <data name="rule.usb-history.advice" xml:space="preserve"><value>brisk bu kaydı yalnızca okur; değiştirmez ve bunun için bir düzeltme sunmaz. Kayıttan aldığı şey kaç girdi olduğu ve okuyabildiği en eski tarihtir — hiçbir zaman bir aygıt adı değil.</value></data>
+  <data name="rule.usb-history.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.usb-history.headline.caption" xml:space="preserve"><value>bu makinede kayıtlı USB depolama aygıtı</value></data>
+  <data name="rule.run-history.title" xml:space="preserve"><value>Windows başlattığın programların kaydını tutuyor</value></data>
+  <data name="rule.run-history.title.unread" xml:space="preserve"><value>Başlattığın programların kayıt sayısı belirlenemedi</value></data>
+  <data name="rule.run-history.evidence" xml:space="preserve"><value>Windows başlattığın programların sürekli bir kaydını tutuyor. brisk bunları tuttuğu iki anahtardaki {0} girdiyi saydı. Girdiler kodlanmış olarak saklanıyor ve brisk onları çözmüyor — yalnızca sayıyor, hiçbirini okumuyor; bu yüzden hiçbir program adı okunmuyor ya da bildirilmiyor ve sayıya Windows'un o iki anahtarda tuttuğu başka şeyler de dahil.</value></data>
+  <data name="rule.run-history.evidence.unread" xml:space="preserve"><value>brisk Windows'un başlattığın programların kaydını tuttuğu yere baktı ve sayacak bir şey bulamadı. İçi boş bir kayıt ile brisk'in okuyamadığı bir kayıt buradan aynı görünür; bu yüzden brisk 'hiç yok' diye bir sayı bildirmiyor.</value></data>
+  <data name="rule.run-history.advice" xml:space="preserve"><value>brisk bu kaydı yalnızca okur; değiştirmez ve bunun için bir düzeltme sunmaz. Kayıttan aldığı şey kaç girdi olduğudur. Girdiler kodlanmış olarak saklanıyor ve brisk onları öyle bırakıyor.</value></data>
+  <data name="rule.run-history.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.run-history.headline.caption" xml:space="preserve"><value>Windows'un ne başlattığın kaydındaki girdi</value></data>
+  <data name="rule.recall-status.title.off" xml:space="preserve"><value>Recall veri analizi bu makinede ilkeyle kapatılmış</value></data>
+  <data name="rule.recall-status.title.on" xml:space="preserve"><value>Recall veri analizi bu makinede ilkeyle kapatılmamış</value></data>
+  <data name="rule.recall-status.title.unread" xml:space="preserve"><value>Recall veri analizinin durumu belirlenemedi</value></data>
+  <data name="rule.recall-status.evidence.off" xml:space="preserve"><value>brisk Windows'un Recall veri analizini kapatmak için kullandığı ilke değerini okudu; değer kapatacak şekilde ayarlı. brisk ilkenin kendisini okur, ötesini değil: bu Windows sürümünde Recall'ın olup olmadığını bu okuma söyleyemez. brisk bunu değiştirmeyi önermiyor — ayar yeni, sürümden sürüme değişiyor ve brisk sonradan doğrulayamayacağı bir değişikliği yapmaz.</value></data>
+  <data name="rule.recall-status.evidence.on" xml:space="preserve"><value>brisk Windows'un Recall veri analizini kapatmak için kullandığı ilke değerini okudu; değer açık bırakacak şekilde ayarlı. brisk ilkenin kendisini okur, ötesini değil: bu Windows sürümünde Recall'ın olup olmadığını bu okuma söyleyemez. brisk bunu değiştirmeyi önermiyor — ayar yeni, sürümden sürüme değişiyor ve brisk sonradan doğrulayamayacağı bir değişikliği yapmaz.</value></data>
+  <data name="rule.recall-status.evidence.unread" xml:space="preserve"><value>brisk Windows'un Recall veri analizini kapatmak için kullandığı ilke değerini aradı ve orada iki yönden birine ayarlı diye okuyabileceği bir şey bulamadı. Bu değeri okuyamamak, ayarın kapalı olduğu anlamına gelmez; brisk onu kapalı diye bildirmiyor.</value></data>
+  <data name="rule.recall-status.advice" xml:space="preserve"><value>brisk bunu yalnızca bildirir, değiştirmeyi önermez. Ayar yeni ve sürümden sürüme değişiyor; brisk sonradan doğrulayamayacağı bir değişikliği yapmaz. Değiştirilebileceği yer Windows'un kendi Recall ayarıdır.</value></data>
+  <data name="rule.recall-status.headline.value.off" xml:space="preserve"><value>Kapalı</value></data>
+  <data name="rule.recall-status.headline.value.on" xml:space="preserve"><value>İzinli</value></data>
+  <data name="rule.recall-status.headline.caption" xml:space="preserve"><value>Recall veri analizi — ilkenin söylediği</value></data>
+  <data name="rule.delivery-optimization.title" xml:space="preserve"><value>Windows bu ay bu makineden başka makinelere veri yükledi</value></data>
+  <data name="rule.delivery-optimization.title.unread" xml:space="preserve"><value>Bu makinenin başka makinelere ne kadar yüklediği belirlenemedi</value></data>
+  <data name="rule.delivery-optimization.evidence" xml:space="preserve"><value>Delivery Optimization, Windows'un bu makineden başka makinelere içerik yüklediği bölümüdür. Windows bu yolla ne kadar yüklediğinin sayacını tutuyor ve içinde bulunulan takvim ayı için bu sayaç {0} gösteriyor. brisk yalnızca bu sayacı okur, ötesini değil: o baytların hangi makinelere ulaştığını bu okuma söyleyemez.</value></data>
+  <data name="rule.delivery-optimization.evidence.unread" xml:space="preserve"><value>brisk Windows'un Delivery Optimization sayacını istedi ve okuyabileceği bir sayı alamadı. Hiçbir şey yüklememiş bir makine ile brisk'in soramadığı bir makine farklı şeylerdir; bu yüzden brisk 'hiç yok' diye bir sayı bildirmiyor.</value></data>
+  <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk bu sayacı yalnızca okur; Delivery Optimization'ı değiştirmez ve bunun için bir düzeltme sunmaz. Sayaçtan aldığı tek şey Delivery Optimization'ın bu ay başka makinelere yüklediği bayt miktarıdır — içinde ne olduğu asla.</value></data>
+  <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>bu ay bu makineden başka makinelere yüklendi</value></data>
+  <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik</value></data>
+  <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
+  <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>
+  <data name="privacy.switches.section" xml:space="preserve"><value>Windows'un kendi gizlilik anahtarları</value></data>
+  <data name="privacy.switches.note" xml:space="preserve"><value>brisk her anahtarı okur ve yazabilir, ötesini değil: bu makineden ne çıktığı, bu okumaların söyleyebileceği bir şey değil.</value></data>
+  <data name="privacy.switches.safe.note" xml:space="preserve"><value>Bunları kapatmak kullandığın hiçbir şeyi götürmez; brisk hepsini geri açabilir.</value></data>
+  <data name="privacy.switches.costly.section" xml:space="preserve"><value>Bunlar sana bir şeye mal olur</value></data>
+  <data name="privacy.switches.none" xml:space="preserve"><value>brisk'in buradan okuduğu her anahtar zaten kapalı okunuyor.</value></data>
+  <data name="privacy.turnoff.safe" xml:space="preserve"><value>{0} ayarı birden kapat</value></data>
+  <data name="privacy.turnoff.refused" xml:space="preserve"><value>Bunlardan {0} tanesi kapanmadı; denemenin bildirdiği şu: {1}</value></data>
+  <data name="privacy.readback.section" xml:space="preserve"><value>brisk neyi kapattı, tuttu mu</value></data>
+  <data name="privacy.setting.failed" xml:space="preserve"><value>Windows'un kendi ayarları bu makinede açılmadı.</value></data>
+  <data name="rule.advertising-id.done" xml:space="preserve"><value>Reklam kimliği kapatıldı</value></data>
+  <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Tanılama verisi ilkesi temel düzeye ayarlandı</value></data>
+  <data name="rule.tailored-experiences.done" xml:space="preserve"><value>Uyarlanmış deneyimler kapatıldı</value></data>
+  <data name="rule.speech-typing.done" xml:space="preserve"><value>Konuşma ve yazma kişiselleştirmesi kısıtlandı</value></data>
+  <data name="rule.location.done" xml:space="preserve"><value>Konum erişimi kapatıldı</value></data>
+  <data name="rule.activity-history.done" xml:space="preserve"><value>Etkinlik geçmişi ilkesi kapalı olarak ayarlandı</value></data>
+  <data name="readback.held" xml:space="preserve"><value>{0} gün önce kapattın, hâlâ kapalı</value></data>
+  <data name="readback.reverted" xml:space="preserve"><value>Bunu {0} tarihinde kapatmıştın; şu an yeniden açık.</value></data>
+  <data name="readback.ignored" xml:space="preserve"><value>Ayar kapalı yazıyor ama bu Windows sürümü onu dikkate almıyor. brisk aynı ayar için bu makinenin tuttuğu ikinci bir değeri okudu; o değer açık diyor.</value></data>
+  <data name="readback.unverified" xml:space="preserve"><value>Bunu {0} gün önce kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
 </root>

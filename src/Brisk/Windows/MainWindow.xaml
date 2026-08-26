@@ -166,14 +166,15 @@
              iconography, not localizable text. -->
         <StackPanel Grid.Row="3" Grid.Column="0" Margin="16,10,0,0"
                     VerticalAlignment="Top">
-            <!-- Five destinations, five names, five pictures. This tile used
-                 to be the wordmark: it wore [app.name] and carried no glyph,
-                 which put "brisk" on the screen twice — once here and once
-                 in the title bar just above it — and left the first nav
-                 entry as the only one that did not say where it goes. The
-                 divider under it went with it: it was there to
-                 separate identity from navigation, there is no identity here
-                 any more, and the selected tile's glow was swallowing it. -->
+            <!-- One tile per destination, each with a name and a picture.
+                 This tile used to be the wordmark: it wore [app.name] and
+                 carried no glyph, which put "brisk" on the screen twice —
+                 once here and once in the title bar just above it — and
+                 left the first nav entry as the only one that did not say
+                 where it goes. The divider under it went with it: it was
+                 there to separate identity from navigation, there is no
+                 identity here any more, and the selected tile's glow was
+                 swallowing it. -->
             <RadioButton x:Name="NavOverview" Style="{StaticResource NavRadio}"
                          GroupName="nav" IsChecked="True" Checked="Nav_Checked"
                          Tag="&#xE80F;"
@@ -187,6 +188,9 @@
             <RadioButton x:Name="NavClean" Style="{StaticResource NavRadio}"
                          GroupName="nav" Checked="Nav_Checked" Tag="&#xEDA2;"
                          Content="{Binding [nav.clean], Source={x:Static loc:Loc.Instance}}" />
+            <RadioButton x:Name="NavPrivacy" Style="{StaticResource NavRadio}"
+                         GroupName="nav" Checked="Nav_Checked" Tag="&#xE72E;"
+                         Content="{Binding [nav.privacy], Source={x:Static loc:Loc.Instance}}" />
             <RadioButton x:Name="NavSettings" Style="{StaticResource NavRadio}"
                          GroupName="nav" Checked="Nav_Checked" Tag="&#xE713;"
                          Content="{Binding [nav.settings], Source={x:Static loc:Loc.Instance}}" />
@@ -199,6 +203,7 @@
             <views:HealthPage x:Name="HealthView" Visibility="Collapsed" />
             <views:PerfPage x:Name="PerfView" Visibility="Collapsed" />
             <views:CleanPage x:Name="CleanView" Visibility="Collapsed" />
+            <views:PrivacyPage x:Name="PrivacyView" Visibility="Collapsed" />
             <views:SettingsPage x:Name="SettingsView" Visibility="Collapsed" />
         </Grid>
         <!-- The window's Topmost is bound to the same PendingConfirmation

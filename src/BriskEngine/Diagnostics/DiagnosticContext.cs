@@ -14,4 +14,5 @@ public sealed record DiagnosticContext(
     IFileProbe Files,
     IProcessLister RunningApps,
     IMemoryIntegrityProbe MemoryIntegrity,
+    IDeliveryOptimizationProbe DeliveryOptimization,
     string DataDirectory);   // %LOCALAPPDATA%\brisk — history store, journals

@@ -99,6 +99,12 @@ public static class CleanupTargetRegistry
         T("windows-update-cache", "Windows Update download cache", CleanupLevel.Deep, "System",
             new[] { @"%SystemRoot%\SoftwareDistribution\Download" },
             contents: true, regen: true, admin: true),
+        // Shares its id string with DeliveryOptimizationRule, which reports
+        // how much this machine UPLOADED. Separate registries, so nothing
+        // collides. REASONED, NOT OBSERVED: that rule's number is a monthly
+        // total of bytes already sent to peers, so deleting cached files
+        // should not change it — nobody here has emptied this cache and
+        // re-read the counter to confirm.
         T("delivery-optimization", "Delivery Optimization cache", CleanupLevel.Deep, "System",
             new[] { @"%SystemRoot%\ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache" },
             contents: true, regen: true, admin: true),

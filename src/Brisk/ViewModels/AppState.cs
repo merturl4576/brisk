@@ -354,11 +354,12 @@ public sealed class AppState : ViewModelBase
                 }
             }
 
-            // Without this, both findings pages keep showing "Displays raised
-            // to their highest refresh rate" as an active, undoable fix for a
-            // mode that went back minutes ago. Only a scan repopulates those
-            // rows, and nothing scans on a timer, so the claim would stand
-            // until something unrelated happened to trigger one.
+            // Without this, the pages that carry the display fix keep
+            // showing "Displays raised to their highest refresh rate" as an
+            // active, undoable fix for a mode that went back minutes ago.
+            // Only a scan repopulates those rows, and nothing scans on a
+            // timer, so the claim would stand until something unrelated
+            // happened to trigger one.
             // The rescan runs first, so the pages are already telling the
             // truth by the time the sentence explaining it arrives.
             if (!kept) await RescanAsync();

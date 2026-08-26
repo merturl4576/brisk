@@ -9,6 +9,7 @@
   <data name="nav.health" xml:space="preserve"><value>Health</value></data>
   <data name="nav.performance" xml:space="preserve"><value>Performance</value></data>
   <data name="nav.clean" xml:space="preserve"><value>Storage</value></data>
+  <data name="nav.privacy" xml:space="preserve"><value>Privacy</value></data>
   <data name="nav.settings" xml:space="preserve"><value>Settings</value></data>
   <data name="chrome.minimize" xml:space="preserve"><value>Minimize</value></data>
   <data name="chrome.maximize" xml:space="preserve"><value>Maximize</value></data>
@@ -42,6 +43,7 @@
   <data name="overview.report.card.failed" xml:space="preserve"><value>The card could not be saved: {0}</value></data>
   <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
+  <data name="flyout.findings.only" xml:space="preserve"><value>{0} findings</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Last scan: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Scanning…</value></data>
@@ -61,6 +63,7 @@
   <data name="health.notice.section" xml:space="preserve"><value>What brisk can only report</value></data>
   <data name="finding.details" xml:space="preserve"><value>Details</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
+  <data name="finding.action.windowssetting" xml:space="preserve"><value>Open Windows privacy settings</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Fixing…</value></data>
   <data name="finding.undoing" xml:space="preserve"><value>Undoing…</value></data>
   <data name="health.crosslink" xml:space="preserve"><value>{0} more findings in Performance →</value></data>
@@ -257,4 +260,78 @@
   <data name="report.unread.cpu" xml:space="preserve"><value>CPU temperature — not read. The driver that reads it will not load while memory integrity is on; brisk could not confirm that is the reason here.</value></data>
   <data name="report.unread.cpu.integrity-on" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is on; the driver that reads it is on Microsoft's vulnerable-driver blocklist.</value></data>
   <data name="report.unread.cpu.integrity-off" xml:space="preserve"><value>CPU temperature — not read. Memory integrity is off here, so the usual reason is ruled out; brisk cannot tell what did it.</value></data>
+  <data name="rule.advertising-id.title" xml:space="preserve"><value>The advertising ID is not switched off</value></data>
+  <data name="rule.advertising-id.evidence" xml:space="preserve"><value>brisk read the advertising ID switch on this machine and it does not read as off: the value is either something other than off, or not set at all. brisk reads the setting itself and nothing past it; what any app does with it is not something brisk can see from here. Switching it off writes one value and can be undone.</value></data>
+  <data name="rule.advertising-id.advice" xml:space="preserve"><value>brisk can switch this off and switch it back on again. brisk counts it among the settings whose being off takes nothing away that you use.</value></data>
+  <data name="rule.diagnostic-level.title" xml:space="preserve"><value>The diagnostic data level is not held at the basic level</value></data>
+  <data name="rule.diagnostic-level.evidence" xml:space="preserve"><value>brisk read the diagnostic data policy on this machine: it is set above the basic level, or it is not set at all, and neither of those reads as held at basic. brisk reads the setting itself and nothing past it. Holding it at basic writes one value, needs administrator rights, and can be undone. What brisk re-reads on the next scan is the policy value it wrote; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="rule.diagnostic-level.advice" xml:space="preserve"><value>Setting this level needs administrator rights. What brisk re-reads on the next scan is the policy value it wrote; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="rule.tailored-experiences.title" xml:space="preserve"><value>Tailored experiences is not switched off</value></data>
+  <data name="rule.tailored-experiences.evidence" xml:space="preserve"><value>brisk read the tailored experiences switch on this machine and it does not read as off: the value is either something other than off, or not set at all. brisk reads the setting itself and nothing past it. Switching it off writes one value and can be undone.</value></data>
+  <data name="rule.tailored-experiences.advice" xml:space="preserve"><value>Windows calls this setting tailored experiences. brisk can switch it off and switch it back on again.</value></data>
+  <data name="rule.speech-typing.title" xml:space="preserve"><value>Speech and typing personalisation is not restricted</value></data>
+  <data name="rule.speech-typing.evidence" xml:space="preserve"><value>brisk read the two values this setting uses on this machine and at least one of them does not read as restricted: that value is either something other than the restricted number, or not set at all. brisk reads the settings themselves and nothing past them. Restricting it writes two values and can be undone.</value></data>
+  <data name="rule.speech-typing.advice" xml:space="preserve"><value>Windows calls this setting inking and typing personalisation. brisk writes both of its values and can write them back.</value></data>
+  <data name="rule.location.title" xml:space="preserve"><value>Location access is not switched off</value></data>
+  <data name="rule.location.evidence" xml:space="preserve"><value>brisk read the location consent on this machine and it does not read as denied. brisk reads the setting itself and nothing past it; what any app does with it is not something brisk can see from here. This switch costs you something — switch it off and Find my device stops working. It writes one value and can be undone.</value></data>
+  <data name="rule.location.advice" xml:space="preserve"><value>This is one of the two switches brisk counts as costing you something: Find my device stops working. That is the feature that locates this machine if it goes missing, and it needs location. brisk can switch location access off and switch it back on again.</value></data>
+  <data name="rule.location.cost" xml:space="preserve"><value>Find my device stops working</value></data>
+  <data name="rule.activity-history.title" xml:space="preserve"><value>Activity history is not switched off</value></data>
+  <data name="rule.activity-history.evidence" xml:space="preserve"><value>brisk read the two values this policy uses on this machine and at least one of them does not read as off. brisk reads the settings themselves and nothing past them. This switch costs you something — switch it off and Timeline ends. It writes two values, needs administrator rights, and can be undone. What brisk re-reads on the next scan is the policy it wrote, so it will report this switch as off once the write succeeds; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="rule.activity-history.advice" xml:space="preserve"><value>This is one of the two switches brisk counts as costing you something: Timeline ends. That is the list of what you had open that you can scroll back through, and brisk never reads it. Switching it off needs administrator rights. brisk can switch it off and switch it back on again. It is a policy, though: what brisk re-reads on the next scan is the policy it wrote, and whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="rule.activity-history.cost" xml:space="preserve"><value>Timeline ends</value></data>
+  <data name="rule.usb-history.title" xml:space="preserve"><value>Windows keeps a record of the USB storage devices attached to this machine</value></data>
+  <data name="rule.usb-history.title.unread" xml:space="preserve"><value>The number of recorded USB storage devices could not be established</value></data>
+  <data name="rule.usb-history.evidence" xml:space="preserve"><value>Windows keeps a record of the USB storage devices that have been attached to this machine. brisk counted {0} of them, and the oldest date it could read among them is {1}. brisk counts the records and never reads a device name.</value></data>
+  <data name="rule.usb-history.evidence.no-date" xml:space="preserve"><value>Windows keeps a record of the USB storage devices that have been attached to this machine. brisk counted {0} of them and could not read a date from any of those records, so it does not say how far back the record goes. brisk counts the records and never reads a device name.</value></data>
+  <data name="rule.usb-history.evidence.unread" xml:space="preserve"><value>brisk looked where Windows keeps its record of USB storage devices and found nothing there to count. A record with nothing in it and a record brisk could not read look the same from here, so brisk does not report a count of none.</value></data>
+  <data name="rule.usb-history.advice" xml:space="preserve"><value>brisk only reads this record; it does not change it and offers no fix for it. What it takes from the record is how many entries are in it and the oldest date it can read — never a device name.</value></data>
+  <data name="rule.usb-history.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.usb-history.headline.caption" xml:space="preserve"><value>USB storage devices recorded on this machine</value></data>
+  <data name="rule.run-history.title" xml:space="preserve"><value>Windows keeps a record of the programs you have started</value></data>
+  <data name="rule.run-history.title.unread" xml:space="preserve"><value>The number of records of programs you have started could not be established</value></data>
+  <data name="rule.run-history.evidence" xml:space="preserve"><value>Windows keeps a running record of the programs you start. brisk counted {0} entries across the two keys it keeps them in. The entries are stored encoded and brisk does not decode them — it counts them and reads none, so no program name is read or reported, and the count also covers whatever else Windows keeps in those two keys.</value></data>
+  <data name="rule.run-history.evidence.unread" xml:space="preserve"><value>brisk looked where Windows keeps its record of the programs you start and found nothing there to count. A record with nothing in it and a record brisk could not read look the same from here, so brisk does not report a count of none.</value></data>
+  <data name="rule.run-history.advice" xml:space="preserve"><value>brisk only reads this record; it does not change it and offers no fix for it. What it takes from the record is how many entries are in it. The entries are stored encoded, and brisk leaves them that way.</value></data>
+  <data name="rule.run-history.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.run-history.headline.caption" xml:space="preserve"><value>entries in Windows' record of what you have started</value></data>
+  <data name="rule.recall-status.title.off" xml:space="preserve"><value>Recall's data analysis is switched off by policy on this machine</value></data>
+  <data name="rule.recall-status.title.on" xml:space="preserve"><value>Recall's data analysis is not switched off by policy on this machine</value></data>
+  <data name="rule.recall-status.title.unread" xml:space="preserve"><value>Recall's data analysis state could not be established</value></data>
+  <data name="rule.recall-status.evidence.off" xml:space="preserve"><value>brisk read the policy value Windows uses to switch Recall's data analysis off, and it is set to switch it off. brisk reads the policy and nothing past it: whether this build of Windows has Recall at all is not something that read can tell you. brisk does not offer to change this one — the setting is new, it differs between builds, and brisk will not make a change it cannot check afterwards.</value></data>
+  <data name="rule.recall-status.evidence.on" xml:space="preserve"><value>brisk read the policy value Windows uses to switch Recall's data analysis off, and it is set to leave it on. brisk reads the policy and nothing past it: whether this build of Windows has Recall at all is not something that read can tell you. brisk does not offer to change this one — the setting is new, it differs between builds, and brisk will not make a change it cannot check afterwards.</value></data>
+  <data name="rule.recall-status.evidence.unread" xml:space="preserve"><value>brisk looked for the policy value Windows uses to switch Recall's data analysis off and found nothing there it can read as set either way. Not being able to read that value is not the same as the setting being switched off, and brisk does not report it as off.</value></data>
+  <data name="rule.recall-status.advice" xml:space="preserve"><value>brisk reports this one and does not offer to change it. The setting is new and differs between builds, and brisk will not make a change it cannot check afterwards. Windows' own Recall setting is where it can be changed.</value></data>
+  <data name="rule.recall-status.headline.value.off" xml:space="preserve"><value>Off</value></data>
+  <data name="rule.recall-status.headline.value.on" xml:space="preserve"><value>Allowed</value></data>
+  <data name="rule.recall-status.headline.caption" xml:space="preserve"><value>Recall data analysis — what the policy says</value></data>
+  <data name="rule.delivery-optimization.title" xml:space="preserve"><value>Windows uploaded data from this machine to other machines this month</value></data>
+  <data name="rule.delivery-optimization.title.unread" xml:space="preserve"><value>How much this machine uploaded to other machines could not be established</value></data>
+  <data name="rule.delivery-optimization.evidence" xml:space="preserve"><value>Delivery Optimization is the part of Windows that uploads content from this machine to other machines. Windows keeps a running count of what it uploaded that way, and for the current calendar month that counter reads {0}. brisk reads the counter and nothing past it: which machines those bytes went to is not something that read can tell you.</value></data>
+  <data name="rule.delivery-optimization.evidence.unread" xml:space="preserve"><value>brisk asked Windows for its Delivery Optimization counter and did not get a number back that it can read. A machine that uploaded nothing and a machine brisk could not ask are different things, so brisk does not report a count of none.</value></data>
+  <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk only reads this counter; it does not change Delivery Optimization and offers no fix for it. What it takes from the counter is how many bytes Delivery Optimization uploaded to other machines this month — never what was in them.</value></data>
+  <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>uploaded from this machine to other machines this month</value></data>
+  <data name="privacy.title" xml:space="preserve"><value>Privacy on this machine</value></data>
+  <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
+  <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>
+  <data name="privacy.switches.section" xml:space="preserve"><value>Windows' own privacy switches</value></data>
+  <data name="privacy.switches.note" xml:space="preserve"><value>brisk reads each switch and can write it, and nothing past that: what leaves this machine is not something those reads can tell you.</value></data>
+  <data name="privacy.switches.safe.note" xml:space="preserve"><value>Switching these off takes nothing away that you use, and brisk can switch every one of them back on.</value></data>
+  <data name="privacy.switches.costly.section" xml:space="preserve"><value>These cost you something</value></data>
+  <data name="privacy.switches.none" xml:space="preserve"><value>Every switch brisk reads here already reads as off.</value></data>
+  <data name="privacy.turnoff.safe" xml:space="preserve"><value>Switch all {0} off</value></data>
+  <data name="privacy.turnoff.refused" xml:space="preserve"><value>{0} of them did not switch off, and this is what the attempt reported: {1}</value></data>
+  <data name="privacy.readback.section" xml:space="preserve"><value>What brisk switched off, and whether it held</value></data>
+  <data name="privacy.setting.failed" xml:space="preserve"><value>Windows' own settings did not open on this machine.</value></data>
+  <data name="rule.advertising-id.done" xml:space="preserve"><value>Advertising ID switched off</value></data>
+  <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Diagnostic data policy set to basic</value></data>
+  <data name="rule.tailored-experiences.done" xml:space="preserve"><value>Tailored experiences switched off</value></data>
+  <data name="rule.speech-typing.done" xml:space="preserve"><value>Speech and typing personalisation restricted</value></data>
+  <data name="rule.location.done" xml:space="preserve"><value>Location access switched off</value></data>
+  <data name="rule.activity-history.done" xml:space="preserve"><value>Activity history policy set to off</value></data>
+  <data name="readback.held" xml:space="preserve"><value>You switched this off {0} days ago; it still reads as off.</value></data>
+  <data name="readback.reverted" xml:space="preserve"><value>You switched this off on {0}; it reads as on again now.</value></data>
+  <data name="readback.ignored" xml:space="preserve"><value>The setting reads as off, but this edition of Windows is not acting on it. brisk read a second value this machine keeps for the same setting, and that one reads as on.</value></data>
+  <data name="readback.unverified" xml:space="preserve"><value>You switched this off {0} days ago and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
 </root>

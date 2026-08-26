@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Brisk.ViewModels;
 using BriskEngine.Models;
 
 namespace Brisk.Services;
@@ -16,6 +17,16 @@ public sealed record FixAllResult(
 /// disabling known-heavy startup items (spec ruling). Advise-only findings
 /// are never touched. Safe-level cleaning is a separate button by design and
 /// must never be bundled in here.
+///
+/// Neither is a privacy setting. This button is about speed and hygiene, and
+/// the disclosure spec's action model is two-tier: the Privacy page carries
+/// its own button over the four consequence-free switches
+/// (PrivacyViewModel.IsConsequenceFree), and its own per-switch control for
+/// each of the two that cost the user something (Find my device, Timeline)
+/// with the loss named beside it. This exclusion never waited for those
+/// surfaces and does not lean on them now: a generic button cannot carry
+/// either consent, so it does not reach a privacy finding whether or not
+/// anything else can.
 public sealed class FixAllService
 {
     /// StartupBloatRule.Fix is exactly "disable every enabled known-heavy
@@ -40,9 +51,30 @@ public sealed class FixAllService
     /// heavy item is already off. The fix-all buttons (overview and health)
     /// query this instead of duplicating the predicate.
     public bool HasWork(ScanSnapshot snapshot) => snapshot.Findings.Any(f =>
-        f.Category != RuleCategory.Advise && f.CanFix
+        IsOneClickFixable(f)
         && (!string.Equals(f.RuleId, StartupBloatRuleId, StringComparison.OrdinalIgnoreCase)
             || EnabledHeavyNames().Count > 0));
+
+    /// The one predicate the FIX-ALL button reads, everywhere it appears:
+    /// HasWork and Run here, and the two places that COUNT that button's work
+    /// for the "{n} one-click fixable" line. Public for that reason — the
+    /// count and the action have to be the same question, or the sentence
+    /// beside the button promises clicks the button declines.
+    ///
+    /// NOT the only one-click predicate in brisk. The Gizlilik page's own
+    /// button walks PrivacyViewModel.IsConsequenceFree, which is the
+    /// complement of the exclusion below: this one refuses the whole privacy
+    /// topic and that one takes the Auto half of it. Two buttons carrying two
+    /// consents over two sets, and each counts itself — a single predicate
+    /// across both would have to promise one button's clicks beside the
+    /// other. Category is a consent level, not a topic,
+    /// and excluding by category would not do the job: all six of the wave's
+    /// privacy switches ship today, the four consequence-free ones as Auto
+    /// and the two that cost the user something as Confirm. Both levels are
+    /// inside the topic, so the topic has to be excluded by rule id.
+    public static bool IsOneClickFixable(DiagnosticFinding f) =>
+        f.Category != RuleCategory.Advise && f.CanFix
+        && !FindingSections.IsPrivacy(f);
 
     /// Callers guard dry-run and busy-state before calling; this always acts.
     public FixAllResult Run(ScanSnapshot snapshot)
@@ -52,7 +84,7 @@ public sealed class FixAllService
         var attempted = 0;
         var applied = 0;
         foreach (var finding in snapshot.Findings
-                     .Where(f => f.Category != RuleCategory.Advise && f.CanFix))
+                     .Where(IsOneClickFixable))
         {
             attempted++;
             FixingRule?.Invoke(finding);

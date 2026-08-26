@@ -1,13 +1,19 @@
 using System;
 using System.IO;
+using System.Linq;
 using Brisk.Cli;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Logging;
 using Xunit;
 
 namespace BriskEngine.Tests;
 
+/// In the "console" collection because Capture swaps the process-global
+/// Console.Out, and xUnit runs classes outside a shared collection at the
+/// same time — see CliHelpSwitchTests, the other class that swaps it.
+[Collection("console")]
 public sealed class ProgramFixTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-pf-").FullName;
@@ -95,6 +101,105 @@ public sealed class ProgramFixTests : IDisposable
         Assert.Equal(0, Program.Fix(
             new CliCommand("fix", RuleId: "display-refresh", Keep: true), ctx, Runner()));
         Assert.Equal(0, displays.PersistCalls);
+    }
+
+    /// `brisk fix --all` is a SECOND fix-all, and it does not go through the
+    /// GUI's FixAllService — that one lives in the Brisk project, excludes the
+    /// whole privacy topic by rule id, and Brisk.Cli does not reference it.
+    /// The CLI selects on RuleCategory alone, which is why the four
+    /// consequence-free switches ARE reached by `brisk fix --all --yes` and
+    /// are meant to be: nothing a user relies on stops working when an
+    /// advertising ID goes off.
+    ///
+    /// These two are the line. `--all` may never take Find my device or
+    /// Timeline away from somebody who typed --all and was shown no
+    /// consequence. Today they are outside the selection because they ship as
+    /// Confirm; this test is what makes that a guarantee rather than a
+    /// coincidence, and it fails the moment either rule is made Auto or the
+    /// selection stops filtering on the category.
+    [Theory]
+    [InlineData("location")]
+    [InlineData("activity-history")]
+    public void CliFixAll_NeverReachesASwitchThatCostsTheUserSomething(string ruleId)
+    {
+        // Not vacuous: the rule has to BE in the registry for its absence from
+        // the selection to mean anything. A typo'd id would otherwise pass
+        // this test by naming a rule that does not exist.
+        Assert.True(DiagnosticRuleRegistry.All.Any(r => r.Id == ruleId),
+            $"no rule with id '{ruleId}' is registered, so its absence from " +
+            "`fix --all` proves nothing");
+
+        var selected = Program.FixAllRules().Select(r => r.Id).ToArray();
+        Assert.False(selected.Contains(ruleId),
+            $"`brisk fix --all` reaches '{ruleId}' and would apply it on any " +
+            "machine it fires on, costing the user something the command " +
+            "never named");
+    }
+
+    /// The other half, so the guard above cannot pass by the selection being
+    /// empty: `fix --all` still reaches the switches that cost nothing.
+    [Fact]
+    public void CliFixAll_StillReachesTheSwitchesThatCostNothing()
+    {
+        var selected = Program.FixAllRules().Select(r => r.Id).ToArray();
+        foreach (var id in new[] { "advertising-id", "diagnostic-level",
+                                   "tailored-experiences", "speech-typing" })
+            Assert.True(selected.Contains(id),
+                $"`brisk fix --all` stopped reaching '{id}'");
+    }
+
+    /// `fix --rule <id> --yes` ACTED HAVING NAMED NO CONSEQUENCE. Without
+    /// --yes this path prints the finding's title and its evidence — which is
+    /// where the loss lives, in both languages, put there so that no CLI path
+    /// takes Find my device or Timeline away unwarned — and then asks for
+    /// --yes. With --yes it applied and printed "location: fixed" and nothing
+    /// else, so the one flag that makes the command act was the one that
+    /// removed the warning.
+    ///
+    /// location is the sharpest case and the one the ledger carried, but the
+    /// print is not conditional on the rule: the preview path it mirrors is
+    /// not either, and the finding is already in hand.
+    ///
+    /// The strings come off the SHIPPED rule rather than being quoted here,
+    /// and the order is asserted: a consequence printed after the write is
+    /// not a warning.
+    [Fact]
+    public void FixRule_WithYes_PrintsTheConsequence_BeforeItActs()
+    {
+        var registry = new FakeRegistry();
+        var ctx = TestContext.Empty() with { Registry = registry };
+        var finding = new LocationRule().Detect(ctx);
+        Assert.True(finding is not null,
+            "location reports nothing on an empty registry, so this test never " +
+            "reached the path that prints a finding");
+
+        var (code, output) = Capture(() => Program.Fix(
+            new CliCommand("fix", RuleId: "location", Yes: true), ctx, Runner()));
+
+        Assert.Equal(0, code);
+        Assert.Equal(LocationRule.Denied,
+            registry.GetString(LocationRule.KeyPath, LocationRule.ValueName));
+        Assert.Contains(finding!.Title, output);
+        Assert.Contains(finding.Evidence, output);
+        Assert.True(output.IndexOf(finding.Evidence, StringComparison.Ordinal)
+                < output.IndexOf("location: fixed", StringComparison.Ordinal),
+            "the consequence was printed after the write went in, which is a " +
+            $"record rather than a warning:{Environment.NewLine}{output}");
+    }
+
+    private static (int Code, string Output) Capture(Func<int> run)
+    {
+        var stdout = Console.Out;
+        var buffer = new StringWriter();
+        try
+        {
+            Console.SetOut(buffer);
+            return (run(), buffer.ToString());
+        }
+        finally
+        {
+            Console.SetOut(stdout);
+        }
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }

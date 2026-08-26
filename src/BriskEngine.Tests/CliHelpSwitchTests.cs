@@ -9,6 +9,9 @@ namespace BriskEngine.Tests;
 /// with "unknown command '--help'" is brisk being unhelpful about the one
 /// question it exists to answer. The translation lives in the console entry
 /// point rather than beside the window, so both executables inherit it.
+/// In the "console" collection because Capture swaps the process-global
+/// Console.Out — see ProgramFixTests, the other class that swaps it.
+[Collection("console")]
 public class CliHelpSwitchTests
 {
     [Theory]

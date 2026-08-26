@@ -230,6 +230,71 @@ public class LocTests
     // instead — English above four Turkish tiles, and green here; the key-set
     // test is the one that fails on it, measured with this very key.
     [InlineData("nav.overview")]
+    // The sixth tile, added with the Gizlilik page. A gap in the ENGLISH resx
+    // puts "nav.privacy" between Depolama and Ayarlar, above and below tiles
+    // that read fine.
+    [InlineData("nav.privacy")]
+    // The read-back's four lines. ReadBackTests reads these keys off disk from
+    // both files, which proves they are THERE; only this row proves the
+    // English one LOADS through ResourceManager, and the two are different
+    // gaps — see this theory's comment above. The Gizlilik page renders these
+    // four, one per ReadBackState, so a miss in the English resx now puts
+    // "readback.held" on screen where the sentence goes.
+    [InlineData("readback.held")]
+    [InlineData("readback.reverted")]
+    [InlineData("readback.ignored")]
+    [InlineData("readback.unverified")]
+    // The Gizlilik page's own strings. Every one of them is a heading, a
+    // button caption or a sentence with no other guard: Loc answers a miss
+    // with the key itself, so a gap prints "privacy.switches.section" over
+    // the switches instead of the sentence naming them.
+    [InlineData("privacy.title")]
+    [InlineData("privacy.hero.note")]
+    [InlineData("privacy.disclosure.section")]
+    [InlineData("privacy.switches.section")]
+    [InlineData("privacy.switches.note")]
+    [InlineData("privacy.switches.safe.note")]
+    [InlineData("privacy.switches.costly.section")]
+    [InlineData("privacy.switches.none")]
+    [InlineData("privacy.turnoff.safe")]
+    [InlineData("privacy.turnoff.refused")]
+    [InlineData("privacy.readback.section")]
+    // The `privacy.*` key this list went without while the page's headings
+    // were added: what the page says when Windows refuses to open its own
+    // Settings app. It is not a heading — it is the whole of the message the
+    // row's only action leaves behind — so a gap in the ENGLISH resx prints
+    // "privacy.setting.failed" where the reason goes, on the one path a
+    // reader reaches by clicking something that then did nothing.
+    // WhenWindowsSettingsDoNotOpen_ThePageSaysSo already refuses an echoed
+    // key there, but only in the language it builds (en) and only on that one
+    // command's path; this row holds the same value from the load list, where
+    // the rest of the page's copy is held. Neither reads the TURKISH value —
+    // see this theory's comment above: a Turkish-only gap renders the English
+    // sentence and stays green here, and ResxFiles_ExposeTheSameKeySet is
+    // what fails on it. (Both directions were watched: deleting the key from
+    // Strings.resx failed this row with Actual: "privacy.setting.failed";
+    // deleting it from Strings.tr.resx left it green.)
+    [InlineData("privacy.setting.failed")]
+    // The named loss beside each of the two switches that cost the user
+    // something. FindingRow reads these through the indexer and treats a miss
+    // as "this rule declares no cost" — so a gap here does not print a key,
+    // it silently removes the warning from the card. There is no louder
+    // failure available: the mechanism that lets every other rule have no
+    // cost line is the same one that would swallow these.
+    [InlineData("rule.location.cost")]
+    [InlineData("rule.activity-history.cost")]
+    // The six switches' past-tense labels. DoneLabel falls back to
+    // "Fixed: {title}" when a rule has no .done key, and a finding title is
+    // a sentence about the switch being ON — so a gap here puts "Fixed: The
+    // advertising ID is not switched off" on a read-back line whose own
+    // sentence says it has been off for three days. Read by the read-back
+    // block, the journal report and the report card alike.
+    [InlineData("rule.advertising-id.done")]
+    [InlineData("rule.diagnostic-level.done")]
+    [InlineData("rule.tailored-experiences.done")]
+    [InlineData("rule.speech-typing.done")]
+    [InlineData("rule.location.done")]
+    [InlineData("rule.activity-history.done")]
     public void ReassuranceKeys_ExistInBothLanguages(string key)
     {
         var loc = new Loc();

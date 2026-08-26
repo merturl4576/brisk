@@ -954,9 +954,17 @@
                                        Converter={x:Static views:BoolToVis.Instance}}" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                                     HorizontalAlignment="Right">
-                            <!-- Impact dots read as "how big is the problem" —
-                                 wrong frame for advice, so advise rows swap
-                                 them for the quiet category word instead. -->
+                            <!-- Impact dots read as "how big is the problem",
+                                 and a row only shows them where that is a
+                                 reading. Advise rows swap them for the quiet
+                                 category word instead; privacy rows have no
+                                 measured impact at all — ImpactStars is 1 on
+                                 every one of them because the field is
+                                 documented 1..5, not because anything was
+                                 measured. FindingRow.ShowsImpact answers for
+                                 both, and the binding is what stops ●○○○○
+                                 from claiming a measurement on the Gizlilik
+                                 page. -->
                             <TextBlock x:Name="ImpactDots" FontSize="10"
                                        VerticalAlignment="Center" Margin="0,0,12,0"
                                        Text="{Binding ImpactText}">
@@ -964,8 +972,8 @@
                                     <Style TargetType="TextBlock"
                                            BasedOn="{StaticResource Faint}">
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsAdvise}"
-                                                         Value="True">
+                                            <DataTrigger Binding="{Binding ShowsImpact}"
+                                                         Value="False">
                                                 <Setter Property="Visibility"
                                                         Value="Collapsed" />
                                             </DataTrigger>
@@ -1006,14 +1014,28 @@
                             </Path>
                         </StackPanel>
                         <!-- Title and its past-tense twin share one cell; the
-                             Fixed morph crossfades between them. -->
-                        <Grid Margin="10,0" VerticalAlignment="Center">
-                            <TextBlock x:Name="TitleText" Style="{StaticResource Body}"
-                                       Text="{Binding Title}" />
-                            <TextBlock x:Name="DoneText" Style="{StaticResource Body}"
-                                       Opacity="0" IsHitTestVisible="False"
-                                       Text="{Binding DoneTitle}" />
-                        </Grid>
+                             Fixed morph crossfades between them. Under them,
+                             for the rows that have one, the named loss: the
+                             two privacy switches that cost the user something
+                             say so on the CLOSED card, because a consequence
+                             behind a fold is a consequence the user can flip
+                             the switch without reading. A rule that declares
+                             no cost has no key and no line here. -->
+                        <StackPanel Margin="10,0" VerticalAlignment="Center">
+                            <Grid>
+                                <TextBlock x:Name="TitleText" Style="{StaticResource Body}"
+                                           Text="{Binding Title}" />
+                                <TextBlock x:Name="DoneText" Style="{StaticResource Body}"
+                                           Opacity="0" IsHitTestVisible="False"
+                                           Text="{Binding DoneTitle}" />
+                            </Grid>
+                            <TextBlock Margin="0,3,0,0" TextWrapping="Wrap"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource SeverityWarning}"
+                                       Text="{Binding CostText}"
+                                       Visibility="{Binding HasCost,
+                                           Converter={x:Static views:BoolToVis.Instance}}" />
+                        </StackPanel>
                     </DockPanel>
                 </ToggleButton>
                 <StackPanel Margin="36,0,16,14"
@@ -1056,9 +1078,13 @@
                                Margin="0,4,0,0" Text="{Binding Evidence}"
                                Visibility="{Binding IsDetailsShown,
                                    Converter={x:Static views:BoolToVis.Instance}}" />
-                    <!-- Fix is the only foreground action (round 9): a card
-                         never advertises Undo — that capability lives in the
-                         done-report rows' context menu, where it belongs. -->
+                    <!-- UNDO is never a foreground action on a card (round 9):
+                         that capability lives in the done-report rows'
+                         context menu, where it belongs. What is here is Fix
+                         and the two ways a card hands the reader somewhere
+                         else — brisk's own Depolama page, and Windows' own
+                         Settings app — each shown only on the rows that have
+                         one. -->
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Button x:Name="FixButton"
                                 Style="{StaticResource PrimaryButton}" Margin="0,0,8,0"
@@ -1073,6 +1099,21 @@
                                     Converter={x:Static views:BoolToVis.Instance}}"
                                 Content="{Binding [finding.action.storage],
                                     Source={x:Static loc:Loc.Instance}}" />
+                        <!-- The other kind of follow-up: the one that leaves
+                             brisk altogether. It opens Windows' own Settings
+                             app and stops there. The Recall row is what
+                             carries it — brisk reports that policy and
+                             refuses to write it, and this is the spec's
+                             answer to that refusal ("state only, with a link
+                             to Windows' own setting"). A ghost button beside
+                             Fix rather than a link glyph, because it is the
+                             same kind of thing "Open Storage" is: this card
+                             is done talking, here is where you go next. -->
+                        <Button Style="{StaticResource GhostButton}"
+                                Command="{Binding OpenWindowsSettingCommand}"
+                                Visibility="{Binding HasWindowsSettingAction,
+                                    Converter={x:Static views:BoolToVis.Instance}}"
+                                Content="{Binding WindowsSettingCaption}" />
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
@@ -1405,8 +1446,8 @@
          exception — a wordmark tile with its icon slot collapsed — and it
          was the one nav entry with no name of its own: it wore [app.name],
          which put "brisk" on the screen twice. The wordmark kept the title
-         bar, where names live, and the nav is five destinations with five
-         labels and five pictures. The label sits UNDER the glyph and WRAPS
+         bar, where names live, and every nav entry now says where it goes
+         with a label and a picture. The label sits UNDER the glyph and WRAPS
          rather than clips: Turkish runs longer than English ("Performans",
          "Depolama"), and an icon-only nav in an app whose whole point is
          being understandable would be a regression. -->

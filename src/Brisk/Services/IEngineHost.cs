@@ -20,12 +20,25 @@ public sealed record SensorStatus(bool CpuRead, bool GpuRead, bool? MemoryIntegr
 /// "Everything brisk tried to read, answered." on a shareable PNG. There is no
 /// default here that adds no claim, so there is no default: a caller that
 /// cannot say what the sensors did cannot build a snapshot.
+///
+/// ReadBack is required for the same reason and rides here for a second one.
+/// The read-back's whole claim is that the state it reports and the finding
+/// the rule reports come from ONE live read — ReadBack.StateOf asks the rule's
+/// own IsOn, "so a switch that is back on is exactly a switch brisk is
+/// reporting again, and the two surfaces cannot disagree". That holds only
+/// while both are taken in the same pass over the same context; a page that
+/// asked the host for a fresh read-back after the scan would be a second
+/// channel for one claim, and two channels for one claim is how the sensor
+/// notice and the report card came to contradict each other once already.
+/// An empty list is a claim too — "brisk has turned nothing off that it can
+/// re-read" — so there is no default for it either.
 public sealed record ScanSnapshot(
     IReadOnlyList<DiagnosticFinding> Findings,
     ScanResult Cleaner,
     int Health,
     DateTime CompletedUtc,
-    SensorStatus Sensors);
+    SensorStatus Sensors,
+    IReadOnlyList<ReadBackResult> ReadBack);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

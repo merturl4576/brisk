@@ -100,9 +100,17 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _revelationMoreText = "";
     private string _revelationEmptyText = "";
     private string _reportSavedText = "";
-    /// The rule id behind the revelation band; "" while the band is empty,
-    /// which is what keeps the link silent instead of navigating nowhere.
+    /// The rule id behind the revelation band, and "" for BOTH of the cases
+    /// with nowhere to go: no revelation at all, and a revelation no findings
+    /// page hosts. It used to say the empty id was "what keeps the link
+    /// silent" — it was not, and it never had been: the link was a Button on
+    /// a command with no canExecute, so it rendered enabled and swallowed the
+    /// click. HasRevelationLink is what withholds it now.
     private string _revelationRuleId = "";
+    /// Kept in step with _revelationRuleId by RevelationTarget and by nothing
+    /// else — the link's visibility, the command's CanExecute and the id the
+    /// click carries are three readings of one fact.
+    private bool _hasRevelationLink;
     /// Rule ids seen in the undoable list on the previous refresh; null until
     /// the first population so nothing animates at startup.
     private HashSet<string>? _seenUndoable;
@@ -138,10 +146,17 @@ public sealed class OverviewViewModel : ViewModelBase
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
         SaveReportCommand = new RelayCommand(SaveReport, () => HasSnapshot);
-        OpenFindingCommand = new RelayCommand(() =>
-        {
-            if (_revelationRuleId.Length > 0) OpenFindingRequested?.Invoke(_revelationRuleId);
-        });
+        // canExecute, not just a guard inside the body: a RelayCommand built
+        // without one answers CanExecute true forever, and the band's link is
+        // a Button bound to this command. A command that accepts the click
+        // and then does nothing is how the dead affordance got shipped once.
+        // Both arms read HasRevelationLink, so there is one fact and two
+        // readings of it rather than two predicates that can drift. Execute
+        // is guarded as well as CanExecute because a RelayCommand is a plain
+        // object: WPF asks first, a direct caller does not have to.
+        OpenFindingCommand = new RelayCommand(
+            () => { if (HasRevelationLink) OpenFindingRequested?.Invoke(_revelationRuleId); },
+            () => HasRevelationLink);
     }
 
     public ObservableCollection<ReportLine> ReportLines { get; } = new();
@@ -178,6 +193,15 @@ public sealed class OverviewViewModel : ViewModelBase
     public string RevelationMoreText { get => _revelationMoreText; private set => Set(ref _revelationMoreText, value); }
     public string RevelationEmptyText { get => _revelationEmptyText; private set => Set(ref _revelationEmptyText, value); }
     public RelayCommand OpenFindingCommand { get; }
+    /// Whether the band has anywhere to send a reader. The link's own
+    /// Visibility binds to this, so a revelation no page hosts shows the
+    /// number and the claim and NO link at all — rather than a live link
+    /// that swallows the click.
+    public bool HasRevelationLink
+    {
+        get => _hasRevelationLink;
+        private set => Set(ref _hasRevelationLink, value);
+    }
     /// Carries the rule id of the finding the band is showing: "see the
     /// evidence" has to open THAT card, so MainWindow routes to whichever
     /// page hosts the rule instead of to a fixed page name.
@@ -522,7 +546,27 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationMoreText = revelations.Count > 1
                 ? _loc.F("overview.revelation.more", revelations.Count - 1) : "";
             RevelationEmptyText = "";
-            _revelationRuleId = top.RuleId;
+            // Every picked finding has a page that hosts it, so every one of
+            // them gets a link. FindingSections routes a rule id to exactly
+            // one of the three findings pages — IsPerformance and IsPrivacy
+            // are the named topics, Sağlık is what is left — and MainWindow's
+            // handler has an arm for each.
+            //
+            // It was not always so. A privacy revelation used to be given an
+            // empty target and no link: MainWindow sent everything that was
+            // not a performance rule to Sağlık, whose filter excludes the
+            // privacy ids, so the link changed the page and opened nothing.
+            // The MECHANISM stays exactly where it was — a band with nowhere
+            // to send a reader still has to withhold the control rather than
+            // render a Button that swallows the click, which is the defect it
+            // was built for — and what changed is that a privacy finding now
+            // has somewhere to go. What it still answers for is the else
+            // below, and WithNoRevelationToShow_TheBandWithholdsItsLink_And
+            // TheCommandRefuses is what holds it there: for one commit that
+            // sentence had no test behind it anywhere, because the pair that
+            // used to assert the false case were rewritten into their
+            // opposites when the privacy finding got its page.
+            RevelationTarget(top.RuleId);
         }
         else
         {
@@ -530,23 +574,60 @@ public sealed class OverviewViewModel : ViewModelBase
             RevelationClaim = ""; RevelationEvidence = ""; RevelationMoreText = "";
             RevelationEmptyText = _loc.F("overview.revelation.none",
                 DiagnosticRuleRegistry.All.Count);
-            _revelationRuleId = "";
+            RevelationTarget("");
         }
         // Three-state headline driven by the same predicate as the fix-all
         // button: work to do → attention; only recommendations left →
-        // positive with a count; nothing at all → plain good news.
+        // positive with a count; neither → plain good news.
+        //
+        // "Neither" is not "nothing found". HasWork stopped seeing privacy
+        // findings when they were excluded from the button, so a machine
+        // whose only fixable findings are the four telemetry switches reads
+        // "good shape" here. That is the wave's red line working as written —
+        // the health score grades speed and hygiene and does not grade
+        // privacy, and a fast clean machine reads 100 whether or not
+        // telemetry is on. It no longer takes the {n} findings line below
+        // down with it: a count is not a grade.
+        //
+        // The "{n} findings" figure below counts the WHOLE snapshot, privacy
+        // included, and it always did. What changed with the Gizlilik page is
+        // that the count stopped promising rows nobody could reach: on a
+        // machine with one power-plan finding and four telemetry switches
+        // this said "5 findings · 1 one-click fixable", both numbers true and
+        // four of the five with no surface anywhere. The figure was left
+        // exactly as it is — the page is what made it honest, not an
+        // adjustment to the arithmetic, because subtracting privacy from the
+        // total would have understated what brisk found in order to match a
+        // gap in the GUI.
         var hasWork = _fixAll.HasWork(snapshot);
         var advise = snapshot.Findings.Count(f => f.Category == RuleCategory.Advise);
         StatusText = hasWork ? _loc["overview.status.attention"]
             : advise > 0 ? _loc.F("overview.status.advise", advise)
             : _loc["overview.status.good"];
         // The "{m} one-click fixable" phrase only appears while it is a
-        // promise (m > 0); "0 tanesi düzelir" would read as failure.
-        var fixable = snapshot.Findings.Count(f =>
-            f.Category != RuleCategory.Advise && f.CanFix);
+        // promise; that is HasWork's doing rather than a test on m, since
+        // HasWork is false exactly when this page's button would do nothing,
+        // and "0 tanesi düzelir" would read as failure.
+        //
+        // The COUNT no longer rides with it. It did: both were one line under
+        // that one condition, so the machine this wave was built for — twelve
+        // findings on it, not one of them work for this button — read "good
+        // shape" and counted nothing anywhere on the app's front page. The
+        // count stays and the promise goes, which is the rule FlyoutViewModel
+        // states and ships for its own copy of this line, over the key it
+        // already has.
+        //
+        // The same predicate THIS page's button obeys, not a second copy of
+        // it: "one-click fixable" counts what pressing "Fix all (safe)" will
+        // actually do. It is not a count of everything brisk can fix in one
+        // click, and has not been since the Gizlilik page shipped a button of
+        // its own over the set this predicate excludes by rule id.
+        var fixable = snapshot.Findings.Count(FixAllService.IsOneClickFixable);
         var parts = new List<string>();
         if (hasWork)
             parts.Add(_loc.F("flyout.findings", snapshot.Findings.Count, fixable));
+        else if (snapshot.Findings.Count > 0)
+            parts.Add(_loc.F("flyout.findings.only", snapshot.Findings.Count));
         // Honest figure (round 11): what the safe clean can take right now —
         // the summary line and the clean button's label share it.
         var reclaimable = CleanService.ReclaimableNowBytes(snapshot.Cleaner);
@@ -561,5 +642,15 @@ public sealed class OverviewViewModel : ViewModelBase
         FixAllCommand.RaiseCanExecuteChanged();
         CleanSafeCommand.RaiseCanExecuteChanged();
         SaveReportCommand.RaiseCanExecuteChanged();
+    }
+
+    /// The one place _revelationRuleId is written, so the id, the link's
+    /// visibility and the command's enabled state cannot disagree. An empty
+    /// id means there is nowhere to go.
+    private void RevelationTarget(string ruleId)
+    {
+        _revelationRuleId = ruleId;
+        HasRevelationLink = ruleId.Length > 0;
+        OpenFindingCommand.RaiseCanExecuteChanged();
     }
 }

@@ -63,7 +63,8 @@ public static class Program
             new RealProcessInfoProbe(), sensors, new RealDisplayProbe(),
             new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
-            new RealProcessLister(), new RealMemoryIntegrityProbe(), dataDir);
+            new RealProcessLister(), new RealMemoryIntegrityProbe(),
+            new RealDeliveryOptimizationProbe(), dataDir);
         var log = new ActionLog(Path.Combine(dataDir, "action-log.jsonl"));
         var fixRunner = new FixRunner(new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl")), log);
         var scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(),
@@ -307,7 +308,7 @@ public static class Program
         if (cmd.All)
         {
             var anyFailed = false;
-            foreach (var rule in DiagnosticRuleRegistry.All.Where(r => r.Category == RuleCategory.Auto))
+            foreach (var rule in FixAllRules())
             {
                 var finding = Safe(() => rule.Detect(ctx));
                 if (finding is null) continue;
@@ -339,10 +340,19 @@ public static class Program
                 Console.WriteLine($"{rule.Id}: no live finding — nothing to fix");
                 return 0;
             }
+            // The consequence, on BOTH paths. The loss lives in Evidence —
+            // "Find my device stops working", "Timeline ends" — and it was
+            // put there so that no CLI path takes it away unwarned; with
+            // --yes this printed the outcome and nothing else, so the flag
+            // that makes the command act was the flag that removed the
+            // warning. For every rule and not only the two Confirm ones,
+            // because the preview it mirrors does not special-case either and
+            // the finding is already in hand; and BEFORE the write, because a
+            // consequence printed after it is a record rather than a warning.
+            Console.WriteLine($"[{rule.Id}] {finding.Title}");
+            Console.WriteLine($"    {finding.Evidence}");
             if (!cmd.Yes)
             {
-                Console.WriteLine($"[{rule.Id}] {finding.Title}");
-                Console.WriteLine($"    {finding.Evidence}");
                 Console.WriteLine("add --yes to apply");
                 return 0;
             }
@@ -355,6 +365,28 @@ public static class Program
         Console.Error.WriteLine("brisk: fix requires --all or --rule <id>");
         return 2;
     }
+
+    /// Every rule `brisk fix --all` considers, and no other. Of these it
+    /// applies the ones whose Detect fires, and only with --yes; a rule that
+    /// is not here is not reachable by that command at all. Extracted from the
+    /// loop so a test can read the selection instead of inferring it from what
+    /// the command printed.
+    ///
+    /// This is NOT the GUI's fix-all. That one lives in Brisk's FixAllService,
+    /// which this project does not reference and cannot see, and it excludes
+    /// the whole privacy topic by rule id. This selects on the consent level
+    /// alone, so it does reach the four privacy switches that cost the user
+    /// nothing visible, and is meant to: nothing anybody relies on stops
+    /// working when an advertising ID goes off.
+    ///
+    /// The line it must never cross is the two switches that DO cost
+    /// something. `--all` names no consequence, so it may not take Find my
+    /// device or Timeline away; those rules ship as Confirm, and
+    /// ProgramFixTests asserts they stay out of what this returns.
+    public static IReadOnlyList<IDiagnosticRule> FixAllRules() =>
+        DiagnosticRuleRegistry.All
+            .Where(r => r.Category == RuleCategory.Auto)
+            .ToList();
 
     /// The display fix is applied for this session only, because the mode that
     /// blanks a screen must not also be the mode the machine boots into. The

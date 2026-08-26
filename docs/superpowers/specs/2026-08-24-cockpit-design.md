@@ -314,6 +314,13 @@ uses — into a gitignored folder, at a fixed 1.0 scale so images stay comparabl
 between sessions.
 
 **It must inherit the gauge-settling step.** `ReportCardRenderer.SettleGauges`
+
+> **Corrected 2026-08-26, from the Faz 3 wave.** `ReportCardRenderer.SettleGauges`
+> no longer exists. THIS wave's own Task 1 extracted it to `OffscreenLayout.Settle`
+> and deleted the private copy — so the sentence was made false by the wave that
+> wrote it, and stood for two waves after. The requirement it states is still
+> binding; only the name is wrong. Found by a reviewer reading every pre-Faz-3
+> document precisely because nobody had.
 exists because an animation clock only advances while a dispatcher is pumping
 frames: offscreen there is no frame loop, animated values stay at zero, and the
 lit arc renders **empty**. The report card once shipped exactly that — a dead

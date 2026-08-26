@@ -35,6 +35,7 @@ public sealed class ReportCardModel
     /// colouring the numeral the first time somebody renamed anything.
     public required string ScoreBrushKey { get; init; }
     public required IReadOnlyList<CardLine> Findings { get; init; }
+    public required string FindingsMoreText { get; init; }
     public required string FindingsEmptyText { get; init; }
     public required IReadOnlyList<string> Unread { get; init; }
     public required IReadOnlyList<string> Fixes { get; init; }
@@ -51,23 +52,59 @@ public sealed class ReportCardModel
     /// look equally tidy; the render test weighs the column's desired height
     /// against the height the Grid gives it instead.
     ///
-    /// The findings section is already bounded: the picker takes five at
-    /// most, and the render test covers that maximum. The fix list is not —
-    /// it comes from the journal, it is uncapped, and a machine that has run
-    /// fix-all can carry eight or ten entries. So this is the budget, in
-    /// ROWS: the last row is spent on "and N more" whenever there are more
-    /// fixes than fit, so nothing is dropped without being counted.
+    /// THE BUDGET IS SHARED, because the frame does not grow. Three sections
+    /// compete for the column and they do not compete on equal terms.
+    ///
+    /// The findings are capped and count what they dropped. The fix list is
+    /// budgeted and counts what it dropped. The section between them does
+    /// NEITHER: the spec's fourth red line says an unreadable probe is never a
+    /// silent zero, so every line it has is printed, and the fix list is what
+    /// pays for them — one row given up per line taken, since an unread
+    /// sentence and a fix row are the same 28.61px. FixBudget has the measured
+    /// figures, and both terms of that trade are even.
+    ///
+    /// THAT TRADE HAS A FLOOR AND IS THEREFORE NOT A BOUND. FixBudget will not
+    /// take the fix list below one row. On a card carrying the findings'
+    /// overflow line that floor is reached AT nine unread lines — 9 - (9-1) -
+    /// 1 = 0, clamped to 1 — and at ten without it; past those, nothing is
+    /// left to pay and the column grows again. Unreachable on the shipped
+    /// rules, where the ceiling is the sensor line plus one per report-only
+    /// disclosure, and stated rather than assumed:
+    /// TheTrade_HasHeadroomForEveryUnreadLineTheShippedRulesCanProduce derives
+    /// that ceiling from the registry, builds its card WITH the overflow line
+    /// — the stricter of the two — and fails when it stops fitting. Said
+    /// plainly because the last sentence in this file that claimed a mechanism
+    /// it did not have hid a live clipping defect for a whole wave.
+    ///
+    /// This constant is the fix list's CEILING: what it gets on a card whose
+    /// sections above took the least they can — one unread sentence, and no
+    /// findings overflow. It gives way rather than the sections above because
+    /// it comes from the journal, is uncapped, and is the footnote on a card
+    /// whose subject is the numbers above it.
     public const int MaxFixRows = 9;
+
+    /// How many measured numbers the card leads with; the rest are counted on
+    /// a line of their own. Five is the most the card could show before this
+    /// cap existed — not by design but because exactly five shipped rules
+    /// carried a headline, which is what "the picker takes five at most" used
+    /// to describe. This wave's disclosures brought that count to nine, and a
+    /// sixth row is 52px the frame does not always have: a card with a full
+    /// fix list measured 758px against the 715px the Grid gives it, and the
+    /// rows past the edge are cut away in silence.
+    public const int MaxFindingRows = 5;
 
     public static ReportCardModel Build(ScanSnapshot snapshot,
         IReadOnlyList<UndoableFix> undoable, Loc loc)
     {
         var picked = RevelationPicker.Pick(snapshot.Findings);
         var findings = picked
+            .Take(MaxFindingRows)
             .Select(f => new CardLine(
                 LocalizedText.Headline(f.Headline!, loc).Value,
                 loc.Title(f.TitleKey, f.Title)))
             .ToList();
+        var hiddenFindings = picked.Count - findings.Count;
+        var unread = UnreadLines(snapshot, loc);
 
         return new ReportCardModel
         {
@@ -77,10 +114,17 @@ public sealed class ReportCardModel
             Health = snapshot.Health,
             ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health),
             Findings = findings,
+            // The overview's key, and the right one here: its Turkish counts
+            // FINDINGS out loud, which under this heading is the noun the line
+            // is about. That same Turkish is what made it the wrong key for
+            // the fix list below.
+            FindingsMoreText = hiddenFindings > 0
+                ? loc.F("overview.revelation.more", hiddenFindings) : "",
             FindingsEmptyText = findings.Count > 0 ? "" :
                 loc.F("overview.revelation.none", DiagnosticRuleRegistry.All.Count),
-            Unread = new[] { UnreadLine(snapshot.Sensors, loc) },
-            Fixes = FixRows(undoable, loc),
+            Unread = unread,
+            Fixes = FixRows(undoable, loc,
+                FixBudget(unread.Count, hiddenFindings > 0)),
         };
     }
 
@@ -95,7 +139,7 @@ public sealed class ReportCardModel
     /// maintainer actually reads the app in. English parity is what hid it, so
     /// the fixes list has its own key and its own Turkish noun.
     private static IReadOnlyList<string> FixRows(
-        IReadOnlyList<UndoableFix> undoable, Loc loc)
+        IReadOnlyList<UndoableFix> undoable, Loc loc, int budget)
     {
         var rows = undoable
             .OrderByDescending(f => f.FixedAtUtc)
@@ -103,18 +147,83 @@ public sealed class ReportCardModel
                 + " · " + f.FixedAtUtc.ToLocalTime()
                     .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
             .ToList();
-        if (rows.Count <= MaxFixRows) return rows;
+        if (rows.Count <= budget) return rows;
 
         // One row short of the budget, because the count needs a row of its
         // own. Truncating to the budget and appending the line would put
-        // MaxFixRows + 1 rows on the card — the overflow this exists to stop.
-        var shown = rows.Take(MaxFixRows - 1).ToList();
+        // budget + 1 rows on the card — the overflow this exists to stop.
+        var shown = rows.Take(budget - 1).ToList();
         shown.Add(loc.F("report.fixes.more", rows.Count - shown.Count));
         return shown;
     }
 
-    /// One line, always, naming which sensor stayed silent. Whenever the CPU
-    /// temperature went unread — alone or alongside the GPU — the line also
+    /// What the fix list may spend on this particular card, in ROWS, measured
+    /// on the real control: a finding row is 51.90px, and an unread sentence,
+    /// a fix line and the findings' overflow line are 28.61px each.
+    ///
+    /// So BOTH terms are an even trade. An unread line costs the fix list
+    /// exactly the row it takes, and so does the overflow line: it is charged
+    /// one 28.61px row and costs one.
+    ///
+    /// IT DID NOT ALWAYS. The overflow line wore the finding rows' 12px bottom
+    /// margin while the small rows it is styled like — same size, same muted
+    /// ink — wore 6px, so it was charged one small row and cost six pixels
+    /// more than one. Those six pixels came out of what the worst card had
+    /// left over. FindingsMore in Views/ReportCard.xaml wears "0,0,0,6" now,
+    /// which is one attribute and no other geometry, and
+    /// TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims holds the
+    /// difference between the two rows at zero.
+    ///
+    /// Every figure above is measured and guarded: that test re-measures all
+    /// four heights — the fix row included, which is the currency the trade
+    /// is paid in and was the last figure here with nothing checking it —
+    /// and the gap between the traded rows, on the real control, and bounds
+    /// what the worst card has left. This paragraph carried "29px
+    /// each" for a whole round with nothing checking it, which is the same
+    /// shape as the sentence that hid the clipping — and the reason the test
+    /// measures the gap as a number rather than trusting this prose is that
+    /// changing that margin has to turn it red.
+    ///
+    /// An even trade is still not a bound on its own. What keeps the worst
+    /// card inside the frame is the frame test, which measures the real
+    /// control and fails at build time; nothing in this file may lean on the
+    /// slack that trade leaves.
+    ///
+    /// Never below one. A card carrying fixes that showed none of them and
+    /// said nothing about it would be the silent drop this whole budget
+    /// exists to stop; at a budget of one the single row IS the count.
+    private static int FixBudget(int unreadLines, bool findingsOverflowed) =>
+        Math.Max(1, MaxFixRows - (unreadLines - 1) - (findingsOverflowed ? 1 : 0));
+
+    /// What brisk could not read, from the sensors and from the findings, in
+    /// that order. The sensor line is always here; a disclosure that reached
+    /// its source and came back with nothing joins it below.
+    ///
+    /// ONE CHANNEL. The disclosures arrive by the same predicate the Gizlilik
+    /// page bands its unreadable rows with, so the card and the page cannot
+    /// come to disagree about which probe went unread — the alternative was a
+    /// second list of "the unreadable ones" kept here, which is exactly the
+    /// drift the page refused to introduce.
+    ///
+    /// The rule's TITLE, which is rule-authored static text and carries no
+    /// reading, so the section obeys the same ban as the rest of the card:
+    /// this model reads headlines and titles and nothing else a finding
+    /// carries. Ordered by rule id, ordinal — the order the page's unreadable
+    /// band already falls into, since every row in it shares the floor that
+    /// page sorts on and its tie-break is all that decides them.
+    private static IReadOnlyList<string> UnreadLines(ScanSnapshot snapshot, Loc loc)
+    {
+        var lines = new List<string> { UnreadLine(snapshot.Sensors, loc) };
+        lines.AddRange(snapshot.Findings
+            .Where(PrivacyViewModel.IsUnreadableDisclosure)
+            .OrderBy(f => f.RuleId, StringComparer.Ordinal)
+            .Select(f => loc.Title(f.TitleKey, f.Title)));
+        return lines;
+    }
+
+    /// The SENSOR line — one of them, always, naming which sensor stayed
+    /// silent. Whenever the CPU temperature went unread — alone or alongside
+    /// the GPU — the line also
     /// carries the measured memory-integrity state, because that is the one
     /// reason brisk can actually name for a silent CPU sensor. A GPU-only
     /// silence carries no reason: a blocked kernel driver is not why a GPU

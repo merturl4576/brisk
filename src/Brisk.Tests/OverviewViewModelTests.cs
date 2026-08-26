@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
@@ -93,6 +95,64 @@ public class OverviewViewModelTests
         Assert.Equal(loc.F("overview.cleanspace", "2 KB"), vm.CleanSafeText);
     }
 
+    /// The same promise as the flyout's, on the surface that carries the
+    /// button: the summary may only count findings this button will act on,
+    /// and it does not act on a privacy setting at any consent level.
+    [Fact]
+    public async Task Summary_CountsOnlyWhatTheFixAllButtonWillActuallyDo()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+            TestData.Finding("advertising-id", cat: RuleCategory.Auto, canFix: true,
+                kind: FindingKind.Notice),
+            TestData.Finding("location", cat: RuleCategory.Confirm, canFix: true,
+                kind: FindingKind.Notice),
+        });
+        await state.ScanAsync();
+
+        Assert.Contains("3 findings", vm.SummaryText);
+        Assert.Contains("1 one-click fixable", vm.SummaryText);
+    }
+
+    /// THE OTHER HALF, and the machine this wave was built for: findings on
+    /// it, and not one of them is work for the button beside this line.
+    /// "Good shape" stays — the score grades speed and hygiene and does not
+    /// grade privacy — but the COUNT rode hasWork out with the promise, so a
+    /// machine with three findings counted none of them anywhere on the app's
+    /// front page.
+    ///
+    /// The rule is the one FlyoutViewModel already states and ships for its
+    /// own copy of this line: the count stays and the promise goes.
+    [Fact]
+    public async Task Summary_StillCountsTheFindings_WhenTheButtonHasNoWork()
+    {
+        var loc = EnglishLoc();
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[]
+            {
+                TestData.Finding("advertising-id", cat: RuleCategory.Auto,
+                    canFix: true, kind: FindingKind.Notice),
+                TestData.Finding("location", cat: RuleCategory.Confirm,
+                    canFix: true, kind: FindingKind.Notice),
+                TestData.Finding("thermals", cat: RuleCategory.Advise, canFix: false),
+            },
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        await state.ScanAsync();
+
+        // Not vacuous: the button really has nothing to do on this snapshot,
+        // which is the state that used to erase the count with it.
+        Assert.False(vm.FixAllCommand.CanExecute(null));
+
+        Assert.Contains(loc.F("flyout.findings.only", 3), vm.SummaryText);
+        Assert.Equal("3 findings", loc.F("flyout.findings.only", 3));
+        // The promise still goes: "0 one-click fixable" reads as a failure
+        // rather than as the absence of a claim.
+        Assert.DoesNotContain("one-click", vm.SummaryText);
+    }
+
     [Fact]
     public async Task Refresh_PopulatesHeroAndSummary()
     {
@@ -157,7 +217,7 @@ public class OverviewViewModelTests
         host.NextSnapshot = new ScanSnapshot(Array.Empty<DiagnosticFinding>(),
             new ScanResult(Array.Empty<TargetScanResult>()), 95,
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-            new SensorStatus(false, false, null));
+            new SensorStatus(false, false, null), Array.Empty<ReadBackResult>());
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);
@@ -894,6 +954,164 @@ public class OverviewViewModelTests
         vm.OpenFindingCommand.Execute(null);
 
         Assert.Equal("zz-fake", requested);
+        // A finding a page hosts gets a link, and the link is enabled.
+        Assert.True(vm.HasRevelationLink,
+            "a finding the findings pages carry was offered no link");
+        Assert.True(vm.OpenFindingCommand.CanExecute(null),
+            "the link is shown and the command behind it refuses the click");
+    }
+
+    /// A privacy revelation now has somewhere to go, and this is the test
+    /// that changed to say so.
+    ///
+    /// It used to assert the opposite, and the opposite was right at the
+    /// time: the disclosures carry a Headline, so one of them can lead this
+    /// band on a real machine, and MainWindow sent everything that was not a
+    /// performance rule to Sağlık, whose filter excludes the privacy ids. The
+    /// link changed the page and opened nothing, so no link was offered. The
+    /// Gizlilik page and MainWindow's third routing arm are what make the
+    /// link honest, and they land in the same commit as this rewrite.
+    ///
+    /// Both halves are still asserted, because the failure this pair was
+    /// built for cuts both ways: HasRevelationLink is what OverviewPage.xaml
+    /// binds the Button's Visibility to, and CanExecute is what a Button asks
+    /// before it lets itself be pressed. A link that is shown over a command
+    /// that refuses the click is the same dead affordance as a link that is
+    /// hidden over a command that would have worked.
+    ///
+    /// What is NOT asserted here is that the click lands on Gizlilik — this
+    /// view model raises a rule id and knows nothing about pages. That half
+    /// is MainWindow's, and TheBandsLink_OverAPrivacyFinding_OpensTheGizlilikPage
+    /// drives the real window for it.
+    [Fact]
+    public async Task OpenFinding_OverAPrivacyRevelation_OffersTheLinkAndCarriesTheId()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("usb-history", cat: RuleCategory.Advise, canFix: false,
+                kind: FindingKind.Notice,
+                headline: new Headline("47", "cap",
+                    "rule.usb-history.headline.value", new[] { "47" },
+                    "rule.usb-history.headline.caption", Array.Empty<string>())),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        string? requested = null;
+        vm.OpenFindingRequested += id => requested = id;
+        vm.OpenFindingCommand.Execute(null);
+
+        Assert.True(vm.HasRevelation, "the privacy finding did not reach the band at all");
+        Assert.Equal("47", vm.RevelationValue);
+        Assert.True(vm.HasRevelationLink,
+            "the band withheld its \"see the evidence\" link over a privacy " +
+            "finding, and the Gizlilik page carries one");
+        Assert.True(vm.OpenFindingCommand.CanExecute(null),
+            "the link is shown over a privacy finding and the command behind " +
+            "it refuses the click");
+        Assert.Equal("usb-history", requested);
+    }
+
+    /// THE OTHER SIDE OF THE SAME MECHANISM, and the one that had no test at
+    /// all for a commit.
+    ///
+    /// OverviewViewModel says of RevelationTarget that "the MECHANISM stays
+    /// exactly where it was — a band with nowhere to send a reader still has
+    /// to withhold the control rather than render a Button that swallows the
+    /// click, which is the defect it was built for". Between the Gizlilik
+    /// page landing and this test, nothing anywhere asserted
+    /// HasRevelationLink false: the rewrite above turned the two assertions
+    /// that did into their opposites, and a claim about a mechanism with no
+    /// witness is a claim about nothing.
+    ///
+    /// The reachable case is a scan with no revelation in it — no finding
+    /// carries a headline, so RevelationPicker returns none and the band goes
+    /// away. Both readings of the one fact are asserted, because they fail
+    /// differently: the Button's Visibility binds the flag, and CanExecute is
+    /// what a Button asks before it lets itself be pressed. The dead
+    /// affordance this branch shipped once was a live Button over a command
+    /// with no canExecute at all, so the command is DRIVEN as well as asked —
+    /// a RelayCommand is a plain object, and a direct caller never asks first.
+    [Fact]
+    public async Task WithNoRevelationToShow_TheBandWithholdsItsLink_AndTheCommandRefuses()
+    {
+        var (vm, host, state) = Build();
+        // Findings, but no headline on any of them: something to report and
+        // nothing to lead with, which is the machine this band goes quiet on.
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true),
+        }, new SensorStatus(true, true, null));
+        await state.ScanAsync();
+
+        var requested = new List<string>();
+        vm.OpenFindingRequested += id => requested.Add(id);
+
+        Assert.False(vm.HasRevelation,
+            "a finding with no headline reached the revelation band, so this " +
+            "test is no longer about a band with nothing to show");
+        Assert.False(vm.HasRevelationLink,
+            "the band offers \"see the evidence\" over no revelation at all — " +
+            "the link is a Button bound to this flag, and there is nothing " +
+            "for it to open");
+        Assert.False(vm.OpenFindingCommand.CanExecute(null),
+            "the command behind the band's link accepts a click over no " +
+            "revelation, which is the dead affordance the canExecute was " +
+            "added for");
+
+        vm.OpenFindingCommand.Execute(null);
+
+        Assert.Empty(requested);
+    }
+
+    /// The half of the fix that lives in markup, and the half nothing else
+    /// can see. HasRevelationLink is only worth anything if the Button
+    /// actually binds its Visibility to it: a typo'd binding path fails
+    /// SILENTLY in WPF — the binding resolves to nothing, the Visibility
+    /// setter never runs, and the link renders live again over a finding no
+    /// page hosts. Read off disk the way InstrumentSourceTests reads this
+    /// same page. Watched red by deleting the Visibility attribute:
+    /// `the band's link binds Visibility to "", not to HasRevelationLink`.
+    ///
+    /// The reflection line above it is NOT what catches a rename. The two
+    /// behaviour tests below read the property directly, so renaming it
+    /// breaks the build first — measured: `error CS1061: 'OverviewViewModel'
+    /// bir 'HasRevelationLink' tanımı içermiyor`. That line is there for the
+    /// day those tests change and the compiler stops holding the name.
+    [Fact]
+    public void TheBandsLink_BindsItsVisibilityToTheProperty_ThatDecidesIt()
+    {
+        const string property = "HasRevelationLink";
+
+        Assert.True(typeof(OverviewViewModel).GetProperty(property) is { } p
+                    && p.PropertyType == typeof(bool),
+            $"OverviewViewModel exposes no bool {property} for the page to bind");
+
+        var buttons = OverviewPageXaml().Descendants()
+            .Where(e => e.Name.LocalName == "Button"
+                && ((string?)e.Attribute("Command") ?? "").Contains("OpenFindingCommand",
+                    StringComparison.Ordinal))
+            .ToList();
+        // Counted rather than Single()d: Single throws where it should report,
+        // and "none" and "two" are different mistakes to have made.
+        Assert.True(buttons.Count == 1,
+            $"{buttons.Count} Buttons in OverviewPage.xaml bind OpenFindingCommand; " +
+            "the band's one link is what this test is about");
+
+        var visibility = (string?)buttons[0].Attribute("Visibility") ?? "";
+        Assert.True(visibility.Contains(property, StringComparison.Ordinal),
+            $"the band's link binds Visibility to \"{visibility}\", not to " +
+            $"{property} — it would render live over a finding no page hosts");
+    }
+
+    private static XElement OverviewPageXaml()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null;
+             dir = dir.Parent)
+            if (File.Exists(Path.Combine(dir.FullName, "brisk.sln")))
+                return XDocument.Load(Path.Combine(dir.FullName, "src", "Brisk",
+                    "Views", "OverviewPage.xaml")).Root!;
+        throw new InvalidOperationException("brisk.sln not found above test bin");
     }
 
     [Fact]

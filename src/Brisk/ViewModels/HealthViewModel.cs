@@ -20,6 +20,47 @@ public sealed class FindingRow : ViewModelBase
                 "stale-dev-caches" },
         StringComparer.OrdinalIgnoreCase);
 
+    /// The other direction the same idea runs in: advice whose follow-up is
+    /// not in brisk at all, but in a page of Windows' own Settings app. One
+    /// entry, and the reason it is one is the reason the entry exists —
+    /// RecallStatusRule reports the policy and refuses to write it, because
+    /// the surface is new, it differs between builds, and a fix brisk cannot
+    /// check afterwards is the one thing this project refuses to ship. The
+    /// spec's answer to that refusal is this link, in as many words: the row
+    /// shows "state only, with a link to Windows' own setting".
+    ///
+    /// The spec said that as "Recall appears HERE as state only, with a link
+    /// to Windows' own setting", under the switches block, and the "here" was
+    /// struck from that block: the page never put the row there, because
+    /// PrivacyViewModel.Band sends a finding carrying a Headline to the
+    /// disclosure band. The LINK half — the half this comment rests on — is
+    /// unchanged, and the spec's UI correction records both.
+    ///
+    /// THE URI IS THE PRIVACY ROOT AND NOT A RECALL PAGE, deliberately.
+    /// "ms-settings:privacy" is Privacy & security, which every Windows brisk
+    /// runs on has, and which is where Recall's own setting sits on the
+    /// builds that have Recall. A Recall-specific sub-page is something brisk
+    /// cannot check exists from here — an ms-settings URI Windows does not
+    /// know opens the Settings app on nothing and throws nothing — so
+    /// pointing at one would be brisk sending a reader somewhere it never
+    /// established was there. That is the same claim-without-evidence the
+    /// rule itself declines to make about the setting.
+    ///
+    /// THE CAPTION IS PART OF THE ENTRY, not a fixed string in the markup.
+    /// A destination and the words on the button that reaches it are one
+    /// decision: a second entry pointing anywhere else, over a caption
+    /// written for this one, would render a button naming a page it does not
+    /// open — and nothing would object, because a caption that is not a
+    /// function of the URI cannot disagree with it. Declaring both here is
+    /// what makes adding a destination without saying what its button says
+    /// impossible rather than merely unwise.
+    internal static readonly Dictionary<string, (string Uri, string CaptionKey)>
+        WindowsSettingRules = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["recall-status"] = ("ms-settings:privacy",
+                "finding.action.windowssetting"),
+        };
+
     private bool _isExpanded;
     private bool _isDetailsShown;
     private bool _isFixing;
@@ -28,7 +69,8 @@ public sealed class FindingRow : ViewModelBase
 
     public FindingRow(DiagnosticFinding finding, Loc loc, bool canUndo,
         Action<FindingRow> onFix, Action<FindingRow> onUndo,
-        Action<FindingRow>? onOpenStorage = null)
+        Action<FindingRow>? onOpenStorage = null,
+        Action<FindingRow>? onOpenWindowsSetting = null)
     {
         RuleId = finding.RuleId;
         Title = loc.Title(finding.TitleKey, finding.Title);
@@ -40,6 +82,22 @@ public sealed class FindingRow : ViewModelBase
             ? LocalizedText.Headline(headline, loc).Value : "";
         ImpactText = new string('●', finding.ImpactStars)
                    + new string('○', 5 - finding.ImpactStars);
+        // Whether the meter above is a reading at all. ImpactStars is
+        // documented 1..5 and measures expected PERFORMANCE impact — so the
+        // privacy rules, which cost no speed, all report ONE, and they report
+        // it because zero is outside the range rather than because anything
+        // was measured. Both engine families say so in as many words
+        // (TelemetrySwitchRule.Detect, PrivacyDisclosureRule.Disclosure).
+        // Rendered, that is ●○○○○ on every privacy row: a meter claiming a
+        // measurement nobody made, on the one page whose whole subject is
+        // brisk not claiming what it did not read.
+        //
+        // Advise rows lose it for a different reason — "how big is the
+        // problem" is the wrong frame for advice — and one property answers
+        // for both, because the question the card asks is the same one: does
+        // this row have an impact reading worth showing?
+        ShowsImpact = finding.Category != RuleCategory.Advise
+            && !FindingSections.IsPrivacy(finding);
         // Kind is read BEFORE Severity, and that order is the claim: Severity
         // still says how bad the thing is, but Kind says whether brisk is in a
         // position to call it a problem at all. v0.4 took the score penalty off
@@ -64,12 +122,40 @@ public sealed class FindingRow : ViewModelBase
         var hasAdviceKey = !string.Equals(advice, adviceKey, StringComparison.Ordinal);
         AdviceText = IsAdvise && hasAdviceKey ? advice : Evidence;
         HasDetails = IsAdvise && hasAdviceKey;
+        // What this switch takes away, in the rule's own words, for the rows
+        // that sit on the Privacy page's second tier. Same shape as the
+        // advice key above: a rule that declares no cost simply has no key,
+        // and the indexer answering with the key itself is what says so. No
+        // list of "the costly ones" lives here — the rule declares its own.
+        var costKey = $"rule.{finding.RuleId}.cost";
+        var cost = loc[costKey];
+        HasCost = !string.Equals(cost, costKey, StringComparison.Ordinal);
+        CostText = HasCost ? cost : "";
         HasStorageAction = IsAdvise && onOpenStorage is not null
             && StorageAdviceRules.Contains(finding.RuleId);
+        // Same three-part test as HasStorageAction above, for the same three
+        // reasons: the rule declares the destination, the row only advertises
+        // an action somebody is wired to perform, and IsAdvise is what keeps
+        // the link on a row brisk offers no fix for — a link beside a Fix
+        // button would be brisk pointing at the change it just declined to
+        // make.
+        var setting = IsAdvise && onOpenWindowsSetting is not null
+            && WindowsSettingRules.TryGetValue(finding.RuleId, out var declared)
+                ? declared : default;
+        WindowsSettingUri = setting.Uri ?? "";
+        // Resolved here rather than bound to a fixed key in the card, so the
+        // words on the button come from the same entry the click does. Row-
+        // computed like Title and CostText, and re-read for the same reason
+        // they are: AppState.SetLanguage raises Changed, and every row is
+        // rebuilt from it.
+        WindowsSettingCaption = setting.CaptionKey is { } key ? loc[key] : "";
+        HasWindowsSettingAction = WindowsSettingUri.Length > 0;
         FixCommand = new RelayCommand(() => onFix(this), () => CanFix);
         UndoCommand = new RelayCommand(() => onUndo(this), () => CanUndo);
         OpenStorageCommand = new RelayCommand(
             () => onOpenStorage?.Invoke(this), () => HasStorageAction);
+        OpenWindowsSettingCommand = new RelayCommand(
+            () => onOpenWindowsSetting?.Invoke(this), () => HasWindowsSettingAction);
     }
 
     public string RuleId { get; }
@@ -80,13 +166,36 @@ public sealed class FindingRow : ViewModelBase
     public string Evidence { get; }
     public string AdviceText { get; }
     public string ImpactText { get; }
+    /// Whether ImpactText is a reading rather than a placeholder — see the
+    /// constructor. The card binds the meter's visibility to this.
+    public bool ShowsImpact { get; }
     public string SeverityKey { get; }
     public string CategoryText { get; }
     public bool IsAdvise { get; }
+    /// The named loss beside a switch that costs the user something
+    /// ("Find my device stops working"), and false for every rule that
+    /// declares none.
+    public bool HasCost { get; }
+    public string CostText { get; }
     public bool CanFix { get; }
     public bool CanUndo { get; }
     public bool HasDetails { get; }
     public bool HasStorageAction { get; }
+    /// Whether this row points at a setting WINDOWS owns — the one action on
+    /// the Privacy page that is not a change brisk makes.
+    public bool HasWindowsSettingAction { get; }
+    /// The page of Windows' own Settings app the link opens, and "" for every
+    /// row that points nowhere.
+    public string WindowsSettingUri { get; }
+    /// What the link's button says, in the user's language — declared in the
+    /// same entry that names the URI, so a caption and a destination that
+    /// describe different pages are visible in one place rather than sitting
+    /// in two files. One declaration site is not a consistency check:
+    /// ("ms-settings:bluetooth", "finding.action.windowssetting") compiles and
+    /// renders "Open Windows privacy settings" over a button that opens
+    /// Bluetooth. What the entry makes impossible is adding a destination
+    /// without saying what its button says.
+    public string WindowsSettingCaption { get; }
     public bool HasHeadline { get; }
     /// The lead value in the user's language ("57 sn"); "" when the finding
     /// carries no headline — the card collapses the column then.
@@ -125,6 +234,7 @@ public sealed class FindingRow : ViewModelBase
     public RelayCommand FixCommand { get; }
     public RelayCommand UndoCommand { get; }
     public RelayCommand OpenStorageCommand { get; }
+    public RelayCommand OpenWindowsSettingCommand { get; }
 }
 
 public sealed class HealthViewModel : ViewModelBase

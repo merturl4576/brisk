@@ -100,6 +100,19 @@ public partial class App : Application
                 Loc.Instance, isDryRun, composition.Launcher);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
                 safeClean, bin, Loc.Instance, isDryRun);
+            // The third findings page. It takes no FixAllService: "Fix all
+            // (safe)" excludes the whole privacy topic by rule id, and this
+            // page's own button carries a different consent over a different
+            // set — the four switches with no visible consequence, and never
+            // the two that cost the user something.
+            //
+            // The link is the last argument and not an optional one: the
+            // Recall row points at Windows' own setting instead of at a fix,
+            // and a page wired without an opener would withhold that link
+            // without a word — which is exactly how it went missing for a
+            // whole commit.
+            var privacyVm = new PrivacyViewModel(state, composition.Host,
+                Loc.Instance, isDryRun, WindowsSettingsLink.Open);
             var settingsVm = new SettingsViewModel(composition.Settings,
                 composition.SettingsPath, composition.Launcher,
                 themeSetting =>
@@ -118,7 +131,7 @@ public partial class App : Application
 
             _flyout = new FlyoutWindow(flyoutVm);
             _main = new MainWindow(state, overviewVm, healthVm, perfVm, startupVm,
-                cleanVm, settingsVm, theme);
+                cleanVm, privacyVm, settingsVm, theme);
             flyoutVm.OpenDetailsRequested += () =>
             {
                 _flyout.Hide();

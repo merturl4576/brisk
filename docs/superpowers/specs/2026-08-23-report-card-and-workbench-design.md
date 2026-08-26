@@ -41,14 +41,35 @@ user's configured language.
 
 1. **Findings** — headline-bearing findings in RevelationPicker order, each
    as its lead value plus the rule's localized title. The picker and the
-   headlines come from v0.2 unchanged; the card introduces no selection
-   logic of its own. A scan with nothing to lead with keeps the section and
-   says so — the same honest empty line the Overview band uses.
+   headlines come from v0.2 unchanged. A scan with nothing to lead with keeps
+   the section and says so — the same honest empty line the Overview band uses.
+
+   > **Corrected 2026-08-26, by the Faz 3 wave.** This paragraph said *"the
+   > card introduces no selection logic of its own."* **It does now, and it
+   > had to.** `RevelationPicker.Pick` has no maximum — five was only how many
+   > shipped rules carried a headline when this was written, and Faz 3's
+   > disclosures took it to nine. The card's body column is a fixed 715 px
+   > with nothing that scrolls, so a six-finding card was already being
+   > sheared off silently, and the frame test could not see it because its
+   > fixture carried the same stale five. The card now caps the finding rows
+   > and prints a counted overflow line, which is selection logic. The
+   > sentence is left quoted rather than deleted, because it is the sentence
+   > that made the clipping invisible.
 2. **What brisk could not read** — the card's signature. Fed today by the
    sensor notice (the thermals story: which sensors did not answer and the
    measured reason when brisk has one). This section NEVER drops; when
    everything was readable it says so in one line. Honesty about the empty
    hand is the point of the section.
+
+   > **Corrected 2026-08-26, by the Faz 3 wave.** The word *"today"* above has
+   > expired. Faz 3 added the unreadable disclosure findings to this same
+   > section — deliberately through ONE channel rather than a second, because
+   > two channels for one claim is how the sensor notice and this card came to
+   > contradict each other once already. The sentence is quoted rather than
+   > rewritten, which is the correction this note is itself a correction of:
+   > the first version of this amendment edited that line in place, in a wave
+   > carrying a commit titled "the correction that condemned quiet rewrites
+   > gets corrected for quietly rewriting". Caught by a reviewer, not by me.
 3. **Applied fixes** — the fix journal's entries, newest first, title and
    date. When the journal is empty the section drops, header and all. The
    measured before/after effect belongs to a later wave; the row layout
@@ -75,6 +96,18 @@ Testing splits along the seam: the card **view model** (section content,
 ordering, the privacy filter, empty states) is fully unit-tested; the pixel
 side gets a smoke test — the PNG exists, has a valid header, and has
 non-trivial dimensions — run on an STA thread.
+
+> **Corrected 2026-08-26, by the Faz 3 wave.** The seam held; "a smoke test"
+> did not. The rendered side had already grown FOUR jobs the model cannot do
+> before this wave touched it: the lit arc, the finding-row template and the
+> score numeral's ink are read off the pixels, and the body column's desired
+> height is weighed against the height the Grid gives it — the one failure no
+> pixel count can see, because a clipped card and a card that fits look equally
+> tidy. Faz 3 added a fifth, the findings' overflow line, whose text is read off
+> the laid-out control because a misspelled binding there renders an empty row
+> instead of failing. **Four before, five after** — the first draft of this note
+> said three and four, having enumerated a set without counting it, which is the
+> same defect as the sentence it corrects.
 
 ## Surfaces — and the architectural constraint that shapes them
 
