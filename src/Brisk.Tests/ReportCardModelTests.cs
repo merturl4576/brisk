@@ -533,6 +533,12 @@ public class ReportCardModelTests
             PlantUsbInstance(reg, "Ven_Generic&Prod_Stick", $"instance-{i:00}");
         reg.SetString(RunHistoryRule.CountKeyPaths[0], "chrome.exe", "");
         reg.SetString(RunHistoryRule.CountKeyPaths[0], "puebzr.rkr", "");
+        // 1282 more, so the run count is the distinctive 1284 the assertions
+        // can find without matching a date or a score by accident — the usb
+        // count no longer reaches the card at all (RevelationPicker.NeverLeads),
+        // so run-history is the disclosure the count claims now ride on.
+        for (var i = 0; i < 1282; i++)
+            reg.SetString(RunHistoryRule.CountKeyPaths[0], $"entry-{i:0000}.rkr", "");
 
         var ctx = TestData.RegistryContext(reg);
         return TestData.Snapshot(
@@ -574,7 +580,11 @@ public class ReportCardModelTests
 
         var text = AllTextOn(card);
 
-        Assert.Contains("47", text);
+        Assert.Contains("1284", text);
+        // The usb COUNT stays off the card too — not a red line but the
+        // maintainer's 2026-08-26 call (RevelationPicker.NeverLeads): the
+        // record lives on the Gizlilik page and leads nothing shareable.
+        Assert.DoesNotContain("47", text);
         Assert.DoesNotContain("Kingston", text);
         Assert.DoesNotContain("DataTraveler", text);
         Assert.DoesNotContain("chrome.exe", text);
@@ -622,7 +632,7 @@ public class ReportCardModelTests
         var card = ReportCardModel.Build(SnapshotWithPlantedNames(),
             Array.Empty<UndoableFix>(), Loc("en"));
 
-        Assert.Equal("47", card.Findings[0].Lead);
+        Assert.Equal("1284", card.Findings[0].Lead);
         Assert.Equal(new[] { "Everything brisk tried to read, answered." }, card.Unread);
     }
 

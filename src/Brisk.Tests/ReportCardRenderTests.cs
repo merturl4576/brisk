@@ -524,6 +524,15 @@ public class ReportCardRenderTests
     private static IReadOnlyList<string> LongestTitledRuleIds(
         Brisk.Localization.Loc loc, int count) =>
         DiagnosticRuleRegistry.All.Select(r => r.Id)
+            // Asked of Pick itself, not of a copied ban list: an id whose
+            // headline the picker refuses (NeverLeads — usb-history since
+            // 2026-08-26) can never be a card row, so a worst case built on
+            // it would measure a card the model cannot produce.
+            .Where(id => RevelationPicker.Pick(new[]
+            {
+                TestData.Finding(id, cat: RuleCategory.Advise,
+                    canFix: false, headline: H("1")),
+            }).Count > 0)
             .OrderByDescending(id => loc.Title($"rule.{id}.title", id).Length)
             .ThenBy(id => id, StringComparer.Ordinal)
             .Take(count).ToList();

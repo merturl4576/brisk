@@ -60,38 +60,31 @@ public class RevelationPickerTests
     public void EmptyInput_EmptyOutput() =>
         Assert.Empty(RevelationPicker.Pick(Array.Empty<DiagnosticFinding>()));
 
-    /// WHERE THE USB COUNT SITS, one pair at a time rather than as a single
-    /// expected list, so a failure names the two rules that swapped.
-    ///
-    /// Third, and the reason is the whole of the decision: a slower boot and a
-    /// display running below its refresh rate are measurements the user can
-    /// act on today, and brisk leads with those. The count of USB devices
-    /// Windows has recorded is the strongest number brisk owns that the user
-    /// can do nothing about, so it leads the moment nothing actionable
-    /// outranks it.
-    ///
-    /// In every row the expected leader is the SECOND argument, so a picker
-    /// that had stopped sorting and returned its input could not pass this.
-    [Theory]
-    [InlineData("usb-history", "boot-degradation", "boot-degradation")]
-    [InlineData("usb-history", "display-refresh", "display-refresh")]
-    [InlineData("startup-bloat", "usb-history", "usb-history")]
-    [InlineData("disk-breakdown", "usb-history", "usb-history")]
-    [InlineData("memory-speed", "usb-history", "usb-history")]
-    public void TheUsbCount_SitsThirdInTheDeclaredOrder(
-        string first, string second, string leads)
+    /// The controller ranked usb-history third; the maintainer's machine
+    /// then showed what that buys — a count of 1 above real findings on
+    /// surfaces built to be read and shared — and he overturned the ranking
+    /// on the first live data (2026-08-26). The count now lives on the
+    /// Gizlilik page, which reads Headline itself and never asks Pick.
+    [Fact]
+    public void UsbHistory_IsNeverPicked_HoweverStrongItsNumber()
     {
-        var picked = RevelationPicker.Pick(new[] { F(first), F(second) });
+        var picked = RevelationPicker.Pick(new[]
+        {
+            F("usb-history", Severity.Warning, stars: 5, value: "47"),
+            F("disk-breakdown", Severity.Info, stars: 1, value: "58.1 GB"),
+        });
 
-        Assert.True(picked[0].RuleId == leads,
-            $"{first} against {second} led with {picked[0].RuleId}");
+        Assert.DoesNotContain(picked, f => f.RuleId == "usb-history");
+        Assert.Contains(picked, f => f.RuleId == "disk-breakdown");
     }
 
     /// The other two report-only disclosures stay OFF the declared list, which
     /// is the tail rank. That is as much a decision as usb-history's third
     /// place: a count of program records and a total of uploaded bytes are not
     /// numbers this project wants a scan to open with, and leaving them
-    /// unlisted is what puts them last.
+    /// unlisted is what puts them last. (usb-history has since gone
+    /// further — NeverLeads — on the maintainer's call; these two stay
+    /// merely unlisted, able to lead a machine where nothing else speaks.)
     ///
     /// What this holds is the CONSEQUENCE — behind memory-speed, the last rule
     /// on the list. Appending either id to the end of Priority leaves it green,
@@ -142,7 +135,13 @@ public class RevelationPickerTests
     public void Priority_IsExactlyTheOptingRules() =>
         Assert.Equal(new[]
         {
-            "boot-degradation", "display-refresh", "usb-history",
+            "boot-degradation", "display-refresh",
             "startup-bloat", "disk-breakdown", "memory-speed",
         }, RevelationPicker.Priority);
+
+    /// The ban list is as much a product decision as the order — pinned the
+    /// same way, for the same reason.
+    [Fact]
+    public void NeverLeads_IsExactlyTheOverturnedRule() =>
+        Assert.Equal(new[] { "usb-history" }, RevelationPicker.NeverLeads);
 }

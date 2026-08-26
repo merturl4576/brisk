@@ -989,11 +989,15 @@ public class OverviewViewModelTests
         var (vm, host, state) = Build();
         host.NextSnapshot = TestData.Snapshot(new[]
         {
-            TestData.Finding("usb-history", cat: RuleCategory.Advise, canFix: false,
-                kind: FindingKind.Notice,
-                headline: new Headline("47", "cap",
-                    "rule.usb-history.headline.value", new[] { "47" },
-                    "rule.usb-history.headline.caption", Array.Empty<string>())),
+            // delivery-optimization, not usb-history: the usb count is
+            // NeverLeads since 2026-08-26, and this test's claim is about the
+            // privacy-revelation link mechanism, which any leading privacy
+            // disclosure exercises.
+            TestData.Finding("delivery-optimization", cat: RuleCategory.Advise,
+                canFix: false, kind: FindingKind.Notice,
+                headline: new Headline("302 MB", "cap",
+                    "rule.delivery-optimization.headline.value", new[] { "302 MB" },
+                    "rule.delivery-optimization.headline.caption", Array.Empty<string>())),
         }, new SensorStatus(true, true, null));
         await state.ScanAsync();
 
@@ -1002,14 +1006,14 @@ public class OverviewViewModelTests
         vm.OpenFindingCommand.Execute(null);
 
         Assert.True(vm.HasRevelation, "the privacy finding did not reach the band at all");
-        Assert.Equal("47", vm.RevelationValue);
+        Assert.Equal("302 MB", vm.RevelationValue);
         Assert.True(vm.HasRevelationLink,
             "the band withheld its \"see the evidence\" link over a privacy " +
             "finding, and the Gizlilik page carries one");
         Assert.True(vm.OpenFindingCommand.CanExecute(null),
             "the link is shown over a privacy finding and the command behind " +
             "it refuses the click");
-        Assert.Equal("usb-history", requested);
+        Assert.Equal("delivery-optimization", requested);
     }
 
     /// THE OTHER SIDE OF THE SAME MECHANISM, and the one that had no test at
