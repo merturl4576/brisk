@@ -143,8 +143,9 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
                 "Windows keeps a record of the USB storage devices that have " +
                 $"been attached to this machine. brisk counted {counted} of them " +
                 "and could not read a date from any of those records, so it does " +
-                "not say how far back the record goes. brisk counts the records " +
-                "and never reads a device name.",
+                "not say how far back the record goes. brisk reads the record, " +
+                "device names included, and shows the names only on the Privacy " +
+                "page — never on anything built to be shared.",
                 new[] { counted }, headline);
 
         var date = oldest.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -153,8 +154,9 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
             $"rule.{Id}.evidence",
             "Windows keeps a record of the USB storage devices that have been " +
             $"attached to this machine. brisk counted {counted} of them, and the " +
-            $"oldest date it could read among them is {date}. brisk counts the " +
-            "records and never reads a device name.",
+            $"oldest date it could read among them is {date}. brisk reads the " +
+            "record, device names included, and shows the names only on the " +
+            "Privacy page — never on anything built to be shared.",
             new[] { counted, date }, headline);
     }
 

@@ -282,10 +282,10 @@
   <data name="rule.activity-history.cost" xml:space="preserve"><value>Timeline biter</value></data>
   <data name="rule.usb-history.title" xml:space="preserve"><value>Windows bu makineye takılan USB depolama aygıtlarının kaydını tutuyor</value></data>
   <data name="rule.usb-history.title.unread" xml:space="preserve"><value>Kayıtlı USB depolama aygıtı sayısı belirlenemedi</value></data>
-  <data name="rule.usb-history.evidence" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı; aralarında okuyabildiği en eski tarih {1}. brisk kayıtları yalnızca sayar, hiçbir aygıt adını okumaz.</value></data>
-  <data name="rule.usb-history.evidence.no-date" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı ve bu kayıtların hiçbirinden tarih okuyamadı; bu yüzden kaydın ne kadar geriye gittiğini söylemiyor. brisk kayıtları yalnızca sayar, hiçbir aygıt adını okumaz.</value></data>
+  <data name="rule.usb-history.evidence" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı; aralarında okuyabildiği en eski tarih {1}. brisk kaydı aygıt adları dahil okur ve adları yalnızca Gizlilik sayfasında gösterir — paylaşılmak için yapılmış hiçbir yüzeyde değil.</value></data>
+  <data name="rule.usb-history.evidence.no-date" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı ve bu kayıtların hiçbirinden tarih okuyamadı; bu yüzden kaydın ne kadar geriye gittiğini söylemiyor. brisk kaydı aygıt adları dahil okur ve adları yalnızca Gizlilik sayfasında gösterir — paylaşılmak için yapılmış hiçbir yüzeyde değil.</value></data>
   <data name="rule.usb-history.evidence.unread" xml:space="preserve"><value>brisk Windows'un USB depolama kaydını tuttuğu yere baktı ve sayacak bir şey bulamadı. İçi boş bir kayıt ile brisk'in okuyamadığı bir kayıt buradan aynı görünür; bu yüzden brisk 'hiç yok' diye bir sayı bildirmiyor.</value></data>
-  <data name="rule.usb-history.advice" xml:space="preserve"><value>brisk bu kaydı yalnızca okur; değiştirmez ve bunun için bir düzeltme sunmaz. Kayıttan aldığı şey kaç girdi olduğu ve okuyabildiği en eski tarihtir — hiçbir zaman bir aygıt adı değil.</value></data>
+  <data name="rule.usb-history.advice" xml:space="preserve"><value>brisk bu kaydı yalnızca okur; değiştirmez ve bunun için bir düzeltme sunmaz. Kayıttan aldığı şey sayı, okuyabildiği tarihler ve aygıt adlarıdır — adlar yalnızca Gizlilik sayfasında görünür, paylaşılmak için yapılmış hiçbir yüzeyde değil.</value></data>
   <data name="rule.usb-history.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.usb-history.headline.caption" xml:space="preserve"><value>bu makinede kayıtlı USB depolama aygıtı</value></data>
   <data name="rule.run-history.title" xml:space="preserve"><value>Windows başlattığın programların kaydını tutuyor</value></data>
@@ -315,7 +315,7 @@
   <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>
-  <data name="privacy.usb.devices.title" xml:space="preserve"><value>O kaydın tuttukları</value></data>
+  <data name="privacy.usb.devices.title" xml:space="preserve"><value>USB kaydının tuttukları</value></data>
   <data name="privacy.usb.device" xml:space="preserve"><value>{0} — ilk kayıt {1} · son görülme {2}</value></data>
   <data name="privacy.switches.section" xml:space="preserve"><value>Windows'un kendi gizlilik anahtarları</value></data>
   <data name="privacy.switches.note" xml:space="preserve"><value>brisk her anahtarı okur ve yazabilir, ötesini değil: bu makineden ne çıktığı, bu okumaların söyleyebileceği bir şey değil.</value></data>
