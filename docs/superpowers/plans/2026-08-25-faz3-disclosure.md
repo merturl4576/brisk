@@ -376,9 +376,12 @@ The whole mechanism, stated so nobody invents a scheduler:
 > not know. Also corrected by it: branch 1 as written grants `Held` on
 > `Detect`-null alone, even with the effective level at 3.
 >
-> A second defect in this section: `HealthScore.For` (line 101) does not exist —
-> the entry point is `HealthScore.Compute`. Task 1 caught it because its dispatch
-> said to use the real signature rather than the plan's.
+> A second defect, **not in this section** — Task 1, Step 3, line 101 (and the
+> same call again at 102): `HealthScore.For` does not exist; the entry point is
+> `HealthScore.Compute`. And the plan is owed more credit than the first draft
+> of this note gave it: line 113 **already** told the implementer to check the
+> real signature before writing the test, so the plan caught its own snippet.
+> Both corrections above were themselves corrected after a reviewer read them.
 
 That third branch is why `TelemetrySwitchRule` exposes its `Values` — the read-back needs to ask "is what I wrote still written?" separately from "is the setting on?".
 
@@ -505,7 +508,19 @@ This task exists because the spec's four red lines are the product, and a red li
 
 - [ ] **Step 1: No copy claims anything about what Microsoft can see**
 
-Parse both resx files. For every key beginning `rule.` whose id is in `PrivacyRuleIds.All`, plus every `readback.*` key — **and, corrected 2026-08-26, every `privacy.*` key: the page's own copy, which this parse as written missed, and which is where Task 7's deferred heading decision lived. Widened in Task 9's dispatch before it ran** — assert the value contains none of: `Microsoft` in the same sentence as a seeing/receiving verb, `göremez`, `görmüyor`, `artık göremez`, `no longer see`, `can't see`, `cannot see`, `stops sending`, `veri gitmiyor`. Keep the banned list in the test file with a comment naming the spec section, so the next person adding a string learns the rule from the failure message.
+Parse both resx files. For every key beginning `rule.` whose id is in `PrivacyRuleIds.All`, plus every `readback.*` key, assert the value contains none of: `Microsoft` in the same sentence as a seeing/receiving verb, `göremez`, `görmüyor`, `artık göremez`, `no longer see`, `can't see`, `cannot see`, `stops sending`, `veri gitmiyor`. Keep the banned list in the test file with a comment naming the spec section, so the next person adding a string learns the rule from the failure message.
+
+> **Corrected 2026-08-26. The parse above is too narrow, and the first version
+> of this correction edited the sentence in place instead of quoting it —
+> which is the form this wave has a commit titled "the correction that
+> condemned quiet rewrites gets corrected for quietly rewriting" about. Caught
+> by a reviewer, twice, on the same document.**
+>
+> The two families named cover the rules and the read-back. They do **not**
+> cover `privacy.*` — the page's own copy — and that is exactly where Task 7's
+> deferred heading decision lived. As written, the guard Task 7 deferred to
+> would never have seen the string it deferred. Widened to all three families
+> in Task 9's dispatch before it ran.
 
 Write the failure message to name the offending key **and** the offending phrase. A guard whose message does not name what it found sends the reader hunting, and this branch has shipped that four times.
 
