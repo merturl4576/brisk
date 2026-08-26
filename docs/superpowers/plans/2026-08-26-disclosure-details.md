@@ -51,7 +51,7 @@ that relies on it).
 - Consumes: `HealthViewModel.ScanCommand`, `.FixAllCommand`, `.CreateRestorePointFirst`, `.IsBusy`, `.State.IsScanning` — all already on the VM both pages share.
 - Produces: nothing later tasks use.
 
-- [ ] **Step 1: Write the failing source-guard test** (mirror the existing PanelSourceTests read-the-XAML pattern in that file):
+- [x] **Step 1: Write the failing source-guard test** (mirror the existing PanelSourceTests read-the-XAML pattern in that file):
 
 ```csharp
     /// The maintainer's first live look at 0.6.0: Performans had no way to
@@ -72,9 +72,9 @@ that relies on it).
 `src/Brisk/Views`; if it has none, mirror how it opens the other XAML files it
 reads.)
 
-- [ ] **Step 2: Run it, watch it fail** — `dotnet test src/Brisk.Tests -c Release --filter "FullyQualifiedName~PerfPage_CarriesTheSameActionBand"`. Expected: FAIL, ScanCommand absent.
+- [x] **Step 2: Run it, watch it fail** — `dotnet test src/Brisk.Tests -c Release --filter "FullyQualifiedName~PerfPage_CarriesTheSameActionBand"`. Expected: FAIL, ScanCommand absent.
 
-- [ ] **Step 3: Insert the band into PerfPage.xaml** — copy of HealthPage.xaml's band (same keys, no new resx), placed as the second `DockPanel.Dock="Top"` element, directly after the hero `Border`:
+- [x] **Step 3: Insert the band into PerfPage.xaml** — copy of HealthPage.xaml's band (same keys, no new resx), placed as the second `DockPanel.Dock="Top"` element, directly after the hero `Border`:
 
 ```xml
         <!-- The same action band Sağlık carries, from the same view model:
@@ -119,8 +119,8 @@ reads.)
 `health.fixall` is deliberately reused: FixAllService acts on the whole snapshot
 from any surface, so the label may not differ per page.
 
-- [ ] **Step 4: Full suite green** — `dotnet test -c Release`, 0 warnings.
-- [ ] **Step 5: Commit** (house-style narrative body).
+- [x] **Step 4: Full suite green** — `dotnet test -c Release`, 0 warnings.
+- [x] **Step 5: Commit** (house-style narrative body).
 
 ### Task 2: usb-history stops leading anything shareable
 
@@ -132,7 +132,7 @@ from any surface, so the label may not differ per page.
 - Consumes: `RevelationPicker.Pick(IEnumerable<DiagnosticFinding>)` — both `OverviewViewModel.cs:536` and `ReportCardModel.cs:99` call it; excluding here removes usb from BOTH the Overview lead and the card's picked rows. `PrivacyViewModel`'s banding reads `finding.Headline` directly, NOT Pick — the page row keeps its number. Do NOT touch `UsbHistoryRule`'s Headline.
 - Produces: `RevelationPicker.NeverLeads` (internal static readonly `string[]`), for tests to read.
 
-- [ ] **Step 1: Failing test:**
+- [x] **Step 1: Failing test:**
 
 ```csharp
     /// The controller ranked usb-history third; the maintainer's machine
@@ -161,8 +161,8 @@ from any surface, so the label may not differ per page.
 (Adapt the `TestData.Finding` headline plumbing to however RevelationPickerTests
 already builds headline-bearing findings — reuse its own helper.)
 
-- [ ] **Step 2: Watch it fail** (usb is picked today, and first).
-- [ ] **Step 3: Implement** — in `RevelationPicker`: remove `"usb-history"` from `Priority`; add above `Pick`:
+- [x] **Step 2: Watch it fail** (usb is picked today, and first).
+- [x] **Step 3: Implement** — in `RevelationPicker`: remove `"usb-history"` from `Priority`; add above `Pick`:
 
 ```csharp
     /// Rules whose number never leads any surface Pick feeds — today the
@@ -181,8 +181,8 @@ and in `Pick`, before the ordering: `.Where(f => Array.IndexOf(NeverLeads, f.Rul
 Rewrite the now-false "third, because…" comment block in `Priority` to point at
 `NeverLeads` (its history moves there); do not leave both stories standing.
 
-- [ ] **Step 4: Full suite** — expect fallout in picker/card/overview tests that fixed usb into expectations; update THEIR fixtures to keep asserting their own claims (ranking order, card row shape) without usb, never by weakening an assertion.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Full suite** — expect fallout in picker/card/overview tests that fixed usb into expectations; update THEIR fixtures to keep asserting their own claims (ranking order, card row shape) without usb, never by weakening an assertion.
+- [x] **Step 5: Commit.**
 
 ### Task 3: the DO counter says where the bytes went
 
@@ -294,6 +294,28 @@ carve-out beyond rule id).
   maintainer's OK for the spec sentence.
 
 ## Execution log
+
+### T1 — Performans gets the hands Sağlık always had (2026-08-26)
+
+Done inline by the controller. Commit `b5d7ae6`. Red watched:
+`PerfPage_CarriesTheSameActionBand_AsHealthPage` failed on the page source
+with ScanCommand absent. Band inserted exactly as planned (Sağlık's keys,
+no new resx). Green at 1282 (600 + 682), 0 warnings.
+
+### T2 — the usb count stops leading anything shareable (2026-08-26)
+
+Done inline by the controller. Commit `bed1fb2`. Reds watched TWICE by
+design: `UsbHistory_IsNeverPicked_HoweverStrongItsNumber` and the
+`NeverLeads` pin both red with the mechanism in and the ban list EMPTY
+(usb still picked), then green with the one id in. Six app-side fixtures
+had leaned on usb-led picks; each was moved to keep its own claim — the
+card's count assertions ride run-history (1284 entries planted so the
+count is distinctive), the worst-case render fixture asks Pick itself
+which headlines can ride (no copied ban list), and the privacy-revelation
+link test exercises the mechanism through delivery-optimization. The card
+fixture now also asserts the usb count's ABSENCE beside the names'.
+Green at 1279 (597 + 682) — the engine count fell by three because a
+five-row theory about usb's third place died with the ruling it pinned.
 
 ### T3 — the DO counter says where the bytes went (2026-08-26)
 
