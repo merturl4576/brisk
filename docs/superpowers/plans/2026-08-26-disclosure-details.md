@@ -262,7 +262,7 @@ carve-out beyond rule id).
 - Produces (app): `ScanSnapshot` gains `IReadOnlyList<UsbDeviceRecord> UsbDevices` — REQUIRED, no default (house rule: no default that adds no claim; an empty list claims "the record holds no devices brisk could read"). `EngineHost.ScanCoreAsync` fills it in the same pass, inside a catch that costs the list and not the scan (the lesson `d083da1` just paid for). The card model NEVER receives it — names cannot leak through a pipeline that never carries them.
 - Produces (VM): `PrivacyViewModel.UsbDeviceRows` (`ObservableCollection<string>`), formatted via new keys `privacy.usb.device` = EN `"{0} — first recorded {1} · last seen {2}"` / TR `"{0} — ilk kayıt {1} · son görülme {2}"`, absent dates rendered as the repo's dash `"—"`; and `privacy.usb.devices.title` = EN `"What that record holds"` / TR `"O kaydın tuttukları"`. Fold in `PrivacyPage.xaml` under the usb row's card, closed by default, Expander style matching the page.
 
-- [ ] **Step 0: Spec amendment — REQUIRES MAINTAINER OK on this exact text.** Red line 2 becomes:
+- [x] **Step 0: Spec amendment — REQUIRES MAINTAINER OK on this exact text.** Red line 2 becomes:
 
 > 2. **Numbers, never contents — on every surface built to be shared.** "47 USB
 >    devices" yes; device names never on the report card, in a headline, or in
@@ -276,11 +276,11 @@ carve-out beyond rule id).
 >    records' yes; the program list never. This already governs the report card
 >    and now governs the Privacy page.")*
 
-- [ ] **Step 1: Failing tests, red-first, in this order:** (a) `ReadDevices` returns one record per instance with the planted model name and both dates from a fake registry; a per-instance refusal costs the field/record, not the list; (b) `PrivacyViewModel` renders the planted name in `UsbDeviceRows`; (c) the EXISTING card plant test extended: the same snapshot's card output still contains no device name (`ReportCardModelTests`) — this is the amended red line as a test, page-yes-card-never in one fixture.
-- [ ] **Step 2: Watch each fail for its own reason.**
-- [ ] **Step 3: Implement engine read → snapshot channel → VM rows → XAML fold, in that order, committing when green.**
-- [ ] **Step 4: resx parity + full suite + `PrivacyRedLineTests` in full.**
-- [ ] **Step 5: Commit(s); the spec edit rides the commit that makes the page render names, never an earlier one.**
+- [x] **Step 1: Failing tests, red-first, in this order:** (a) `ReadDevices` returns one record per instance with the planted model name and both dates from a fake registry; a per-instance refusal costs the field/record, not the list; (b) `PrivacyViewModel` renders the planted name in `UsbDeviceRows`; (c) the EXISTING card plant test extended: the same snapshot's card output still contains no device name (`ReportCardModelTests`) — this is the amended red line as a test, page-yes-card-never in one fixture.
+- [x] **Step 2: Watch each fail for its own reason.**
+- [x] **Step 3: Implement engine read → snapshot channel → VM rows → XAML fold, in that order, committing when green.**
+- [x] **Step 4: resx parity + full suite + `PrivacyRedLineTests` in full.**
+- [x] **Step 5: Commit(s); the spec edit rides the commit that makes the page render names, never an earlier one.**
 
 ## Self-review notes
 
@@ -355,3 +355,129 @@ languages.
 - `RevelationPickerTests` and `OverviewViewModelTests` carry `"302 MB"` as a
   planted headline value for this rule. Still correct, still the total, left
   alone.
+
+### T4 — the USB records reach their owner, and only their owner (2026-08-26)
+
+**Commits** (branch `feat/disclosure-details`, on top of `65b1ca7`):
+
+- `1869475` the usb record starts naming what it holds, for the one reader
+  entitled to it — `UsbDeviceRecord`, `UsbHistoryRule.ReadDevices`,
+  `LastArrivalSubPath` (0066, marked UNVERIFIED), `InstallDate` refactored to
+  `Stamp(ctx, instanceKeyPath, subPath)`.
+- `13836d4` the snapshot grows the one channel a device name is allowed to
+  travel on — `ScanSnapshot.UsbDevices` required, `EngineHost` fills it in the
+  same pass, `TestData` and the two direct construction sites wired, the card's
+  planted fixture now CARRIES the names.
+- `2a1cd33` the record reaches its owner, behind a fold, and the spec says he
+  may — two resx keys in both files, `PrivacyViewModel.UsbDeviceRows`, the
+  fold in `PrivacyPage.xaml`, the page-yes/card-never fixture, the snapshot
+  render's new assertion — and **the spec's red line 2 amendment rides here**,
+  the first commit that makes the page render a name.
+
+**Reds watched:**
+
+1. `ReadDevices_*` (three tests) —
+   `error CS0117: 'UsbHistoryRule' bir 'ReadDevices' tanımı içermiyor` and
+   `error CS0117: 'UsbHistoryRule' bir 'LastArrivalSubPath' tanımı içermiyor`.
+   One compile failure for three tests is weaker than one reason each, so the
+   two claims that could have hidden behind a working enumeration were MEASURED
+   by breaking the code under them:
+   - guard removed from `Stamp`:
+     `ReadDevices_ADatePropertyItIsRefused_CostsTheDatesAndNotTheRecord` —
+     `System.Security.SecurityException : denied: HKLM\SYSTEM\CurrentControlSet
+     \Enum\USBSTOR\Ven_A&Prod_Stick\aaa\Properties\{83da6326-…}\0064`, thrown
+     out of `ReadDevices` itself.
+   - second read pointed back at 0064:
+     `ReadDevices_ADeviceWithOnlyAnInstallDate_ClaimsNoLastArrival` —
+     `"nothing was written at Properties\{83da6326-…}\0066 and brisk read a
+     last-arrival date of 9.05.2017 08:30:00 out of it"`.
+2. `ScanAsync_CarriesTheUsbDeviceRecords_FromTheSamePass` —
+   `error CS1061: 'ScanSnapshot' bir 'UsbDevices' tanımı içermiyor`.
+3. `TheUsbRecord_RendersEachDevice_WithItsModelAndBothDates` (+ the dash theory
+   and two siblings) —
+   `error CS1061: 'PrivacyViewModel' bir 'UsbDeviceRows' tanımı içermiyor`.
+4. `TheDeviceName_RendersOnThePrivacyPage_AndOnNothingTheCardCarries` — the
+   same CS1061 at `ReportCardModelTests.cs(643,31)`: the page did not render
+   the name. **Its card half could not be given a red**, and that is the point
+   of the amendment — nothing on the card side moved.
+5. `ThePrivacyPage_FoldsTheUsbRecordsAway_ClosedAndCollapsibleAndBound` —
+   `System.InvalidOperationException : Sequence contains no matching element`
+   at the `ToggleButton` lookup: no fold in the markup.
+6. `ThePrivacyPage_PhotographsAllThreeBlocks` — `"the fixture's snapshot
+   carries no USB device record, so this photograph cannot say where the record
+   is rendered"`.
+
+**Counts:** baseline 1284 (602 + 682) → 1287 (605 + 682) after `1869475` →
+1289 (605 + 684) after `13836d4` → **1299 (605 + 694)** after `2a1cd33`.
+0 warnings, `dotnet test -c Release`. `PrivacyRedLineTests` run alone:
+**42/42 green** — unchanged from T3, and the two new `privacy.*` keys are
+inside its copy-ban scope by predicate (nothing was added to a list to make
+them so).
+
+**Deviations from the plan, and why:**
+
+- **The fold sits under the whole disclosure block, not under the usb card.**
+  The plan says "under the usb disclosure row's card area", in
+  `PrivacyPage.xaml`. Those two cannot both be literal: the band is ORDERED BY
+  ITS NUMBERS, so the usb row is wherever its count puts it — second on the
+  fixture machine, between the program records and Recall — and a page-level
+  block can only follow the whole `ItemsControl`. Under the usb card itself
+  would mean the fold living in `FindingCard`, which is `Shared.xaml` and
+  belongs to four pages. So "that record" is read from a line that follows
+  three records rather than one. The markup comment says this at the site;
+  changing it is a call for the maintainer.
+- **Four extra guards nobody asked for**, each with its own red: two on
+  `EngineHost` (the channel is filled from the same pass; an unread record is
+  an empty list), one source-guard on the markup (a view model can be right
+  about `UsbDeviceRows` while nothing on the page binds them — the state the
+  Recall link shipped in), and one on the tall Gizlilik render (the fold is
+  LABELLED and CLOSED in the photograph, so "behind a fold that opens on
+  request" is a claim about the rendered page and not only about the markup).
+- **The spec's Guards section was extended too**, beyond the red-line-2 edit
+  Step 0 prescribes: its red-line-2 bullet named only the two card tests, which
+  after the amendment describes half a line. It now also names the page-yes /
+  card-never fixture.
+- **`ReadDevices` walks the registry a second time in the same scan** rather
+  than sharing `Detect`'s pass. `Detect`'s answer is a count and one earliest
+  date; a list of records cannot be recovered from it, and folding this in
+  would move a method a dozen tests pin. The cost is one extra enumeration of a
+  key holding tens of entries; `Detect`'s observable behaviour did not move and
+  every `UsbHistory_*` test passes untouched.
+- **The catch around the fill expects nothing, and says so.** `ReadDevices`
+  guards every read it makes, so nothing known reaches it. It is written for
+  where it SITS: outside the rule loop's catch, exactly where `ReadBack.For`
+  sat when one `SecurityException` took down an entire scan (`d083da1`).
+- **`TheRegistrySurfaces_AreTheOnesTheSpecNames` gained a row** for the
+  last-arrival path, so 0066 is pinned as a literal the way 0064 is.
+- **Dates are NOT converted to local time.** The usb row six lines above the
+  fold prints the rule's own unconverted stamp; converting here would put two
+  spellings of one record's date on one page. `ReadBackRow.LocalDate` converts
+  because what it dates is an act performed at a wall clock. The theory plants
+  08:30 UTC precisely because it is far enough from midnight to have shown the
+  shift.
+
+**Found, not touched:**
+
+- **The card never receives the list, and this was read rather than assumed.**
+  `ReportCardModel.Build` reads `Findings`, `CompletedUtc`, `Health` and
+  `Sensors` — four `snapshot.` accesses, all of them checked. `Brisk.Cli` has
+  **no reference to `ScanSnapshot` at all**, so `scan --json` serialises engine
+  findings and cannot reach this channel; the only `ReportCardModel.Build`
+  callers are `ReportRunner` and `OverviewViewModel`, both over a snapshot.
+- **No reflection guard over the privacy view model's strings exists.**
+  `AllTextOn_ReachesEveryStringTheModelExposes` is in `ReportCardModelTests`
+  and reflects over `ReportCardModel`, not over `PrivacyViewModel` — so
+  nothing had to be split or exempted on the page side, and nothing was.
+  `PrivacyRedLineTests` deliberately carries no copy of red line 2 (its own
+  header says a second copy would be worse than none), so it needed no edit
+  either; it was re-run in full and is green.
+- **`TheCard_CarriesCounts_AndNeverADeviceOrAProgramName` and
+  `PrivacyBan_EvidenceNamesAndPathsNeverReachTheCard` are semantically
+  untouched.** Their assertions are character-for-character what they were;
+  what changed is that the snapshot under them now CARRIES the names.
+- **Tasks 1 and 2 have no execution-log block and their checkboxes are
+  unticked**, though `b5d7ae6` and `bed1fb2` landed them. Left alone: not this
+  task's territory.
+- **The instance id still goes nowhere.** It is a serial number — it
+  identifies the stick rather than describing it — and neither the plan nor
+  the amended red line asked for it.
