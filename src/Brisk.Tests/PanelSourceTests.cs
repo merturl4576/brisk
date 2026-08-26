@@ -141,6 +141,20 @@ public sealed class PanelSourceTests
             "local attribute, which beats the Wrap that PanelHeader sets");
     }
 
+    /// The maintainer's first live look at 0.6.0: Performans had no way to
+    /// start a scan or run the safe fixes, while Sağlık — the same view
+    /// model behind a different filter — offered both. The two findings
+    /// pages carry the same action band now, and this reads the page source
+    /// so removing a button is a decision someone has to make in a diff.
+    [Fact]
+    public void PerfPage_CarriesTheSameActionBand_AsHealthPage()
+    {
+        var xaml = File.ReadAllText(Path.Combine(BriskDir(), "Views", "PerfPage.xaml"));
+        Assert.Contains("{Binding ScanCommand}", xaml);
+        Assert.Contains("{Binding FixAllCommand}", xaml);
+        Assert.Contains("{Binding CreateRestorePointFirst}", xaml);
+    }
+
     /// The cards on Sağlık, Performans and Depolama are not written on those
     /// pages: FindingCard and CompletionReport live in Shared.xaml, which is
     /// what makes "three pages change look without changing" true at all. So
