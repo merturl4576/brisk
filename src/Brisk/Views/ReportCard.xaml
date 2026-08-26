@@ -156,7 +156,7 @@
                          is, so a card whose findings all fit measures exactly
                          as it did before. -->
                     <TextBlock x:Name="FindingsMore"
-                               FontSize="17" TextWrapping="Wrap" Margin="0,0,0,12"
+                               FontSize="17" TextWrapping="Wrap" Margin="0,0,0,6"
                                Foreground="{StaticResource HeroMuted}"
                                Text="{Binding FindingsMoreText}">
                         <TextBlock.Style>

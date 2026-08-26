@@ -61,7 +61,7 @@ public sealed class ReportCardModel
     /// silent zero, so every line it has is printed, and the fix list is what
     /// pays for them — one row given up per line taken, since an unread
     /// sentence and a fix row are the same 28.61px. FixBudget has the measured
-    /// figures and the one term of it that is not an even trade.
+    /// figures, and both terms of that trade are even.
     ///
     /// THAT TRADE HAS A FLOOR AND IS THEREFORE NOT A BOUND. FixBudget will not
     /// take the fix list below one row. On a card carrying the findings'
@@ -158,38 +158,36 @@ public sealed class ReportCardModel
     }
 
     /// What the fix list may spend on this particular card, in ROWS, measured
-    /// on the real control: a finding row is 51.90px, an unread sentence and a
-    /// fix line are 28.61px each, and the findings' overflow line is 34.61px.
+    /// on the real control: a finding row is 51.90px, and an unread sentence,
+    /// a fix line and the findings' overflow line are 28.61px each.
     ///
-    /// So ONE of the two terms is an even trade and the other is not. An
-    /// unread line costs the fix list exactly the row it takes. The overflow
-    /// line costs 34.61 and is charged one 28.61px row, because it wears the
-    /// finding rows' 12px bottom margin rather than the 6px the small rows
-    /// use — an UNDER-CHARGE of 6.00px, and the whole of why the worst card
-    /// clears the frame by less than one row rather than by six pixels more.
+    /// So BOTH terms are an even trade. An unread line costs the fix list
+    /// exactly the row it takes, and so does the overflow line: it is charged
+    /// one 28.61px row and costs one.
     ///
-    /// THE REMEDY IS KNOWN AND DELIBERATELY NOT TAKEN HERE. It is one number:
-    /// FindingsMore in Views/ReportCard.xaml wears Margin="0,0,0,12" and the
-    /// unread and fix rows beside it wear "0,0,0,6"; matching them makes both
-    /// terms of the trade even. It is not taken in the commit that wrote this
-    /// paragraph because that commit changed no card geometry at all, and a
-    /// pixel change to the shipped card belongs in a commit somebody would
-    /// think to look for it in. Whoever takes it changes that one attribute and
-    /// nothing else, and TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDoc
-    /// Claims goes red until this paragraph moves with it — which is the whole
-    /// reason that test measures the gap as a number rather than trusting the
-    /// prose.
+    /// IT DID NOT ALWAYS. The overflow line wore the finding rows' 12px bottom
+    /// margin while the small rows it is styled like — same size, same muted
+    /// ink — wore 6px, so it was charged one small row and cost six pixels
+    /// more than one. Those six pixels came out of what the worst card had
+    /// left over. FindingsMore in Views/ReportCard.xaml wears "0,0,0,6" now,
+    /// which is one attribute and no other geometry, and
+    /// TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims holds the
+    /// difference between the two rows at zero.
     ///
-    /// Every figure above is measured and guarded:
-    /// TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims re-measures
-    /// all three heights and the 6.00 gap on the real control, and bounds what
-    /// the worst card has left. This paragraph carried "29px each" for a whole
-    /// round with nothing checking it, which is the same shape as the sentence
-    /// that hid the clipping.
+    /// Every figure above is measured and guarded: that test re-measures all
+    /// four heights — the fix row included, which is the currency the trade
+    /// is paid in and was the last figure here with nothing checking it —
+    /// and the gap between the traded rows, on the real control, and bounds
+    /// what the worst card has left. This paragraph carried "29px
+    /// each" for a whole round with nothing checking it, which is the same
+    /// shape as the sentence that hid the clipping — and the reason the test
+    /// measures the gap as a number rather than trusting this prose is that
+    /// changing that margin has to turn it red.
     ///
-    /// The under-charge is in the SAFE direction only because the frame test
-    /// measures the real control and fails at build time. It is not a rounding
-    /// allowance, and nothing else in this file may lean on it.
+    /// An even trade is still not a bound on its own. What keeps the worst
+    /// card inside the frame is the frame test, which measures the real
+    /// control and fails at build time; nothing in this file may lean on the
+    /// slack that trade leaves.
     ///
     /// Never below one. A card carrying fixes that showed none of them and
     /// said nothing about it would be the silent drop this whole budget

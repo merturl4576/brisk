@@ -288,13 +288,20 @@ say. The second was a live defect rather than a gap in the prose.
   past that. Unreachable on the shipped rules — the section's ceiling is the
   sensor line plus one per report-only disclosure — and `TheTrade_HasHeadroom
   ForEveryUnreadLineTheShippedRulesCanProduce` derives that ceiling from the
-  registry and fails when it stops fitting. One term of the trade is also not
-  even: the overflow line is 34.61px and is charged one 28.61px row, which is
-  why the worst card clears the frame by less than one row rather than by six
-  pixels more. Those figures are re-measured on the real control by
-  `TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims`, because a
-  measured number written down with nothing checking it is how this card's
-  clipping stayed invisible for a wave.
+  registry and fails when it stops fitting.
+
+  **Corrected 2026-08-26, in Task 10, which took the margin.** One term of the
+  trade was not even while this paragraph first said it was: the overflow line
+  measured 34.61px and was charged one 28.61px row, because it wore the finding
+  rows' 12px bottom margin rather than the 6px used by the small rows it is
+  styled like. `FindingsMore` in `Views/ReportCard.xaml` wears `0,0,0,6` now —
+  one attribute, no other geometry — so all three traded rows are 28.61px and
+  the six pixels went back to the column the worst card is measured in. Those
+  figures are re-measured on the real control by
+  `TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims`, which holds the
+  gap between the traded rows at zero, because a measured number written down
+  with nothing checking it is how this card's clipping stayed invisible for a
+  wave.
 
 The lottery placement, which this section did not name either: `usb-history`
 is third on `RevelationPicker.Priority`, after `boot-degradation` and

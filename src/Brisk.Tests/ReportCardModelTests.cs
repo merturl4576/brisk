@@ -272,14 +272,15 @@ public class ReportCardModelTests
     /// unread. The fix list is what gives, being the section that already
     /// counts what it drops rather than losing anything.
     ///
-    /// One row per line, and only ONE of those two lines is an even trade: an
-    /// unread sentence and a fix row are both 28.61px on the real control, but
-    /// the findings' overflow line is 34.61px and is charged the same single
-    /// row. See FixBudget for the 6.00px that under-charge costs and where it
-    /// shows up. What is asserted here is the ROW arithmetic, which is exact;
-    /// the three heights it stands on are re-measured on the real control by
+    /// One row per line, and both of those lines are an even trade: an unread
+    /// sentence, a fix row and the findings' overflow line are all 28.61px on
+    /// the real control, each charged one row. The overflow line was not
+    /// always — see FixBudget for the margin that under-charged it and the
+    /// commit that took it. What is asserted here is the ROW arithmetic,
+    /// which is exact and was exact either way;
+    /// the three heights named above are re-measured on the real control by
     /// ReportCardRenderTests' TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgets
-    /// DocClaims. NOT by the frame test: WorstCaseCard_FitsInsideTheFrameItIs
+    /// DocClaims, which weighs a finding row beside them. NOT by the frame test: WorstCaseCard_FitsInsideTheFrameItIs
     /// DrawnInto asserts `wanted <= given` and holds no row height at all, so a
     /// sentence sending a reader there for these figures sends them where the
     /// figures are not.

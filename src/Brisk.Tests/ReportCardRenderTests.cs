@@ -376,37 +376,50 @@ public class ReportCardRenderTests
     ///
     /// The budget trades the fix list one row per line the sections above it
     /// take, and that is only sound while those rows are the heights the doc
-    /// claims. It said all three were the same 29px. Two are; the findings'
-    /// overflow line is six pixels taller, because it wears the finding rows'
-    /// 12px bottom margin rather than the 6px the small rows use — so that
-    /// term of the trade under-charges, which is the whole of why the worst
-    /// card clears the frame by under one row instead of by nine pixels.
+    /// claims. It said all three were the same 29px. Two were; the findings'
+    /// overflow line was six pixels taller, because it wore the finding rows'
+    /// 12px bottom margin rather than the 6px used by the small rows it is
+    /// styled like — so that term of the trade under-charged, and the pixels
+    /// came out of what the worst card had left over. FindingsMore wears
+    /// "0,0,0,6" now; the zero below is what says the trade is even, and it is
+    /// the assertion that turns red if that margin moves again.
+    ///
+    /// FOUR HEIGHTS, not three, and the fourth arrived last. The trade pays
+    /// the unread section and the overflow line in FIX ROWS, so the fix row
+    /// is the currency — and it was the one figure FixBudget's doc named that
+    /// nothing here measured. It is a separate TextBlock in ReportCard.xaml
+    /// from the unread row, with its own attributes, and the two being the
+    /// same height is a fact about that markup rather than a consequence of
+    /// anything above.
     ///
     /// A comment carrying a measured figure with nothing checking it is the
     /// exact shape that hid this card's clipping for a whole wave. This is
     /// that comment's guard, and it is deliberately the one test that fails
-    /// when somebody changes that margin: the change is correct and the doc
-    /// has to move with it.
+    /// when somebody changes that margin: FixBudget's doc has to move with it.
     [Fact]
     public void TheRowHeightsTheBudgetTrades_AreTheOnesFixBudgetsDocClaims()
     {
         var findingRow = HeightOf(HeadlineFindings(5)) - HeightOf(HeadlineFindings(4));
         var smallRow = HeightOf(WithUnreadable(2)) - HeightOf(WithUnreadable(1));
+        var fixRow = HeightOf(Quiet, Fixes(3)) - HeightOf(Quiet, Fixes(2));
         var overflowLine = HeightOf(HeadlineFindings(ReportCardModel.MaxFindingRows + 1))
             - HeightOf(HeadlineFindings(ReportCardModel.MaxFindingRows));
 
         Assert.Equal(51.90, findingRow, 2);
         Assert.Equal(28.61, smallRow, 2);
-        Assert.Equal(34.61, overflowLine, 2);
-        // The term that is NOT an even trade, as a number so it cannot grow
-        // quietly: the overflow line is charged one small row and costs more.
-        Assert.Equal(6.00, overflowLine - smallRow, 2);
+        Assert.Equal(28.61, fixRow, 2);
+        Assert.Equal(28.61, overflowLine, 2);
+        // The trade, as a number so an under-charge cannot come back quietly:
+        // the overflow line is charged one small row and costs one.
+        Assert.Equal(0.00, overflowLine - smallRow, 2);
 
-        // And what that costs the frame, which is the reason any of this is
+        // And what the worst card has left, which is the reason any of this is
         // written down. Bounded rather than pinned: the claim is "less than
         // one row of room left, and more than none", which stays true under a
-        // harmless layout tweak and goes false the moment the under-charge
-        // grows into a clipped card.
+        // harmless layout tweak and goes false the moment something starts
+        // clipping. Evening the trade above moved this figure by the six
+        // pixels that margin used to take and did not move the bound, because
+        // the bound is about the frame and not about the trade.
         var (wanted, given) = MeasureBody(WorstCaseModel("en"));
         Assert.InRange(given - wanted, 0.0, smallRow);
     }
@@ -430,17 +443,35 @@ public class ReportCardRenderTests
             FixDescription: null, Headline: null, Kind: FindingKind.Notice)).ToList(),
         new SensorStatus(true, true, null));
 
-    private static double HeightOf(ScanSnapshot snapshot)
+    private static double HeightOf(ScanSnapshot snapshot) =>
+        HeightOf(snapshot, Array.Empty<UndoableFix>());
+
+    private static double HeightOf(
+        ScanSnapshot snapshot, IReadOnlyList<UndoableFix> fixes)
     {
         var loc = new Brisk.Localization.Loc();
         loc.SetLanguage("en");
-        return MeasureBody(ReportCardModel.Build(
-            snapshot, Array.Empty<UndoableFix>(), loc)).Wanted;
+        return MeasureBody(ReportCardModel.Build(snapshot, fixes, loc)).Wanted;
     }
 
+    /// A card with nothing above the fix list that can vary: no findings, and
+    /// every sensor answering, so the unread section is its shortest single
+    /// line. The difference between two of these is one FIX row and nothing
+    /// else — which is the only way to weigh the row the budget SPENDS, as
+    /// opposed to the two rows it charges against.
+    private static ScanSnapshot Quiet =>
+        TestData.Snapshot(null, new SensorStatus(true, true, null));
+
+    /// n fixes, well inside FixBudget's ceiling on a Quiet card (nine), so
+    /// neither card here is showing the "and n more" line instead of a row.
+    private static UndoableFix[] Fixes(int count) => Enumerable.Range(0, count)
+        .Select(i => new UndoableFix($"rule-{i:00}",
+            new DateTime(2026, 8, 21, 9, 0, 0, DateTimeKind.Utc).AddMinutes(-i)))
+        .ToArray();
+
     /// The worst card the model will build, in one place because two tests
-    /// weigh it: the frame check, and the row-height guard that says how much
-    /// room the under-charged overflow line leaves it.
+    /// weigh it: the frame check, and the row-height guard that bounds how
+    /// much room it has left.
     private static ReportCardModel WorstCaseModel(string language)
     {
         var loc = new Brisk.Localization.Loc();
