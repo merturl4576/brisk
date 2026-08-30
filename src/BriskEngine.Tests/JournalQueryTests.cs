@@ -62,8 +62,12 @@ public sealed class JournalQueryTests : IDisposable
     public void ReadTail_MissingFile_IsEmpty() =>
         Assert.Empty(ActionLogReader.ReadTail(Path.Combine(_root, "nope.jsonl")));
 
+    /// "removed" joins the lifetime figure (2026-08-30): past-the-bin work
+    /// freed those bytes just as surely, and a lifetime that forgot a 30 GB
+    /// Windows.old would understate brisk's own record. Dry-runs and rule
+    /// fixes still count for nothing.
     [Fact]
-    public void TotalRecycledBytes_SumsOnlyRecycledLines()
+    public void TotalRecycledBytes_SumsRecycledAndRemovedLines_NothingElse()
     {
         var path = Path.Combine(_root, "life.jsonl");
         File.WriteAllLines(path, new[]
@@ -72,8 +76,9 @@ public sealed class JournalQueryTests : IDisposable
             """{"ts":"2026-08-15T10:01:00Z","targetId":"user-temp","path":"C:\\b","bytes":900,"action":"dry-run","reason":null}""",
             """{"ts":"2026-08-15T10:02:00Z","targetId":"npm-cache","path":"C:\\c","bytes":50,"action":"recycled","reason":null}""",
             """{"ts":"2026-08-15T10:03:00Z","ruleId":"power-plan","action":"fix"}""",
+            """{"ts":"2026-08-30T10:04:00Z","targetId":"windows-old","path":"C:\\Windows.old","bytes":7,"action":"removed","reason":null}""",
         });
-        Assert.Equal(150, ActionLogReader.TotalRecycledBytes(path));
+        Assert.Equal(157, ActionLogReader.TotalRecycledBytes(path));
         Assert.Equal(0, ActionLogReader.TotalRecycledBytes(Path.Combine(_root, "no.jsonl")));
     }
 

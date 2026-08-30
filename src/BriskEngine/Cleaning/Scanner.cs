@@ -89,7 +89,7 @@ public sealed class Scanner
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this path on any other exception
         }
-        ProbeLargestFirst(items, appRunning, budget, ct);
+        ProbeLargestFirst(target, items, appRunning, budget, ct);
         return new TargetScanResult(target, items, appRunning
             ? $"{target.AppDisplayName} is running — close it to include this target"
             : null);
@@ -102,11 +102,19 @@ public sealed class Scanner
     /// largest-first the unverified tail is the SMALLEST it can be in the
     /// only unit the promise is made in: bytes. Sizes are already computed
     /// above, so this costs an ordering, not a walk.
-    private void ProbeLargestFirst(List<ResolvedItem> items, bool appRunning,
-        LockProbeBudget? budget, CancellationToken ct)
+    private void ProbeLargestFirst(CleanupTarget target, List<ResolvedItem> items,
+        bool appRunning, LockProbeBudget? budget, CancellationToken ct)
     {
         // A skipped target is wholly outside the promise; nothing to verify.
         if (appRunning || budget is null || _lockProbe is null) return;
+        // The probe asks one question — "can the SHELL delete this?" — and a
+        // past-the-bin target is never given to the shell: hiberfil.sys is
+        // kernel-held its whole life yet powercfg frees it, and an ACL-denied
+        // entry inside Windows.old stops nothing takeown will not fix. Probing
+        // these marks them Locked, zeroes ReclaimableBytes, and silently
+        // deletes the exact gigabytes the deep reveal exists to announce
+        // (2026-08-30 review, CONFIRMED on the live hiberfil).
+        if (target.BypassesRecycleBin) return;
         foreach (var i in Enumerable.Range(0, items.Count)
                      .OrderByDescending(n => items[n].Bytes)
                      .ToList())

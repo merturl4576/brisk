@@ -631,6 +631,30 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Empty(_runner.Commands);
     }
 
+    /// BACKSTOP PIN (2026-08-30 review): BypassesRecycleBin used to be a flag
+    /// nothing read — a future noBin target added to the registry without a
+    /// matching removal case would have fallen through to the shell loop and
+    /// put a 30 GB directory in the recycle bin. It fails closed instead.
+    [Fact]
+    public void NoBinTargetWithoutAHandler_FailsClosed_NeverReachesTheShell()
+    {
+        var dir = Path.Combine(_root, "future-heavy");
+        Directory.CreateDirectory(dir);
+        var target = new CleanupTarget("future-heavy", "Future heavy",
+            CleanupLevel.Deep, new List<string> { dir }, "System",
+            BypassesRecycleBin: true);
+        var scan = new TargetScanResult(target,
+            new[] { new ResolvedItem("future-heavy", dir, 10, DateTime.UtcNow) }, null);
+
+        var report = Runner(elevated: true).Clean(scan, dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("refused", entry.Action);
+        Assert.Contains("no removal handler", entry.Reason);
+        Assert.Empty(_recycler.Recycled);
+        Assert.True(Directory.Exists(dir));
+    }
+
     /// A machine with no Windows.old resolves zero items — the clean must
     /// do and say nothing, exactly like any other empty target.
     [Fact]

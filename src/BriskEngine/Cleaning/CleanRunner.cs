@@ -128,7 +128,7 @@ public sealed class CleanRunner
                 return RemoveOutsideTheBin(scan, dryRun, Record, entries,
                     _ => _processRunner.Run("powercfg", "/hibernate off"));
             case "component-store":
-                if (!_isElevated())
+                if (scan.Target.RequiresElevation && !_isElevated())
                 {
                     Record("(component store)", 0, "refused", "requires administrator");
                 }
@@ -147,6 +147,19 @@ public sealed class CleanRunner
                     else Record("(component store)", 0, "external");
                 }
                 return new CleanReport(entries);
+        }
+
+        // BACKSTOP (2026-08-30 review): BypassesRecycleBin is a promise that
+        // this target never goes through the shell's recycle path — the trio
+        // above and empty-recycle-bin keep it via their cases. A future noBin
+        // target added to the registry WITHOUT a matching case must fail
+        // closed here, not fall through and land a 30 GB directory in the bin.
+        if (scan.Target.BypassesRecycleBin)
+        {
+            foreach (var item in scan.Items)
+                Record(item.Path, 0, "refused",
+                    "declares past-the-bin removal but has no removal handler");
+            return new CleanReport(entries);
         }
 
         // Authorized items are recycled in shell batches; a failed batch is
@@ -304,7 +317,10 @@ public sealed class CleanRunner
     {
         foreach (var item in scan.Items)
         {
-            if (!_isElevated())
+            // The registry's own field, not a hand-rolled twin of it — so the
+            // registry stays the one place elevation policy is declared
+            // (2026-08-30 review: the first cut read _isElevated() alone).
+            if (scan.Target.RequiresElevation && !_isElevated())
             { record(item.Path, 0, "refused", "requires administrator"); continue; }
             if (dryRun)
             { record(item.Path, item.Bytes, "dry-run", null); continue; }

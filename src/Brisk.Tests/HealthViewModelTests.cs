@@ -1353,6 +1353,27 @@ public class HealthViewModelTests
         Assert.Equal("", health.BootTrendText);
     }
 
+    /// One boot after the changes is its own sentence — never "1 boots",
+    /// and "the first boot since" is the honest label for evidence that thin.
+    [Fact]
+    public async Task BootTrend_SingleBootAfter_GetsItsOwnSentence()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null) with
+        {
+            BootTrend = new BootTrend(59_400, 4, 41_200, 1,
+                new DateTime(2026, 8, 25, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 8, 27, 0, 0, 0, DateTimeKind.Utc)),
+        };
+        var state = new AppState(host);
+        var perf = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), showBootTrend: true);
+        await state.ScanAsync();
+
+        Assert.Contains("first boot", perf.BootTrendText);
+        Assert.DoesNotContain("1 boots", perf.BootTrendText);
+    }
+
     [Fact]
     public async Task BootTrend_NoTrendInTheSnapshot_LineStaysEmpty()
     {

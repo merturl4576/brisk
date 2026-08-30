@@ -64,6 +64,18 @@ The number is `ReclaimableBytes` (lock-honest) plus sized optIn targets
 whose clean is a consent away; targets with no size promise are named,
 never numbered.
 
+**AMENDED at the closing review (2026-08-30):** the "named, never
+numbered" clause is deliberately dropped. The shipped format has no slot
+for an unnumbered name, and a reveal line reading "+ component store:
+size unknown" adds a question, not a number, to the page whose job is one
+loud figure. Promise-less targets live on the Depolama page with their
+consequence notes; the Overview reveal speaks only when it has gigabytes
+to name. Recorded here so plan and implementation agree on purpose, not
+by accident. The same review also added the lock-probe exemption for
+past-the-bin targets (T1's hiberfil was being zeroed by the shell's own
+question) and made `BypassesRecycleBin`/`RequiresElevation` load-bearing
+in the runner.
+
 ## Order
 
 T1 -> T2 (engine, TDD in BriskEngine.Tests) -> T3 -> T4 (GUI, tests in

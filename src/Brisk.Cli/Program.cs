@@ -452,6 +452,8 @@ public static class Program
 
         long recycledBytes = 0;
         int recycledCount = 0;
+        long removedBytes = 0;
+        int removedCount = 0;
         var anyErrors = false;
         foreach (var t in selected)
         {
@@ -468,6 +470,15 @@ public static class Program
                     recycledBytes += entry.Bytes;
                     recycledCount++;
                 }
+                else if (entry.Action == "removed")
+                {
+                    // Past-the-bin work (windows-old, hiberfil). This is the
+                    // path the GUI's per-action elevation relay runs, so a
+                    // dropped case here printed "recycled: 0 items, 0 B" over
+                    // a 30 GB removal (2026-08-30 review).
+                    removedBytes += entry.Bytes;
+                    removedCount++;
+                }
                 else if (entry.Action is "refused" or "error")
                 {
                     Console.WriteLine($"  {entry.Action}: {entry.Path} — {entry.Reason}");
@@ -476,6 +487,8 @@ public static class Program
             }
         }
         Console.WriteLine($"recycled: {recycledCount} items, {Fmt.Bytes(recycledBytes)}");
+        if (removedCount > 0)
+            Console.WriteLine($"removed for good (past the recycle bin): {removedCount} items, {Fmt.Bytes(removedBytes)}");
         return anyErrors ? 1 : 0;
     }
 

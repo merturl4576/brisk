@@ -637,10 +637,16 @@ public sealed class HealthViewModel : ViewModelBase
         // The performance read-back line, only on the page that owns boot
         // (the perf instance opts in at construction). Two measurements and
         // their counts, Windows' own timings — never a causal claim.
+        // A single boot after the changes is its own sentence, not "1 boots"
+        // — and "the first boot since" is also the more honest label for it.
         BootTrendText = _showBootTrend && snapshot.BootTrend is { } trend
-            ? _loc.F("perf.boottrend",
-                Seconds(trend.BeforeMedianMs), trend.BeforeBoots,
-                Seconds(trend.AfterMedianMs), trend.AfterBoots)
+            ? trend.AfterBoots == 1
+                ? _loc.F("perf.boottrend.one",
+                    Seconds(trend.BeforeMedianMs), trend.BeforeBoots,
+                    Seconds(trend.AfterMedianMs))
+                : _loc.F("perf.boottrend",
+                    Seconds(trend.BeforeMedianMs), trend.BeforeBoots,
+                    Seconds(trend.AfterMedianMs), trend.AfterBoots)
             : "";
         // Notices cost the score nothing, but they are still worth
         // reading — so the sentence counts both bands. Counting only

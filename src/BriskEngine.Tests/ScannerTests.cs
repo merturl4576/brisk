@@ -257,6 +257,40 @@ public sealed class ScannerTests : IDisposable
         }
     }
 
+    /// 2026-08-30 review, CONFIRMED on the live machine: hiberfil.sys is
+    /// kernel-held its whole life, so the delete-lock probe marked it Locked
+    /// and ReclaimableBytes read 0 — hiding from the deep reveal the exact
+    /// gigabytes the feature exists to announce. A past-the-bin target is
+    /// never given to the shell, so the shell's question must not be asked:
+    /// no probe call, nothing marked locked, the bytes stay in the promise.
+    [Fact]
+    public void PastTheBinTarget_IsNeverLockProbed_SoItsBytesStayInThePromise()
+    {
+        var file = Path.Combine(_root, "hiberfil.sys");
+        File.WriteAllBytes(file, new byte[128]);
+        var probe = new FakeLockProbe();
+        probe.LockedPaths.Add(file);   // the kernel would say exactly this
+
+        var noBin = new CleanupTarget("hibernation-file", "Hibernation",
+            CleanupLevel.Deep, new List<string> { file }, "System",
+            RequiresExplicitOptIn: true, BypassesRecycleBin: true,
+            RequiresElevation: true);
+        var normal = Target("t-normal", file);
+
+        var result = new Scanner(new[] { noBin, normal }, _processes, probe).Scan();
+
+        var heavy = result.Targets.Single(t => t.Target.Id == "hibernation-file");
+        Assert.False(heavy.Items.Single().Locked);
+        Assert.Equal(128, heavy.ReclaimableBytes);
+        // the ordinary target IS probed and honestly zeroed — the exemption
+        // is the noBin flag, not the path
+        var ordinary = result.Targets.Single(t => t.Target.Id == "t-normal");
+        Assert.True(ordinary.Items.Single().Locked);
+        Assert.Equal(0, ordinary.ReclaimableBytes);
+        Assert.All(probe.Calls, c => Assert.Equal(file, c.Path));
+        Assert.Single(probe.Calls);   // one probe: the ordinary target's
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }
 

@@ -59,6 +59,36 @@ public sealed class EngineHost : IEngineHost
         var gpuRead = SensorReading.IsReal(_ctx.Sensors.GpuTempC());
         var integrityOn = _ctx.MemoryIntegrity.IsOn();
 
+        // One event-log walk per scan, not two: the boot trend below asks for
+        // 20 boots and BootDegradationRule asks for 8, and each walk opens
+        // readers and parses every record's XML. The trend runs FIRST so its
+        // deeper fetch seeds the cache and the rule's 8 is served as a prefix
+        // of the same newest-first list (2026-08-30 review).
+        var ctx = _ctx with { EventLog = new PrefixCachingEventLog(_ctx.EventLog) };
+
+        BootTrend? bootTrend = null;
+        try
+        {
+            DateTime? firstChange = null, lastChange = null;
+            foreach (var fix in _journal.ListUndoable())
+            {
+                if (firstChange is null || fix.FixedAtUtc < firstChange) firstChange = fix.FixedAtUtc;
+                if (lastChange is null || fix.FixedAtUtc > lastChange) lastChange = fix.FixedAtUtc;
+            }
+            var (startupFirst, startupLast) = ActionLogReader.StartupChangeBoundsUtc(_actionLogPath);
+            if (startupFirst is not null && (firstChange is null || startupFirst < firstChange))
+                firstChange = startupFirst;
+            if (startupLast is not null && (lastChange is null || startupLast > lastChange))
+                lastChange = startupLast;
+            bootTrend = BootTrendCalculator.Compute(
+                ctx.EventLog.RecentBoots(BootTrendCalculator.SampledBoots),
+                firstChange, lastChange);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            bootTrend = null;
+        }
+
         var findings = new List<DiagnosticFinding>();
         foreach (var rule in _rules)
         {
@@ -66,7 +96,7 @@ public sealed class EngineHost : IEngineHost
             progress?.Report(rule.Id);
             try
             {
-                if (rule.Detect(_ctx) is { } finding) findings.Add(finding);
+                if (rule.Detect(ctx) is { } finding) findings.Add(finding);
             }
             catch
             {
@@ -123,34 +153,6 @@ public sealed class EngineHost : IEngineHost
         {
             usbDevices = Array.Empty<UsbDeviceRecord>();
         }
-        // The performance read-back, on the same pass: boots from Windows'
-        // own timings, anchored on brisk's first and last recorded change
-        // (rule fixes from the journal, startup toggles from the action
-        // log — cleans deliberately not, see StartupChangeBoundsUtc). The
-        // catch mirrors the read-back's: a refused journal or log read
-        // costs this line, never the scan.
-        BootTrend? bootTrend = null;
-        try
-        {
-            DateTime? firstChange = null, lastChange = null;
-            foreach (var fix in _journal.ListUndoable())
-            {
-                if (firstChange is null || fix.FixedAtUtc < firstChange) firstChange = fix.FixedAtUtc;
-                if (lastChange is null || fix.FixedAtUtc > lastChange) lastChange = fix.FixedAtUtc;
-            }
-            var (startupFirst, startupLast) = ActionLogReader.StartupChangeBoundsUtc(_actionLogPath);
-            if (startupFirst is not null && (firstChange is null || startupFirst < firstChange))
-                firstChange = startupFirst;
-            if (startupLast is not null && (lastChange is null || startupLast > lastChange))
-                lastChange = startupLast;
-            bootTrend = BootTrendCalculator.Compute(
-                _ctx.EventLog.RecentBoots(BootTrendCalculator.SampledBoots),
-                firstChange, lastChange);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            bootTrend = null;
-        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
@@ -159,6 +161,26 @@ public sealed class EngineHost : IEngineHost
                 MemoryIntegrityOn: integrityOn),
             readBack, usbDevices, bootTrend);
     }, ct);
+
+    /// Serves RecentBoots(n) as a prefix of the deepest fetch made so far —
+    /// per-scan, single-threaded, discarded with the lambda that made it, so
+    /// it can never go stale across scans.
+    private sealed class PrefixCachingEventLog : IEventLogProbe
+    {
+        private readonly IEventLogProbe _inner;
+        private IReadOnlyList<BootRecord>? _cached;
+        private int _cachedCount;
+        public PrefixCachingEventLog(IEventLogProbe inner) => _inner = inner;
+        public IReadOnlyList<BootRecord> RecentBoots(int count)
+        {
+            if (_cached is null || count > _cachedCount)
+            {
+                _cached = _inner.RecentBoots(count);
+                _cachedCount = count;
+            }
+            return _cached.Count <= count ? _cached : _cached.Take(count).ToList();
+        }
+    }
 
     private sealed class SyncProgressAdapter : IProgress<ScanProgress>
     {

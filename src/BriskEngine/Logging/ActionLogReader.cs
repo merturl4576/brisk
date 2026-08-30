@@ -25,7 +25,10 @@ public static class ActionLogReader
         return entries.Take(max).ToList();
     }
 
-    /// Lifetime reclaimed total — every "recycled" clean line ever logged.
+    /// Lifetime reclaimed total — every "recycled" clean line ever logged,
+    /// plus every "removed" one: past-the-bin work (windows-old, hiberfil)
+    /// freed those bytes just as surely, and a lifetime figure that forgot a
+    /// 30 GB removal would understate brisk's own record (2026-08-30 review).
     public static long TotalRecycledBytes(string path)
     {
         if (!File.Exists(path)) return 0;
@@ -38,7 +41,7 @@ public static class ActionLogReader
                 using var doc = JsonDocument.Parse(line);
                 var root = doc.RootElement;
                 if (root.TryGetProperty("action", out var a)
-                    && a.GetString() == "recycled"
+                    && a.GetString() is "recycled" or "removed"
                     && root.TryGetProperty("bytes", out var b)
                     && b.ValueKind == JsonValueKind.Number)
                     total += b.GetInt64();
