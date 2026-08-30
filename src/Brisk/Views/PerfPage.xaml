@@ -104,6 +104,24 @@
                       IsChecked="{Binding CreateRestorePointFirst}"
                       Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
         </StackPanel>
+        <!-- The performance read-back (2026-08-30): two measurements side by
+             side, from Windows' own boot timings — before brisk's first
+             recorded change, since its last. Counts printed so thin evidence
+             says so; no causal claim anywhere in the sentence. Collapsed
+             until the machine has enough boots on both sides. -->
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
+                   MaxWidth="{StaticResource ContentMaxWidth}"
+                   Text="{Binding BootTrendText}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource Body}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding BootTrendText}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
                    MaxWidth="{StaticResource ContentMaxWidth}"
                    Text="{Binding Message}">

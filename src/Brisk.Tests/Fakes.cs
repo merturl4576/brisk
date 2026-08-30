@@ -254,7 +254,10 @@ public static class TestData
         params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-        sensors, readBack, usbDevices);
+        sensors, readBack, usbDevices,
+        // No trend is the honest default; the boot-trend tests build one
+        // with `snapshot with { BootTrend = ... }`.
+        BootTrend: null);
 
     /// A snapshot whose only distinguishing feature is what brisk found when
     /// it looked again — the shape most read-back tests want.

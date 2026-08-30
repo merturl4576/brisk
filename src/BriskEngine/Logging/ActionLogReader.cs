@@ -48,6 +48,33 @@ public static class ActionLogReader
         return total;
     }
 
+    /// The boot trend's anchors: when brisk's first and last startup toggle
+    /// happened (lines StartupManager writes with a "startup" field). Cleans
+    /// and everything else in this log are ignored — emptying a cache does
+    /// not change what starts with Windows.
+    public static (DateTime? FirstUtc, DateTime? LastUtc) StartupChangeBoundsUtc(string path)
+    {
+        if (!File.Exists(path)) return (null, null);
+        DateTime? first = null, last = null;
+        foreach (var line in File.ReadAllLines(path))
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            try
+            {
+                using var doc = JsonDocument.Parse(line);
+                var root = doc.RootElement;
+                if (!root.TryGetProperty("startup", out _)) continue;
+                if (!root.TryGetProperty("ts", out var tsEl)
+                    || !tsEl.TryGetDateTime(out var ts)) continue;
+                var utc = ts.ToUniversalTime();
+                if (first is null || utc < first) first = utc;
+                if (last is null || utc > last) last = utc;
+            }
+            catch (JsonException) { }
+        }
+        return (first, last);
+    }
+
     private static ActionLogEntry? TryParse(string line)
     {
         try

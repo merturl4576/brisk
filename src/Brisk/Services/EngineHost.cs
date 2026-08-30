@@ -123,13 +123,41 @@ public sealed class EngineHost : IEngineHost
         {
             usbDevices = Array.Empty<UsbDeviceRecord>();
         }
+        // The performance read-back, on the same pass: boots from Windows'
+        // own timings, anchored on brisk's first and last recorded change
+        // (rule fixes from the journal, startup toggles from the action
+        // log — cleans deliberately not, see StartupChangeBoundsUtc). The
+        // catch mirrors the read-back's: a refused journal or log read
+        // costs this line, never the scan.
+        BootTrend? bootTrend = null;
+        try
+        {
+            DateTime? firstChange = null, lastChange = null;
+            foreach (var fix in _journal.ListUndoable())
+            {
+                if (firstChange is null || fix.FixedAtUtc < firstChange) firstChange = fix.FixedAtUtc;
+                if (lastChange is null || fix.FixedAtUtc > lastChange) lastChange = fix.FixedAtUtc;
+            }
+            var (startupFirst, startupLast) = ActionLogReader.StartupChangeBoundsUtc(_actionLogPath);
+            if (startupFirst is not null && (firstChange is null || startupFirst < firstChange))
+                firstChange = startupFirst;
+            if (startupLast is not null && (lastChange is null || startupLast > lastChange))
+                lastChange = startupLast;
+            bootTrend = BootTrendCalculator.Compute(
+                _ctx.EventLog.RecentBoots(BootTrendCalculator.SampledBoots),
+                firstChange, lastChange);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            bootTrend = null;
+        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
             HealthScore.Compute(findings), DateTime.UtcNow,
             new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
                 MemoryIntegrityOn: integrityOn),
-            readBack, usbDevices);
+            readBack, usbDevices, bootTrend);
     }, ct);
 
     private sealed class SyncProgressAdapter : IProgress<ScanProgress>

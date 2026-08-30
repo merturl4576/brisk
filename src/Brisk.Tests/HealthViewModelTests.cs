@@ -1321,6 +1321,46 @@ public class HealthViewModelTests
         Assert.Contains("IsBusy", raised);
     }
 
+    /// The performance read-back line: only the instance that opted in (the
+    /// Performans page) prints it, and only off a snapshot that carries a
+    /// trend — both figures in whole seconds with their counts, the same
+    /// rounding the boot-degradation rule uses.
+    [Fact]
+    public async Task BootTrend_ShowsOnThePerfInstance_AndOnlyThere()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(null) with
+        {
+            BootTrend = new BootTrend(59_400, 4, 41_200, 2,
+                new DateTime(2026, 8, 25, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 8, 27, 0, 0, 0, DateTimeKind.Utc)),
+        };
+        var state = new AppState(host);
+        var loc = EnglishLoc();
+        var perf = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host), showBootTrend: true);
+        var health = new HealthViewModel(state, host, loc, () => false,
+            new FixAllService(host));
+        await state.ScanAsync();
+
+        Assert.Contains("59 s", perf.BootTrendText);
+        Assert.Contains("41 s", perf.BootTrendText);
+        Assert.Contains("4 boots", perf.BootTrendText);
+        Assert.Equal("", health.BootTrendText);
+    }
+
+    [Fact]
+    public async Task BootTrend_NoTrendInTheSnapshot_LineStaysEmpty()
+    {
+        var host = new FakeEngineHost();   // TestData.Snapshot carries no trend
+        var state = new AppState(host);
+        var perf = new HealthViewModel(state, host, EnglishLoc(), () => false,
+            new FixAllService(host), showBootTrend: true);
+        await state.ScanAsync();
+
+        Assert.Equal("", perf.BootTrendText);
+    }
+
     [Theory]
     [InlineData(95, "Good")]
     [InlineData(72, "SeverityNotice")]
@@ -1332,7 +1372,7 @@ public class HealthViewModelTests
             new ScanResult(Array.Empty<TargetScanResult>()), health,
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
             new SensorStatus(false, false, null), Array.Empty<ReadBackResult>(),
-            Array.Empty<UsbDeviceRecord>());
+            Array.Empty<UsbDeviceRecord>(), null);
         var state = new AppState(host);
         var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
             new FixAllService(host));

@@ -42,6 +42,12 @@ public sealed record SensorStatus(bool CpuRead, bool GpuRead, bool? MemoryIntegr
 /// Gizlilik page reads it and nothing else does — the spec's red line 2 as
 /// amended on 2026-08-26, held by the shape of the pipeline rather than by
 /// every future caller remembering.
+/// BootTrend rides the snapshot for the same one-pass reason ReadBack does:
+/// the boots and the change timestamps are read once, next to the findings
+/// they will be shown beside. Null is the honest empty — "no trend brisk
+/// can claim yet" (no changes made, or too few boots on either side) — and
+/// unlike the fields above it adds no claim, which is why it is the one
+/// member here that may be null.
 public sealed record ScanSnapshot(
     IReadOnlyList<DiagnosticFinding> Findings,
     ScanResult Cleaner,
@@ -49,7 +55,8 @@ public sealed record ScanSnapshot(
     DateTime CompletedUtc,
     SensorStatus Sensors,
     IReadOnlyList<ReadBackResult> ReadBack,
-    IReadOnlyList<UsbDeviceRecord> UsbDevices);
+    IReadOnlyList<UsbDeviceRecord> UsbDevices,
+    BootTrend? BootTrend);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

@@ -253,6 +253,8 @@ public sealed class HealthViewModel : ViewModelBase
     private double _scoreValue;
     private string _scoreBrushKey = "";
     private string _statusLine = "";
+    private string _bootTrendText = "";
+    private bool _showBootTrend;
     private string _message = "";
     private string _reportSummary = "";
     private string _crossLinkText = "";
@@ -278,8 +280,10 @@ public sealed class HealthViewModel : ViewModelBase
         FixAllService fixAll, Func<DiagnosticFinding, bool>? filter = null,
         Func<string, bool>? doneFilter = null, string? crossLinkKey = null,
         Func<DiagnosticFinding, bool>? crossLinkFilter = null,
-        Func<Task>? morphPause = null)
+        Func<Task>? morphPause = null,
+        bool showBootTrend = false)
     {
+        _showBootTrend = showBootTrend;
         _state = state;
         _host = host;
         _loc = loc;
@@ -357,6 +361,10 @@ public sealed class HealthViewModel : ViewModelBase
     /// findings: work to do → attention; only advice left → positive with
     /// the count; nothing → plain good news (round 11).
     public string StatusLine { get => _statusLine; private set => Set(ref _statusLine, value); }
+    /// "Boot before brisk's changes: ~59 s (4 boots) → since: ~41 s (2)".
+    /// Empty on the Sağlık instance and whenever the snapshot carries no
+    /// trend; the page collapses the line then.
+    public string BootTrendText { get => _bootTrendText; private set => Set(ref _bootTrendText, value); }
     public string Message { get => _message; private set => Set(ref _message, value); }
     /// The report's ✓ lead line; empty while the last run changed nothing.
     public string ReportSummary
@@ -626,6 +634,14 @@ public sealed class HealthViewModel : ViewModelBase
         ScoreText = snapshot.Health.ToString();
         ScoreValue = snapshot.Health;
         ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health);
+        // The performance read-back line, only on the page that owns boot
+        // (the perf instance opts in at construction). Two measurements and
+        // their counts, Windows' own timings — never a causal claim.
+        BootTrendText = _showBootTrend && snapshot.BootTrend is { } trend
+            ? _loc.F("perf.boottrend",
+                Seconds(trend.BeforeMedianMs), trend.BeforeBoots,
+                Seconds(trend.AfterMedianMs), trend.AfterBoots)
+            : "";
         // Notices cost the score nothing, but they are still worth
         // reading — so the sentence counts both bands. Counting only
         // the advice would announce good news over a page still
@@ -636,4 +652,9 @@ public sealed class HealthViewModel : ViewModelBase
             : _loc["overview.status.good"];
         FixAllCommand.RaiseCanExecuteChanged();
     }
+
+    /// Whole seconds, BootDegradationRule's rounding — the two surfaces must
+    /// never print different figures for the same boot.
+    private static string Seconds(int ms) =>
+        (int)System.Math.Round(ms / 1000.0, System.MidpointRounding.AwayFromZero) + " s";
 }

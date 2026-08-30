@@ -97,7 +97,9 @@ public partial class App : Application
                 isDryRun, fixAllService, FindingSections.IsPerformance,
                 doneFilter: FindingSections.IsPerformance,
                 crossLinkKey: "performance.crosslink",
-                crossLinkFilter: FindingSections.IsHealth);
+                crossLinkFilter: FindingSections.IsHealth,
+                // The performance read-back line: boot belongs to this page.
+                showBootTrend: true);
             var startupVm = new StartupViewModel(state, composition.Host,
                 Loc.Instance, isDryRun, composition.Launcher);
             var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
