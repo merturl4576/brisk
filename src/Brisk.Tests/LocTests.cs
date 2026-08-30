@@ -259,6 +259,17 @@ public class LocTests
     [InlineData("privacy.turnoff.safe")]
     [InlineData("privacy.turnoff.refused")]
     [InlineData("privacy.readback.section")]
+    // The USB fold's two keys, added with the amended red line 2. The title
+    // is a heading like the eleven above it. The row is not: it is a FORMAT
+    // string with three holes in it, and Loc answers a miss with the key
+    // itself — so a gap in the English resx does not print
+    // "privacy.usb.device" once, it prints it once per device, with the
+    // model name and both dates dropped on the floor. There is no louder
+    // failure; the row key also has a second guard after all —
+    // PrivacyViewModelTests renders its real English value through a real
+    // Loc, so a break there lands twice.
+    [InlineData("privacy.usb.devices.title")]
+    [InlineData("privacy.usb.device")]
     // The `privacy.*` key this list went without while the page's headings
     // were added: what the page says when Windows refuses to open its own
     // Settings app. It is not a heading — it is the whole of the message the

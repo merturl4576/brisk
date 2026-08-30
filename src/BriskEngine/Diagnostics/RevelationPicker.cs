@@ -24,26 +24,34 @@ public static class RevelationPicker
     {
         "boot-degradation",
         "display-refresh",
-        // The disclosure wave's one entry here. Third, because brisk leads
-        // with a measurement the user can act on today and both of the two
-        // above are one; the count of USB devices Windows has recorded is the
-        // strongest number brisk owns that the user can do nothing about, so
-        // it leads the moment nothing actionable outranks it.
-        //
-        // The wave's other three disclosures — run-history, recall-status and
-        // delivery-optimization — are left off this list on purpose. Unlisted
-        // is the tail rank, and a count of program records, a policy word and
-        // a total of uploaded bytes are not what this project wants a scan to
-        // open with.
-        "usb-history",
+        // The three report-only disclosures that can lead at all —
+        // run-history, recall-status and delivery-optimization — are left
+        // off this list on purpose. Unlisted is the tail rank, and a count
+        // of program records, a policy word and a total of uploaded bytes
+        // are not what this project wants a scan to open with. The fourth,
+        // usb-history, is not merely unlisted: see NeverLeads below.
         "startup-bloat",
         "disk-breakdown",
         "memory-speed",
     };
 
+    /// Rules whose number never leads any surface Pick feeds — today the
+    /// Overview hero band and the report card, which both take Pick's
+    /// answer. The Gizlilik page does not ask Pick; it reads Headline
+    /// itself, and that page is where these still render.
+    ///
+    /// usb-history sat THIRD in Priority above, on the ruling that the
+    /// strongest number brisk owns should lead the moment nothing
+    /// actionable outranks it. The maintainer's first live look at 0.6.0
+    /// showed the other side of that ruling — his machine holds ONE
+    /// recorded device, and "1" led surfaces carrying a 58.1 GB disk
+    /// finding — and he overturned it on that data (2026-08-26).
+    internal static readonly string[] NeverLeads = { "usb-history" };
+
     public static IReadOnlyList<DiagnosticFinding> Pick(
         IEnumerable<DiagnosticFinding> findings) =>
         findings.Where(f => f.Headline is not null)
+            .Where(f => Array.IndexOf(NeverLeads, f.RuleId) < 0)
             .OrderBy(Rank)
             .ThenByDescending(f => SeverityRank(f.Severity))
             .ThenByDescending(f => f.ImpactStars)

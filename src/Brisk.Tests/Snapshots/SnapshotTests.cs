@@ -13,6 +13,7 @@ using Brisk.ViewModels;
 using Brisk.Views;
 using Brisk.Windows;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Models;
 using Xunit;
 // WinForms is on in this project, so these six bare names are ambiguous.
@@ -422,6 +423,33 @@ public class SnapshotTests
                         $"{row.State} sentence is nowhere in the picture");
                 }
 
+                // THE AMENDED RED LINE'S OWN CONDITION, IN THE PICTURE. The
+                // spec lets the USB record be shown to its owner "behind a
+                // fold that opens on request", and this is the only place
+                // anything checks that the rendered page agrees: the fold's
+                // heading is drawn, and not one device row is. A record
+                // standing open is a record legible to whoever walks past the
+                // machine, which is not what was amended.
+                //
+                // Both halves matter and neither implies the other. The
+                // heading alone could be a label over a fold nobody wired;
+                // the absent rows alone could be a block that collapsed
+                // because the fixture read nothing — so the count is
+                // asserted first, and it is what says this photograph had
+                // something to hide.
+                Assert.True(vm.UsbDeviceRows.Count > 0,
+                    "the fixture's snapshot carries no USB device record, so " +
+                    "this photograph cannot say where the record is rendered");
+                var english = new Loc();
+                english.SetLanguage("en");
+                Assert.True(drawn.Contains(english["privacy.usb.devices.title"]),
+                    "the USB fold's heading is nowhere in the picture, so the " +
+                    "record brisk read has no door on the page at all");
+                foreach (var device in vm.UsbDeviceRows)
+                    Assert.False(drawn.Contains(device),
+                        $"\"{device}\" is standing open in the photograph of a " +
+                        "page nobody has opened the fold on");
+
                 // The spec's Recall sentence, in the frame. Found by the
                 // COMMAND OBJECT rather than by its caption: the row and the
                 // control are then provably the same one, and the assertion
@@ -536,6 +564,7 @@ public class SnapshotTests
                 }.Concat(PrivacyTopic()).ToArray(),
                 new SensorStatus(false, false, null),
                 ReRead(),
+                Recorded(),
                 TestData.Target("user-temp", CleanupLevel.Safe, 2048)),
         };
         var loc = new Loc();
@@ -700,6 +729,27 @@ public class SnapshotTests
             new DateTime(2026, 8, 9, 9, 0, 0, DateTimeKind.Utc)),
         new ReadBackResult("activity-history", ReadBackState.WrittenButUnverified,
             new DateTime(2026, 8, 5, 9, 0, 0, DateTimeKind.Utc)),
+    };
+
+    /// The USB record this machine holds, in the shape a real read returns
+    /// one: three instances, two of them the same model, and dates that are
+    /// there for two of them and not the third.
+    ///
+    /// The third is not decoration. A property store brisk was refused, or a
+    /// stamp it could not turn into a date, is the ORDINARY result of an
+    /// unelevated scan on the machine this was written on — the rule's own
+    /// header says so — and the dash is what the page prints for it. A
+    /// fixture where every date read would photograph a page brisk mostly
+    /// does not produce.
+    private static UsbDeviceRecord[] Recorded() => new[]
+    {
+        new UsbDeviceRecord("Ven_Kingston&Prod_DataTraveler_3.0",
+            new DateTime(2021, 3, 4, 5, 6, 7, DateTimeKind.Utc),
+            new DateTime(2026, 8, 20, 9, 30, 0, DateTimeKind.Utc)),
+        new UsbDeviceRecord("Ven_Kingston&Prod_DataTraveler_3.0",
+            new DateTime(2023, 11, 2, 12, 0, 0, DateTimeKind.Utc),
+            new DateTime(2024, 1, 8, 18, 45, 0, DateTimeKind.Utc)),
+        new UsbDeviceRecord("Ven_SanDisk&Prod_Ultra", null, null),
     };
 
     /// One canned reading, so the live tiles photograph as numbers rather

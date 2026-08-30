@@ -628,8 +628,8 @@ public class PrivacyRedLineTests
     ///   written.
     ///
     ///   THE COUNTER WAS NOT — title.unread, evidence.unread. Unread() builds
-    ///   both, and is reached precisely when BytesUploadedToPeers() answered
-    ///   null or a figure that is not a quantity. They are permitted because
+    ///   both, and is reached precisely when UploadedToPeers() answered
+    ///   null or a reading that is not a quantity. They are permitted because
     ///   they name the transmission only to say brisk COULD NOT MEASURE IT,
     ///   and evidence.unread refuses the count in as many words: "a machine
     ///   that uploaded nothing and a machine brisk could not ask are
@@ -871,12 +871,18 @@ public class PrivacyRedLineTests
         // value names what it disables, so its sense is inverted.
         reg.SetInt(RecallStatusRule.KeyPath, RecallStatusRule.ValueName, 0);
 
-        return Context(reg, uploadedBytes: 4L << 30);
+        // 4 GB uploaded, in the two halves Windows keeps it in: most of it to
+        // machines on this local network, the rest over the internet. The
+        // split is arbitrary — nothing here reads either half — but two
+        // non-zero halves are what a machine with something to disclose
+        // looks like, and a rule reporting only one of them would be reading
+        // a fixture this comment did not describe.
+        return Context(reg, uploaded: new PeerUpload(3L << 30, 1L << 30));
     }
 
     /// A machine that answers nothing at all.
     private static DiagnosticContext NothingReadsAtAll() =>
-        Context(new FakeRegistry(), uploadedBytes: null);
+        Context(new FakeRegistry(), uploaded: null);
 
     /// The eleven probes no privacy rule reads THROW, so a rule that grows a
     /// reading nobody arranged fails loudly rather than measuring a machine
@@ -886,21 +892,21 @@ public class PrivacyRedLineTests
     /// swallowed by that rule's own catch and turn silently into the
     /// unreadable answer, which is one of the two states these tests exist to
     /// tell apart.
-    private static DiagnosticContext Context(IRegistryProbe registry, long? uploadedBytes)
+    private static DiagnosticContext Context(IRegistryProbe registry, PeerUpload? uploaded)
     {
         var none = new NoOtherProbes();
         return new DiagnosticContext(none, registry, none, none, none, none, none,
             none, none, none, none,
-            new DeliveryOptimizationReading(uploadedBytes),
+            new DeliveryOptimizationReading(uploaded),
             Path.Combine(Path.GetTempPath(), "brisk-privacy-red-line-context"));
     }
 
-    /// Null is the probe's own "I could not read the counter", and a number
-    /// is a reading. Nothing here rounds one into the other.
-    private sealed record DeliveryOptimizationReading(long? Bytes)
+    /// Null is the probe's own "I could not read the counter", and a
+    /// PeerUpload is a reading. Nothing here rounds one into the other.
+    private sealed record DeliveryOptimizationReading(PeerUpload? Upload)
         : IDeliveryOptimizationProbe
     {
-        public long? BytesUploadedToPeers() => Bytes;
+        public PeerUpload? UploadedToPeers() => Upload;
     }
 
     private static void Sub(FakeRegistry reg, string parent, string child)

@@ -141,6 +141,61 @@ public sealed class PanelSourceTests
             "local attribute, which beats the Wrap that PanelHeader sets");
     }
 
+    /// The maintainer's first live look at 0.6.0: Performans had no way to
+    /// start a scan or run the safe fixes, while Sağlık — the same view
+    /// model behind a different filter — offered both. The two findings
+    /// pages carry the same action band now, and this reads the page source
+    /// so removing a button is a decision someone has to make in a diff.
+    [Fact]
+    public void PerfPage_CarriesTheSameActionBand_AsHealthPage()
+    {
+        var xaml = File.ReadAllText(Path.Combine(BriskDir(), "Views", "PerfPage.xaml"));
+        Assert.Contains("{Binding ScanCommand}", xaml);
+        Assert.Contains("{Binding FixAllCommand}", xaml);
+        Assert.Contains("{Binding CreateRestorePointFirst}", xaml);
+    }
+
+    /// THE MARKUP HALF OF THE USB FOLD, and the half nothing else can see.
+    /// PrivacyViewModel can be as right as it likes about UsbDeviceRows: if
+    /// nothing on the page binds them, the record renders nowhere and every
+    /// view-model test still passes — which is exactly the half-built state
+    /// the Recall link shipped in, below.
+    ///
+    /// FOUR THINGS, and each of them is a different way for the fold to be
+    /// wrong while the app runs. The toggle carries the heading key, so the
+    /// fold is labelled. It has no IsChecked, so it opens on request rather
+    /// than standing open — the amended red line says "behind a fold that
+    /// opens on request", and a fold that is open by default is not one. The
+    /// list binds UsbDeviceRows and follows that toggle. And the block
+    /// collapses on an empty collection, because a record brisk could not
+    /// read must not leave a heading standing over nothing.
+    [Fact]
+    public void ThePrivacyPage_FoldsTheUsbRecordsAway_ClosedAndCollapsibleAndBound()
+    {
+        var page = XDocument.Load(
+            Path.Combine(BriskDir(), "Views", "PrivacyPage.xaml")).Root!;
+
+        var fold = page.Descendants().Single(e => e.Name.LocalName == "ToggleButton"
+            && (string?)e.Attribute(X + "Name") == "UsbDevicesFold");
+        Assert.Contains("[privacy.usb.devices.title]", fold.ToString(),
+            StringComparison.Ordinal);
+        Assert.True(fold.Attribute("IsChecked") is null,
+            "the USB fold sets IsChecked in markup, so it does not open on " +
+            "request — it is already open, and the record is on screen for " +
+            "anyone who walks past the machine");
+
+        var list = page.Descendants().Single(e => e.Name.LocalName == "ItemsControl"
+            && ((string?)e.Attribute("ItemsSource") ?? "")
+                .Contains("UsbDeviceRows", StringComparison.Ordinal));
+        Assert.Contains("UsbDevicesFold", (string?)list.Attribute("Visibility") ?? "",
+            StringComparison.Ordinal);
+
+        Assert.Contains(page.Descendants().Where(e => e.Name.LocalName == "DataTrigger"),
+            trigger => ((string?)trigger.Attribute("Binding") ?? "")
+                    .Contains("UsbDeviceRows.Count", StringComparison.Ordinal)
+                && (string?)trigger.Attribute("Value") == "0");
+    }
+
     /// The cards on Sağlık, Performans and Depolama are not written on those
     /// pages: FindingCard and CompletionReport live in Shared.xaml, which is
     /// what makes "three pages change look without changing" true at all. So

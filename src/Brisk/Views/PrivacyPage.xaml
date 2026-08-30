@@ -77,6 +77,72 @@
                                Source={x:Static loc:Loc.Instance}}" />
                 <ItemsControl ItemsSource="{Binding DisclosureRows}"
                               ItemTemplate="{StaticResource FindingCard}" />
+                <!-- WHAT THAT RECORD HOLDS. The usb row above says how many
+                     devices Windows wrote down; this says which, and it is
+                     the only place in brisk that does. The spec's red line 2
+                     read "device names never" until the maintainer amended it
+                     at his first live look (2026-08-26): a model and its
+                     dates are the user's own data, and the page only the user
+                     looks at may show the record in full, behind a fold that
+                     opens on request. Every surface built to be shared still
+                     carries the count alone.
+
+                     The fold is the page's own idiom, not a new control: the
+                     same templated ToggleButton the finding card's
+                     "Ayrıntılar" is, over a list that follows its IsChecked.
+                     No IsChecked here, so it opens on request rather than
+                     standing open. No new colours; Faint is the label and
+                     Muted is the row, which is what every quiet line on this
+                     page already wears.
+
+                     The whole block collapses when brisk read no record, so a
+                     heading never stands over nothing. What could not be read
+                     is said in the band below, by the finding, once.
+
+                     KNOWN AND NOT CLAIMED AWAY: this sits under the whole
+                     disclosure block, not under the usb card, because the
+                     block is ORDERED BY ITS NUMBERS and the usb row is
+                     wherever its count puts it — second today, between the
+                     program records and Recall. So "that record" is read from
+                     a line that follows three records rather than one. Under
+                     the usb card itself would mean the fold living in
+                     FindingCard, which is Shared.xaml and belongs to four
+                     pages. The margin below separates it from the cards so it
+                     reads as the block's own footer rather than as part of
+                     whichever card the ordering left last. -->
+                <StackPanel Margin="0,6,0,16">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UsbDeviceRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <ToggleButton x:Name="UsbDevicesFold" Cursor="Hand"
+                                  HorizontalAlignment="Left" Margin="2,0,0,0">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <TextBlock Style="{StaticResource Faint}"
+                                           Text="{Binding [privacy.usb.devices.title],
+                                               Source={x:Static loc:Loc.Instance}}" />
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                    <ItemsControl Margin="2,6,0,0" ItemsSource="{Binding UsbDeviceRows}"
+                                  Visibility="{Binding IsChecked,
+                                      ElementName=UsbDevicesFold,
+                                      Converter={x:Static Brisk:BoolToVis.Instance}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{StaticResource Muted}"
+                                           TextWrapping="Wrap" Margin="0,0,0,3"
+                                           Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <!-- The spec's fourth red line, given a place to stand: a
                      probe that could not read its source is never a silent
                      zero. The heading is the report card's own key, not a

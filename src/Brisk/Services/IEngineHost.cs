@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 
@@ -32,13 +33,23 @@ public sealed record SensorStatus(bool CpuRead, bool GpuRead, bool? MemoryIntegr
 /// notice and the report card came to contradict each other once already.
 /// An empty list is a claim too — "brisk has turned nothing off that it can
 /// re-read" — so there is no default for it either.
+///
+/// UsbDevices is required on the same rule, and its empty list says "the
+/// record holds no device brisk could read". It is the ONE channel a device
+/// MODEL NAME travels on, and it exists so that the name never travels on the
+/// other one: a DiagnosticFinding goes to the report card, the headline and
+/// the Overview lead, and this does not go anywhere near a finding. The
+/// Gizlilik page reads it and nothing else does — the spec's red line 2 as
+/// amended on 2026-08-26, held by the shape of the pipeline rather than by
+/// every future caller remembering.
 public sealed record ScanSnapshot(
     IReadOnlyList<DiagnosticFinding> Findings,
     ScanResult Cleaner,
     int Health,
     DateTime CompletedUtc,
     SensorStatus Sensors,
-    IReadOnlyList<ReadBackResult> ReadBack);
+    IReadOnlyList<ReadBackResult> ReadBack,
+    IReadOnlyList<UsbDeviceRecord> UsbDevices);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

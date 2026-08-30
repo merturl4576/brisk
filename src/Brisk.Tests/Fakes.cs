@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Brisk.Services;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 
@@ -166,7 +167,7 @@ public sealed class NoOtherProbes
 
     public bool? IsOn() => No<bool?>();
 
-    public long? BytesUploadedToPeers() => No<long?>();
+    public PeerUpload? UploadedToPeers() => No<PeerUpload?>();
 }
 
 public static class TestData
@@ -224,6 +225,14 @@ public static class TestData
     /// what the fixture's own machine would produce, not a shrug.
     private static readonly ReadBackResult[] NothingReRead = Array.Empty<ReadBackResult>();
 
+    /// The fixture's registry holds no USB record, so the fixture's snapshot
+    /// holds no device — stated, like the two above, rather than defaulted.
+    /// A test about the records passes its own list; ReportCardModelTests'
+    /// planted fixture passes what the SHIPPED rule read out of a planted
+    /// registry, which is the only way to ask whether a name a real read had
+    /// in its hands can reach the card.
+    private static readonly UsbDeviceRecord[] NoDevicesRead = Array.Empty<UsbDeviceRecord>();
+
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
         params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);
 
@@ -233,10 +242,19 @@ public static class TestData
 
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
         SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
+        params TargetScanResult[] targets) =>
+        Snapshot(findings, sensors, readBack, NoDevicesRead, targets);
+
+    /// The whole shape, for the one fixture that plants device records: the
+    /// card must print no name off a snapshot that CARRIES one, which is a
+    /// stronger question than the same card built over an empty list.
+    public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
+        SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
+        IReadOnlyList<UsbDeviceRecord> usbDevices,
         params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
-        sensors, readBack);
+        sensors, readBack, usbDevices);
 
     /// A snapshot whose only distinguishing feature is what brisk found when
     /// it looked again — the shape most read-back tests want.

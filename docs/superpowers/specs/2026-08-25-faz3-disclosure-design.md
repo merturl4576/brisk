@@ -44,9 +44,17 @@ These are not guidance. Each becomes a test (see Guards).
    available is *"this setting currently reads as off; I last confirmed it on
    this date"*. brisk reads a machine; it has no visibility into what Microsoft
    receives.
-2. **Numbers, never contents.** "47 USB devices" yes; device names never.
-   "1,284 program records" yes; the program list never. This already governs
-   the report card and now governs the Privacy page.
+2. **Numbers, never contents — on every surface built to be shared.** "47 USB
+   devices" yes; device names never on the report card, in a headline, or in
+   any string a screenshot carries. On the Gizlilik page itself the USB record
+   may be shown in full to its owner — model and dates are the user's own
+   data, rendered where only the user looks, behind a fold that opens on
+   request. The program list stays banned everywhere: "1,284 program records"
+   yes; the list never, on any surface. *(Amended 2026-08-26 on the
+   maintainer's call at the first live look; the original read: "Numbers,
+   never contents. '47 USB devices' yes; device names never. '1,284 program
+   records' yes; the program list never. This already governs the report card
+   and now governs the Privacy page.")*
 3. **Policies that do not apply on this edition are said so.** A Home machine
    where a Group Policy value is written but ignored must read as ignored, not
    as protection.
@@ -334,7 +342,16 @@ copy of:
 - the report card carries counts and never a device or program name:
   `ReportCardModelTests.TheCard_CarriesCounts_AndNeverADeviceOrAProgramName`
   and `PrivacyBan_EvidenceNamesAndPathsNeverReachTheCard`, over a card the real
-  rules built from a registry with a real device name in it
+  rules built from a registry with a real device name in it — and since the
+  amendment, over a snapshot that CARRIES those names in `UsbDevices` rather
+  than merely having had them in reach
+- the amended half, both directions in one fixture:
+  `ReportCardModelTests.TheDeviceName_RendersOnThePrivacyPage_AndOnNothingThe
+  CardCarries` hands ONE such snapshot to `PrivacyViewModel` and to
+  `ReportCardModel`, and asserts the model name renders in `UsbDeviceRows` and
+  reaches neither the card's text nor any headline. One fixture and not two,
+  because a rule split across two files can drift into disagreeing about which
+  surface is which
 - a probe that fails produces "unreadable", never zero:
   `PrivacyRedLineTests.NoPrivacyRule_TurnsAnUnreadableProbeIntoANumber`, over
   the same ten rules against a machine that answers nothing

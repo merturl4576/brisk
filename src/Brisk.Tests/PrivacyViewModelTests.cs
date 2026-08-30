@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine.Diagnostics;
+using BriskEngine.Diagnostics.Rules.Privacy;
 using BriskEngine.Models;
 using Xunit;
 
@@ -97,6 +99,117 @@ public class PrivacyViewModelTests
         Assert.Equal(
             new[] { "delivery-optimization", "recall-status" },
             order.Skip(2).OrderBy(id => id, StringComparer.Ordinal));
+    }
+
+    // ---- the USB record's own contents ---------------------------------
+
+    /// THE RECORD, SHOWN TO ITS OWNER. The spec's red line 2 was amended on
+    /// the maintainer's call at his first live look (2026-08-26): a device
+    /// model and its dates are the user's own data, and the page only the
+    /// user looks at may show them in full, behind a fold. Every surface
+    /// built to be shared still carries the count alone — that half is
+    /// TheDeviceName_RendersOnThePrivacyPage_AndOnNothingTheCardCarries, in
+    /// ReportCardModelTests, over one snapshot.
+    ///
+    /// The whole LINE is asserted, not the name inside it: what this page
+    /// owes the reader is which model, first recorded when, last seen when.
+    /// A test that looked for the name alone would pass over a row that had
+    /// swapped the two dates.
+    [Fact]
+    public async Task TheUsbRecord_RendersEachDevice_WithItsModelAndBothDates()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { Disclosure("usb-history", "2") },
+            new SensorStatus(false, false, null),
+            Array.Empty<ReadBackResult>(),
+            new[]
+            {
+                new UsbDeviceRecord("Ven_Kingston&Prod_DataTraveler",
+                    new DateTime(2021, 3, 4, 5, 6, 7, DateTimeKind.Utc),
+                    new DateTime(2026, 8, 20, 9, 30, 0, DateTimeKind.Utc)),
+                new UsbDeviceRecord("Ven_SanDisk&Prod_Cruzer",
+                    new DateTime(2019, 7, 16, 0, 0, 0, DateTimeKind.Utc),
+                    new DateTime(2019, 7, 16, 0, 0, 0, DateTimeKind.Utc)),
+            });
+        await state.ScanAsync();
+
+        Assert.Equal(
+            new[]
+            {
+                "Ven_Kingston&Prod_DataTraveler — first recorded 2021-03-04 · last seen 2026-08-20",
+                "Ven_SanDisk&Prod_Cruzer — first recorded 2019-07-16 · last seen 2019-07-16",
+            },
+            vm.UsbDeviceRows);
+    }
+
+    /// A date brisk did not read renders as the dash this app prints where it
+    /// has no reading — never a guess, and never the blank an eye reads as a
+    /// zero. Both halves get their own row, because they are two reads and
+    /// either can be refused on its own.
+    ///
+    /// The stamps are NOT converted to local time, deliberately. The usb row
+    /// directly above this fold prints "the oldest date it could read among
+    /// them is 2017-05-09" straight off the rule, unconverted, and one record
+    /// wearing two spellings of its own date six lines apart on one page is
+    /// the defect this matches the rule to avoid. Every date here is a
+    /// calendar day out of a FILETIME, and 08:30 UTC is 11:30 in the timezone
+    /// this is built in — far enough from midnight to have shown the shift.
+    [Theory]
+    [InlineData(null, null, "Ven_A&Prod_Stick — first recorded — · last seen —")]
+    [InlineData("2017-05-09", null, "Ven_A&Prod_Stick — first recorded 2017-05-09 · last seen —")]
+    [InlineData(null, "2026-08-20", "Ven_A&Prod_Stick — first recorded — · last seen 2026-08-20")]
+    public async Task ADateBriskCouldNotRead_RendersTheDash_NotAGuess(
+        string? first, string? last, string expected)
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { Disclosure("usb-history", "1") },
+            new SensorStatus(false, false, null),
+            Array.Empty<ReadBackResult>(),
+            new[] { new UsbDeviceRecord("Ven_A&Prod_Stick", Utc(first), Utc(last)) });
+        await state.ScanAsync();
+
+        Assert.Equal(expected, Assert.Single(vm.UsbDeviceRows));
+    }
+
+    /// 08:30 UTC on the planted day, or nothing — the shape a FILETIME read
+    /// off the property store arrives in, at an hour a timezone conversion
+    /// would visibly move.
+    private static DateTime? Utc(string? day) => day is null ? null
+        : DateTime.SpecifyKind(DateTime.Parse(day, CultureInfo.InvariantCulture),
+            DateTimeKind.Utc).AddHours(8.5);
+
+    /// A machine whose USB record brisk could not read leaves the fold with
+    /// nothing in it, which is what collapses it in the markup. No row saying
+    /// so: the page's "what brisk could not read" band is where that claim
+    /// belongs, and the finding is what carries it there.
+    [Fact]
+    public async Task NoDeviceRecordRead_LeavesTheFoldEmpty()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[] { Unreadable("usb-history") });
+        await state.ScanAsync();
+
+        Assert.Empty(vm.UsbDeviceRows);
+    }
+
+    /// The rows are REBUILT per snapshot, like every other band on this page.
+    /// An ObservableCollection that was appended to instead would show the
+    /// same stick twice after a rescan and call it two devices.
+    [Fact]
+    public async Task ASecondScan_RebuildsTheDeviceRows_RatherThanAppending()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { Disclosure("usb-history", "1") },
+            new SensorStatus(false, false, null),
+            Array.Empty<ReadBackResult>(),
+            new[] { new UsbDeviceRecord("Ven_A&Prod_Stick", null, null) });
+        await state.ScanAsync();
+        await state.ScanAsync();
+
+        Assert.Single(vm.UsbDeviceRows);
     }
 
     /// The spec's fourth red line, on this page: what could not be read is

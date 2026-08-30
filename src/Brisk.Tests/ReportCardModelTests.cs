@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
@@ -525,6 +526,13 @@ public class ReportCardModelTests
     /// registry, never written here as literals: what these tests ask is
     /// whether a name a real rule had in its hands can reach the card, and a
     /// fixture that never held the name could not ask it.
+    ///
+    /// SINCE THE AMENDMENT, the snapshot also CARRIES the names, in
+    /// UsbDevices, off the same shipped rule reading the same registry. That
+    /// is a harder question than the one this fixture asked before and the
+    /// one worth asking now: the card is built over a snapshot with
+    /// "Kingston" in it, in a list, in reach of anything that walked the
+    /// snapshot — and prints no Kingston.
     private static ScanSnapshot SnapshotWithPlantedNames()
     {
         var reg = new FakeRegistry();
@@ -533,6 +541,12 @@ public class ReportCardModelTests
             PlantUsbInstance(reg, "Ven_Generic&Prod_Stick", $"instance-{i:00}");
         reg.SetString(RunHistoryRule.CountKeyPaths[0], "chrome.exe", "");
         reg.SetString(RunHistoryRule.CountKeyPaths[0], "puebzr.rkr", "");
+        // 1282 more, so the run count is the distinctive 1284 the assertions
+        // can find without matching a date or a score by accident — the usb
+        // count no longer reaches the card at all (RevelationPicker.NeverLeads),
+        // so run-history is the disclosure the count claims now ride on.
+        for (var i = 0; i < 1282; i++)
+            reg.SetString(RunHistoryRule.CountKeyPaths[0], $"entry-{i:0000}.rkr", "");
 
         var ctx = TestData.RegistryContext(reg);
         return TestData.Snapshot(
@@ -541,7 +555,9 @@ public class ReportCardModelTests
                 new UsbHistoryRule().Detect(ctx)!,
                 new RunHistoryRule().Detect(ctx)!,
             },
-            new SensorStatus(true, true, null));
+            new SensorStatus(true, true, null),
+            Array.Empty<ReadBackResult>(),
+            UsbHistoryRule.ReadDevices(ctx));
     }
 
     private static void PlantUsbInstance(FakeRegistry reg, string model, string instance)
@@ -574,11 +590,72 @@ public class ReportCardModelTests
 
         var text = AllTextOn(card);
 
-        Assert.Contains("47", text);
+        Assert.Contains("1284", text);
+        // The usb COUNT stays off the card too — not a red line but the
+        // maintainer's 2026-08-26 call (RevelationPicker.NeverLeads): the
+        // record lives on the Gizlilik page and leads nothing shareable.
+        Assert.DoesNotContain("47", text);
         Assert.DoesNotContain("Kingston", text);
         Assert.DoesNotContain("DataTraveler", text);
         Assert.DoesNotContain("chrome.exe", text);
         Assert.DoesNotContain("puebzr", text);
+    }
+
+    /// THE AMENDED RED LINE 2, BOTH HALVES, OVER ONE SNAPSHOT. The spec's
+    /// second red line read "device names never", full stop. On 2026-08-26,
+    /// at his first live look at 0.6.0, the maintainer amended it: the model
+    /// and its dates are the user's OWN data, and the Gizlilik page — the one
+    /// surface nobody screenshots to share a result — may show the record in
+    /// full to its owner, behind a fold. Everything built to be shared keeps
+    /// the count alone. The spec quotes what it replaced, verbatim, beside
+    /// the amendment.
+    ///
+    /// ONE FIXTURE AND NOT TWO, because the two halves are one rule and a
+    /// rule split across two files can drift into disagreeing about which
+    /// surface is which. The same snapshot — the shipped UsbHistoryRule
+    /// reading a registry with a Kingston planted in it — is handed to the
+    /// page and to the card, and it is asked what each of them does with the
+    /// name that is demonstrably in reach of both.
+    ///
+    /// THE PAGE SIDE IS THE ONLY THING EXEMPTED, and only UsbDeviceRows. No
+    /// card-side assertion was weakened for this: TheCard_CarriesCounts_And
+    /// NeverADeviceOrAProgramName above asserts exactly what it asserted
+    /// before the amendment, and asserts it over a snapshot that now CARRIES
+    /// the names rather than merely having had them in reach.
+    ///
+    /// The headlines are read too. AllTextOn covers the card model; the
+    /// Overview's lead reads Headline off the finding directly, and a name in
+    /// a headline would reach a shareable surface by a route the card model
+    /// never touches.
+    [Fact]
+    public async Task TheDeviceName_RendersOnThePrivacyPage_AndOnNothingTheCardCarries()
+    {
+        var snapshot = SnapshotWithPlantedNames();
+        var loc = Loc("en");
+        var host = new FakeEngineHost { NextSnapshot = snapshot };
+        var state = new AppState(host, loc);
+        var page = new PrivacyViewModel(state, host, loc, () => false, _ => true);
+
+        await state.ScanAsync();
+
+        // PAGE-YES. Every one of the 47 records the rule read reaches its
+        // owner, and the recognisable one is among them by name.
+        Assert.Equal(47, page.UsbDeviceRows.Count);
+        Assert.Contains(page.UsbDeviceRows,
+            row => row.Contains("Ven_Kingston&Prod_DataTraveler", StringComparison.Ordinal));
+
+        // CARD-NEVER. The same snapshot, the same names, nothing printed.
+        var card = ReportCardModel.Build(snapshot, Array.Empty<UndoableFix>(), loc);
+        var text = AllTextOn(card);
+        Assert.DoesNotContain("Kingston", text);
+        Assert.DoesNotContain("DataTraveler", text);
+        Assert.DoesNotContain("Ven_", text);
+        foreach (var headline in snapshot.Findings
+                     .Select(f => f.Headline).Where(h => h is not null))
+        {
+            Assert.DoesNotContain("Kingston", headline!.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Kingston", headline.Caption, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     /// The card's "okuyamadıklarım" is fed from ONE channel. It used to read
@@ -622,7 +699,7 @@ public class ReportCardModelTests
         var card = ReportCardModel.Build(SnapshotWithPlantedNames(),
             Array.Empty<UndoableFix>(), Loc("en"));
 
-        Assert.Equal("47", card.Findings[0].Lead);
+        Assert.Equal("1284", card.Findings[0].Lead);
         Assert.Equal(new[] { "Everything brisk tried to read, answered." }, card.Unread);
     }
 

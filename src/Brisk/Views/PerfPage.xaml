@@ -64,6 +64,46 @@
                 </StackPanel>
             </DockPanel>
         </Border>
+        <!-- The same action band Sağlık carries, from the same view model:
+             the maintainer's first live look (2026-08-26) found this page
+             could neither start a scan nor run the safe fixes. The keys are
+             Sağlık's own — FixAllService acts on the whole snapshot from any
+             surface, so the label may not differ per page. No
+             HorizontalAlignment: the content column works by MaxWidth +
+             default Stretch. -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,14"
+                    MaxWidth="{StaticResource ContentMaxWidth}">
+            <Button Margin="0,0,8,0" Command="{Binding ScanCommand}"
+                    Content="{Binding [flyout.scan], Source={x:Static loc:Loc.Instance}}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Margin="0,0,16,0" Command="{Binding FixAllCommand}"
+                    Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <CheckBox Style="{StaticResource QuietCheck}" VerticalAlignment="Center"
+                      IsChecked="{Binding CreateRestorePointFirst}"
+                      Content="{Binding [health.restorepoint], Source={x:Static loc:Loc.Instance}}" />
+        </StackPanel>
         <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" TextWrapping="Wrap"
                    MaxWidth="{StaticResource ContentMaxWidth}"
                    Text="{Binding Message}">

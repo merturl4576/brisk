@@ -45,19 +45,44 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
     public override DiagnosticFinding? Detect(DiagnosticContext ctx) =>
         Uploaded(ctx) switch
         {
-            0 => null,
-            > 0 and var bytes => Reported(bytes),
             // Anything the probe hands back that is not a count of bytes
             // brisk can report. null is the probe's own way of saying it
             // could not read the counter, and a figure below zero is not a
             // quantity of anything; neither is rounded into the answer that
             // would reassure, and neither is the whole of what lands here.
-            _ => Unread(),
+            //
+            // THREE FIGURES ARE CHECKED WHERE THERE USED TO BE ONE, because
+            // the probe now hands back two halves and their sum rather than a
+            // single number. Each half in its own right — a half below zero
+            // is not a quantity even when the other half hides it in the
+            // total — and the total in its own right too, which is not
+            // implied by the halves: two halves large enough to wrap the sum
+            // negative are each individually non-negative.
+            null or { LanBytes: < 0 } or { InternetBytes: < 0 } or { Total: < 0 }
+                => Unread(),
+            { Total: 0 } => null,
+            { } upload => Reported(upload),
         };
 
-    private DiagnosticFinding Reported(long bytes)
+    /// THE HEADLINE IS THE TOTAL AND THE SENTENCE IS THE SPLIT. Windows
+    /// counts these bytes in two halves — machines reached over this local
+    /// network, machines reached over the internet — and brisk used to add
+    /// them and report the sum alone, which told a reader that 302 MB left
+    /// this machine and not that every byte of it stopped at the router. The
+    /// two are different claims about one number and the split is the one
+    /// brisk read. The lead stays the total because a headline is one figure
+    /// and the number that answers "how much" is the sum of both halves.
+    ///
+    /// THE LAST CLAUSE IS NOT A LEFTOVER. Naming the two sides is not naming
+    /// the machines, and a reader handed a split is likelier to think brisk
+    /// knows where the bytes landed than one handed a total. So the sentence
+    /// that says brisk cannot say which machines those were survives the
+    /// widening, and the test on it says why it is there.
+    private DiagnosticFinding Reported(PeerUpload upload)
     {
-        var amount = Fmt.Bytes(bytes);
+        var amount = Fmt.Bytes(upload.Total);
+        var lan = Fmt.Bytes(upload.LanBytes);
+        var internet = Fmt.Bytes(upload.InternetBytes);
         return Disclosure(
             $"rule.{Id}.title",
             "Windows uploaded data from this machine to other machines this month",
@@ -65,10 +90,11 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
             "Delivery Optimization is the part of Windows that uploads content " +
             "from this machine to other machines. Windows keeps a running count " +
             "of what it uploaded that way, and for the current calendar month " +
-            $"that counter reads {amount}. brisk reads the counter and nothing " +
-            "past it: which machines those bytes went to is not something that " +
-            "read can tell you.",
-            new[] { amount },
+            $"that counter reads {amount}: {lan} of it to machines on this local " +
+            $"network, {internet} to machines on the internet. brisk reads the " +
+            "counter and nothing past it: which machines those were is not " +
+            "something that read can tell you.",
+            new[] { amount, lan, internet },
             new Headline(
                 amount, "uploaded from this machine to other machines this month",
                 $"rule.{Id}.headline.value", new[] { amount },
@@ -91,9 +117,9 @@ public sealed class DeliveryOptimizationRule : PrivacyDisclosureRule
     /// catch-all, which drops the whole finding without a word — and the
     /// reading brisk would then never make is the unreadable one, which is
     /// the reading this rule exists to make.
-    private static long? Uploaded(DiagnosticContext ctx)
+    private static PeerUpload? Uploaded(DiagnosticContext ctx)
     {
-        try { return ctx.DeliveryOptimization.BytesUploadedToPeers(); }
+        try { return ctx.DeliveryOptimization.UploadedToPeers(); }
         catch (Exception) { return null; }
     }
 }

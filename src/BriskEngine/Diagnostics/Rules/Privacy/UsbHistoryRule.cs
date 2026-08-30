@@ -5,6 +5,25 @@ using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.Rules.Privacy;
 
+/// ONE instance of one USB storage device, as Windows recorded it: the name
+/// of the model subkey it sits under, and the two dates the device property
+/// store keeps below it.
+///
+/// Either date is null when brisk did not read one — a refused key, a value
+/// that is not there, a stamp that will not convert. Null means "brisk read
+/// no date here" and never "there is no date": the two are the same from
+/// where this read stands, and picking one of them is what the rest of this
+/// file refuses to do with a count.
+///
+/// THIS IS THE ONLY SHAPE A DEVICE NAME TRAVELS IN, and it travels one way:
+/// EngineHost puts it in ScanSnapshot.UsbDevices and the Gizlilik page
+/// renders it. It is not on DiagnosticFinding, so no report card, headline
+/// or picked row can carry a name however the rest of the pipeline is wired.
+/// That is the spec's red line 2 as amended on 2026-08-26 — shown in full to
+/// its owner, on the owner's own screen, and on no surface built to be
+/// shared — held by construction rather than by remembering.
+public sealed record UsbDeviceRecord(string Model, DateTime? FirstSeen, DateTime? LastSeen);
+
 /// How many USB storage devices Windows has a record of, and how far back
 /// that record goes. Windows enumerates them two levels deep — a subkey per
 /// device MODEL, and under each model a subkey per INSTANCE, which is what it
@@ -13,10 +32,17 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// sticks of the same model.
 ///
 /// Those subkey names identify the device: the model above, and below it the
-/// instance id Windows gave that one. They are read to build the next key
-/// path and they go nowhere else — no name reaches the title, the evidence,
-/// an evidence argument or the headline. That is the spec's second red line:
-/// a count may be shown, the thing counted may not.
+/// instance id Windows gave that one. Detect reads them to build the next key
+/// path and they go nowhere else FROM HERE — no name reaches the title, the
+/// evidence, an evidence argument or the headline, which is what a finding
+/// carries onto every surface built to be shared.
+///
+/// ReadDevices below is the one door the model name leaves by, and it does
+/// not open onto a finding: the spec's red line 2, amended on the
+/// maintainer's call at his first live look (2026-08-26), lets the record be
+/// shown in full to its owner on the Gizlilik page and nowhere else. The
+/// instance id is not part of that — it is a serial number, it identifies
+/// the stick rather than describing it, and nothing asked for it.
 ///
 /// The date is a separate read and it fails on its own, MEASURED rather than
 /// guessed at. Windows keeps an install date in the device property store
@@ -51,6 +77,52 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
 
     public const string InstallDateValueName = "";
 
+    /// The other half of the same property store: when Windows last saw this
+    /// device attached. Same property set, property 0066 —
+    /// DEVPKEY_Device_LastArrivalDate — read as the same default value under
+    /// the same InstallDateValueName, because "the value the key holds by
+    /// default" is one empty name whichever property it belongs to.
+    ///
+    /// UNVERIFIED against real hardware, exactly like InstallDateSubPath
+    /// above and for exactly the same reason: this path came from the task
+    /// brief, the machine this was written on refuses the property key
+    /// unelevated, and only the fake has ever exercised the layout. If a
+    /// device shows a first date and never a last one on a machine that CAN
+    /// open the key, this constant is the first thing to doubt.
+    public const string LastArrivalSubPath =
+        @"Properties\{83da6326-97a6-4088-9453-a1923f573b29}\0066";
+
+    /// Every instance Detect counts, carrying what Detect throws away: the
+    /// model name and both dates, one record per INSTANCE, in the order the
+    /// two-level walk reaches them. The same walk and the same guards — a
+    /// refused model key costs that branch, a refused property read costs
+    /// that field — so a refusal costs a record's DATE, never the record,
+    /// never the list, and never the scan.
+    ///
+    /// It walks the registry a second time in the same scan rather than
+    /// sharing Detect's pass, and that is deliberate. Detect's answer is a
+    /// count and one earliest date; a list of records cannot be recovered
+    /// from it, and folding this into Detect would change the shape of a
+    /// method whose behaviour a dozen tests pin. The cost is one extra
+    /// enumeration of a key that holds tens of entries.
+    ///
+    /// The one caller is EngineHost, which puts the answer in
+    /// ScanSnapshot.UsbDevices for the Gizlilik page. Nothing here reaches a
+    /// DiagnosticFinding.
+    public static IReadOnlyList<UsbDeviceRecord> ReadDevices(DiagnosticContext ctx)
+    {
+        var devices = new List<UsbDeviceRecord>();
+        foreach (var model in SubKeys(ctx, KeyPath))
+        foreach (var instance in SubKeys(ctx, $@"{KeyPath}\{model}"))
+        {
+            var instanceKeyPath = $@"{KeyPath}\{model}\{instance}";
+            devices.Add(new UsbDeviceRecord(model,
+                Stamp(ctx, instanceKeyPath, InstallDateSubPath),
+                Stamp(ctx, instanceKeyPath, LastArrivalSubPath)));
+        }
+        return devices;
+    }
+
     public override string Id => "usb-history";
 
     public override DiagnosticFinding? Detect(DiagnosticContext ctx)
@@ -71,8 +143,9 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
                 "Windows keeps a record of the USB storage devices that have " +
                 $"been attached to this machine. brisk counted {counted} of them " +
                 "and could not read a date from any of those records, so it does " +
-                "not say how far back the record goes. brisk counts the records " +
-                "and never reads a device name.",
+                "not say how far back the record goes. brisk reads the record, " +
+                "device names included, and shows the names only on the Privacy " +
+                "page — never on anything built to be shared.",
                 new[] { counted }, headline);
 
         var date = oldest.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -81,8 +154,9 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
             $"rule.{Id}.evidence",
             "Windows keeps a record of the USB storage devices that have been " +
             $"attached to this machine. brisk counted {counted} of them, and the " +
-            $"oldest date it could read among them is {date}. brisk counts the " +
-            "records and never reads a device name.",
+            $"oldest date it could read among them is {date}. brisk reads the " +
+            "record, device names included, and shows the names only on the " +
+            "Privacy page — never on anything built to be shared.",
             new[] { counted, date }, headline);
     }
 
@@ -111,7 +185,7 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
         foreach (var instance in SubKeys(ctx, $@"{KeyPath}\{model}"))
         {
             count++;
-            if (InstallDate(ctx, $@"{KeyPath}\{model}\{instance}") is { } when
+            if (Stamp(ctx, $@"{KeyPath}\{model}\{instance}", InstallDateSubPath) is { } when
                 && (earliest is null || when < earliest))
                 earliest = when;
         }
@@ -131,19 +205,27 @@ public sealed class UsbHistoryRule : PrivacyDisclosureRule
         catch (Exception) { return Array.Empty<string>(); }
     }
 
-    /// The install date of one instance, or nothing. Nothing is what a read
+    /// ONE dated property of one instance, or nothing. Nothing is what a read
     /// that cannot be turned into a date returns: a refused key, a value that
     /// is not there or is not bytes, too few bytes to hold a FILETIME, and a
     /// FILETIME that will not convert — including zero, which converts
     /// happily into the first instant of the FILETIME epoch and would report
     /// a machine as having had a USB stick attached in 1601.
-    private static DateTime? InstallDate(DiagnosticContext ctx, string instanceKeyPath)
+    ///
+    /// The sub-path is a parameter because two properties in one store are
+    /// read this way and both are FILETIMEs under the same empty value name.
+    /// It was InstallDate, reading InstallDateSubPath alone; ReadDevices
+    /// needs the last-arrival property read to exactly this standard, and a
+    /// second copy of these five refusals is a second chance to leave one
+    /// out.
+    private static DateTime? Stamp(DiagnosticContext ctx, string instanceKeyPath,
+        string subPath)
     {
         byte[]? stamp;
         try
         {
             stamp = ctx.Registry.GetBytes(
-                $@"{instanceKeyPath}\{InstallDateSubPath}", InstallDateValueName);
+                $@"{instanceKeyPath}\{subPath}", InstallDateValueName);
         }
         catch (Exception) { return null; }
 
