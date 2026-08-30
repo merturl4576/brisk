@@ -13,9 +13,9 @@ No installer. No account. No telemetry. No AI. Every diagnosis is a deterministi
 
 [Türkçe README](README.tr.md)
 
-<!-- SCREENSHOT: the Health page with findings visible goes here, plus a GIF of a
-     one-click fix and its undo. Both are the maintainer's call to record, since
-     they mean launching the app on a real machine. -->
+![The brisk cockpit — Overview page](docs/media/cockpit.png)
+
+*Rendered by the test suite's offscreen harness over fixture data — the same code path the app draws with. (Yes, "Free up 2 KB": fixtures are small. A real machine's numbers are bigger and just as honestly sourced.)*
 
 ---
 
@@ -76,6 +76,10 @@ Every tool in this category says "done". brisk is built on the idea that "done" 
 No causal claim anywhere in that sentence — two measurements, their counts, and the reader's own conclusion.
 
 **What Windows knows about you:** the Privacy page reads out what your machine has been recording — every USB device ever plugged in (model and dates), how many program launches Windows has counted, whether Recall is present, and how much Delivery Optimization uploaded to other machines this month, split into local network vs internet. On the maintainer's machine that counter read 302 MB — all of it LAN, zero internet. Knowing the split is the difference between a scare and a fact.
+
+![The Privacy page, four-state read-back included](docs/media/privacy-readback.png)
+
+*The bottom band is the read-back over fixture data: one switch held, one was written but ignored, one cannot be verified on this edition, one was reverted — four different sentences, because four different things happened.*
 
 ---
 

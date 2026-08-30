@@ -13,9 +13,9 @@ Kurulum yok. Hesap yok. Telemetri yok. Yapay zekâ yok. Her teşhis, kaynağınd
 
 [English README](README.md)
 
-<!-- EKRAN GÖRÜNTÜSÜ: Health sayfası bulgular görünürken, artı tek tıkla
-     düzeltme ve geri alma GIF'i. İkisi de gerçek makinede uygulama açmayı
-     gerektirdiği için Mert'in kararı. -->
+![brisk kokpiti — Genel Bakış sayfası](docs/media/cockpit.png)
+
+*Test süitinin ekran-dışı render düzeneğiyle, fixture verisi üzerinden çizildi — uygulamanın kullandığı kod yolunun aynısı. (Evet, "2 KB yer aç": fixture'lar küçük. Gerçek bir makinenin sayıları daha büyük ve aynı dürüstlükle kaynaklı.)*
 
 ---
 
@@ -76,6 +76,10 @@ Bu kategorideki her araç "tamam" der. brisk, "tamam"ın bir iddia olduğu ve id
 Cümlenin hiçbir yerinde nedensellik iddiası yok — iki ölçüm, sayıları ve okuyanın kendi çıkarımı.
 
 **Windows'un senin hakkında bildikleri:** Gizlilik sayfası makinenin kaydettiklerini okur — bugüne dek takılmış her USB aygıt (model ve tarihler), Windows'un saydığı program çalıştırma kayıtları, Recall'un durumu ve Delivery Optimization'ın bu ay başka makinelere ne yüklediği, yerel ağ / internet ayrımıyla. Geliştiricinin makinesinde o sayaç 302 MB gösteriyordu — tamamı yerel ağ, internet sıfır. Ayrımı bilmek, korku ile gerçek arasındaki farktır.
+
+![Gizlilik sayfası, dört durumlu read-back dahil](docs/media/privacy-readback.png)
+
+*Alttaki bant, fixture verisi üzerindeki read-back: bir ayar tuttu, biri yazıldı ama umursanmadı, biri bu sürümde doğrulanamıyor, biri geri döndü — dört farklı cümle, çünkü dört farklı şey oldu.*
 
 ---
 
