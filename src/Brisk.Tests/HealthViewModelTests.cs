@@ -1270,9 +1270,11 @@ public class HealthViewModelTests
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
         Assert.Equal("", vm.Message);   // success speaks through the report
-        var line = Assert.Single(vm.ReportLines);
-        Assert.Equal(loc["rule.power-plan.done"], line.Text);
-        Assert.True(line.IsDone);
+        // outcome first, then the when-it-shows note (dotless, 2026-08-30)
+        Assert.Equal(new[] { loc["rule.power-plan.done"], loc["report.expectation"] },
+            vm.ReportLines.Select(l => l.Text));
+        Assert.True(vm.ReportLines[0].IsDone);
+        Assert.False(vm.ReportLines[1].IsDone);
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
             vm.ReportSummary);
@@ -1296,9 +1298,11 @@ public class HealthViewModelTests
 
         await vm.FixAllAsync();
 
-        // the partial note is an info line in the report — dotless, honest
+        // the partial note is an info line in the report — dotless, honest —
+        // and since 2026-08-30 the when-it-shows note stands beside it
         Assert.Equal("", vm.Message);
-        var partial = vm.ReportLines.Single(l => !l.IsDone);
+        var partial = vm.ReportLines.Single(
+            l => !l.IsDone && l.Text != loc["report.expectation"]);
         Assert.Equal(loc.F("health.fixpartial", 1, 2), partial.Text);
         Assert.Contains(vm.ReportLines,
             l => l.IsDone && l.Text == loc["rule.power-plan.done"]);

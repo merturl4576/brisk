@@ -316,10 +316,14 @@ public class OverviewViewModelTests
 
         Assert.Equal(new[] { "power-plan" }, host.Fixed);
         // the line is the rule's past-tense outcome, not its problem title —
-        // and a real outcome wears the report's green dot
-        Assert.Equal(new[] { "Power plan switched to high performance" },
+        // and a real outcome wears the report's green dot. The when-it-shows
+        // note closes every applied run (2026-08-30 field-test lesson) and
+        // never wears the dot: it is a caveat, not an outcome.
+        Assert.Equal(new[] { "Power plan switched to high performance",
+                loc["report.expectation"] },
             vm.ReportLines.Select(l => l.Text));
-        Assert.All(vm.ReportLines, l => Assert.True(l.IsDone));
+        Assert.True(vm.ReportLines[0].IsDone);
+        Assert.False(vm.ReportLines[1].IsDone);
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.fixes", 1)),
             vm.ReportSummary);
@@ -342,7 +346,8 @@ public class OverviewViewModelTests
 
         // rule.custom-x.done and rule.custom-x.title are both missing:
         // generic "Fixed: <engine English>" keeps the line an outcome.
-        Assert.Equal(new[] { loc.F("overview.report.fixed", "Title custom-x") },
+        Assert.Equal(new[] { loc.F("overview.report.fixed", "Title custom-x"),
+                loc["report.expectation"] },
             vm.ReportLines.Select(l => l.Text));
     }
 
@@ -365,7 +370,8 @@ public class OverviewViewModelTests
 
         await vm.FixAllAsync();
 
-        Assert.Equal(new[] { loc.F("overview.report.disabled", "Discord") },
+        Assert.Equal(new[] { loc.F("overview.report.disabled", "Discord"),
+                loc["report.expectation"] },
             vm.ReportLines.Select(l => l.Text));
         Assert.Equal(
             loc.F("overview.report.summary", loc.F("overview.report.part.startup", 1)),

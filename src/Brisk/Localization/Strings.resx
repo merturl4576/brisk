@@ -104,6 +104,7 @@
   <data name="clean.note.docker-prune" xml:space="preserve"><value>Runs "docker system prune -af": unused images, containers and build cache — everything a build or pull recreates.</value></data>
   <data name="overview.deepreveal" xml:space="preserve"><value>{0} more sits on the deep shelves ({1}: {2}) — see the breakdown</value></data>
   <data name="perf.boottrend" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → since the last change: about {2} ({3} boots). Windows' own timings.</value></data>
+  <data name="report.expectation" xml:space="preserve"><value>Part of this only shows after the next restart — brisk will read Windows' own boot timings then and put the before → after on the Performance page.</value></data>
   <data name="clean.undo" xml:space="preserve"><value>Undo</value></data>
   <data name="clean.reclaim" xml:space="preserve"><value>Reclaim space now</value></data>
   <data name="clean.dismiss" xml:space="preserve"><value>Dismiss</value></data>
