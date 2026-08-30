@@ -37,7 +37,13 @@ public class RefreshConfirmationTests
         // outright: if Keep() ever regresses to a no-op, the infinite delay
         // never completes, and without this race the test would hang forever
         // rather than reporting a failure.
-        var winner = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(5)));
+        //
+        // 30 s, not 5: the timeout exists to catch a REGRESSION, not to time
+        // the ThreadPool. On the launch-day CI run (2026-08-30, run
+        // 33309646521) a busy two-core runner took longer than 5 s to
+        // schedule the continuation and this test was the suite's only red —
+        // a flake by construction. A real Keep() no-op still fails in 30 s.
+        var winner = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(30)));
         Assert.Same(pending, winner);
 
         Assert.True(await pending);

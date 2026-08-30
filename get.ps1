@@ -10,6 +10,9 @@
 $ErrorActionPreference = 'Stop'
 # Eski Windows PowerShell kurulumlari TLS 1.0 ile acilir; GitHub reddeder.
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# PS 5.1'de Invoke-WebRequest, ilerleme cubugunu cizerken indirmeyi
+# onlarca kat yavaslatir; 94 MB'lik zip icin fark dakikalardir.
+$ProgressPreference = 'SilentlyContinue'
 
 $repo = 'merturl4576/brisk'
 $dir  = Join-Path $env:LOCALAPPDATA 'brisk'
