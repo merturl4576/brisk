@@ -8,6 +8,8 @@
 # butun is asagida; gormek istemeyenler icin de indirilen arsivin SHA256'si,
 # release'in yaninda yayimlanan ozetle KARSILASTIRILIR — tutmazsa calismaz.
 $ErrorActionPreference = 'Stop'
+# Eski Windows PowerShell kurulumlari TLS 1.0 ile acilir; GitHub reddeder.
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $repo = 'merturl4576/brisk'
 $dir  = Join-Path $env:LOCALAPPDATA 'brisk'

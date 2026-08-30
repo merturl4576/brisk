@@ -21,7 +21,7 @@ Kurulum yok. Hesap yok. Telemetri yok. Yapay zekâ yok. Her teşhis, kaynağınd
 
 ## Kurulum
 
-Tek satır — ama güvenmek zorunda kalma diye betik [39 okunur satır](get.ps1): son sürümü indirir, **SHA-256 özeti yayımlananla tutmuyorsa çalıştırmayı reddeder** ve tek klasöre açar (kaldırmak = klasörü silmek):
+Tek satır — ama güvenmek zorunda kalma diye betik [41 okunur satır](get.ps1): son sürümü indirir, **SHA-256 özeti yayımlananla tutmuyorsa çalıştırmayı reddeder** ve tek klasöre açar (kaldırmak = klasörü silmek):
 
 ```powershell
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
