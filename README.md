@@ -21,7 +21,7 @@ No installer. No account. No telemetry. No AI. Every diagnosis is a deterministi
 
 ## Install
 
-One line, if you trust it — and you should not have to, so the script is [35 readable lines](get.ps1) that download the latest release, **refuse to run it unless the SHA-256 digest matches** the one published beside it, and unpack into one folder (uninstall = delete the folder):
+One line, if you trust it — and you should not have to, so the script is [39 readable lines](get.ps1) that download the latest release, **refuse to run it unless the SHA-256 digest matches** the one published beside it, and unpack into one folder (uninstall = delete the folder):
 
 ```powershell
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex

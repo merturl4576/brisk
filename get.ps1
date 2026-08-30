@@ -20,9 +20,14 @@ $zip = Join-Path $env:TEMP $asset.name
 Invoke-WebRequest $asset.browser_download_url -OutFile $zip
 
 # Ozet dogrulamasi: release her zip'in yaninda "<ad>.zip.sha256" yayimlar.
+# Dosyaya indirilip oyle okunur: GitHub varliklari octet-stream olarak servis
+# eder ve Invoke-RestMethod o zaman string degil Byte[] dondurur.
 $shaAsset = $rel.assets | Where-Object name -eq ($asset.name + '.sha256')
 if (-not $shaAsset) { throw 'brisk: release ozet dosyasini tasimiyor; bu betik dogrulamadan kurmaz' }
-$expected = (Invoke-RestMethod $shaAsset.browser_download_url).Trim().Split(' ')[0].ToUpperInvariant()
+$shaFile = Join-Path $env:TEMP $shaAsset.name
+Invoke-WebRequest $shaAsset.browser_download_url -OutFile $shaFile
+$expected = (Get-Content $shaFile -Raw).Trim().Split(' ')[0].ToUpperInvariant()
+Remove-Item $shaFile
 $actual   = (Get-FileHash $zip -Algorithm SHA256).Hash.ToUpperInvariant()
 if ($actual -ne $expected) {
     throw "brisk: indirilen dosyanin ozeti release'in yayimladigiyla tutmadi (beklenen $expected, gelen $actual)"
