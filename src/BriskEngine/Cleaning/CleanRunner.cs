@@ -103,6 +103,50 @@ public sealed class CleanRunner
                     Record("(recycle bin)", 0, "external");
                 }
                 return new CleanReport(entries);
+
+            // ---- The heavy system trio. Two house rules the older external
+            // cases never needed: elevation is checked HERE (this switch sits
+            // above the loop's blockedByElevation check), and bytes are
+            // recorded as "removed" — never "recycled" — only for a path that
+            // existed before the commands and is observed gone after them.
+            // Nothing here can come back from the bin, and the accounting
+            // downstream (undo, freed figures) must know that.
+            case "windows-old":
+                return RemoveOutsideTheBin(scan, dryRun, Record, entries, path =>
+                {
+                    // ownership first, then rights by SID (the group's NAME is
+                    // localized; S-1-5-32-544 is Administrators everywhere),
+                    // then the removal itself
+                    _processRunner.Run("takeown", $"/f \"{path}\" /r /d y");
+                    _processRunner.Run("icacls", $"\"{path}\" /grant *S-1-5-32-544:F /t /q");
+                    _processRunner.Run("cmd", $"/c rd /s /q \"{path}\"");
+                });
+            case "hibernation-file":
+                // powercfg both frees the file and turns hibernation (and
+                // Fast Startup) off — the consent copy names that trade, and
+                // "powercfg /hibernate on" reverses it.
+                return RemoveOutsideTheBin(scan, dryRun, Record, entries,
+                    _ => _processRunner.Run("powercfg", "/hibernate off"));
+            case "component-store":
+                if (!_isElevated())
+                {
+                    Record("(component store)", 0, "refused", "requires administrator");
+                }
+                else if (dryRun)
+                {
+                    Record("(component store)", 0, "dry-run");
+                }
+                else
+                {
+                    // StartComponentCleanup only — never /ResetBase, which
+                    // would make installed updates uninstallable. DISM owns
+                    // the outcome, so brisk claims no byte count for it.
+                    var (exit, _) = _processRunner.Run("Dism.exe",
+                        "/Online /Cleanup-Image /StartComponentCleanup");
+                    if (exit != 0) Record("(component store)", 0, "error", $"DISM exited {exit}");
+                    else Record("(component store)", 0, "external");
+                }
+                return new CleanReport(entries);
         }
 
         // Authorized items are recycled in shell batches; a failed batch is
@@ -251,6 +295,29 @@ public sealed class CleanRunner
             if (batch.Count >= BatchSize) Flush();
         }
         Flush();
+        return new CleanReport(entries);
+    }
+
+    private CleanReport RemoveOutsideTheBin(TargetScanResult scan, bool dryRun,
+        Action<string, long, string, string?> record, List<CleanEntry> entries,
+        Action<string> commands)
+    {
+        foreach (var item in scan.Items)
+        {
+            if (!_isElevated())
+            { record(item.Path, 0, "refused", "requires administrator"); continue; }
+            if (dryRun)
+            { record(item.Path, item.Bytes, "dry-run", null); continue; }
+            if (!Exists(item.Path))
+            { record(item.Path, 0, "error", "no longer exists (nothing to remove)"); continue; }
+
+            commands(item.Path);
+
+            if (Exists(item.Path))
+                record(item.Path, 0, "error", "still present after the removal commands");
+            else
+                record(item.Path, item.Bytes, "removed", null);
+        }
         return new CleanReport(entries);
     }
 

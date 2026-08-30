@@ -108,6 +108,16 @@ public static class CleanupTargetRegistry
         T("delivery-optimization", "Delivery Optimization cache", CleanupLevel.Deep, "System",
             new[] { @"%SystemRoot%\ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache" },
             contents: true, regen: true, admin: true),
+        // ---- The heavy system trio (2026-08-30): gigabytes each, and each a
+        // decision — explicit opt-in, administrator, and (where a real path
+        // exists) past the recycle bin, because a 30 GB Windows.old does not
+        // fit in one and pretending otherwise poisons undo.
+        T("windows-old", "Windows.old (previous Windows installation)", CleanupLevel.Deep, "System",
+            new[] { @"%SystemDrive%\Windows.old" }, optIn: true, noBin: true, admin: true),
+        T("hibernation-file", "Hibernation file (hiberfil.sys)", CleanupLevel.Deep, "System",
+            new[] { @"%SystemDrive%\hiberfil.sys" }, optIn: true, noBin: true, admin: true),
+        T("component-store", "Windows component store (superseded updates)", CleanupLevel.Deep, "System",
+            System.Array.Empty<string>(), optIn: true, admin: true),
         T("old-installers", "Old installers in Downloads", CleanupLevel.Deep, "Downloads",
             new[] { @"%USERPROFILE%\Downloads\*.exe", @"%USERPROFILE%\Downloads\*.msi",
                     @"%USERPROFILE%\Downloads\*.iso" },

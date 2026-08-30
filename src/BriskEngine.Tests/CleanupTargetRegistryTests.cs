@@ -12,7 +12,7 @@ namespace BriskEngine.Tests;
 
 public class CleanupTargetRegistryTests
 {
-    private static readonly HashSet<string> PathlessIds = new() { "docker-prune", "empty-recycle-bin" };
+    private static readonly HashSet<string> PathlessIds = new() { "docker-prune", "empty-recycle-bin", "component-store" };
 
     [Fact]
     public void Ids_AreUnique()
@@ -83,6 +83,29 @@ public class CleanupTargetRegistryTests
     {
         var t = CleanupTargetRegistry.All.Single(t => t.Id == "docker-prune");
         Assert.True(t.RequiresExplicitOptIn);
+    }
+
+    /// The heavy system trio (2026-08-30 deep-visible-cleanup wave): each
+    /// one frees gigabytes, each one is a decision, so none may ever ride a
+    /// one-click clean — explicit opt-in, Deep shelf, administrator. The
+    /// two with a real path bypass the recycle bin (a 30 GB Windows.old
+    /// does not fit in it, and pretending it does poisons undo).
+    [Fact]
+    public void HeavySystemTrio_IsDeepOptInAdmin()
+    {
+        foreach (var id in new[] { "windows-old", "hibernation-file", "component-store" })
+        {
+            var t = CleanupTargetRegistry.All.Single(t => t.Id == id);
+            Assert.Equal(CleanupLevel.Deep, t.Level);
+            Assert.True(t.RequiresExplicitOptIn, $"{id} must be explicit opt-in");
+            Assert.True(t.RequiresElevation, $"{id} must require administrator");
+        }
+        Assert.True(CleanupTargetRegistry.All.Single(t => t.Id == "windows-old").BypassesRecycleBin);
+        Assert.True(CleanupTargetRegistry.All.Single(t => t.Id == "hibernation-file").BypassesRecycleBin);
+        Assert.Equal(new[] { @"%SystemDrive%\Windows.old" },
+            CleanupTargetRegistry.All.Single(t => t.Id == "windows-old").PathTemplates);
+        Assert.Equal(new[] { @"%SystemDrive%\hiberfil.sys" },
+            CleanupTargetRegistry.All.Single(t => t.Id == "hibernation-file").PathTemplates);
     }
 
     /// REGRESSION PIN (2026-08-17): modern WhatsApp Desktop's process is

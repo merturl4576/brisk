@@ -22,3 +22,6 @@ tools/workbench/.state/
 
 # Design snapshots — evidence for human eyes, never committed
 .snapshots/
+
+# field-test footage stays local
+*.MOV

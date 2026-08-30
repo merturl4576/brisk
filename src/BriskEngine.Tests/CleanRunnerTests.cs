@@ -55,6 +55,18 @@ sealed class FakeRunner : IProcessRunner
     { Commands.Add($"{exe} {args}"); return (0, ""); }
 }
 
+/// A process runner whose effect is scripted by the test: what the heavy
+/// external targets need, because their attribution is observation-based —
+/// the fake must be able to actually take the path (or pointedly not).
+sealed class ScriptedRunner : IProcessRunner
+{
+    private readonly Func<string, string, (int, string)> _script;
+    public List<string> Commands { get; } = new();
+    public ScriptedRunner(Func<string, string, (int, string)> script) => _script = script;
+    public (int ExitCode, string StdOut) Run(string exe, string args)
+    { Commands.Add($"{exe} {args}"); return _script(exe, args); }
+}
+
 public sealed class CleanRunnerTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-clean-").FullName;
@@ -468,6 +480,167 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Single(report.Entries);
         Assert.Equal("dry-run", report.Entries.Single().Action);
         Assert.Empty(_runner.Commands); // no docker command executed
+    }
+
+    // ---- The heavy system trio (2026-08-30 deep-visible-cleanup wave).
+    // House rules the older external cases never needed: elevation is
+    // checked INSIDE the case (the id switch sits above the loop's check),
+    // and freed bytes are recorded ONLY for a path that existed before the
+    // commands and is observed gone after them — action "removed", never
+    // "recycled", because nothing here can come back from the bin.
+
+    private CleanRunner Runner(IProcessRunner processRunner, bool elevated) =>
+        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated);
+
+    private TargetScanResult HeavyScan(string id, string path, long bytes)
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == id);
+        return new TargetScanResult(target,
+            new[] { new ResolvedItem(id, path, bytes, DateTime.UtcNow) }, null);
+    }
+
+    [Fact]
+    public void WindowsOld_Unelevated_IsRefused_AndRunsNothing()
+    {
+        var dir = Path.Combine(_root, "Windows.old");
+        Directory.CreateDirectory(dir);
+        var report = Runner(_runner, elevated: false)
+            .Clean(HeavyScan("windows-old", dir, 123), dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("refused", entry.Action);
+        Assert.Equal("requires administrator", entry.Reason);
+        Assert.Empty(_runner.Commands);
+        Assert.True(Directory.Exists(dir));
+    }
+
+    [Fact]
+    public void WindowsOld_DryRun_PromisesBytes_AndRunsNothing()
+    {
+        var dir = Path.Combine(_root, "Windows.old2");
+        Directory.CreateDirectory(dir);
+        var report = Runner(_runner, elevated: true)
+            .Clean(HeavyScan("windows-old", dir, 123), dryRun: true);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("dry-run", entry.Action);
+        Assert.Equal(123, entry.Bytes);
+        Assert.Empty(_runner.Commands);
+    }
+
+    [Fact]
+    public void WindowsOld_Elevated_TakesOwnershipRemoves_AndRecordsObservedBytes()
+    {
+        var dir = Path.Combine(_root, "Windows.old3");
+        Directory.CreateDirectory(dir);
+        // the scripted "rd" is the only thing that actually takes the dir
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (exe == "cmd" && args.Contains("rd")) Directory.Delete(dir, true);
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(HeavyScan("windows-old", dir, 123), dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("removed", entry.Action);
+        Assert.Equal(123, entry.Bytes);
+        Assert.Equal(3, runner.Commands.Count);
+        Assert.StartsWith("takeown ", runner.Commands[0]);
+        // the Administrators group by SID, never by its localized name
+        Assert.Contains("*S-1-5-32-544", runner.Commands[1]);
+        Assert.Contains("rd /s /q", runner.Commands[2]);
+    }
+
+    [Fact]
+    public void WindowsOld_CommandsRanButDirSurvived_IsAnError_NeverPhantomBytes()
+    {
+        var dir = Path.Combine(_root, "Windows.old4");
+        Directory.CreateDirectory(dir);
+        var report = Runner(_runner, elevated: true)   // FakeRunner deletes nothing
+            .Clean(HeavyScan("windows-old", dir, 123), dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("error", entry.Action);
+        Assert.Equal(0, entry.Bytes);
+        Assert.NotNull(entry.Reason);
+    }
+
+    [Fact]
+    public void HibernationFile_Elevated_RunsPowercfgOff_AndRecordsObservedBytes()
+    {
+        var file = Path.Combine(_root, "hiberfil.sys");
+        File.WriteAllBytes(file, new byte[16]);
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (exe == "powercfg") File.Delete(file);
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(HeavyScan("hibernation-file", file, 16), dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("removed", entry.Action);
+        Assert.Equal(16, entry.Bytes);
+        Assert.Equal("powercfg /hibernate off", Assert.Single(runner.Commands));
+    }
+
+    [Fact]
+    public void ComponentStore_Elevated_RunsDism_AndClaimsNoBytes()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+
+        var report = Runner(_runner, elevated: true).Clean(scan, dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("external", entry.Action);
+        Assert.Equal(0, entry.Bytes);   // brisk never invents a number DISM did not report
+        Assert.Equal("Dism.exe /Online /Cleanup-Image /StartComponentCleanup",
+            Assert.Single(_runner.Commands));
+    }
+
+    [Fact]
+    public void ComponentStore_DismFailure_IsAnError_WithTheExitCode()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var runner = new ScriptedRunner((_, _) => (87, ""));
+
+        var report = Runner(runner, elevated: true).Clean(scan, dryRun: false);
+
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("error", entry.Action);
+        Assert.Contains("87", entry.Reason);
+    }
+
+    [Fact]
+    public void ComponentStore_UnelevatedRefused_DryRunVisible()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+
+        var refused = Runner(_runner, elevated: false).Clean(scan, dryRun: false);
+        Assert.Equal("refused", Assert.Single(refused.Entries).Action);
+        Assert.Empty(_runner.Commands);
+
+        var dry = Runner(_runner, elevated: true).Clean(scan, dryRun: true);
+        Assert.Equal("dry-run", Assert.Single(dry.Entries).Action);
+        Assert.Empty(_runner.Commands);
+    }
+
+    /// A machine with no Windows.old resolves zero items — the clean must
+    /// do and say nothing, exactly like any other empty target.
+    [Fact]
+    public void WindowsOld_NoItems_CleansNothing()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "windows-old");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var report = Runner(_runner, elevated: true).Clean(scan, dryRun: false);
+        Assert.Empty(report.Entries);
+        Assert.Empty(_runner.Commands);
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
