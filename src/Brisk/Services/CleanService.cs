@@ -17,11 +17,19 @@ namespace Brisk.Services;
 /// instead of prose, the GUI narrates from it, and every path is in the
 /// action log with a timestamp. A field that exists to hold raw paths for
 /// display is one {Binding} away from putting them back on the page.
+/// Removed (2026-08-30, the heavy trio) carries the entries taken PAST the
+/// recycle bin ("removed": Windows.old, hiberfil). They count toward what
+/// was freed and must never enter RecycledPaths — a restore over a path
+/// the bin never held reports a false "restore failed".
 public sealed record CleanOutcome(
     IReadOnlyList<string> RecycledPaths, long RecycledBytes,
     bool WasDryRun,
     IReadOnlyList<CleanEntry> Skipped,
-    IReadOnlyList<CleanEntry> Recycled);
+    IReadOnlyList<CleanEntry> Recycled,
+    IReadOnlyList<CleanEntry> Removed)
+{
+    public long RemovedBytes => Removed.Sum(e => e.Bytes);
+}
 
 /// One clean pass over a set of scanned targets, shared by flyout and window.
 public sealed class CleanService
@@ -80,6 +88,7 @@ public sealed class CleanService
         long bytes = 0;
         var skipped = new List<CleanEntry>();
         var recycled = new List<CleanEntry>();
+        var removed = new List<CleanEntry>();
         foreach (var scan in scans)
         {
             var report = _host.Clean(scan, _settings.DryRun, onEntry);
@@ -91,12 +100,16 @@ public sealed class CleanService
                     bytes += entry.Bytes;
                     recycled.Add(entry);
                 }
+                else if (entry.Action == "removed")
+                {
+                    removed.Add(entry);
+                }
                 else if (entry.Action is "refused" or "error")
                 {
                     skipped.Add(entry);
                 }
             }
         }
-        return new CleanOutcome(paths, bytes, _settings.DryRun, skipped, recycled);
+        return new CleanOutcome(paths, bytes, _settings.DryRun, skipped, recycled, removed);
     }
 }

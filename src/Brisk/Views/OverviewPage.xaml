@@ -435,6 +435,25 @@
                 </Button>
             </StackPanel>
 
+            <!-- The deep shelves, said out loud (2026-08-30 field test): on a
+                 neglected machine the felt value is Windows.old and its kin,
+                 and a figure buried on Depolama might as well not exist. A
+                 link, not a button — clicking REVEALS the consent boxes and
+                 takes nothing. Hidden below 1 GB. -->
+            <Button Margin="0,8,0,0" HorizontalAlignment="Left"
+                    Command="{Binding OpenStorageCommand}"
+                    Content="{Binding DeepRevealText}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource LinkButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DeepRevealText}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
             <!-- The scan a person can actually show someone: the path the
                  card was written to, said once and quietly. -->
             <TextBlock Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"

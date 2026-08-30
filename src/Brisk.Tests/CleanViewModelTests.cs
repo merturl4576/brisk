@@ -291,6 +291,37 @@ public class CleanViewModelTests
         Assert.Equal(2, host.ScanCalls);
     }
 
+    /// "removed" is past-the-bin work (the heavy trio): the banner reports
+    /// it, but the undo offer may only stand when something actually sits in
+    /// the bin — offering "Geri al" over a gone-for-good Windows.old lies.
+    [Fact]
+    public async Task CleanLevel_RemovedOnly_ShowsBanner_WithoutUndoOffer()
+    {
+        var (vm, host, _, state) = Build(Host());
+        await state.ScanAsync();
+        host.OnClean = (scan, _) => new BriskEngine.Cleaning.CleanReport(
+            new List<BriskEngine.Cleaning.CleanEntry>
+                { new(scan.Target.Id, @"C:\Windows.old", 30L << 30, "removed") });
+
+        await vm.CleanLevelAsync(vm.Levels.Single(l => l.Level == CleanupLevel.Safe));
+
+        Assert.True(vm.HasBanner);
+        Assert.Contains("30.0 GB", vm.BannerText);
+        Assert.False(vm.UndoAvailable);
+    }
+
+    [Fact]
+    public async Task CleanLevel_RecycledWork_KeepsTheUndoOffer()
+    {
+        var (vm, _, _, state) = Build(Host());
+        await state.ScanAsync();
+
+        await vm.CleanLevelAsync(vm.Levels.Single(l => l.Level == CleanupLevel.Safe));
+
+        Assert.True(vm.HasBanner);
+        Assert.True(vm.UndoAvailable);
+    }
+
     [Fact]
     public async Task CleanLevel_PerItemTarget_CleansOnlyCheckedItems()
     {

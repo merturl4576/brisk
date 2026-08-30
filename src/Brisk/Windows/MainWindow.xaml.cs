@@ -35,6 +35,9 @@ public partial class MainWindow : Window
         // whichever page hosted the card.
         health.OpenStorageRequested += ShowStorage;
         performance.OpenStorageRequested += ShowStorage;
+        // The Overview's deep-reveal line lands on the same page: the deep
+        // shelves' consent boxes are what the number is made of.
+        overview.OpenStorageRequested += ShowStorage;
         // The findings pages cross-link each other (category split): the
         // quiet "{n} more findings …" row navigates to the sibling page.
         health.CrossNavigateRequested += () => NavPerf.IsChecked = true;

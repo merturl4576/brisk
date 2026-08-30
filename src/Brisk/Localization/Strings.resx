@@ -94,6 +94,15 @@
   <data name="clean.level.developer" xml:space="preserve"><value>Developer</value></data>
   <data name="clean.level.deep" xml:space="preserve"><value>Deep</value></data>
   <data name="clean.recycled" xml:space="preserve"><value>{0} items moved to Recycle Bin ({1})</value></data>
+  <data name="clean.removed" xml:space="preserve"><value>{0} items removed for good ({1}) — past the Recycle Bin, no undo</value></data>
+  <data name="clean.target.windows-old" xml:space="preserve"><value>Windows.old (previous Windows installation)</value></data>
+  <data name="clean.target.hibernation-file" xml:space="preserve"><value>Hibernation file (hiberfil.sys)</value></data>
+  <data name="clean.target.component-store" xml:space="preserve"><value>Windows component store (superseded updates)</value></data>
+  <data name="clean.note.windows-old" xml:space="preserve"><value>Removes the previous Windows installation — rolling back to it stops being possible. Windows deletes this itself about 10 days after an upgrade.</value></data>
+  <data name="clean.note.hibernation-file" xml:space="preserve"><value>Frees the file by turning hibernation and Fast Startup off — "powercfg /hibernate on" brings both back.</value></data>
+  <data name="clean.note.component-store" xml:space="preserve"><value>Windows removes update files it has already replaced (DISM StartComponentCleanup). Takes minutes; the freed amount is DISM's to decide; installed updates stay uninstallable.</value></data>
+  <data name="clean.note.docker-prune" xml:space="preserve"><value>Runs "docker system prune -af": unused images, containers and build cache — everything a build or pull recreates.</value></data>
+  <data name="overview.deepreveal" xml:space="preserve"><value>{0} more sits on the deep shelves ({1}: {2}) — see the breakdown</value></data>
   <data name="clean.undo" xml:space="preserve"><value>Undo</value></data>
   <data name="clean.reclaim" xml:space="preserve"><value>Reclaim space now</value></data>
   <data name="clean.dismiss" xml:space="preserve"><value>Dismiss</value></data>

@@ -96,6 +96,45 @@ public class OverviewViewModelTests
         Assert.Equal(loc.F("overview.cleanspace", "2 KB"), vm.CleanSafeText);
     }
 
+    /// The deep shelves, said out loud (2026-08-30 field test): gigabytes on
+    /// Developer/Deep get one Overview line naming the largest occupant, and
+    /// clicking it navigates to the Depolama consent boxes. Lock-honest
+    /// (ReclaimableBytes), and silent below 1 GB — the reveal exists for the
+    /// neglected-machine story, not to shout about megabytes.
+    [Fact]
+    public async Task DeepShelves_GetOneLoudRevealLine_ThatNavigatesToStorage()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048),
+            TestData.Target("windows-old", CleanupLevel.Deep, 30L << 30,
+                optIn: true, admin: true),
+            TestData.Target("npm-cache", CleanupLevel.Developer, 2L << 30));
+        await state.ScanAsync();
+
+        Assert.Contains("32.0 GB", vm.DeepRevealText);
+        Assert.Contains("Windows.old", vm.DeepRevealText);   // resx name, largest first
+        Assert.Contains("30.0 GB", vm.DeepRevealText);
+
+        var navigated = false;
+        vm.OpenStorageRequested += () => navigated = true;
+        vm.OpenStorageCommand.Execute(null);
+        Assert.True(navigated);
+    }
+
+    [Fact]
+    public async Task DeepShelves_UnderAGigabyte_StayQuiet()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048),
+            TestData.Target("npm-cache", CleanupLevel.Developer, 500L << 20));
+        await state.ScanAsync();
+
+        Assert.Equal("", vm.DeepRevealText);
+        Assert.False(vm.OpenStorageCommand.CanExecute(null));
+    }
+
     /// The same promise as the flyout's, on the surface that carries the
     /// button: the summary may only count findings this button will act on,
     /// and it does not act on a privacy setting at any consent level.

@@ -24,7 +24,12 @@
                            Text="{Binding BannerText}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
                             HorizontalAlignment="Right">
+                    <!-- Past-the-bin work ("removed") has no undo: both bin
+                         buttons leave rather than grey out, so the banner
+                         never shows a rescue it cannot perform. -->
                     <Button Margin="0,0,6,0" Command="{Binding UndoCommand}"
+                            Visibility="{Binding UndoAvailable,
+                                Converter={x:Static Brisk:BoolToVis.Instance}}"
                             Content="{Binding [clean.undo], Source={x:Static loc:Loc.Instance}}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
@@ -39,6 +44,8 @@
                         </Button.Style>
                     </Button>
                     <Button Margin="0,0,6,0" Command="{Binding ReclaimCommand}"
+                            Visibility="{Binding UndoAvailable,
+                                Converter={x:Static Brisk:BoolToVis.Instance}}"
                             Content="{Binding [clean.reclaim], Source={x:Static loc:Loc.Instance}}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
@@ -435,6 +442,12 @@
                                                                    Text="{Binding SizeText}" />
                                                     </StackPanel>
                                                 </DockPanel>
+                                                <TextBlock Style="{StaticResource Faint}"
+                                                           Margin="24,1,0,2"
+                                                           TextWrapping="Wrap"
+                                                           Text="{Binding NoteText}"
+                                                           Visibility="{Binding HasNote,
+                                                               Converter={x:Static Brisk:BoolToVis.Instance}}" />
                                                 <ItemsControl ItemsSource="{Binding Items}"
                                                               Margin="24,2,0,0">
                                                     <ItemsControl.ItemTemplate>

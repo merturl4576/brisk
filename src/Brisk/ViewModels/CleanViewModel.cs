@@ -40,6 +40,10 @@ public sealed class TargetRow : ViewModelBase
         // the engine's DisplayName for a target the resx doesn't know.
         DisplayName = loc.Title($"clean.target.{scan.Target.Id}",
             scan.Target.DisplayName);
+        // What ticking this box actually trades away, for the targets where
+        // that is a real question (Windows.old, hibernation, DISM, docker).
+        // Empty for everything else, and the row collapses the line.
+        NoteText = loc.Title($"clean.note.{scan.Target.Id}", "");
         SizeText = Fmt.Bytes(scan.TotalBytes);
         IsPerItem = scan.Target.RequiresIndividualSelection;
         NeedsElevation = scan.Target.RequiresElevation;
@@ -64,6 +68,8 @@ public sealed class TargetRow : ViewModelBase
     public TargetScanResult Scan { get; }
     public string Id => Scan.Target.Id;
     public string DisplayName { get; }
+    public string NoteText { get; }
+    public bool HasNote => NoteText.Length > 0;
     public string SizeText { get; }
     public string? SkippedReason { get; }
     public string SkippedText { get; }
@@ -133,6 +139,7 @@ public sealed class CleanViewModel : ViewModelBase
     private long _simpleTotalBytes;
     private bool _busy;
     private bool _hasBanner;
+    private bool _undoAvailable;
     private string _bannerText = "";
     private string _problemsText = "";
     private string _lifetimeText = "";
@@ -173,8 +180,8 @@ public sealed class CleanViewModel : ViewModelBase
         // Undo/Reclaim/Dismiss belong to the BANNER (advanced level cleans)
         // alone since round 12 — the simple clean purges its own recycled
         // items automatically and offers no bin choreography at all.
-        UndoCommand = new RelayCommand(Undo, () => HasBanner);
-        ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner);
+        UndoCommand = new RelayCommand(Undo, () => HasBanner && UndoAvailable);
+        ReclaimCommand = new RelayCommand(Reclaim, () => HasBanner && UndoAvailable);
         DismissCommand = new RelayCommand(Dismiss, () => HasBanner);
         OpenBinCommand = new RelayCommand(_bin.OpenRecycleBinUi);
         SimpleCleanCommand = new RelayCommand(() => _ = CleanSimpleAsync(),
@@ -280,6 +287,9 @@ public sealed class CleanViewModel : ViewModelBase
 
     public ObservableCollection<LevelSection> Levels { get; } = new();
     public bool HasBanner { get => _hasBanner; private set { Set(ref _hasBanner, value); RaiseBannerCommands(); } }
+    /// False when the banner reports past-the-bin work only ("removed"):
+    /// nothing sits in the bin, so Geri al / Alanı boşalt would both lie.
+    public bool UndoAvailable { get => _undoAvailable; private set { Set(ref _undoAvailable, value); RaiseBannerCommands(); } }
     public string BannerText { get => _bannerText; private set => Set(ref _bannerText, value); }
     public string ProblemsText { get => _problemsText; private set => Set(ref _problemsText, value); }
     public string LifetimeText { get => _lifetimeText; private set => Set(ref _lifetimeText, value); }
@@ -398,7 +408,7 @@ public sealed class CleanViewModel : ViewModelBase
     private void OnCleanEntry(CleanEntry entry)
     {
         var processed = Interlocked.Increment(ref _processedItems);
-        if (entry.Action == "recycled")
+        if (entry.Action is "recycled" or "removed")
             Interlocked.Add(ref _cleanedBytes, entry.Bytes);
         var now = System.Environment.TickCount64;
         var final = processed >= _plannedItems;
@@ -565,10 +575,18 @@ public sealed class CleanViewModel : ViewModelBase
             _lastRecycled = outcome.RecycledPaths;
             RestoreFailed = false;
             ProblemsText = string.Join("\n", problems);
-            if (!outcome.WasDryRun && outcome.RecycledPaths.Count > 0)
+            if (!outcome.WasDryRun
+                && (outcome.RecycledPaths.Count > 0 || outcome.Removed.Count > 0))
             {
-                BannerText = _loc.F("clean.recycled",
-                    outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes));
+                var lines = new List<string>(2);
+                if (outcome.RecycledPaths.Count > 0)
+                    lines.Add(_loc.F("clean.recycled",
+                        outcome.RecycledPaths.Count, Fmt.Bytes(outcome.RecycledBytes)));
+                if (outcome.Removed.Count > 0)
+                    lines.Add(_loc.F("clean.removed",
+                        outcome.Removed.Count, Fmt.Bytes(outcome.RemovedBytes)));
+                BannerText = string.Join("\n", lines);
+                UndoAvailable = outcome.RecycledPaths.Count > 0;
                 HasBanner = true;
             }
             await _state.ScanAsync();

@@ -61,6 +61,29 @@ public class CleanServiceTests
             .Where(CleanService.IsAppHeld).Select(t => t.Target.Id));
     }
 
+    /// The heavy trio records "removed" — taken past the recycle bin, so it
+    /// must reach the freed figures WITHOUT ever entering the undo list: a
+    /// restore over a path the bin never held is a false "restore failed".
+    [Fact]
+    public void CleanTargets_RemovedEntries_CountSeparately_NeverIntoUndo()
+    {
+        var host = new FakeEngineHost
+        {
+            OnClean = (scan, _) => new CleanReport(new List<CleanEntry>
+            {
+                new(scan.Target.Id, @"C:\Windows.old", 30L << 30, "removed"),
+                new(scan.Target.Id, @"C:\x\b", 512, "recycled"),
+            }),
+        };
+        var outcome = new CleanService(host, new Settings())
+            .CleanTargets(new[] { TestData.Target("windows-old", CleanupLevel.Deep, 30L << 30) });
+
+        Assert.Equal(new[] { @"C:\x\b" }, outcome.RecycledPaths);
+        Assert.Equal(512, outcome.RecycledBytes);
+        Assert.Equal(@"C:\Windows.old", Assert.Single(outcome.Removed).Path);
+        Assert.Equal(30L << 30, outcome.RemovedBytes);
+    }
+
     [Fact]
     public void CleanTargets_CollectsRefusalsAndErrors_AsProblems()
     {

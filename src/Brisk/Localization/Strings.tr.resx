@@ -94,6 +94,15 @@
   <data name="clean.level.developer" xml:space="preserve"><value>Geliştirici</value></data>
   <data name="clean.level.deep" xml:space="preserve"><value>Derin</value></data>
   <data name="clean.recycled" xml:space="preserve"><value>{0} öğe Geri Dönüşüm Kutusu'na taşındı ({1})</value></data>
+  <data name="clean.removed" xml:space="preserve"><value>{0} öğe kalıcı olarak kaldırıldı ({1}) — Geri Dönüşüm Kutusu'na uğramadı, geri alınamaz</value></data>
+  <data name="clean.target.windows-old" xml:space="preserve"><value>Windows.old (önceki Windows kurulumu)</value></data>
+  <data name="clean.target.hibernation-file" xml:space="preserve"><value>Uyku modu dosyası (hiberfil.sys)</value></data>
+  <data name="clean.target.component-store" xml:space="preserve"><value>Windows bileşen deposu (yeri doldurulan güncellemeler)</value></data>
+  <data name="clean.note.windows-old" xml:space="preserve"><value>Önceki Windows kurulumunu kaldırır — ona geri dönmek artık mümkün olmaz. Windows bunu yükseltmeden yaklaşık 10 gün sonra kendisi de siler.</value></data>
+  <data name="clean.note.hibernation-file" xml:space="preserve"><value>Dosyayı, uyku modunu ve Hızlı Başlangıç'ı kapatarak boşaltır — "powercfg /hibernate on" ikisini de geri getirir.</value></data>
+  <data name="clean.note.component-store" xml:space="preserve"><value>Windows, yerini yenisine bırakmış güncelleme dosyalarını kaldırır (DISM StartComponentCleanup). Dakikalar sürer; boşalacak miktara DISM karar verir; kurulu güncellemeler kaldırılabilir kalır.</value></data>
+  <data name="clean.note.docker-prune" xml:space="preserve"><value>"docker system prune -af" çalıştırır: kullanılmayan imajlar, konteynerler ve derleme önbelleği — bir build ya da pull'un yeniden oluşturduğu her şey.</value></data>
+  <data name="overview.deepreveal" xml:space="preserve"><value>Derin raflarda {0} daha var ({1}: {2}) — dökümü gör</value></data>
   <data name="clean.undo" xml:space="preserve"><value>Geri al</value></data>
   <data name="clean.reclaim" xml:space="preserve"><value>Alanı şimdi boşalt</value></data>
   <data name="clean.dismiss" xml:space="preserve"><value>Kapat</value></data>

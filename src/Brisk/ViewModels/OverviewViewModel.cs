@@ -90,6 +90,10 @@ public sealed class OverviewViewModel : ViewModelBase
     private string _liveDiskText = "—";
     private string _doneLead = "";
     private string _cleanSafeText;
+    private string _deepRevealText = "";
+    /// Below this, the deep-reveal line stays hidden — the reveal exists for
+    /// the tens-of-gigabytes neglected-machine story, not for megabytes.
+    public const long DeepRevealVisibleBytes = 1L << 30;
     private bool _liveBusy;
     private bool _busy;
     private bool _hasRevelation;
@@ -145,6 +149,11 @@ public sealed class OverviewViewModel : ViewModelBase
         FixAllCommand = new RelayCommand(() => _ = FixAllAsync(),
             () => _state.Snapshot is { } s && _fixAll.HasWork(s));
         CleanSafeCommand = new RelayCommand(() => _ = CleanSafeAsync(), () => HasSnapshot);
+        // The deep shelves' reveal (2026-08-30 field-test lesson): the felt
+        // value on a neglected machine sits in Windows.old and its kin, and
+        // a promise buried on the Depolama page might as well not exist.
+        OpenStorageCommand = new RelayCommand(
+            () => OpenStorageRequested?.Invoke(), () => DeepRevealText.Length > 0);
         SaveReportCommand = new RelayCommand(SaveReport, () => HasSnapshot);
         // canExecute, not just a guard inside the body: a RelayCommand built
         // without one answers CanExecute true forever, and the band's link is
@@ -206,6 +215,18 @@ public sealed class OverviewViewModel : ViewModelBase
     /// evidence" has to open THAT card, so MainWindow routes to whichever
     /// page hosts the rule instead of to a fixed page name.
     public event Action<string>? OpenFindingRequested;
+    /// The deep-reveal line's destination: the Depolama page, where the
+    /// consent boxes for the deep shelves live.
+    public event Action? OpenStorageRequested;
+    public RelayCommand OpenStorageCommand { get; }
+    /// "Derin raflarda 34,2 GB daha var (Windows.old: 28,1 GB) — dökümü gör".
+    /// Empty (and the line hidden) below 1 GB: the reveal exists for the
+    /// neglected-machine story, not to shout about megabytes.
+    public string DeepRevealText
+    {
+        get => _deepRevealText;
+        private set { Set(ref _deepRevealText, value); OpenStorageCommand.RaiseCanExecuteChanged(); }
+    }
     public string SummaryText { get => _summaryText; private set => Set(ref _summaryText, value); }
     /// The report's ✓ lead line ("Result: 210 MB freed · 3 fixes applied").
     /// Empty when the last run changed nothing; the pages hide the lead
@@ -635,6 +656,20 @@ public sealed class OverviewViewModel : ViewModelBase
         CleanSafeText = reclaimable > 0
             ? _loc.F("overview.cleanspace", Fmt.Bytes(reclaimable))
             : _loc["overview.cleanspace.none"];
+        // The deep shelves (Developer + Deep), lock-honest, named by their
+        // largest occupant. This is a REVEAL, not a promise the safe button
+        // makes: clicking navigates to the consent boxes, takes nothing.
+        var deepShelves = snapshot.Cleaner.Targets
+            .Where(t => t.Target.Level != BriskEngine.Models.CleanupLevel.Safe
+                        && t.SkippedReason is null)
+            .ToList();
+        var deepBytes = deepShelves.Sum(t => t.ReclaimableBytes);
+        var deepTop = deepShelves.OrderByDescending(t => t.ReclaimableBytes).FirstOrDefault();
+        DeepRevealText = deepBytes >= DeepRevealVisibleBytes && deepTop is not null
+            ? _loc.F("overview.deepreveal", Fmt.Bytes(deepBytes),
+                _loc.Title($"clean.target.{deepTop.Target.Id}", deepTop.Target.DisplayName),
+                Fmt.Bytes(deepTop.ReclaimableBytes))
+            : "";
         parts.Add(_loc.F("flyout.lastscan",
             snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm")));
         SummaryText = string.Join("   ·   ", parts);
