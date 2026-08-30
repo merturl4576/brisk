@@ -81,6 +81,13 @@ function Publish-One {
 Publish-One -Project 'src\Brisk\Brisk.csproj'         -FinalName 'brisk-app.exe'
 Publish-One -Project 'src\Brisk.Cli\Brisk.Cli.csproj' -FinalName 'brisk.exe'
 
+# get.ps1 installs from exactly one asset pair: brisk-win-x64.zip and its
+# .sha256, and refuses to run without the digest. The zip carries both exes.
+$zipPath = Join-Path $OutDir 'brisk-win-x64.zip'
+Compress-Archive -Path (Join-Path $OutDir 'brisk-app.exe'), (Join-Path $OutDir 'brisk.exe') -DestinationPath $zipPath
+$zipHash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLower()
+"$zipHash  brisk-win-x64.zip" | Set-Content ($zipPath + '.sha256') -Encoding ascii
+
 # A checksum file is what lets someone verify the download is the file this
 # script produced. Same format as sha256sum, so it can be checked on any OS.
 $lines = Get-ChildItem $OutDir -Filter *.exe | Sort-Object Name | ForEach-Object {

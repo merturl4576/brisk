@@ -1,7 +1,7 @@
 # brisk'i indirir ve baslatir — kurulum yok, tek klasor, silmek = klasoru silmek.
 #
 # Kullanim (duyuruda verilecek tek satir):
-#   irm https://raw.githubusercontent.com/<KULLANICI>/brisk/main/get.ps1 | iex
+#   irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
 #
 # Bu dosya BILEREK kisa ve okunur: "irm | iex" tarzina gelen hakli elestiri,
 # insanlarin ne calistirdigini gormeden calistirmasidir. Goren gozler icin
@@ -9,7 +9,7 @@
 # release'in yaninda yayimlanan ozetle KARSILASTIRILIR — tutmazsa calismaz.
 $ErrorActionPreference = 'Stop'
 
-$repo = '<KULLANICI>/brisk'   # duyurudan once doldurulacak
+$repo = 'merturl4576/brisk'
 $dir  = Join-Path $env:LOCALAPPDATA 'brisk'
 
 $rel   = Invoke-RestMethod "https://api.github.com/repos/$repo/releases/latest"
