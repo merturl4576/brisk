@@ -285,9 +285,17 @@ public sealed class FakeEngineHost : IEngineHost
     public int RestorePointCalls { get; private set; }
     public bool Elevated { get; set; }
 
+    /// Mirrors OnClean: a look at the app the moment a rescan STARTS. The
+    /// closing rescan of a clean is seconds of real work on a real machine,
+    /// and everything the user reads in that window was written before it —
+    /// so this is where a page that waits for the scan to tell the truth
+    /// gets caught.
+    public Action? OnScan { get; set; }
+
     public Task<ScanSnapshot> ScanAsync(IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
+        OnScan?.Invoke();
         ScanCalls++;
         progress?.Report("fake");
         return Task.FromResult(NextSnapshot);

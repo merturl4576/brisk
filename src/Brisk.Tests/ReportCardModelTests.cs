@@ -165,6 +165,26 @@ public class ReportCardModelTests
         Assert.False(without.HasFixes);
     }
 
+    /// The card is the one artifact built to be shared, and under "Applied
+    /// fixes" it listed the PROBLEMS: "Visual effects are slowing this PC ·
+    /// 2026-09-01" for a fix that had already tuned them (live workbench,
+    /// 2026-09-01). The Overview's own report has said the outcome all along.
+    [Theory]
+    [InlineData("tr", "Görsel efektler performansa göre ayarlandı")]
+    [InlineData("en", null)]   // taken from Strings.resx: rule.visual-effects.done
+    public void Fixes_read_as_outcomes_not_as_the_problems_they_fixed(string lang, string? expectedStart)
+    {
+        var loc = Loc(lang);
+        expectedStart ??= loc["rule.visual-effects.done"];
+        var snapshot = TestData.Snapshot(null, new SensorStatus(true, true, null));
+
+        var card = ReportCardModel.Build(snapshot,
+            new[] { new UndoableFix("visual-effects", new DateTime(2026, 9, 1, 12, 0, 0, DateTimeKind.Utc)) }, loc);
+
+        Assert.StartsWith(expectedStart, card.Fixes[0]);
+        Assert.DoesNotContain(loc["rule.visual-effects.title"], card.Fixes[0]);
+    }
+
     /// The card's frame is fixed and nothing in it clips, so a fix list long
     /// enough to outgrow the body used to draw off both ends of the bitmap and
     /// vanish — no error, no test that could see it, and a shareable picture

@@ -23,16 +23,22 @@ public sealed class CleanRunner
     private static extern int SHEmptyRecycleBinW(IntPtr hwnd, string? root, uint flags);
     private const uint SHERB_SILENT = 0x7; // no confirm, no progress UI, no sound
 
+    /// How long brisk waits for the Delivery Optimization service to finish
+    /// deleting after Delete-DeliveryOptimizationCache returns. 7.5 GB took
+    /// well under this live; a test lowers it to prove the wait ends.
+    public static TimeSpan DeliveryOptimizationSettleTimeout { get; set; } = TimeSpan.FromSeconds(120);
+
     private readonly SafetyValidator _validator;
     private readonly IRecycler _recycler;
     private readonly ActionLog _log;
     private readonly IProcessRunner _processRunner;
     private readonly Func<bool> _isElevated;
     private readonly ILockProbe? _lockProbe;
+    private readonly Func<long> _systemDriveFreeBytes;
 
     public CleanRunner(SafetyValidator validator, IRecycler recycler, ActionLog log,
         IProcessRunner processRunner, Func<bool> isElevated,
-        ILockProbe? lockProbe = null)
+        ILockProbe? lockProbe = null, Func<long>? systemDriveFreeBytes = null)
     {
         _validator = validator;
         _recycler = recycler;
@@ -40,6 +46,8 @@ public sealed class CleanRunner
         _processRunner = processRunner;
         _isElevated = isElevated;
         _lockProbe = lockProbe;
+        _systemDriveFreeBytes = systemDriveFreeBytes
+            ?? (() => new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory)!).AvailableFreeSpace);
     }
 
     /// What a path held by a running app is recorded as when the probe —
@@ -127,6 +135,28 @@ public sealed class CleanRunner
                 // "powercfg /hibernate on" reverses it.
                 return RemoveOutsideTheBin(scan, dryRun, Record, entries,
                     _ => _processRunner.Run("powercfg", "/hibernate off"));
+            case "delivery-optimization":
+            {
+                // One command for the whole cache; the per-folder observation
+                // afterwards is what earns each "removed" line its byte count.
+                var ran = false;
+                return RemoveOutsideTheBin(scan, dryRun, Record, entries, _ =>
+                {
+                    if (ran) return;
+                    ran = true;
+                    _processRunner.Run("powershell.exe",
+                        "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"Delete-DeliveryOptimizationCache -Force\"");
+                    // The cmdlet returns before the service has deleted anything.
+                    // Live 2026-09-01: 1 of 14 folders gone two seconds later,
+                    // all 14 gone minutes later — and thirteen honest "still
+                    // present" lines covered 7.4 GB brisk had in fact freed.
+                    // Wait for the drive to agree, up to a bound; then the
+                    // per-item observation below speaks for itself.
+                    var deadline = DateTime.UtcNow + DeliveryOptimizationSettleTimeout;
+                    while (DateTime.UtcNow < deadline && scan.Items.Any(i => Exists(i.Path)))
+                        System.Threading.Thread.Sleep(250);
+                });
+            }
             case "component-store":
                 if (scan.Target.RequiresElevation && !_isElevated())
                 {
@@ -139,12 +169,25 @@ public sealed class CleanRunner
                 else
                 {
                     // StartComponentCleanup only — never /ResetBase, which
-                    // would make installed updates uninstallable. DISM owns
-                    // the outcome, so brisk claims no byte count for it.
+                    // would make installed updates uninstallable.
+                    var before = _systemDriveFreeBytes();
                     var (exit, _) = _processRunner.Run("Dism.exe",
                         "/Online /Cleanup-Image /StartComponentCleanup");
-                    if (exit != 0) Record("(component store)", 0, "error", $"DISM exited {exit}");
-                    else Record("(component store)", 0, "external");
+                    if (exit != 0) { Record("(component store)", 0, "error", $"DISM exited {exit}"); }
+                    else
+                    {
+                        // DISM owns the outcome; the drive is the only witness
+                        // brisk has. A rise is reported as what it is — a
+                        // reading, not a file count — and no rise is reported
+                        // as nothing. Live 2026-09-01: 555 seconds of DISM and
+                        // a "0 B" line over ~9.5 GB nothing else accounted for.
+                        var gained = Math.Max(0, _systemDriveFreeBytes() - before);
+                        if (gained > 0)
+                            Record("(component store)", gained, "removed",
+                                "free space rose by this much while DISM ran — DISM's own doing, observed on the drive, not a count of files");
+                        else
+                            Record("(component store)", 0, "external", "DISM finished; free space did not rise");
+                    }
                 }
                 return new CleanReport(entries);
         }
@@ -315,6 +358,15 @@ public sealed class CleanRunner
         Action<string, long, string, string?> record, List<CleanEntry> entries,
         Action<string> commands)
     {
+        // Every item's existence is read BEFORE any command runs. One command
+        // can empty a whole target — the Delivery Optimization cache is 14
+        // folders and one Delete-DeliveryOptimizationCache — and an item
+        // checked only when its turn came would be filed "no longer exists",
+        // 0 B, for bytes brisk had just freed (live workbench, 2026-09-01).
+        var existedBefore = new HashSet<string>(
+            scan.Items.Where(i => Exists(i.Path)).Select(i => i.Path),
+            StringComparer.OrdinalIgnoreCase);
+
         foreach (var item in scan.Items)
         {
             // The registry's own field, not a hand-rolled twin of it — so the
@@ -324,7 +376,7 @@ public sealed class CleanRunner
             { record(item.Path, 0, "refused", "requires administrator"); continue; }
             if (dryRun)
             { record(item.Path, item.Bytes, "dry-run", null); continue; }
-            if (!Exists(item.Path))
+            if (!existedBefore.Contains(item.Path))
             { record(item.Path, 0, "error", "no longer exists (nothing to remove)"); continue; }
 
             commands(item.Path);

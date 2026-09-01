@@ -888,6 +888,59 @@ public class CleanViewModelTests
         Assert.Empty(bin.Restored);                      // nothing restored
     }
 
+    /// Live workbench, 2026-09-01: the banner said "1 öğe kalıcı olarak
+    /// kaldırıldı (12.7 GB)" while the hero beside it still read the
+    /// pre-clean total, and only the NEXT scan moved it. One host, one
+    /// moment, one number.
+    [Fact]
+    public async Task LifetimeHero_MovesWithTheBanner_NotAtTheNextScan()
+    {
+        var host = Host();
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+        var safe = vm.Levels.Single(l => l.Level == CleanupLevel.Safe);
+        host.OnClean = (scan, _) =>
+        {
+            // what the engine would have logged by the time the clean returns
+            host.Lifetime = 12_700_000_000L;
+            return new BriskEngine.Cleaning.CleanReport(scan.Items
+                .Select(i => new BriskEngine.Cleaning.CleanEntry(
+                    scan.Target.Id, i.Path, i.Bytes, "recycled")).ToList());
+        };
+        // The banner is up and the closing rescan has not started yet — the
+        // window the user actually reads, and the whole of finding 7.
+        string? heroWhenTheBannerAppeared = null;
+        host.OnScan = () => heroWhenTheBannerAppeared ??= vm.LifetimeValueText;
+
+        await vm.CleanLevelAsync(safe);
+
+        Assert.True(vm.HasBanner);
+        Assert.Equal(BriskEngine.Fmt.Bytes(12_700_000_000L), heroWhenTheBannerAppeared);
+        Assert.Equal(BriskEngine.Fmt.Bytes(12_700_000_000L), vm.LifetimeValueText);
+    }
+
+    /// Live workbench, 2026-09-01: every Deep row wore "Yönetici gerekiyor"
+    /// inside brisk-app, which always runs elevated. The badge answers "will
+    /// this row refuse?", not "does this target need rights?" — and elevated,
+    /// the answer is no.
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Elevation_badge_shows_only_when_the_app_is_not_elevated(
+        bool elevated, bool badge)
+    {
+        var host = Host();
+        host.Elevated = elevated;
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+
+        var row = vm.Levels.Single(l => l.Level == CleanupLevel.Deep)
+            .Targets.Single(t => t.Id == "windows-temp");
+
+        Assert.True(row.NeedsElevation);
+        Assert.Equal(badge, row.ShowsElevationBadge);
+    }
+
     /// Round-10 review: the big total's push cadence must outlast
     /// NumeralTick's slide, or every push restarts the animation mid-flight
     /// and the numeral strobes instead of ticking.

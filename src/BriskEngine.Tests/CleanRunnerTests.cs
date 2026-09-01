@@ -489,8 +489,9 @@ public sealed class CleanRunnerTests : IDisposable
     // commands and is observed gone after them — action "removed", never
     // "recycled", because nothing here can come back from the bin.
 
-    private CleanRunner Runner(IProcessRunner processRunner, bool elevated) =>
-        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated);
+    private CleanRunner Runner(IProcessRunner processRunner, bool elevated,
+        Func<long>? free = null) =>
+        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated, null, free);
 
     private TargetScanResult HeavyScan(string id, string path, long bytes)
     {
@@ -588,16 +589,18 @@ public sealed class CleanRunnerTests : IDisposable
     }
 
     [Fact]
-    public void ComponentStore_Elevated_RunsDism_AndClaimsNoBytes()
+    public void ComponentStore_Elevated_RunsDism_AndClaimsNoBytesTheDriveDidNotShow()
     {
         var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
         var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
 
-        var report = Runner(_runner, elevated: true).Clean(scan, dryRun: false);
+        // a drive that never moves: brisk has watched nothing, so it says nothing
+        var report = Runner(_runner, elevated: true, free: () => 100L << 30)
+            .Clean(scan, dryRun: false);
 
         var entry = Assert.Single(report.Entries);
         Assert.Equal("external", entry.Action);
-        Assert.Equal(0, entry.Bytes);   // brisk never invents a number DISM did not report
+        Assert.Equal(0, entry.Bytes);   // brisk never invents a number nothing witnessed
         Assert.Equal("Dism.exe /Online /Cleanup-Image /StartComponentCleanup",
             Assert.Single(_runner.Commands));
     }
@@ -629,6 +632,41 @@ public sealed class CleanRunnerTests : IDisposable
         var dry = Runner(_runner, elevated: true).Clean(scan, dryRun: true);
         Assert.Equal("dry-run", Assert.Single(dry.Entries).Action);
         Assert.Empty(_runner.Commands);
+    }
+
+    /// 2026-09-01 live workbench: DISM ran for 555 seconds and brisk printed
+    /// "recycled: 0 items, 0 B" while the machine's free space rose ~9.5 GB
+    /// that no other entry accounted for. The drive is the only witness brisk
+    /// has, and a reading is worth reporting as long as it is called one.
+    [Fact]
+    public void ComponentStore_reports_the_free_space_it_watched_rise()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var free = new Queue<long>(new[] { 100L << 30, 109L << 30 });   // 100 GB before, 109 GB after
+
+        var report = Runner(_runner, elevated: true, free: () => free.Dequeue())
+            .Clean(scan, dryRun: false);
+
+        var entry = report.Entries.Single(e => e.Path == "(component store)");
+        Assert.Equal("removed", entry.Action);
+        Assert.Equal(9L << 30, entry.Bytes);
+        Assert.Contains("observed", entry.Reason);
+    }
+
+    [Fact]
+    public void ComponentStore_claims_nothing_when_free_space_did_not_rise()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var free = new Queue<long>(new[] { 100L << 30, 100L << 30 });
+
+        var report = Runner(_runner, elevated: true, free: () => free.Dequeue())
+            .Clean(scan, dryRun: false);
+
+        var entry = report.Entries.Single(e => e.Path == "(component store)");
+        Assert.Equal("external", entry.Action);
+        Assert.Equal(0, entry.Bytes);
     }
 
     /// BACKSTOP PIN (2026-08-30 review): BypassesRecycleBin used to be a flag
@@ -665,6 +703,146 @@ public sealed class CleanRunnerTests : IDisposable
         var report = Runner(_runner, elevated: true).Clean(scan, dryRun: false);
         Assert.Empty(report.Entries);
         Assert.Empty(_runner.Commands);
+    }
+
+    // ---- Delivery Optimization (2026-09-01 live workbench): the cache sits
+    // under the NetworkService profile, so every one of the 14 folders the
+    // shell was asked to move came back DE_ACCESSDENIEDSRC and a promised
+    // 7.5 GB freed 0 B. Windows owns the supported way to empty it; the
+    // per-folder observation afterwards is what earns each byte count.
+
+    private TargetScanResult DeliveryScan(params (string Path, long Bytes)[] folders)
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "delivery-optimization");
+        return new TargetScanResult(target,
+            folders.Select(f => new ResolvedItem("delivery-optimization", f.Path, f.Bytes, DateTime.UtcNow))
+                   .ToList(), null);
+    }
+
+    private string CacheFolder(string name)
+    {
+        var dir = Path.Combine(_root, "do-cache", name);
+        Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    [Fact]
+    public void DeliveryOptimization_runs_windows_own_command_once_and_counts_what_is_gone()
+    {
+        var a = CacheFolder("a");
+        var b = CacheFolder("b");
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (args.Contains("Delete-DeliveryOptimizationCache"))
+            {
+                Directory.Delete(a, true);
+                Directory.Delete(b, true);
+            }
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+
+        Assert.Single(runner.Commands.Where(c => c.Contains("Delete-DeliveryOptimizationCache")));
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "removed"));
+        Assert.Equal(10_000L, report.Entries.Where(e => e.Action == "removed").Sum(e => e.Bytes));
+        Assert.DoesNotContain(report.Entries, e => e.Action == "recycled");
+        Assert.Empty(_recycler.Recycled);   // the shell is never asked
+    }
+
+    [Fact]
+    public void DeliveryOptimization_waits_for_the_service_to_finish_what_the_command_started()
+    {
+        // Live 2026-09-01: the cmdlet returned at once, 1 of 14 folders was gone
+        // two seconds later and all 14 were gone minutes later — the service
+        // deletes in the background. brisk must wait for the drive to agree.
+        var a = CacheFolder("async-a");
+        var b = CacheFolder("async-b");
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (args.Contains("Delete-DeliveryOptimizationCache"))
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(500);
+                    Directory.Delete(a, true);
+                    Directory.Delete(b, true);
+                });
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "removed"));
+        Assert.Equal(10_000L, report.Entries.Where(e => e.Action == "removed").Sum(e => e.Bytes));
+        Assert.DoesNotContain(report.Entries, e => e.Action == "error");
+    }
+
+    [Fact]
+    public void DeliveryOptimization_stops_waiting_and_says_so_when_nothing_happens()
+    {
+        var a = CacheFolder("stuck-a");
+        var runner = new ScriptedRunner((_, _) => (0, ""));   // the command "succeeds" and nothing moves
+        var before = CleanRunner.DeliveryOptimizationSettleTimeout;
+        CleanRunner.DeliveryOptimizationSettleTimeout = TimeSpan.FromMilliseconds(600);
+        try
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var report = Runner(runner, elevated: true)
+                .Clean(DeliveryScan((a, 4_000L)), dryRun: false);
+            sw.Stop();
+
+            var entry = Assert.Single(report.Entries);
+            Assert.Equal("error", entry.Action);
+            Assert.Contains("still present", entry.Reason);
+            Assert.Equal(0, entry.Bytes);
+            Assert.InRange(sw.ElapsedMilliseconds, 600, 10_000);
+        }
+        finally { CleanRunner.DeliveryOptimizationSettleTimeout = before; }
+    }
+
+    [Fact]
+    public void DeliveryOptimization_dry_run_touches_nothing()
+    {
+        var a = CacheFolder("dry-a");
+        var b = CacheFolder("dry-b");
+        var runner = new ScriptedRunner((_, _) => (0, ""));
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: true);
+
+        Assert.All(report.Entries, e => Assert.Equal("dry-run", e.Action));
+        Assert.Empty(runner.Commands);
+        Assert.True(Directory.Exists(a));
+        Assert.True(Directory.Exists(b));
+    }
+
+    [Fact]
+    public void DeliveryOptimization_reports_what_the_command_left_behind()
+    {
+        var a = CacheFolder("left-a");
+        var b = CacheFolder("left-b");
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (args.Contains("Delete-DeliveryOptimizationCache")) Directory.Delete(a, true);
+            return (0, "");
+        });
+
+        // b never goes away, so the runner would wait its full settle bound;
+        // the bound is the subject of the test above this one, not this one.
+        var before = CleanRunner.DeliveryOptimizationSettleTimeout;
+        CleanRunner.DeliveryOptimizationSettleTimeout = TimeSpan.FromMilliseconds(300);
+        CleanReport report;
+        try
+        {
+            report = Runner(runner, elevated: true)
+                .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+        }
+        finally { CleanRunner.DeliveryOptimizationSettleTimeout = before; }
+
+        Assert.Contains(report.Entries, e => e.Action == "removed" && e.Bytes == 4_000L);
+        Assert.Contains(report.Entries, e => e.Action == "error" && e.Reason!.Contains("still present"));
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }

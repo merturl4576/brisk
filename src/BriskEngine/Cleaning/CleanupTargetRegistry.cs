@@ -105,9 +105,14 @@ public static class CleanupTargetRegistry
         // total of bytes already sent to peers, so deleting cached files
         // should not change it — nobody here has emptied this cache and
         // re-read the counter to confirm.
+        // Lives under the NetworkService profile: the shell cannot recycle it
+        // (DE_ACCESSDENIEDSRC, seen live 2026-09-01 — 14 folders, 7.5 GB, 0 B
+        // freed). Windows owns the supported way to empty it, so this target
+        // goes past the bin through that command. Regenerable: the bytes come
+        // back only as Windows re-downloads what it needs.
         T("delivery-optimization", "Delivery Optimization cache", CleanupLevel.Deep, "System",
             new[] { @"%SystemRoot%\ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache" },
-            contents: true, regen: true, admin: true),
+            contents: true, regen: true, admin: true, noBin: true),
         // ---- The heavy system trio (2026-08-30): gigabytes each, and each a
         // decision — explicit opt-in, administrator, and (where a real path
         // exists) past the recycle bin, because a 30 GB Windows.old does not

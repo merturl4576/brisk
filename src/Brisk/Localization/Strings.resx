@@ -102,6 +102,7 @@
   <data name="clean.note.hibernation-file" xml:space="preserve"><value>Frees the file by turning hibernation and Fast Startup off — "powercfg /hibernate on" brings both back.</value></data>
   <data name="clean.note.component-store" xml:space="preserve"><value>Windows removes update files it has already replaced (DISM StartComponentCleanup). Takes minutes; the freed amount is DISM's to decide; installed updates stay uninstallable.</value></data>
   <data name="clean.note.docker-prune" xml:space="preserve"><value>Runs "docker system prune -af": unused images, containers and build cache — everything a build or pull recreates.</value></data>
+  <data name="clean.note.delivery-optimization" xml:space="preserve"><value>Empties Windows' peer-update download cache with Windows' own command. Nothing goes to the Recycle Bin; the bytes come back only as Windows re-downloads what it needs.</value></data>
   <data name="overview.deepreveal" xml:space="preserve"><value>{0} more sits on the deep shelves ({1}: {2}) — see the breakdown</value></data>
   <data name="perf.boottrend" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → since the last change: about {2} ({3} boots). Windows' own timings.</value></data>
   <data name="perf.boottrend.one" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → the first boot since the last change: {2}. Windows' own timings.</value></data>
@@ -345,7 +346,11 @@
   <data name="rule.location.done" xml:space="preserve"><value>Location access switched off</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Activity history policy set to off</value></data>
   <data name="readback.held" xml:space="preserve"><value>You switched this off {0} days ago; it still reads as off.</value></data>
+  <data name="readback.held.today" xml:space="preserve"><value>You switched this off today; it still reads as off.</value></data>
+  <data name="readback.held.yesterday" xml:space="preserve"><value>You switched this off yesterday; it still reads as off.</value></data>
   <data name="readback.reverted" xml:space="preserve"><value>You switched this off on {0}; it reads as on again now.</value></data>
   <data name="readback.ignored" xml:space="preserve"><value>The setting reads as off, but this edition of Windows is not acting on it. brisk read a second value this machine keeps for the same setting, and that one reads as on.</value></data>
   <data name="readback.unverified" xml:space="preserve"><value>You switched this off {0} days ago and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="readback.unverified.today" xml:space="preserve"><value>You switched this off today and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="readback.unverified.yesterday" xml:space="preserve"><value>You switched this off yesterday and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
 </root>

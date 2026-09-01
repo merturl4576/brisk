@@ -337,8 +337,13 @@
                 <!-- Round 11: the Win11 focus ring instead of the classic
                      dotted marching-ants rectangle the owner saw after
                      clicking; keyboard focus keeps its visual. -->
+                <!-- UI Automation saw this as [Button] '' — a nameless button
+                     the whole deep shelf hides behind (workbench, 2026-09-01).
+                     The template's TextBlock is its label; the control says so. -->
                 <ToggleButton IsChecked="{Binding IsAdvancedShown}" Cursor="Hand"
                               FocusVisualStyle="{StaticResource Win11FocusVisual}"
+                              AutomationProperties.Name="{Binding [clean.advanced],
+                                  Source={x:Static loc:Loc.Instance}}"
                               HorizontalAlignment="Left" Margin="2,14,0,8">
                     <ToggleButton.Template>
                         <ControlTemplate TargetType="ToggleButton">
@@ -433,7 +438,7 @@
                                                         <TextBlock Style="{StaticResource Faint}"
                                                                    VerticalAlignment="Center"
                                                                    Margin="0,0,8,0"
-                                                                   Visibility="{Binding NeedsElevation,
+                                                                   Visibility="{Binding ShowsElevationBadge,
                                                                        Converter={x:Static Brisk:BoolToVis.Instance}}"
                                                                    Text="{Binding [clean.elevation],
                                                                        Source={x:Static loc:Loc.Instance}}" />

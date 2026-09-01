@@ -32,7 +32,7 @@ public sealed class TargetRow : ViewModelBase
 {
     private bool _isSelected;
 
-    public TargetRow(TargetScanResult scan, Loc loc)
+    public TargetRow(TargetScanResult scan, Loc loc, bool isElevated)
     {
         Scan = scan;
         // The engine names targets in English; the GUI looks the stable id
@@ -47,6 +47,7 @@ public sealed class TargetRow : ViewModelBase
         SizeText = Fmt.Bytes(scan.TotalBytes);
         IsPerItem = scan.Target.RequiresIndividualSelection;
         NeedsElevation = scan.Target.RequiresElevation;
+        ShowsElevationBadge = NeedsElevation && !isElevated;
         SkippedReason = scan.SkippedReason;
         // The engine's skip reason is English prose; the GUI recomposes it
         // from data it already has (the only skip cause is "app running").
@@ -74,6 +75,10 @@ public sealed class TargetRow : ViewModelBase
     public string? SkippedReason { get; }
     public string SkippedText { get; }
     public bool NeedsElevation { get; }
+    /// The badge answers "will this row refuse?", not "does this target need
+    /// rights?" — inside the elevated app the second is always yes and the
+    /// first is always no, and the workbench found every Deep row wearing it.
+    public bool ShowsElevationBadge { get; }
     public bool IsPerItem { get; }
     public bool IsSelectable { get; }
     public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
@@ -374,6 +379,7 @@ public sealed class CleanViewModel : ViewModelBase
             ProblemsText = "";
             await _state.ScanAsync();
             ShowReport(result, freeBefore, _host.FreeDiskBytes(), appHeld);
+            RefreshHero();
         }
         finally
         {
@@ -589,6 +595,9 @@ public sealed class CleanViewModel : ViewModelBase
                 UndoAvailable = outcome.RecycledPaths.Count > 0;
                 HasBanner = true;
             }
+            // Before the closing rescan, not after it: the banner is on the
+            // screen now, and the hero beside it tells the same story now.
+            RefreshHero();
             await _state.ScanAsync();
         }
         finally
@@ -680,6 +689,15 @@ public sealed class CleanViewModel : ViewModelBase
         Add(CleanupLevel.Safe, "clean.level.safe", snapshot);
         Add(CleanupLevel.Developer, "clean.level.developer", snapshot);
         Add(CleanupLevel.Deep, "clean.level.deep", snapshot);
+        RefreshHero();
+    }
+
+    /// The banner says "12.7 GB removed" the moment it happens; the hero next
+    /// to it said 19.9 GB until the next scan (live workbench, 2026-09-01) —
+    /// and on a real machine that scan is seconds of work the user spends
+    /// reading both. Same host, same numbers, same moment.
+    private void RefreshHero()
+    {
         var lifetime = _host.LifetimeReclaimedBytes();
         LifetimeText = _loc.F("clean.lifetime", Fmt.Bytes(lifetime));
         LifetimeValueText = Fmt.Bytes(lifetime);
@@ -700,6 +718,6 @@ public sealed class CleanViewModel : ViewModelBase
         Levels.Add(new LevelSection(level, titleKey,
             snapshot.Cleaner.Targets
                 .Where(t => t.Target.Level == level)
-                .Select(t => new TargetRow(t, _loc)),
+                .Select(t => new TargetRow(t, _loc, _host.IsElevated())),
             CleanLevelAsync));
 }
