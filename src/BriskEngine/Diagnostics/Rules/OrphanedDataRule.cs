@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using BriskEngine.Models;
 using BriskEngine.Paths;
 
@@ -44,6 +45,14 @@ public sealed class OrphanedDataRule : AdviseRuleBase
             Severity.Warning, Category, ImpactStars: 3, CanFix: false, FixDescription: null);
     }
 
+    /// Whole-word match. The live workbench (2026-09-01) found the previous
+    /// Contains() reading "PyCharm Community Edition" as proof that Unity
+    /// is installed, so a 600 MB orphaned Unity folder went unreported.
+    public static bool NameMatches(string displayName, string toolName) =>
+        Regex.IsMatch(displayName,
+            @"(?<![\p{L}\p{N}])" + Regex.Escape(toolName) + @"(?![\p{L}\p{N}])",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     private bool IsInstalled(DiagnosticContext ctx, string toolName)
     {
         var uninstallPaths = new[]
@@ -62,7 +71,7 @@ public sealed class OrphanedDataRule : AdviseRuleBase
                 {
                     var displayName = ctx.Registry.GetString($@"{uninstallPath}\{subKey}", "DisplayName");
                     if (!string.IsNullOrEmpty(displayName) &&
-                        displayName.Contains(toolName, StringComparison.OrdinalIgnoreCase))
+                        NameMatches(displayName, toolName))
                     {
                         return true;
                     }
