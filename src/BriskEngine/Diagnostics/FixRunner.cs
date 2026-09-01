@@ -28,6 +28,14 @@ public sealed class FixRunner
             _log.Append(new { ts = DateTime.UtcNow, ruleId = rule.Id, action = "fix" });
             return new FixOutcome(true, $"{rule.Id}: fixed");
         }
+        // A refusal for want of rights is not a mystery — it has a name and a
+        // way out. The unelevated CLI used to hand the user .NET's own
+        // sentence about HKEY_LOCAL_MACHINE instead (live workbench, 2026-09-01).
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return new FixOutcome(false,
+                $"{rule.Id}: fix refused — needs administrator rights (run brisk as administrator, or use the app)");
+        }
         catch (Exception ex)
         {
             return new FixOutcome(false, $"{rule.Id}: fix failed — {ex.Message}");

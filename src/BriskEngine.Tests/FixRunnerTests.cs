@@ -29,6 +29,20 @@ file sealed class AdviseRule : IDiagnosticRule
     public void Undo(DiagnosticContext ctx, string prior) => throw new InvalidOperationException();
 }
 
+/// The unelevated CLI handed the user .NET's own sentence — "Access to the
+/// registry key 'HKEY_LOCAL_MACHINE\…' is denied." A refusal for want of
+/// rights has a plain name and a way out; this rule stands in for one.
+file sealed class RefusingRule : IDiagnosticRule
+{
+    public string Id => "refusing";
+    public RuleCategory Category => RuleCategory.Auto;
+    public DiagnosticFinding? Detect(DiagnosticContext ctx) => null;
+    public string Fix(DiagnosticContext ctx) =>
+        throw new UnauthorizedAccessException(
+            @"Access to the registry key 'HKEY_LOCAL_MACHINE\X' is denied.");
+    public void Undo(DiagnosticContext ctx, string prior) => throw new InvalidOperationException();
+}
+
 public sealed class FixRunnerTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-fr-").FullName;
@@ -102,6 +116,15 @@ public sealed class FixRunnerTests : IDisposable
         Assert.False(outcome.Ok);
         Assert.Contains("refused", outcome.Message);
         Assert.Empty(journal.ListUndoable());
+    }
+
+    [Fact]
+    public void Apply_names_the_missing_right_when_the_fix_is_refused()
+    {
+        var outcome = Runner().Apply(new RefusingRule(), _ctx);
+        Assert.False(outcome.Ok);
+        Assert.Contains("needs administrator rights", outcome.Message);
+        Assert.DoesNotContain("HKEY_LOCAL_MACHINE", outcome.Message);
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
