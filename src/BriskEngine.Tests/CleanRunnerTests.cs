@@ -667,5 +667,85 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Empty(_runner.Commands);
     }
 
+    // ---- Delivery Optimization (2026-09-01 live workbench): the cache sits
+    // under the NetworkService profile, so every one of the 14 folders the
+    // shell was asked to move came back DE_ACCESSDENIEDSRC and a promised
+    // 7.5 GB freed 0 B. Windows owns the supported way to empty it; the
+    // per-folder observation afterwards is what earns each byte count.
+
+    private TargetScanResult DeliveryScan(params (string Path, long Bytes)[] folders)
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "delivery-optimization");
+        return new TargetScanResult(target,
+            folders.Select(f => new ResolvedItem("delivery-optimization", f.Path, f.Bytes, DateTime.UtcNow))
+                   .ToList(), null);
+    }
+
+    private string CacheFolder(string name)
+    {
+        var dir = Path.Combine(_root, "do-cache", name);
+        Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    [Fact]
+    public void DeliveryOptimization_runs_windows_own_command_once_and_counts_what_is_gone()
+    {
+        var a = CacheFolder("a");
+        var b = CacheFolder("b");
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (args.Contains("Delete-DeliveryOptimizationCache"))
+            {
+                Directory.Delete(a, true);
+                Directory.Delete(b, true);
+            }
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+
+        Assert.Single(runner.Commands.Where(c => c.Contains("Delete-DeliveryOptimizationCache")));
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "removed"));
+        Assert.Equal(10_000L, report.Entries.Where(e => e.Action == "removed").Sum(e => e.Bytes));
+        Assert.DoesNotContain(report.Entries, e => e.Action == "recycled");
+        Assert.Empty(_recycler.Recycled);   // the shell is never asked
+    }
+
+    [Fact]
+    public void DeliveryOptimization_dry_run_touches_nothing()
+    {
+        var a = CacheFolder("dry-a");
+        var b = CacheFolder("dry-b");
+        var runner = new ScriptedRunner((_, _) => (0, ""));
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: true);
+
+        Assert.All(report.Entries, e => Assert.Equal("dry-run", e.Action));
+        Assert.Empty(runner.Commands);
+        Assert.True(Directory.Exists(a));
+        Assert.True(Directory.Exists(b));
+    }
+
+    [Fact]
+    public void DeliveryOptimization_reports_what_the_command_left_behind()
+    {
+        var a = CacheFolder("left-a");
+        var b = CacheFolder("left-b");
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (args.Contains("Delete-DeliveryOptimizationCache")) Directory.Delete(a, true);
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+
+        Assert.Contains(report.Entries, e => e.Action == "removed" && e.Bytes == 4_000L);
+        Assert.Contains(report.Entries, e => e.Action == "error" && e.Reason!.Contains("still present"));
+    }
+
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
 }

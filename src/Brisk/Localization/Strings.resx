@@ -102,6 +102,7 @@
   <data name="clean.note.hibernation-file" xml:space="preserve"><value>Frees the file by turning hibernation and Fast Startup off — "powercfg /hibernate on" brings both back.</value></data>
   <data name="clean.note.component-store" xml:space="preserve"><value>Windows removes update files it has already replaced (DISM StartComponentCleanup). Takes minutes; the freed amount is DISM's to decide; installed updates stay uninstallable.</value></data>
   <data name="clean.note.docker-prune" xml:space="preserve"><value>Runs "docker system prune -af": unused images, containers and build cache — everything a build or pull recreates.</value></data>
+  <data name="clean.note.delivery-optimization" xml:space="preserve"><value>Empties Windows' peer-update download cache with Windows' own command. Nothing goes to the Recycle Bin; the bytes come back only as Windows re-downloads what it needs.</value></data>
   <data name="overview.deepreveal" xml:space="preserve"><value>{0} more sits on the deep shelves ({1}: {2}) — see the breakdown</value></data>
   <data name="perf.boottrend" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → since the last change: about {2} ({3} boots). Windows' own timings.</value></data>
   <data name="perf.boottrend.one" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → the first boot since the last change: {2}. Windows' own timings.</value></data>

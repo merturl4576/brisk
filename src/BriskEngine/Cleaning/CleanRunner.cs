@@ -127,6 +127,19 @@ public sealed class CleanRunner
                 // "powercfg /hibernate on" reverses it.
                 return RemoveOutsideTheBin(scan, dryRun, Record, entries,
                     _ => _processRunner.Run("powercfg", "/hibernate off"));
+            case "delivery-optimization":
+            {
+                // One command for the whole cache; the per-folder observation
+                // afterwards is what earns each "removed" line its byte count.
+                var ran = false;
+                return RemoveOutsideTheBin(scan, dryRun, Record, entries, _ =>
+                {
+                    if (ran) return;
+                    ran = true;
+                    _processRunner.Run("powershell.exe",
+                        "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"Delete-DeliveryOptimizationCache -Force\"");
+                });
+            }
             case "component-store":
                 if (scan.Target.RequiresElevation && !_isElevated())
                 {
@@ -315,6 +328,15 @@ public sealed class CleanRunner
         Action<string, long, string, string?> record, List<CleanEntry> entries,
         Action<string> commands)
     {
+        // Every item's existence is read BEFORE any command runs. One command
+        // can empty a whole target — the Delivery Optimization cache is 14
+        // folders and one Delete-DeliveryOptimizationCache — and an item
+        // checked only when its turn came would be filed "no longer exists",
+        // 0 B, for bytes brisk had just freed (live workbench, 2026-09-01).
+        var existedBefore = new HashSet<string>(
+            scan.Items.Where(i => Exists(i.Path)).Select(i => i.Path),
+            StringComparer.OrdinalIgnoreCase);
+
         foreach (var item in scan.Items)
         {
             // The registry's own field, not a hand-rolled twin of it — so the
@@ -324,7 +346,7 @@ public sealed class CleanRunner
             { record(item.Path, 0, "refused", "requires administrator"); continue; }
             if (dryRun)
             { record(item.Path, item.Bytes, "dry-run", null); continue; }
-            if (!Exists(item.Path))
+            if (!existedBefore.Contains(item.Path))
             { record(item.Path, 0, "error", "no longer exists (nothing to remove)"); continue; }
 
             commands(item.Path);

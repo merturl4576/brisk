@@ -108,6 +108,20 @@ public class CleanupTargetRegistryTests
             CleanupTargetRegistry.All.Single(t => t.Id == "hibernation-file").PathTemplates);
     }
 
+    /// 2026-09-01 live workbench: the Delivery Optimization cache sits under
+    /// the NetworkService profile, so all 14 folders came back
+    /// DE_ACCESSDENIEDSRC from the shell and a promised 7.5 GB freed 0 B.
+    /// The target must declare past-the-bin removal — CleanRunner has the
+    /// matching case, and the backstop refuses any noBin target that lacks one.
+    [Fact]
+    public void DeliveryOptimizationCache_GoesPastTheBin()
+    {
+        var t = CleanupTargetRegistry.All.Single(x => x.Id == "delivery-optimization");
+        Assert.True(t.BypassesRecycleBin);
+        Assert.True(t.RequiresElevation);
+        Assert.Equal(CleanupLevel.Deep, t.Level);
+    }
+
     /// REGRESSION PIN (2026-08-17): modern WhatsApp Desktop's process is
     /// "WhatsApp.Root"; with only "WhatsApp" registered, the running-app
     /// exclusion silently never fired and a locked 310 MB cache entered the
