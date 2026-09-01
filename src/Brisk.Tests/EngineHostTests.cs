@@ -201,6 +201,9 @@ file sealed class NullFiles : IFileProbe
     public void WriteAllText(string path, string content) { }
     public IReadOnlyList<string> ListFiles(string directory) => Array.Empty<string>();
     public long DirectorySizeBytes(string path) => 0;
+    public BriskEngine.Models.DirectoryStats DirectoryStats(
+        string path, long minFileBytes, int take) =>
+        new(0, Array.Empty<BriskEngine.Models.LargeFile>());
     public DateTime? NewestWriteUtc(string path, int limit = 1500) => null;
 }
 

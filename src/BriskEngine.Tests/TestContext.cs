@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
+using BriskEngine.Models;
 
 namespace BriskEngine.Tests;
 
@@ -107,6 +108,19 @@ public sealed class FakeFiles : IFileProbe
     public Dictionary<string, long> Sizes = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, DateTime?> NewestWrites = new(StringComparer.OrdinalIgnoreCase);
 
+    /// The files a folder is to name, beside the size it is to report.
+    /// A folder with no entry here names nothing and still has its size —
+    /// which is what every disk-breakdown test that predates large-files
+    /// asks for, and why they all stayed green when the rule switched to
+    /// the shared walk.
+    public Dictionary<string, List<LargeFile>> LargeFiles =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    /// How many times the shared walk was actually asked to walk. The memo
+    /// is invisible from its answers — the same numbers come back either
+    /// way — so this counter is the only thing that can see it working.
+    public int StatsCalls;
+
     public bool FileExists(string path) => Texts.ContainsKey(path);
     public string? ReadAllText(string path) =>
         Texts.TryGetValue(path, out var text) ? text : null;
@@ -115,6 +129,16 @@ public sealed class FakeFiles : IFileProbe
         FileLists.TryGetValue(directory, out var files) ? files : new List<string>();
     public long DirectorySizeBytes(string path) =>
         Sizes.TryGetValue(path, out var size) ? size : 0;
+    public DirectoryStats DirectoryStats(string path, long minFileBytes, int take)
+    {
+        StatsCalls++;
+        var files = LargeFiles.TryGetValue(path, out var planted)
+            ? planted.FindAll(f => f.Bytes >= minFileBytes)
+            : new List<LargeFile>();
+        files.Sort((a, b) => b.Bytes.CompareTo(a.Bytes));
+        if (files.Count > take) files.RemoveRange(take, files.Count - take);
+        return new DirectoryStats(DirectorySizeBytes(path), files);
+    }
     public DateTime? NewestWriteUtc(string path, int limit = 1500) =>
         NewestWrites.TryGetValue(path, out var dt) ? dt : null;
 }
