@@ -29,10 +29,11 @@ public sealed class CleanRunner
     private readonly IProcessRunner _processRunner;
     private readonly Func<bool> _isElevated;
     private readonly ILockProbe? _lockProbe;
+    private readonly Func<long> _systemDriveFreeBytes;
 
     public CleanRunner(SafetyValidator validator, IRecycler recycler, ActionLog log,
         IProcessRunner processRunner, Func<bool> isElevated,
-        ILockProbe? lockProbe = null)
+        ILockProbe? lockProbe = null, Func<long>? systemDriveFreeBytes = null)
     {
         _validator = validator;
         _recycler = recycler;
@@ -40,6 +41,8 @@ public sealed class CleanRunner
         _processRunner = processRunner;
         _isElevated = isElevated;
         _lockProbe = lockProbe;
+        _systemDriveFreeBytes = systemDriveFreeBytes
+            ?? (() => new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory)!).AvailableFreeSpace);
     }
 
     /// What a path held by a running app is recorded as when the probe —
@@ -152,12 +155,25 @@ public sealed class CleanRunner
                 else
                 {
                     // StartComponentCleanup only — never /ResetBase, which
-                    // would make installed updates uninstallable. DISM owns
-                    // the outcome, so brisk claims no byte count for it.
+                    // would make installed updates uninstallable.
+                    var before = _systemDriveFreeBytes();
                     var (exit, _) = _processRunner.Run("Dism.exe",
                         "/Online /Cleanup-Image /StartComponentCleanup");
-                    if (exit != 0) Record("(component store)", 0, "error", $"DISM exited {exit}");
-                    else Record("(component store)", 0, "external");
+                    if (exit != 0) { Record("(component store)", 0, "error", $"DISM exited {exit}"); }
+                    else
+                    {
+                        // DISM owns the outcome; the drive is the only witness
+                        // brisk has. A rise is reported as what it is — a
+                        // reading, not a file count — and no rise is reported
+                        // as nothing. Live 2026-09-01: 555 seconds of DISM and
+                        // a "0 B" line over ~9.5 GB nothing else accounted for.
+                        var gained = Math.Max(0, _systemDriveFreeBytes() - before);
+                        if (gained > 0)
+                            Record("(component store)", gained, "removed",
+                                "free space rose by this much while DISM ran — DISM's own doing, observed on the drive, not a count of files");
+                        else
+                            Record("(component store)", 0, "external", "DISM finished; free space did not rise");
+                    }
                 }
                 return new CleanReport(entries);
         }

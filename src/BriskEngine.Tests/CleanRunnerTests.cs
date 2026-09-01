@@ -489,8 +489,9 @@ public sealed class CleanRunnerTests : IDisposable
     // commands and is observed gone after them — action "removed", never
     // "recycled", because nothing here can come back from the bin.
 
-    private CleanRunner Runner(IProcessRunner processRunner, bool elevated) =>
-        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated);
+    private CleanRunner Runner(IProcessRunner processRunner, bool elevated,
+        Func<long>? free = null) =>
+        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated, null, free);
 
     private TargetScanResult HeavyScan(string id, string path, long bytes)
     {
@@ -588,16 +589,18 @@ public sealed class CleanRunnerTests : IDisposable
     }
 
     [Fact]
-    public void ComponentStore_Elevated_RunsDism_AndClaimsNoBytes()
+    public void ComponentStore_Elevated_RunsDism_AndClaimsNoBytesTheDriveDidNotShow()
     {
         var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
         var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
 
-        var report = Runner(_runner, elevated: true).Clean(scan, dryRun: false);
+        // a drive that never moves: brisk has watched nothing, so it says nothing
+        var report = Runner(_runner, elevated: true, free: () => 100L << 30)
+            .Clean(scan, dryRun: false);
 
         var entry = Assert.Single(report.Entries);
         Assert.Equal("external", entry.Action);
-        Assert.Equal(0, entry.Bytes);   // brisk never invents a number DISM did not report
+        Assert.Equal(0, entry.Bytes);   // brisk never invents a number nothing witnessed
         Assert.Equal("Dism.exe /Online /Cleanup-Image /StartComponentCleanup",
             Assert.Single(_runner.Commands));
     }
@@ -629,6 +632,41 @@ public sealed class CleanRunnerTests : IDisposable
         var dry = Runner(_runner, elevated: true).Clean(scan, dryRun: true);
         Assert.Equal("dry-run", Assert.Single(dry.Entries).Action);
         Assert.Empty(_runner.Commands);
+    }
+
+    /// 2026-09-01 live workbench: DISM ran for 555 seconds and brisk printed
+    /// "recycled: 0 items, 0 B" while the machine's free space rose ~9.5 GB
+    /// that no other entry accounted for. The drive is the only witness brisk
+    /// has, and a reading is worth reporting as long as it is called one.
+    [Fact]
+    public void ComponentStore_reports_the_free_space_it_watched_rise()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var free = new Queue<long>(new[] { 100L << 30, 109L << 30 });   // 100 GB before, 109 GB after
+
+        var report = Runner(_runner, elevated: true, free: () => free.Dequeue())
+            .Clean(scan, dryRun: false);
+
+        var entry = report.Entries.Single(e => e.Path == "(component store)");
+        Assert.Equal("removed", entry.Action);
+        Assert.Equal(9L << 30, entry.Bytes);
+        Assert.Contains("observed", entry.Reason);
+    }
+
+    [Fact]
+    public void ComponentStore_claims_nothing_when_free_space_did_not_rise()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new TargetScanResult(target, Array.Empty<ResolvedItem>(), null);
+        var free = new Queue<long>(new[] { 100L << 30, 100L << 30 });
+
+        var report = Runner(_runner, elevated: true, free: () => free.Dequeue())
+            .Clean(scan, dryRun: false);
+
+        var entry = report.Entries.Single(e => e.Path == "(component store)");
+        Assert.Equal("external", entry.Action);
+        Assert.Equal(0, entry.Bytes);
     }
 
     /// BACKSTOP PIN (2026-08-30 review): BypassesRecycleBin used to be a flag

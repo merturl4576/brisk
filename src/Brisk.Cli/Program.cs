@@ -478,6 +478,12 @@ public static class Program
                     // a 30 GB removal (2026-08-30 review).
                     removedBytes += entry.Bytes;
                     removedCount++;
+                    // A "removed" line can carry a caveat about HOW the bytes
+                    // were counted — the component store's number is a free
+                    // space reading, not a file count. Print it, or the total
+                    // claims more precision than brisk has.
+                    if (entry.Reason is not null)
+                        Console.WriteLine($"  note: {entry.Path} — {entry.Reason}");
                 }
                 else if (entry.Action is "refused" or "error")
                 {
