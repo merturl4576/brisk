@@ -143,7 +143,11 @@ public sealed class ReportCardModel
     {
         var rows = undoable
             .OrderByDescending(f => f.FixedAtUtc)
-            .Select(f => loc.Title($"rule.{f.RuleId}.title", f.RuleId)
+            // The card is the one artifact built to be shared; under "Applied
+            // fixes" it listed "Location access is not switched off" — the
+            // problem, not the outcome (live workbench, 2026-09-01). Same
+            // words as the Overview's own report now.
+            .Select(f => DoneLabel.For(loc, f.RuleId, $"rule.{f.RuleId}.title", f.RuleId)
                 + " · " + f.FixedAtUtc.ToLocalTime()
                     .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
             .ToList();
