@@ -63,17 +63,28 @@ public sealed class ReadBackRow
         result.State switch
         {
             ReadBackState.Held =>
-                loc.F("readback.held", DaysAgo(result.FixedAtUtc, nowUtc)),
+                ByAge(loc, "readback.held", DaysAgo(result.FixedAtUtc, nowUtc)),
             ReadBackState.Reverted =>
                 loc.F("readback.reverted", LocalDate(result.FixedAtUtc)),
             ReadBackState.WrittenButIgnored => loc["readback.ignored"],
             ReadBackState.WrittenButUnverified =>
-                loc.F("readback.unverified", DaysAgo(result.FixedAtUtc, nowUtc)),
+                ByAge(loc, "readback.unverified", DaysAgo(result.FixedAtUtc, nowUtc)),
             var unknown => throw new ArgumentOutOfRangeException(
                 nameof(result), unknown,
                 $"'{result.RuleId}' came back in a read-back state this row has " +
                 "no sentence for"),
         };
+
+    /// The two days a person has a word for. A day count is right from the
+    /// day after tomorrow onward and wrong before it: the live workbench read
+    /// "0 gün önce kapattın, hâlâ kapalı" the afternoon of the fix, and the
+    /// next morning it would have said "1 days ago".
+    private static string ByAge(Loc loc, string key, int days) => days switch
+    {
+        0 => loc[$"{key}.today"],
+        1 => loc[$"{key}.yesterday"],
+        _ => loc.F(key, days),
+    };
 
     private static string BrushKeyFor(ReadBackState state) => state switch
     {

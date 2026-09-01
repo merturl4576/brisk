@@ -346,7 +346,11 @@
   <data name="rule.location.done" xml:space="preserve"><value>Konum erişimi kapatıldı</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Etkinlik geçmişi ilkesi kapalı olarak ayarlandı</value></data>
   <data name="readback.held" xml:space="preserve"><value>{0} gün önce kapattın, hâlâ kapalı</value></data>
+  <data name="readback.held.today" xml:space="preserve"><value>Bugün kapattın, hâlâ kapalı</value></data>
+  <data name="readback.held.yesterday" xml:space="preserve"><value>Dün kapattın, hâlâ kapalı</value></data>
   <data name="readback.reverted" xml:space="preserve"><value>Bunu {0} tarihinde kapatmıştın; şu an yeniden açık.</value></data>
   <data name="readback.ignored" xml:space="preserve"><value>Ayar kapalı yazıyor ama bu Windows sürümü onu dikkate almıyor. brisk aynı ayar için bu makinenin tuttuğu ikinci bir değeri okudu; o değer açık diyor.</value></data>
   <data name="readback.unverified" xml:space="preserve"><value>Bunu {0} gün önce kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="readback.unverified.today" xml:space="preserve"><value>Bunu bugün kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="readback.unverified.yesterday" xml:space="preserve"><value>Bunu dün kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
 </root>

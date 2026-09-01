@@ -395,11 +395,11 @@ public class PrivacyViewModelTests
         var days = ReadBackRow.DaysAgo(fixedAt, now);
         var expected = state switch
         {
-            ReadBackState.Held => loc.F("readback.held", days),
+            ReadBackState.Held => HeldText(loc, days),
             ReadBackState.Reverted =>
                 loc.F("readback.reverted", ReadBackRow.LocalDate(fixedAt)),
             ReadBackState.WrittenButIgnored => loc["readback.ignored"],
-            ReadBackState.WrittenButUnverified => loc.F("readback.unverified", days),
+            ReadBackState.WrittenButUnverified => ByAge(loc, "readback.unverified", days),
             _ => throw new ArgumentOutOfRangeException(nameof(state), state,
                 "a read-back state this theory has no expected sentence for — " +
                 "the renderer has one, and an unchecked sentence is a sentence " +
@@ -410,6 +410,36 @@ public class PrivacyViewModelTests
             new ReadBackResult("advertising-id", state, fixedAt), now);
 
         Assert.Equal(expected, row.Text);
+    }
+
+    /// The two days a person has a word for. A count is right from the day
+    /// after tomorrow onward and wrong before it: the live workbench read
+    /// "0 gün önce kapattın" the afternoon of the fix, and the morning after
+    /// it would have said "1 days ago".
+    private static string HeldText(Loc loc, int days) => ByAge(loc, "readback.held", days);
+
+    private static string ByAge(Loc loc, string key, int days) => days switch
+    {
+        0 => loc[$"{key}.today"],
+        1 => loc[$"{key}.yesterday"],
+        _ => loc.F(key, days),
+    };
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public async Task TheFreshestReadBacks_SayTodayAndYesterday(int daysAgo)
+    {
+        var loc = EnglishLoc();
+        var now = new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var row = await OneReadBackRow(
+            new ReadBackResult("advertising-id", ReadBackState.Held,
+                now.AddDays(-daysAgo)), now);
+
+        Assert.Equal(HeldText(loc, daysAgo), row.Text);
+        Assert.DoesNotContain("0 ", row.Text);
+        Assert.DoesNotContain("1 days", row.Text);
     }
 
     /// Every member of the enum reaches the theory above, read off the enum
@@ -494,7 +524,7 @@ public class PrivacyViewModelTests
             new ReadBackResult("advertising-id", ReadBackState.Held,
                 now.AddHours(hoursAhead)), now);
 
-        Assert.Equal(loc.F("readback.held", 0), row.Text);
+        Assert.Equal(HeldText(loc, 0), row.Text);
     }
 
     /// The lines are the journal's, newest fix first — the same order every
