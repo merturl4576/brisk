@@ -23,6 +23,11 @@ public sealed class CleanRunner
     private static extern int SHEmptyRecycleBinW(IntPtr hwnd, string? root, uint flags);
     private const uint SHERB_SILENT = 0x7; // no confirm, no progress UI, no sound
 
+    /// How long brisk waits for the Delivery Optimization service to finish
+    /// deleting after Delete-DeliveryOptimizationCache returns. 7.5 GB took
+    /// well under this live; a test lowers it to prove the wait ends.
+    public static TimeSpan DeliveryOptimizationSettleTimeout { get; set; } = TimeSpan.FromSeconds(120);
+
     private readonly SafetyValidator _validator;
     private readonly IRecycler _recycler;
     private readonly ActionLog _log;
@@ -141,6 +146,15 @@ public sealed class CleanRunner
                     ran = true;
                     _processRunner.Run("powershell.exe",
                         "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"Delete-DeliveryOptimizationCache -Force\"");
+                    // The cmdlet returns before the service has deleted anything.
+                    // Live 2026-09-01: 1 of 14 folders gone two seconds later,
+                    // all 14 gone minutes later — and thirteen honest "still
+                    // present" lines covered 7.4 GB brisk had in fact freed.
+                    // Wait for the drive to agree, up to a bound; then the
+                    // per-item observation below speaks for itself.
+                    var deadline = DateTime.UtcNow + DeliveryOptimizationSettleTimeout;
+                    while (DateTime.UtcNow < deadline && scan.Items.Any(i => Exists(i.Path)))
+                        System.Threading.Thread.Sleep(250);
                 });
             }
             case "component-store":

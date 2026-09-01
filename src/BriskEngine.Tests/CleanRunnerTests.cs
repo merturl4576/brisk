@@ -752,6 +752,57 @@ public sealed class CleanRunnerTests : IDisposable
     }
 
     [Fact]
+    public void DeliveryOptimization_waits_for_the_service_to_finish_what_the_command_started()
+    {
+        // Live 2026-09-01: the cmdlet returned at once, 1 of 14 folders was gone
+        // two seconds later and all 14 were gone minutes later — the service
+        // deletes in the background. brisk must wait for the drive to agree.
+        var a = CacheFolder("async-a");
+        var b = CacheFolder("async-b");
+        var runner = new ScriptedRunner((exe, args) =>
+        {
+            if (args.Contains("Delete-DeliveryOptimizationCache"))
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(500);
+                    Directory.Delete(a, true);
+                    Directory.Delete(b, true);
+                });
+            return (0, "");
+        });
+
+        var report = Runner(runner, elevated: true)
+            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+
+        Assert.Equal(2, report.Entries.Count(e => e.Action == "removed"));
+        Assert.Equal(10_000L, report.Entries.Where(e => e.Action == "removed").Sum(e => e.Bytes));
+        Assert.DoesNotContain(report.Entries, e => e.Action == "error");
+    }
+
+    [Fact]
+    public void DeliveryOptimization_stops_waiting_and_says_so_when_nothing_happens()
+    {
+        var a = CacheFolder("stuck-a");
+        var runner = new ScriptedRunner((_, _) => (0, ""));   // the command "succeeds" and nothing moves
+        var before = CleanRunner.DeliveryOptimizationSettleTimeout;
+        CleanRunner.DeliveryOptimizationSettleTimeout = TimeSpan.FromMilliseconds(600);
+        try
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var report = Runner(runner, elevated: true)
+                .Clean(DeliveryScan((a, 4_000L)), dryRun: false);
+            sw.Stop();
+
+            var entry = Assert.Single(report.Entries);
+            Assert.Equal("error", entry.Action);
+            Assert.Contains("still present", entry.Reason);
+            Assert.Equal(0, entry.Bytes);
+            Assert.InRange(sw.ElapsedMilliseconds, 600, 10_000);
+        }
+        finally { CleanRunner.DeliveryOptimizationSettleTimeout = before; }
+    }
+
+    [Fact]
     public void DeliveryOptimization_dry_run_touches_nothing()
     {
         var a = CacheFolder("dry-a");
@@ -778,8 +829,17 @@ public sealed class CleanRunnerTests : IDisposable
             return (0, "");
         });
 
-        var report = Runner(runner, elevated: true)
-            .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+        // b never goes away, so the runner would wait its full settle bound;
+        // the bound is the subject of the test above this one, not this one.
+        var before = CleanRunner.DeliveryOptimizationSettleTimeout;
+        CleanRunner.DeliveryOptimizationSettleTimeout = TimeSpan.FromMilliseconds(300);
+        CleanReport report;
+        try
+        {
+            report = Runner(runner, elevated: true)
+                .Clean(DeliveryScan((a, 4_000L), (b, 6_000L)), dryRun: false);
+        }
+        finally { CleanRunner.DeliveryOptimizationSettleTimeout = before; }
 
         Assert.Contains(report.Entries, e => e.Action == "removed" && e.Bytes == 4_000L);
         Assert.Contains(report.Entries, e => e.Action == "error" && e.Reason!.Contains("still present"));
