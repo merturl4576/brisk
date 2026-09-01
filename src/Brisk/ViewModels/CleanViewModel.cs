@@ -379,6 +379,7 @@ public sealed class CleanViewModel : ViewModelBase
             ProblemsText = "";
             await _state.ScanAsync();
             ShowReport(result, freeBefore, _host.FreeDiskBytes(), appHeld);
+            RefreshHero();
         }
         finally
         {
@@ -594,6 +595,9 @@ public sealed class CleanViewModel : ViewModelBase
                 UndoAvailable = outcome.RecycledPaths.Count > 0;
                 HasBanner = true;
             }
+            // Before the closing rescan, not after it: the banner is on the
+            // screen now, and the hero beside it tells the same story now.
+            RefreshHero();
             await _state.ScanAsync();
         }
         finally
@@ -685,6 +689,15 @@ public sealed class CleanViewModel : ViewModelBase
         Add(CleanupLevel.Safe, "clean.level.safe", snapshot);
         Add(CleanupLevel.Developer, "clean.level.developer", snapshot);
         Add(CleanupLevel.Deep, "clean.level.deep", snapshot);
+        RefreshHero();
+    }
+
+    /// The banner says "12.7 GB removed" the moment it happens; the hero next
+    /// to it said 19.9 GB until the next scan (live workbench, 2026-09-01) —
+    /// and on a real machine that scan is seconds of work the user spends
+    /// reading both. Same host, same numbers, same moment.
+    private void RefreshHero()
+    {
         var lifetime = _host.LifetimeReclaimedBytes();
         LifetimeText = _loc.F("clean.lifetime", Fmt.Bytes(lifetime));
         LifetimeValueText = Fmt.Bytes(lifetime);
