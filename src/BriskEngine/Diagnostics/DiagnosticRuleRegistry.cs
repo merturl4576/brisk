@@ -10,7 +10,14 @@ public static class DiagnosticRuleRegistry
     {
         new PowerPlanRule(), new BrowserGpuRule(), new HardwareAccelerationRule(),
         new StartupBloatRule(), new RamPressureRule(), new ThermalsRule(),
-        new DiskBreakdownRule(), new DiskForecastRule(), new OrphanedDataRule(),
+        new DiskBreakdownRule(),
+        // Straight after the folder totals, because it is the same
+        // walk answered twice and the second answer is the one a
+        // reader can act on: disk-breakdown says the folder is big,
+        // this one says which file made it big. Report-only — it
+        // names the files and touches none of them.
+        new LargeFilesRule(),
+        new DiskForecastRule(), new OrphanedDataRule(),
         new StaleDevCachesRule(), new VisualEffectsRule(), new StorageSenseRule(),
         new DisplayRefreshRule(), new SearchWebResultsRule(),
         new BootDegradationRule(), new MemorySpeedRule(),

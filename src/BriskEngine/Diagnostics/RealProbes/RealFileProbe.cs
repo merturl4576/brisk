@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BriskEngine.Cleaning;
+using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.RealProbes;
 
@@ -48,6 +49,9 @@ public sealed class RealFileProbe : IFileProbe
     }
 
     public long DirectorySizeBytes(string path) => SizeCalculator.SizeOf(path);
+
+    public DirectoryStats DirectoryStats(string path, long minFileBytes, int take) =>
+        SizeCalculator.StatsOf(path, minFileBytes, take);
 
     public DateTime? NewestWriteUtc(string path, int limit = 1500)
     {

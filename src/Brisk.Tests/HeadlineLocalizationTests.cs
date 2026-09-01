@@ -43,6 +43,14 @@ public class HeadlineLocalizationTests
     [InlineData("rule.disk-breakdown.headline.value", "57.7 GB", "57.7 GB", "57.7 GB")]
     [InlineData("rule.disk-breakdown.headline.caption", "Desktop",
         "Desktop — the largest measured folder", "Desktop — ölçülen en büyük klasör")]
+    [InlineData("rule.large-files.headline.value", "23.5 GB", "23.5 GB", "23.5 GB")]
+    // The caption takes no argument at all, and that is the guard: the
+    // report card is a picture people post, and a caption with a hole in it
+    // is a caption something could be poured into. The size is the only
+    // thing that travels.
+    [InlineData("rule.large-files.headline.caption", "x",
+        "the largest single file in your profile",
+        "profilindeki en büyük tek dosya")]
     [InlineData("rule.memory-speed.headline.value", "2933", "2933 MT/s", "2933 MT/s")]
     [InlineData("rule.memory-speed.headline.caption", "3200",
         "rated for 3200 MT/s", "anma hızı 3200 MT/s")]

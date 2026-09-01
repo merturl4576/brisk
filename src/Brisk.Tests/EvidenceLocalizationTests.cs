@@ -61,6 +61,29 @@ public class EvidenceLocalizationTests
             Row(finding, Loc("en")).Evidence);
     }
 
+    /// The list itself is language-neutral — sizes, paths and ISO dates read
+    /// the same in both — so only the sentence around it is translated, and
+    /// both halves of it are pinned: brisk NAMES these files and TOUCHES
+    /// none of them. A translation that dropped the second promise would
+    /// leave the Turkish reader looking at his own VM disk wondering what
+    /// brisk is about to do with it.
+    [Fact]
+    public void Evidence_LargeFiles_PromisesInBothLanguages_ThatBriskTouchesNothing()
+    {
+        var list = @"23.5 GB  Desktop\vms\workbench.vdi  (2026-07-14)";
+        var finding = TestData.Finding("large-files", cat: RuleCategory.Advise,
+            canFix: false, evidenceKey: "rule.large-files.evidence",
+            evidenceArgs: new[] { list });
+
+        Assert.Equal("Files of 500 MB or more in your profile, largest first — " +
+            "brisk names them and touches none: " + list,
+            Row(finding, Loc("en")).Evidence);
+
+        Assert.Equal("Profilindeki 500 MB ve üstü dosyalar, büyükten küçüğe — " +
+            "brisk adlarını söyler, hiçbirine dokunmaz: " + list,
+            Row(finding, Loc("tr")).Evidence);
+    }
+
     [Fact]
     public void Evidence_UnknownKey_FallsBackToEngineProse()
     {

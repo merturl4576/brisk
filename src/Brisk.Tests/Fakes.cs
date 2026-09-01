@@ -161,6 +161,9 @@ public sealed class NoOtherProbes
     public void WriteAllText(string path, string content) => No<bool>();
     public IReadOnlyList<string> ListFiles(string directory) => No<IReadOnlyList<string>>();
     public long DirectorySizeBytes(string path) => No<long>();
+    public BriskEngine.Models.DirectoryStats DirectoryStats(
+        string path, long minFileBytes, int take) =>
+        No<BriskEngine.Models.DirectoryStats>();
     public DateTime? NewestWriteUtc(string path, int limit = 1500) => No<DateTime?>();
 
     public bool IsRunning(string processName) => No<bool>();

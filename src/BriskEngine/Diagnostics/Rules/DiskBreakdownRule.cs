@@ -33,7 +33,11 @@ public sealed class DiskBreakdownRule : AdviseRuleBase
 
         foreach (var (label, path, threshold) in folders)
         {
-            var size = ctx.Files.DirectorySizeBytes(path);
+            // The shared walk, not a private one: large-files wants the
+            // same four folders measured and FileStats is what stops the
+            // scan paying for %LOCALAPPDATA% twice. The number is the
+            // same number DirectorySizeBytes returned.
+            var size = FileStats.Of(ctx, path).Bytes;
             var sizeStr = Fmt.Bytes(size);
             var line = $"{label}: {sizeStr}";
             if (size >= threshold)

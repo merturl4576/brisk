@@ -130,6 +130,24 @@ public class RevelationPickerTests
             RevelationPicker.Pick(asShipped).Select(f => f.RuleId));
     }
 
+    /// A named 23.5 GB file outranks the total of the folder holding it.
+    /// That is the whole argument for the large-files rule, made once more
+    /// where the order is decided: "Desktop: 58.8 GB" and "23.5 GB — the
+    /// largest single file in your profile" describe the same disk, and only
+    /// one of them can be acted on.
+    [Fact]
+    public void ANamedFile_LeadsAheadOfTheFolderTotal()
+    {
+        var picked = RevelationPicker.Pick(new[]
+        {
+            F("disk-breakdown", value: "58.8 GB"),
+            F("large-files", value: "23.5 GB"),
+        });
+
+        Assert.Equal(new[] { "large-files", "disk-breakdown" },
+            picked.Select(f => f.RuleId).ToArray());
+    }
+
     /// The declared order IS the product decision — pinned so a change to it
     /// is a deliberate edit here, never a drive-by.
     [Fact]
@@ -137,7 +155,7 @@ public class RevelationPickerTests
         Assert.Equal(new[]
         {
             "boot-degradation", "display-refresh",
-            "startup-bloat", "disk-breakdown", "memory-speed",
+            "startup-bloat", "large-files", "disk-breakdown", "memory-speed",
         }, RevelationPicker.Priority);
 
     /// The ban list is as much a product decision as the order — pinned the
