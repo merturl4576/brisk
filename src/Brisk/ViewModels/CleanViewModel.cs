@@ -32,7 +32,7 @@ public sealed class TargetRow : ViewModelBase
 {
     private bool _isSelected;
 
-    public TargetRow(TargetScanResult scan, Loc loc)
+    public TargetRow(TargetScanResult scan, Loc loc, bool isElevated)
     {
         Scan = scan;
         // The engine names targets in English; the GUI looks the stable id
@@ -47,6 +47,7 @@ public sealed class TargetRow : ViewModelBase
         SizeText = Fmt.Bytes(scan.TotalBytes);
         IsPerItem = scan.Target.RequiresIndividualSelection;
         NeedsElevation = scan.Target.RequiresElevation;
+        ShowsElevationBadge = NeedsElevation && !isElevated;
         SkippedReason = scan.SkippedReason;
         // The engine's skip reason is English prose; the GUI recomposes it
         // from data it already has (the only skip cause is "app running").
@@ -74,6 +75,10 @@ public sealed class TargetRow : ViewModelBase
     public string? SkippedReason { get; }
     public string SkippedText { get; }
     public bool NeedsElevation { get; }
+    /// The badge answers "will this row refuse?", not "does this target need
+    /// rights?" — inside the elevated app the second is always yes and the
+    /// first is always no, and the workbench found every Deep row wearing it.
+    public bool ShowsElevationBadge { get; }
     public bool IsPerItem { get; }
     public bool IsSelectable { get; }
     public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
@@ -700,6 +705,6 @@ public sealed class CleanViewModel : ViewModelBase
         Levels.Add(new LevelSection(level, titleKey,
             snapshot.Cleaner.Targets
                 .Where(t => t.Target.Level == level)
-                .Select(t => new TargetRow(t, _loc)),
+                .Select(t => new TargetRow(t, _loc, _host.IsElevated())),
             CleanLevelAsync));
 }

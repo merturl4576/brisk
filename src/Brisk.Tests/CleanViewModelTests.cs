@@ -888,6 +888,28 @@ public class CleanViewModelTests
         Assert.Empty(bin.Restored);                      // nothing restored
     }
 
+    /// Live workbench, 2026-09-01: every Deep row wore "Yönetici gerekiyor"
+    /// inside brisk-app, which always runs elevated. The badge answers "will
+    /// this row refuse?", not "does this target need rights?" — and elevated,
+    /// the answer is no.
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Elevation_badge_shows_only_when_the_app_is_not_elevated(
+        bool elevated, bool badge)
+    {
+        var host = Host();
+        host.Elevated = elevated;
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+
+        var row = vm.Levels.Single(l => l.Level == CleanupLevel.Deep)
+            .Targets.Single(t => t.Id == "windows-temp");
+
+        Assert.True(row.NeedsElevation);
+        Assert.Equal(badge, row.ShowsElevationBadge);
+    }
+
     /// Round-10 review: the big total's push cadence must outlast
     /// NumeralTick's slide, or every push restarts the animation mid-flight
     /// and the numeral strobes instead of ticking.

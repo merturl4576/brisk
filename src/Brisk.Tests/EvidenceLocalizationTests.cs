@@ -83,7 +83,7 @@ public class EvidenceLocalizationTests
         var scan = TestData.Target("chrome-cache", CleanupLevel.Safe, 0,
             skipped: "chrome is running — close it to include this target",
             app: "chrome");
-        var row = new TargetRow(scan, Loc("tr"));
+        var row = new TargetRow(scan, Loc("tr"), isElevated: false);
 
         Assert.Equal("Chrome önbelleği", row.DisplayName);
         Assert.Equal("chrome açık — dahil etmek için önce kapat", row.SkippedText);
@@ -95,7 +95,7 @@ public class EvidenceLocalizationTests
     {
         var scan = TestData.Target("future-target", CleanupLevel.Safe, 0,
             skipped: "some engine reason");
-        var row = new TargetRow(scan, Loc("tr"));
+        var row = new TargetRow(scan, Loc("tr"), isElevated: false);
 
         Assert.Equal("future-target", row.DisplayName);   // engine DisplayName
         Assert.Equal(Loc("tr")["clean.skipped"], row.SkippedText);
@@ -105,7 +105,8 @@ public class EvidenceLocalizationTests
     public void TargetRow_NotSkipped_HasEmptySkipText()
     {
         var row = new TargetRow(
-            TestData.Target("user-temp", CleanupLevel.Safe, 2048), Loc("en"));
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048), Loc("en"),
+            isElevated: false);
         Assert.Equal("", row.SkippedText);
         Assert.Equal("User temp files", row.DisplayName);
     }
