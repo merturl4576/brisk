@@ -99,7 +99,7 @@ Bu kategori büyük ölçüde kimsenin kontrol etmediği iddialar üzerine kurul
 
 ## Ne yapıyor
 
-- **26 deterministik teşhis kuralı** — güç planı, başlangıç yükü, Windows'un kendi ölçtüğü açılış süresi, monitörün desteklediğinin altında çalışan ekran yenileme hızı, kendi hız değerinin altında çalışan bellek, sıcaklıklar, disk baskısı, yukarıdaki read-back'li on gizlilik kuralı ve dahası. Her bulgu kanıtını taşıyor.
+- **27 deterministik teşhis kuralı** — güç planı, başlangıç yükü, Windows'un kendi ölçtüğü açılış süresi, monitörün desteklediğinin altında çalışan ekran yenileme hızı, kendi hız değerinin altında çalışan bellek, sıcaklıklar, disk baskısı, profilindeki en büyük dosyalar, adıyla, yukarıdaki read-back'li on gizlilik kuralı ve dahası. Her bulgu kanıtını taşıyor.
 - **Tek tıkla düzeltme ve geri alma.** Kurallar Auto, Confirm ve Advise diye ayrılıyor; brisk bir Confirm kuralını sormadan uygulamıyor, yalnızca gözlemlediği bir şey için düzeltme düğmesi göstermiyor.
 - **Beyaz listeyle çalışan temizleyici** — desenle değil. Yalnızca Windows'un ve uygulamaların kendiliğinden yeniden ürettiği önbellek ve geçici dosyalara dokunuyor. Üç seviye: Safe, Developer, Deep.
 - **Sesini yükselten derin raflar.** Windows.old, uyku modu dosyası, bileşen deposunun yeri doldurulmuş yarısı, bayat geliştirici önbellekleri — boyutlanmış, ön sayfada adıyla anılmış ("Derin raflarda 32 GB daha var"), her biri kendi onayının arkasında ve satırın üstünde takası yazıyor: ne geri gelir, ne gelmez, ne çalışmayı bırakır.

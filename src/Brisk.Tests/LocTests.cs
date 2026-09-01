@@ -128,6 +128,8 @@ public class LocTests
     [InlineData("rule.disk-forecast.advice")]
     [InlineData("rule.orphaned-data.advice")]
     [InlineData("rule.stale-dev-caches.advice")]
+    [InlineData("rule.large-files.advice")]
+    [InlineData("rule.large-files.evidence")]
     [InlineData("startup.system.hint")]
     [InlineData("startup.app.teams")]
     [InlineData("startup.app.onedrive")]

@@ -325,6 +325,11 @@ public class HealthViewModelTests
     [InlineData("memory-speed", true)]
     [InlineData("ram-pressure", true)]
     [InlineData("thermals", false)]     // machine condition, not a speed lever
+    // Disk space, so Saglik — and beside disk-breakdown, which is the folder
+    // total the same walk produced. A reader who follows one of the two to a
+    // page must find the other one on it.
+    [InlineData("disk-breakdown", false)]
+    [InlineData("large-files", false)]
     public void NoticeRules_ClassifyToThePageThatHoldsTheirCard(
         string ruleId, bool onPerformance)
     {

@@ -31,6 +31,14 @@ public static class RevelationPicker
         // are not what this project wants a scan to open with. The fourth,
         // usb-history, is not merely unlisted: see NeverLeads below.
         "startup-bloat",
+        // A NAMED FILE OUTRANKS THE FOLDER THAT HOLDS IT. Both of these come
+        // out of the same walk of the same four folders, and they describe
+        // the same disk two ways: "Desktop: 58.8 GB (over threshold)" and
+        // "23.5 GB — the largest single file in your profile". Only the
+        // second one is a thing a reader can go and decide about, which is
+        // what the field test on a neglected machine and the maintainer's
+        // own live look both said, so it leads and the total follows it.
+        "large-files",
         "disk-breakdown",
         "memory-speed",
     };

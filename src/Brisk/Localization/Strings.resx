@@ -158,6 +158,7 @@
   <data name="rule.ram-pressure.title" xml:space="preserve"><value>Memory pressure is high</value></data>
   <data name="rule.thermals.title" xml:space="preserve"><value>Running hot at idle</value></data>
   <data name="rule.disk-breakdown.title" xml:space="preserve"><value>Where your disk space goes</value></data>
+  <data name="rule.large-files.title" xml:space="preserve"><value>The biggest files on this machine, by name</value></data>
   <data name="rule.disk-forecast.title" xml:space="preserve"><value>Disk is filling up</value></data>
   <data name="rule.orphaned-data.title" xml:space="preserve"><value>Data left behind by uninstalled apps</value></data>
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Stale developer caches</value></data>
@@ -172,6 +173,10 @@
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
   <data name="rule.disk-breakdown.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.disk-breakdown.headline.caption" xml:space="preserve"><value>{0} — the largest measured folder</value></data>
+  <data name="rule.large-files.advice" xml:space="preserve"><value>brisk never touches files like these — they are yours. Open the folder and decide: an archive whose extracted copy already exists, an ISO you have installed from, a VM disk you no longer start.</value></data>
+  <data name="rule.large-files.evidence" xml:space="preserve"><value>Files of 500 MB or more in your profile, largest first — brisk names them and touches none: {0}</value></data>
+  <data name="rule.large-files.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.large-files.headline.caption" xml:space="preserve"><value>the largest single file in your profile</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>The disk is filling up — a safe clean now buys time before space runs out</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Uninstalled apps left data behind — you can review and clean it safely</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>

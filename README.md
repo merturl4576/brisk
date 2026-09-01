@@ -99,7 +99,7 @@ Most of this category is built on claims nobody checks. brisk's list of *refusal
 
 ## What it does
 
-- **26 deterministic diagnostic rules** — power plan, startup load, boot time as Windows itself measured it, display refresh rate running below what the monitor supports, memory running below its rated speed, thermals, disk pressure, ten privacy rules with the read-back above, and more. Each finding carries its evidence.
+- **27 deterministic diagnostic rules** — power plan, startup load, boot time as Windows itself measured it, display refresh rate running below what the monitor supports, memory running below its rated speed, thermals, disk pressure, the largest files in your profile, named, ten privacy rules with the read-back above, and more. Each finding carries its evidence.
 - **One-click fixes with undo.** Rules are classified Auto, Confirm or Advise; brisk never applies a Confirm rule without asking, and never offers a fix for something it only observed.
 - **A cleaner that works from an allowlist**, not from a pattern. It touches caches and temp files that Windows and your applications rebuild on their own — and nothing else. Three levels: Safe, Developer, Deep.
 - **Deep shelves that speak up.** Windows.old, the hibernation file, the superseded half of the component store, stale dev caches — sized, named on the front page ("32 GB more sits on the deep shelves"), each behind its own consent with the trade-off written on the row: what comes back, what does not, what stops working.

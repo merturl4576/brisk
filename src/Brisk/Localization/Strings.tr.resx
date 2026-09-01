@@ -158,6 +158,7 @@
   <data name="rule.ram-pressure.title" xml:space="preserve"><value>Bellek baskısı yüksek</value></data>
   <data name="rule.thermals.title" xml:space="preserve"><value>Boştayken yüksek sıcaklık</value></data>
   <data name="rule.disk-breakdown.title" xml:space="preserve"><value>Disk alanı nereye gidiyor</value></data>
+  <data name="rule.large-files.title" xml:space="preserve"><value>Bu makinedeki en büyük dosyalar, adıyla</value></data>
   <data name="rule.disk-forecast.title" xml:space="preserve"><value>Disk doluyor</value></data>
   <data name="rule.orphaned-data.title" xml:space="preserve"><value>Kaldırılmış uygulamalardan kalan veriler</value></data>
   <data name="rule.stale-dev-caches.title" xml:space="preserve"><value>Bayat geliştirici önbellekleri</value></data>
@@ -172,6 +173,10 @@
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
   <data name="rule.disk-breakdown.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.disk-breakdown.headline.caption" xml:space="preserve"><value>{0} — ölçülen en büyük klasör</value></data>
+  <data name="rule.large-files.advice" xml:space="preserve"><value>brisk böyle dosyalara asla dokunmaz — onlar senin. Klasörü aç ve karar ver: çıkarılmış kopyası zaten duran bir arşiv, kurulumu bitmiş bir ISO, artık açmadığın bir sanal makine diski.</value></data>
+  <data name="rule.large-files.evidence" xml:space="preserve"><value>Profilindeki 500 MB ve üstü dosyalar, büyükten küçüğe — brisk adlarını söyler, hiçbirine dokunmaz: {0}</value></data>
+  <data name="rule.large-files.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.large-files.headline.caption" xml:space="preserve"><value>profilindeki en büyük tek dosya</value></data>
   <data name="rule.disk-forecast.advice" xml:space="preserve"><value>Disk doluyor — şimdi yapacağın güvenli bir temizlik alan bitmeden vakit kazandırır</value></data>
   <data name="rule.orphaned-data.advice" xml:space="preserve"><value>Kaldırılmış uygulamalar geride veri bırakmış — gözden geçirip güvenle temizleyebilirsin</value></data>
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
