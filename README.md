@@ -183,7 +183,7 @@ What keeps that honest:
 - Every rule is a deterministic function over fake probes, and 1391 tests pin what each one says and refuses to say.
 - The specs and implementation plans that drove each wave are public under [`docs/superpowers`](docs/superpowers).
 - Every change was reviewed before merge, and the commit history records its own corrections instead of rewriting them.
-- Every rule and every fix ran on real machines the maintainer owns before it shipped, and the field test that went badly (a score that jumped 40 points while the owner felt nothing) is the reason the score works the way it does now.
+- Every rule and every fix ran on real machines the maintainer owns before it shipped. One of those runs showed the score moving 43 points on settings flips alone, with nothing brisk could measure having changed. That is why the score works the way it does now.
 
 If you find a place where the code claims more than it proves, that is the bug report this project most wants.
 

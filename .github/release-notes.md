@@ -1,7 +1,7 @@
 ### What changed in 0.8.0
 
 - **The largest files in your profile, named.** A new report-only finding lists the ten biggest files (500 MB and up) under your profile, with size and date, and leads the Overview when the largest is 1 GB or more. brisk names them and touches none of them.
-- **The health score stops rewarding switch flips.** Only findings brisk can measure the other side of (boot timings, refresh rate, days until the disk is full) move the gauge far. A power plan or visual-effects flip now costs 2 points, whatever its stars. A field test where the score jumped 40 points while the owner felt nothing is the reason.
+- **The health score stops rewarding switch flips.** Only findings brisk can measure the other side of (boot timings, refresh rate, days until the disk is full) move the gauge far. A power plan or visual-effects flip now costs 2 points, whatever its stars. Settings flips alone once moved the score 43 points while nothing brisk could measure had changed; that is the reason.
 - **The power-plan rule stops overclaiming.** It fires only on a desktop that has a performance plan to switch to, never on a machine with a battery, as a Warning that asks first instead of a Critical one-click, and its text no longer says "throttling": brisk has no measurement that anyone feels a power plan.
 - **Delivery Optimization cache actually clears.** 0.7.0 promised gigabytes and delivered 0 B, because that cache lives under a service profile the Recycle Bin cannot take. brisk now uses the past-the-bin path Windows provides and waits for the service to finish before it counts.
 - **The component-store step reports what it measured, or nothing.** No more "0 B" after a long DISM run that freed space brisk did not observe.

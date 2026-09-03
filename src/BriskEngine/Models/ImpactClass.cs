@@ -13,6 +13,6 @@ namespace BriskEngine.Models;
 ///
 /// Hygiene is the default, so a rule that says nothing here under-charges
 /// rather than over-charges: a score that jumps 40 points on switch flips
-/// nobody feels is the category's oldest lie, and a field test caught brisk
-/// telling it (47 -> 90, "nothing changed").
+/// with nothing measured behind them is the category's oldest lie, and brisk
+/// once told it (47 -> 90 on settings alone).
 public enum ImpactClass { Hygiene, Measured }

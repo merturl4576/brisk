@@ -32,10 +32,10 @@ internal static class FixReport
         if (result.Applied < result.Attempted)
             lines.Add(new ReportLine(loc.F("health.fixpartial",
                 result.Applied, result.Attempted), IsDone: false));
-        // The field-test lesson (2026-08-30): a machine went 47 -> 90 and its
-        // owner felt nothing, because nothing SAID the difference arrives at
-        // the next restart — so they never restarted. Every applied run now
-        // names when it will show, and where the measurement will appear.
+        // Lesson from a real run (2026-08-30): the score went 47 -> 90 and
+        // nothing SAID the difference arrives at the next restart, so the
+        // machine was never restarted. Every applied run now names when it
+        // will show, and where the measurement will appear.
         if (result.Applied > 0)
             lines.Add(new ReportLine(loc["report.expectation"], IsDone: false));
         var parts = new List<string>();

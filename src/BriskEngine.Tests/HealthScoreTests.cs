@@ -43,15 +43,15 @@ public class HealthScoreTests
     public void HygieneInfo_ChargesOnePoint() =>
         Assert.Equal(99, HealthScore.Compute(new[] { H("stale-dev-caches", Severity.Info, 2) }));
 
-    /// The field-test machine, replayed. Power plan (Critical 5), web results
-    /// in the start menu (Warning 4) and visual effects (Warning 2) are
-    /// hygiene; startup bloat (Warning 3) is measured, because the next boots
-    /// will say whether it mattered. The old formula charged 25+12+6+9 and
-    /// showed 48; the fixes took it to 90 and the human felt nothing. Now the
-    /// same machine reads 85 before and 100 after — a 15-point promise, most
-    /// of it on the one item brisk will measure.
+    /// A real machine, replayed. Power plan (Critical 5), web results in the
+    /// start menu (Warning 4) and visual effects (Warning 2) are hygiene;
+    /// startup bloat (Warning 3) is measured, because the next boots will say
+    /// whether it mattered. The old formula charged 25+12+6+9 and showed 48;
+    /// applying the fixes took it to 90 with nothing measured behind the
+    /// jump. Now the same machine reads 85 before and 100 after, a 15-point
+    /// promise with most of it on the one item brisk will measure.
     [Fact]
-    public void FieldTestMachine_ReadsEightyFive_NotFortyEight()
+    public void SettingsHeavyMachine_ReadsEightyFive_NotFortyEight()
     {
         var findings = new[]
         {

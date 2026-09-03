@@ -11,10 +11,10 @@ public static class HealthScore
     /// (1 for Info), whatever its stars. Notices subtract nothing. Floor 5 so
     /// the gauge never reads "dead".
     ///
-    /// The flat charge is the answer to a field test: a laptop went 47 -> 90
-    /// on a power plan, a start-menu switch and visual effects, and its owner
-    /// felt nothing. Only what brisk can measure the other side of is allowed
-    /// to move the gauge far.
+    /// The flat charge exists because settings flips alone once moved the
+    /// score from 47 to 90 (a power plan, a start-menu switch, visual effects)
+    /// while nothing brisk could measure had changed. Only what brisk can
+    /// measure the other side of is allowed to move the gauge far.
     public static int Compute(IReadOnlyList<DiagnosticFinding> findings)
     {
         var penalty = 0;
