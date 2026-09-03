@@ -13,9 +13,9 @@ Kurulum yok. Hesap yok. Telemetri yok. Ürünün içinde yapay zekâ yok. Her te
 
 [English README](README.md)
 
-![Gizlilik sayfası, dört durumlu read-back dahil](docs/media/privacy-readback.png)
+![Gizlilik sayfası, read-back dahil](docs/media/privacy-readback.tr.png)
 
-*Test süitinin ekran-dışı render düzeneğiyle, fixture verisi üzerinden, uygulamanın çizdiği kod yolunun aynısıyla çizildi. Alttaki bant read-back: bir ayar tuttu, biri yazıldı ama umursanmadı, biri bu sürümde doğrulanamıyor, biri geri döndü. Dört farklı cümle, çünkü dört farklı şey oldu.*
+*Geliştiricinin kendi makinesi, 3 Eylül 2026. Sayı var, içerik yok: 375 program kaydı, 2 USB aygıtı, Recall'un durumu bu sürümde okunamıyor. Alttaki bant read-back: brisk'in iki gün önce kapattığı dört anahtar hâlâ kapalı okunuyor; beşincisi için brisk, bu Windows sürümünün ilkeyi uygulayıp uygulamadığını söyleyemediğini "tamam" demek yerine açıkça yazıyor.*
 
 ---
 
@@ -71,15 +71,19 @@ Bu kategorideki her araç "tamam" der. brisk "tamam"ı bir iddia sayar ve iddial
 
 **Hız.** Aynı fikir zamana uygulanmış. brisk ne zaman değişiklik yaptığını kaydeder, sonra Windows'un kendisi için yazdığı açılış ölçümlerini (kendi icat ettiği bir kronometreyi değil) okuyup ikisini Performans sayfasında yan yana koyar:
 
-> brisk'in değişikliklerinden önce açılış: yaklaşık 59 sn (4 açılışın ortası) → son değişiklikten beri: yaklaşık 41 sn (2 açılış). Ölçüm Windows'un kendi zamanlayıcısından.
+> brisk'in değişikliklerinden önce açılış: yaklaşık 60 sn (7 açılışın ortası) → son değişiklikten beri: yaklaşık 75 sn (2 açılış). Ölçüm Windows'un kendi zamanlayıcısından.
 
-Cümlenin hiçbir yerinde nedensellik iddiası yok. İki ölçüm, sayıları ve senin kendi çıkarımın.
+Cümlenin hiçbir yerinde nedensellik iddiası yok. İki ölçüm, sayıları ve senin kendi çıkarımın. Bu satır bugün geliştiricinin makinesinden ve sayı kötüye gitmiş: bir test sırasında eklenen gecikmeli başlangıç görevi açılışı yavaşlattı, brisk de bunu bastı. Sadece iyi sayıyı gösteren bir araç ölçüm yapmıyordur.
+
+![Performans sayfası: açılış read-back satırı, brisk'in yaptıkları ve yalnızca raporlayabildikleri](docs/media/performance-readback.tr.png)
+
+*Aynı makine. brisk'in yaptığı ve geri alabildiği altı değişiklik, bekleyen iki bulgu, yalnızca raporlayabildiği bir tane. 75 sn, brisk'in değişikliklerinin öbür tarafında ve sayfada duruyor.*
 
 **Windows'un senin hakkında bildikleri.** Gizlilik sayfası makinenin kaydettiklerini okur: bugüne dek takılmış her USB aygıt (model ve tarihler), Windows'un saydığı program çalıştırma kayıtları, Recall'un durumu ve Delivery Optimization'ın bu ay başka makinelere ne yüklediği, yerel ağ ve internet ayrımıyla. Geliştiricinin makinesinde o sayaç 302 MB gösteriyordu, tamamı yerel ağ, internet sıfır. Ayrımı bilmek, korku ile gerçek arasındaki fark.
 
-![brisk kokpiti, Genel Bakış sayfası](docs/media/cockpit.png)
+![brisk kokpiti, Genel Bakış sayfası](docs/media/cockpit.tr.png)
 
-*Genel Bakış, aynı fixture verisi üzerinden çizildi. Evet, "2 KB yer aç": fixture'lar küçük. Gerçek bir makinenin sayıları daha büyük ve aynı yoldan kaynaklı.*
+*Aynı makinede Genel Bakış. 64, çünkü bir ekran desteklediği yenileme hızının altında çalışıyor (25 puan) ve on program Windows'la başlıyor (9 puan). Ölçülü iki bulgu 36 puanın 34'ünü taşıyor; buradaki geri kalan her şey ya bir not ya da 2 puanlık bir düzen maddesi. 75 sn açılış en büyük ölçülü sayı olduğu için önde; derin raflardaki 24.5 GB adıyla anılmış ve istenmeden dokunulmamış.*
 
 ---
 

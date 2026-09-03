@@ -15,7 +15,7 @@ No installer. No account. No telemetry. No AI in the product. Every diagnosis is
 
 ![The Privacy page, four-state read-back included](docs/media/privacy-readback.png)
 
-*Rendered by the test suite's offscreen harness over fixture data, on the same code path the app draws with. The bottom band is the read-back: one switch held, one was written but ignored, one cannot be verified on this edition, one was reverted. Four different sentences, because four different things happened.*
+*The maintainer's own machine, 2026-09-03. Counts, never contents: 375 program records, 2 USB devices, Recall's state unreadable on this build. The bottom band is the read-back: four switches brisk turned off two days ago still read as off, and for the fifth brisk says it cannot tell whether this edition of Windows acts on the policy, instead of saying "done".*
 
 ---
 
@@ -71,15 +71,19 @@ Every tool in this category says "done". brisk treats "done" as a claim, and cla
 
 **Speed.** The same idea applied to time. brisk records when it changed something, then reads the boot timings Windows writes for itself (not a stopwatch brisk invented) and puts the two side by side on the Performance page:
 
-> Boot before brisk's changes: about 59 s (middle of 4 boots) → since the last change: about 41 s (2 boots). Windows' own timings.
+> Boot before brisk's changes: about 60 s (middle of 7 boots) → since the last change: about 75 s (2 boots). Windows' own timings.
 
-There is no causal claim in that sentence. Two measurements, their counts, and your own conclusion.
+There is no causal claim in that sentence. Two measurements, their counts, and your own conclusion. That line is from the maintainer's machine today, and the number went the wrong way: a delayed startup task planted during a test made boot slower, and brisk printed it. A tool that only shows you the good number is not measuring.
+
+![The Performance page: the boot read-back line, what brisk did, and what it can only report](docs/media/performance-readback.png)
+
+*Same machine. Six changes brisk made and can undo, two findings waiting, one it can only report. The 75 s is on the far side of brisk's changes and it stays on the page.*
 
 **What Windows knows about you.** The Privacy page reads out what your machine has been recording: every USB device ever plugged in (model and dates), how many program launches Windows has counted, whether Recall is present, and how much Delivery Optimization uploaded to other machines this month, split into local network and internet. On the maintainer's machine that counter read 302 MB, all of it LAN, zero internet. Knowing the split is the difference between a scare and a fact.
 
 ![The brisk cockpit, Overview page](docs/media/cockpit.png)
 
-*The Overview, rendered over the same fixture data. Yes, "Free up 2 KB": fixtures are small. A real machine's numbers are bigger and sourced the same way.*
+*The Overview on the same machine. 64, because a display is running below the refresh rate it supports (25 points) and ten programs start with Windows (9 points). Two measured findings carry 34 of the 36 points; everything else here is a notice, or a 2-point hygiene item. The 75 s boot leads because it is the largest measured number, and the 24.5 GB on the deep shelves is named and left alone until asked.*
 
 ---
 
