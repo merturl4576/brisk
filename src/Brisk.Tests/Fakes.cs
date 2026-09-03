@@ -135,6 +135,7 @@ public sealed class NoOtherProbes
     public IReadOnlyList<(Guid Id, string Name)> ListSchemes() =>
         No<IReadOnlyList<(Guid, string)>>();
     public void SetActive(Guid id) => No<bool>();
+    public bool HasBattery() => No<bool>();
 
     public IReadOnlyList<(string Name, long WorkingSetBytes)> TopByMemory(int count) =>
         No<IReadOnlyList<(string, long)>>();

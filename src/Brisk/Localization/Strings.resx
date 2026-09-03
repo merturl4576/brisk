@@ -151,7 +151,7 @@
   <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
   <data name="settings.value.light" xml:space="preserve"><value>Light</value></data>
   <data name="settings.value.dark" xml:space="preserve"><value>Dark</value></data>
-  <data name="rule.power-plan.title" xml:space="preserve"><value>Power plan is limiting speed</value></data>
+  <data name="rule.power-plan.title" xml:space="preserve"><value>A performance power plan is available and not in use</value></data>
   <data name="rule.browser-gpu.title" xml:space="preserve"><value>Browsers are not using the fast GPU</value></data>
   <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Browser hardware acceleration is off</value></data>
   <data name="rule.startup-bloat.title" xml:space="preserve"><value>Too many programs start with Windows</value></data>
@@ -190,7 +190,7 @@
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
   <data name="rule.display-refresh.done" xml:space="preserve"><value>Displays raised to their highest refresh rate</value></data>
   <data name="rule.search-web-results.done" xml:space="preserve"><value>Start menu search no longer queries the web</value></data>
-  <data name="rule.power-plan.evidence" xml:space="preserve"><value>Active plan: {0}. This plan deliberately limits CPU boost clocks; a performance plan lets the CPU reach its full turbo frequency.</value></data>
+  <data name="rule.power-plan.evidence" xml:space="preserve"><value>Active plan: {0}. On a desktop, High performance keeps the CPU from idling down between bursts. brisk has no measurement that you will feel the difference, so this is a small, undoable setting, not a speed promise.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>This machine has two GPUs, but {0} has no high-performance GPU preference, so Windows may run it on the slow integrated GPU.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>{0} programs start with Windows. None of them is on brisk's heavy list, so which ones you actually need is your call — review them under Startup programs on the Performance page.</value></data>

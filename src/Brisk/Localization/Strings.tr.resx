@@ -151,7 +151,7 @@
   <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
   <data name="settings.value.light" xml:space="preserve"><value>Açık</value></data>
   <data name="settings.value.dark" xml:space="preserve"><value>Koyu</value></data>
-  <data name="rule.power-plan.title" xml:space="preserve"><value>Güç planı hızı kısıtlıyor</value></data>
+  <data name="rule.power-plan.title" xml:space="preserve"><value>Performans güç planı var ama kullanılmıyor</value></data>
   <data name="rule.browser-gpu.title" xml:space="preserve"><value>Tarayıcılar hızlı GPU'yu kullanmıyor</value></data>
   <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Tarayıcı donanım hızlandırması kapalı</value></data>
   <data name="rule.startup-bloat.title" xml:space="preserve"><value>Windows ile çok fazla program başlıyor</value></data>
@@ -190,7 +190,7 @@
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Depolama Alanı Algılayıcısı açıldı</value></data>
   <data name="rule.display-refresh.done" xml:space="preserve"><value>Ekranlar en yüksek yenileme hızına alındı</value></data>
   <data name="rule.search-web-results.done" xml:space="preserve"><value>Başlat menüsü araması artık web'e sormuyor</value></data>
-  <data name="rule.power-plan.evidence" xml:space="preserve"><value>Etkin plan: {0}. Bu plan CPU hızlarını bilerek sınırlar; performans planı işlemcinin tam turbo hızına çıkmasına izin verir.</value></data>
+  <data name="rule.power-plan.evidence" xml:space="preserve"><value>Etkin plan: {0}. Masaüstünde Yüksek performans planı işlemcinin yükler arasında yavaşlamasını engeller. brisk farkı hissedeceğine dair bir ölçüme sahip değil; bu küçük, geri alınabilir bir ayar, hız vaadi değil.</value></data>
   <data name="rule.browser-gpu.evidence" xml:space="preserve"><value>Bu bilgisayarda iki GPU var; {0} için yüksek performanslı GPU tercihi tanımlı değil, bu yüzden Windows onu yavaş tümleşik GPU'da çalıştırabilir.</value></data>
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Hiçbiri brisk'in ağır listesinde değil; hangilerinin sana gerçekten gerekli olduğu senin kararın — Performans sayfasındaki Açılış programları listesinden gözden geçir.</value></data>

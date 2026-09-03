@@ -5,6 +5,11 @@ using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.Rules;
 
+/// Balanced or Power saver active on a DESKTOP that also offers a performance
+/// plan. Nothing else: a laptop is right to run Balanced, and a machine whose
+/// only plan is Balanced has nothing to switch to. Warning, two stars,
+/// Confirm, and copy that promises no speed: brisk has no measurement that
+/// anyone feels a power plan, so the score treats it as hygiene (2 points).
 public sealed class PowerPlanRule : IDiagnosticRule
 {
     public static readonly Guid Balanced = Guid.Parse("381b4222-f694-41f0-9685-ff5bb260df2e");
@@ -15,18 +20,30 @@ public sealed class PowerPlanRule : IDiagnosticRule
     private sealed record Prior(Guid PreviousScheme);
 
     public string Id => "power-plan";
-    public RuleCategory Category => RuleCategory.Auto;
+    public RuleCategory Category => RuleCategory.Confirm;
 
     public DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
+        // A battery means a laptop (or "cannot tell"), and Balanced is the
+        // right plan there: High performance costs battery for a gain brisk
+        // cannot measure. No finding, rather than advice to ignore.
+        if (ctx.Powercfg.HasBattery()) return null;
+
         var (id, name) = ctx.Powercfg.GetActiveScheme();
         if (id != Balanced && id != PowerSaver) return null;
+
+        // Modern Standby machines often list Balanced alone. With nothing to
+        // switch to, the finding would be a button that fails.
+        var schemes = ctx.Powercfg.ListSchemes();
+        if (!schemes.Any(s => s.Id == HighPerformance || s.Id == Ultimate)) return null;
+
         return new DiagnosticFinding(
             Id, "rule.power-plan.title",
-            "Power plan is throttling your CPU",
-            $"Active plan: {name}. This plan deliberately limits CPU boost clocks; " +
-            "a performance plan lets the CPU reach its full turbo frequency.",
-            Severity.Critical, Category, ImpactStars: 5, CanFix: true,
+            "A performance power plan is available and not in use",
+            $"Active plan: {name}. On a desktop, High performance keeps the CPU from " +
+            "idling down between bursts. brisk has no measurement that you will feel " +
+            "the difference, so this is a small, undoable setting, not a speed promise.",
+            Severity.Warning, Category, ImpactStars: 2, CanFix: true,
             FixDescription: "Switch to the High performance power plan (undoable)",
             EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { name });
     }

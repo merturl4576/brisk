@@ -25,12 +25,41 @@ public class PowerPlanRuleTests
             (PowerPlanRule.HighPerformance, "High performance"));
         var finding = new PowerPlanRule().Detect(ctx);
         Assert.NotNull(finding);
-        Assert.Equal(RuleCategory.Auto, finding!.Category);
+        // Confirm, not Auto: a power plan is a preference brisk asks about.
+        Assert.Equal(RuleCategory.Confirm, finding!.Category);
         Assert.Contains("Balanced", finding.Evidence);
         Assert.True(finding.CanFix);
+        // Warning with two stars. It was Critical with five, which read as
+        // "your CPU is throttled" over a setting brisk cannot measure.
+        Assert.Equal(Severity.Warning, finding.Severity);
+        Assert.Equal(2, finding.ImpactStars);
         // brisk reads the plan name back, never the effect. Hygiene: 2 points,
         // not the 25 that once moved a quarter of the gauge on a laptop.
         Assert.Equal(ImpactClass.Hygiene, finding.ImpactClass);
+        // The copy promises nothing it cannot measure.
+        Assert.DoesNotContain("throttl", finding.Evidence, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("throttl", finding.Title, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// A laptop on Balanced is a laptop doing the right thing. High
+    /// performance costs battery for a gain brisk cannot measure, so there is
+    /// nothing to find, not even advice.
+    [Fact]
+    public void OnAMachineWithABattery_NoFinding()
+    {
+        var (ctx, power) = Context(PowerPlanRule.Balanced, "Balanced",
+            (PowerPlanRule.HighPerformance, "High performance"));
+        power.Battery = true;
+        Assert.Null(new PowerPlanRule().Detect(ctx));
+    }
+
+    /// Modern Standby machines often list Balanced alone. A finding there is a
+    /// fix button that fails; no finding is the honest reading.
+    [Fact]
+    public void NoPerformancePlanToSwitchTo_NoFinding()
+    {
+        var (ctx, _) = Context(PowerPlanRule.Balanced, "Balanced");
+        Assert.Null(new PowerPlanRule().Detect(ctx));
     }
 
     [Fact]

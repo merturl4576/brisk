@@ -78,8 +78,8 @@ public class LocTests
     {
         var loc = new Loc();
         loc.SetLanguage("tr");
-        Assert.Equal("Güç planı hızı kısıtlıyor",
-            loc.Title("rule.power-plan.title", "Power plan is limiting speed"));
+        Assert.Equal("Performans güç planı var ama kullanılmıyor",
+            loc.Title("rule.power-plan.title", "A performance power plan is available and not in use"));
         Assert.Equal("Engine English",
             loc.Title("rule.not-a-rule.title", "Engine English"));
     }

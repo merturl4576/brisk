@@ -103,7 +103,7 @@ public class HealthViewModelTests
         var power = Assert.Single(vm.Rows);
         Assert.Equal("power-plan", power.RuleId);
         // resx has rule.power-plan.title -> localized, not the engine string
-        Assert.Equal("Power plan is limiting speed", power.Title);
+        Assert.Equal("A performance power plan is available and not in use", power.Title);
         Assert.Equal("SeverityWarning", power.SeverityKey);
         Assert.Equal("●●●●○", power.ImpactText);
         Assert.True(power.CanFix);

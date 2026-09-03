@@ -8,6 +8,10 @@ public interface IPowercfgProbe
     (Guid Id, string Name) GetActiveScheme();
     IReadOnlyList<(Guid Id, string Name)> ListSchemes();
     void SetActive(Guid id);
+    /// True when the machine has a system battery, or when that cannot be
+    /// told. The power-plan rule stays silent on such machines: Balanced is
+    /// the right plan on a laptop, and "unknown" must not become a finding.
+    bool HasBattery();
 }
 
 public interface IRegistryProbe

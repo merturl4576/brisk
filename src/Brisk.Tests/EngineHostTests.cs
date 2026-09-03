@@ -22,6 +22,7 @@ file sealed class NullPowercfg : IPowercfgProbe
     public IReadOnlyList<(Guid Id, string Name)> ListSchemes() =>
         Array.Empty<(Guid, string)>();
     public void SetActive(Guid id) { }
+    public bool HasBattery() => false;
 }
 
 file sealed class NullRegistry : IRegistryProbe

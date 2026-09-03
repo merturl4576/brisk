@@ -11,6 +11,8 @@ public sealed class FakePowercfg : IPowercfgProbe
     public (Guid Id, string Name) Active;
     public List<(Guid Id, string Name)> Schemes = new();
     public List<Guid> SetCalls = new();
+    public bool Battery;   // default: a desktop, so the power-plan rule can speak
+    public bool HasBattery() => Battery;
     public (Guid Id, string Name) GetActiveScheme() => Active;
     public IReadOnlyList<(Guid Id, string Name)> ListSchemes() => Schemes;
     public void SetActive(Guid id)

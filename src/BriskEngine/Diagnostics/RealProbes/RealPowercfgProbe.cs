@@ -45,4 +45,28 @@ public sealed class RealPowercfgProbe : IPowercfgProbe
         var (code, _) = _runner.Run("powercfg", $"/setactive {id}");
         if (code != 0) throw new InvalidOperationException($"powercfg /setactive failed ({code})");
     }
+
+    /// GetSystemPowerStatus: BatteryFlag 128 means "no system battery", 255
+    /// means unknown. Only an explicit 128 counts as a desktop; a failed call
+    /// or an unknown flag is reported as "has battery" so the rule stays quiet.
+    public bool HasBattery()
+    {
+        if (!GetSystemPowerStatus(out var status)) return true;
+        const byte NoSystemBattery = 128;
+        return (status.BatteryFlag & NoSystemBattery) == 0;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct SystemPowerStatus
+    {
+        public byte ACLineStatus;
+        public byte BatteryFlag;
+        public byte BatteryLifePercent;
+        public byte SystemStatusFlag;
+        public int BatteryLifeTime;
+        public int BatteryFullLifeTime;
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetSystemPowerStatus(out SystemPowerStatus status);
 }
