@@ -24,6 +24,8 @@ public class DisplayRefreshRuleTests
         Assert.Equal(RuleCategory.Auto, finding!.Category);
         Assert.True(finding.CanFix);
         Assert.Contains("144", finding.Evidence);
+        // 60 -> 144 Hz is read back from the panel and seen by the eye.
+        Assert.Equal(ImpactClass.Measured, finding.ImpactClass);
     }
 
     [Fact]

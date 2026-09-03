@@ -89,6 +89,8 @@ public sealed class StartupBloatRule : IDiagnosticRule
         return new DiagnosticFinding(Id, "rule.startup-bloat.title",
             "Too many programs start with Windows", evidence,
             Severity.Warning, Category, ImpactStars: 3, CanFix: heavy.Count > 0,
+            // Measured: the next boots are read against this fix (boot trend).
+            ImpactClass: ImpactClass.Measured,
             FixDescription: heavy.Count > 0
                 ? $"Disable at startup: {heavyNames} (undoable; the apps still work when opened manually)"
                 : null,

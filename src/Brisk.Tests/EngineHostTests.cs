@@ -293,7 +293,10 @@ public sealed class EngineHostTests : IDisposable
             new SyncProgress(progress.Add));
 
         Assert.Equal("power-plan", Assert.Single(snapshot.Findings).RuleId);
-        Assert.Equal(88, snapshot.Health);
+        // A finding that declares no ImpactClass is Hygiene: a flat 2 points,
+        // not the 12 that 4 Warning stars used to cost. (HealthScoreTests owns
+        // the formula; this pins that the host hands it the findings as-is.)
+        Assert.Equal(98, snapshot.Health);
         Assert.Equal(64, snapshot.Cleaner.TotalBytes);
         Assert.NotEmpty(progress);
     }

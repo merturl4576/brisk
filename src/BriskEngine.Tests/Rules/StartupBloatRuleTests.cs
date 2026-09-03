@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Models;
 using Xunit;
 
 namespace BriskEngine.Tests.Rules;
@@ -29,6 +30,9 @@ public class StartupBloatRuleTests
         // to rebuild the sentence in the user's language.
         Assert.Equal("rule.startup-bloat.evidence.heavy", finding.EvidenceKey);
         Assert.Equal(new[] { "1", "Steam" }, finding.EvidenceArgs);
+        // The next boots are measured against this fix (boot trend), so the
+        // score may charge it in full.
+        Assert.Equal(ImpactClass.Measured, finding.ImpactClass);
     }
 
     [Fact]

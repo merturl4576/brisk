@@ -42,6 +42,8 @@ public sealed class DisplayRefreshRule : IDiagnosticRule
             $"{readings}. Windows left the display slower than it supports, " +
             "so everything on screen moves at the lower rate.",
             Severity.Critical, Category, ImpactStars: 5, CanFix: true,
+            // Measured: the panel reports the rate it runs at, and the eye sees it.
+            ImpactClass: ImpactClass.Measured,
             FixDescription: "Raise each display to its highest refresh rate (undoable)",
             EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { readings },
             Headline: new Headline(

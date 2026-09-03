@@ -26,4 +26,9 @@ public sealed record DiagnosticFinding(
     // Problem or Notice. Trailing and defaulted, so a rule that says nothing
     // here keeps the judgement it always made; the four rules that report a
     // fact brisk cannot act on opt in explicitly.
-    FindingKind Kind = FindingKind.Problem);
+    FindingKind Kind = FindingKind.Problem,
+    // How far a Problem may move the health score. Defaulted to Hygiene so
+    // a rule that says nothing under-charges; the rules whose fix brisk can
+    // measure the other side of (startup-bloat, display-refresh,
+    // disk-forecast) opt into Measured explicitly. Notices ignore this.
+    ImpactClass ImpactClass = ImpactClass.Hygiene);

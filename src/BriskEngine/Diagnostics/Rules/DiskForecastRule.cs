@@ -48,6 +48,8 @@ public sealed class DiskForecastRule : AdviseRuleBase
             "Disk is on track to fill up",
             $"Free space has been shrinking; disk full in ~{days} days at the current rate.",
             Severity.Warning, Category, ImpactStars: 3, CanFix: false, FixDescription: null,
+            // Measured: days-until-full is a number, and a full disk is felt.
+            ImpactClass: ImpactClass.Measured,
             EvidenceKey: $"rule.{Id}.evidence",
             EvidenceArgs: new[]
             {

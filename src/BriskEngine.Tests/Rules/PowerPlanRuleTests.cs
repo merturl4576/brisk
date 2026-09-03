@@ -28,6 +28,9 @@ public class PowerPlanRuleTests
         Assert.Equal(RuleCategory.Auto, finding!.Category);
         Assert.Contains("Balanced", finding.Evidence);
         Assert.True(finding.CanFix);
+        // brisk reads the plan name back, never the effect. Hygiene: 2 points,
+        // not the 25 that once moved a quarter of the gauge on a laptop.
+        Assert.Equal(ImpactClass.Hygiene, finding.ImpactClass);
     }
 
     [Fact]

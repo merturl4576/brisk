@@ -9,12 +9,61 @@ namespace BriskEngine.Tests;
 
 public class HealthScoreTests
 {
+    // Measured findings are the ones that carry the stars x severity formula;
+    // the arithmetic tests below are about that formula.
     private static DiagnosticFinding F(Severity sev, int stars) => new(
-        "r", "rule.r.title", "T", "E", sev, RuleCategory.Auto, stars, true, null);
+        "r", "rule.r.title", "T", "E", sev, RuleCategory.Auto, stars, true, null,
+        ImpactClass: ImpactClass.Measured);
+
+    private static DiagnosticFinding H(string id, Severity sev, int stars) => new(
+        id, $"rule.{id}.title", "T", "E", sev, RuleCategory.Auto, stars, true, null);
 
     [Fact]
     public void NoFindings_Is100() =>
         Assert.Equal(100, HealthScore.Compute(Array.Empty<DiagnosticFinding>()));
+
+    /// A finding that says nothing about its class is Hygiene. The default
+    /// leans towards under-charging: a rule someone adds later and forgets to
+    /// classify cannot inflate the score.
+    [Fact]
+    public void AFindingThatSaysNothing_IsHygiene() =>
+        Assert.Equal(ImpactClass.Hygiene, H("r", Severity.Warning, 4).ImpactClass);
+
+    /// A setting brisk flips without a number that says anyone felt it costs
+    /// a flat 2 points, whatever its stars. Five Critical stars used to cost
+    /// 25 — the power plan alone moved a quarter of the gauge.
+    [Fact]
+    public void HygieneFinding_ChargesTwoPoints_WhateverItsStars()
+    {
+        Assert.Equal(98, HealthScore.Compute(new[] { H("power-plan", Severity.Critical, 5) }));
+        Assert.Equal(98, HealthScore.Compute(new[] { H("visual-effects", Severity.Warning, 2) }));
+    }
+
+    [Fact]
+    public void HygieneInfo_ChargesOnePoint() =>
+        Assert.Equal(99, HealthScore.Compute(new[] { H("stale-dev-caches", Severity.Info, 2) }));
+
+    /// The field-test machine, replayed. Power plan (Critical 5), web results
+    /// in the start menu (Warning 4) and visual effects (Warning 2) are
+    /// hygiene; startup bloat (Warning 3) is measured, because the next boots
+    /// will say whether it mattered. The old formula charged 25+12+6+9 and
+    /// showed 48; the fixes took it to 90 and the human felt nothing. Now the
+    /// same machine reads 85 before and 100 after — a 15-point promise, most
+    /// of it on the one item brisk will measure.
+    [Fact]
+    public void FieldTestMachine_ReadsEightyFive_NotFortyEight()
+    {
+        var findings = new[]
+        {
+            H("power-plan", Severity.Critical, 5),
+            H("search-web-results", Severity.Warning, 4),
+            H("visual-effects", Severity.Warning, 2),
+            new DiagnosticFinding("startup-bloat", "rule.startup-bloat.title", "T", "E",
+                Severity.Warning, RuleCategory.Confirm, 3, true, null,
+                ImpactClass: ImpactClass.Measured),
+        };
+        Assert.Equal(85, HealthScore.Compute(findings));
+    }
 
     [Fact]
     public void Warning4Stars_Subtracts12() =>

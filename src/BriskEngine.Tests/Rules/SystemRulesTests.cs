@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Models;
 using Xunit;
 
 namespace BriskEngine.Tests.Rules;
@@ -51,6 +52,8 @@ public class SystemRulesTests
         var finding = new DiskForecastRule().Detect(ctx);   // appends today's 40 GB sample
         Assert.NotNull(finding);
         Assert.Contains("days", finding!.Evidence);
+        // Days-until-full is a measured number; the disk filling up is felt.
+        Assert.Equal(ImpactClass.Measured, finding.ImpactClass);
     }
 
     [Fact]
