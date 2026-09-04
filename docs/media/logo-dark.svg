@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="brisk">
+  <!-- brisk mark, for dark backgrounds. A 270-degree gauge arc, open at the bottom,
+       and one measurement tick at the top. Drawn by hand: no raster, no generated art. -->
+  <path d="M 58.7 197.3 A 98 98 0 1 1 197.3 197.3" fill="none" stroke="#5FD4E8" stroke-width="26" stroke-linecap="round"/>
+  <line x1="128" y1="10" x2="128" y2="52" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+</svg>

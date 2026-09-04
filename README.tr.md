@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/logo-dark.svg">
+    <img src="docs/media/logo-light.svg" width="128" height="128" alt="brisk: bir gösterge yayı ve tek ölçüm çentiği">
+  </picture>
+</p>
+
 # brisk
 
 **Windows için ücretsiz, açık kaynak CCleaner alternatifi. Bilgisayarının *neden* yavaş olduğunu kanıtıyla söyler ve ölçmediği hiçbir şeyi iddia etmez.**

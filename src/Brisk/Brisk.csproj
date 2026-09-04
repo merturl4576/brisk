@@ -11,6 +11,10 @@
     <PlatformTarget>x64</PlatformTarget>
     <AssemblyName>brisk-app</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The mark from docs/media/logo-*.svg as a multi-size .ico: taskbar,
+         Explorer, and the window itself (WPF falls back to it when no
+         Window.Icon is set). -->
+    <ApplicationIcon>Assets\brisk.ico</ApplicationIcon>
     <!-- One file, two faces: Program.Main decides window or console. The
          generated WPF entry point can only do the first, so it is turned off
          and App.xaml is compiled as a Page instead. -->

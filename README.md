@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/logo-dark.svg">
+    <img src="docs/media/logo-light.svg" width="128" height="128" alt="brisk: a gauge arc with one measurement tick">
+  </picture>
+</p>
+
 # brisk
 
 **A free, open-source CCleaner alternative for Windows. It tells you *why* your PC is slow, and it refuses to claim anything it did not measure.**
