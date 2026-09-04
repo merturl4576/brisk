@@ -72,6 +72,14 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
     public System.Collections.Generic.Dictionary<string, int> Ints { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// QWORDs, which is how Windows keeps a FILETIME stamp. Nothing in brisk
+    /// writes one, so this shelf is here to be planted from a test: a fake
+    /// that answered null instead would let an app-layer test of "no finding
+    /// when the stamp is absent" go green whether or not the rule was wired
+    /// to read anything at all.
+    public System.Collections.Generic.Dictionary<string, long> Longs { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> SubKeys { get; } =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -86,12 +94,13 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
     {
         Strings.Remove(Key(keyPath, valueName));
         Blobs.Remove(Key(keyPath, valueName));
-        // DWORDs too. Nothing in this project writes an int through the double
-        // today, so the divergence costs nothing yet — but every rule that
-        // deletes a DWORD on undo is tested against the OTHER double, and the
-        // next app-layer test of that path would go green on behaviour the
-        // real registry does not have.
+        // DWORDs and QWORDs too. Nothing in this project writes either through
+        // the double today, so the divergence costs nothing yet — but every
+        // rule that deletes a DWORD on undo is tested against the OTHER
+        // double, and the next app-layer test of that path would go green on
+        // behaviour the real registry does not have.
         Ints.Remove(Key(keyPath, valueName));
+        Longs.Remove(Key(keyPath, valueName));
     }
     public byte[]? GetBytes(string keyPath, string valueName) =>
         Blobs.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
@@ -101,11 +110,8 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
         Ints.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
     public void SetInt(string keyPath, string valueName, int value) =>
         Ints[Key(keyPath, valueName)] = value;
-    /// Nothing the app layer reads is a QWORD, and this fake keeps a
-    /// dictionary per shape — so there is nothing to read a long out of, and
-    /// no way to plant one either. Both would arrive together, the way Ints
-    /// arrived when the Store rows needed them.
-    public long? GetLong(string keyPath, string valueName) => null;
+    public long? GetLong(string keyPath, string valueName) =>
+        Longs.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
     /// Run values are strings, so listing only Strings is what the real key
     /// holds — the binaries and DWORDs above live under different keys and
     /// are read by name, never enumerated.
