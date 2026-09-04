@@ -533,6 +533,7 @@ public class PrivacyDisclosureRuleTests
         public IReadOnlyList<string> GetValueNames(string k) { Refuse(k); return _inner.GetValueNames(k); }
         public string? GetString(string k, string v) { Refuse(k); return _inner.GetString(k, v); }
         public int? GetInt(string k, string v) { Refuse(k); return _inner.GetInt(k, v); }
+        public long? GetLong(string k, string v) { Refuse(k); return _inner.GetLong(k, v); }
         public void SetString(string k, string v, string value) => _inner.SetString(k, v, value);
         public void SetBytes(string k, string v, byte[] value) => _inner.SetBytes(k, v, value);
         public void SetInt(string k, string v, int value) => _inner.SetInt(k, v, value);

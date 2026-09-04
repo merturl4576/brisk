@@ -34,6 +34,7 @@ file sealed class NullRegistry : IRegistryProbe
     public void SetBytes(string k, string v, byte[] value) { }
     public int? GetInt(string k, string v) => null;
     public void SetInt(string k, string v, int value) { }
+    public long? GetLong(string k, string v) => null;
     public IReadOnlyList<string> GetValueNames(string k) => Array.Empty<string>();
     public IReadOnlyList<string> GetSubKeyNames(string k) => Array.Empty<string>();
 }
@@ -73,6 +74,12 @@ file sealed class ArmableRegistry : IRegistryProbe
     {
         Refuse(k);
         return _values.TryGetValue(K(k, v), out var o) ? o as int? : null;
+    }
+
+    public long? GetLong(string k, string v)
+    {
+        Refuse(k);
+        return _values.TryGetValue(K(k, v), out var o) ? o as long? : null;
     }
 
     public void SetString(string k, string v, string value) => _values[K(k, v)] = value;

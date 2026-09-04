@@ -43,6 +43,12 @@ public sealed class RealRegistryProbe : IRegistryProbe
         return key?.GetValue(v) as int?;
     }
     public void SetInt(string k, string v, int value) => Write(k, v, value, RegistryValueKind.DWord);
+    public long? GetLong(string k, string v)
+    {
+        var (root, sub) = Split(k);
+        using var key = root.OpenSubKey(sub);
+        return key?.GetValue(v) as long?;
+    }
 
     public void DeleteValue(string keyPath, string valueName)
     {

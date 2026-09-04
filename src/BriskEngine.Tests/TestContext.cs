@@ -48,6 +48,10 @@ public sealed class FakeRegistry : IRegistryProbe
         if (DenyWriteKeys.Contains(k)) throw new UnauthorizedAccessException();
         Values[K(k, v)] = value;
     }
+    // A QWORD read, and the planting helper for it: nothing in brisk WRITES
+    // one, so SetLong is here and not on the interface.
+    public long? GetLong(string k, string v) => Values.TryGetValue(K(k, v), out var o) ? o as long? : null;
+    public void SetLong(string k, string v, long value) => Values[K(k, v)] = value;
     public IReadOnlyList<string> GetValueNames(string keyPath)
     {
         var names = new List<string>();

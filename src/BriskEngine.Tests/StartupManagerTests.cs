@@ -24,6 +24,7 @@ sealed class FakeStartupRegistry : IRegistryProbe
     public void SetBytes(string k, string v, byte[] value) { Deny(k); Key(k)[v] = value; }
     public int? GetInt(string k, string v) => Key(k).TryGetValue(v, out var o) ? o as int? : null;
     public void SetInt(string k, string v, int value) { Deny(k); Key(k)[v] = value; }
+    public long? GetLong(string k, string v) => Key(k).TryGetValue(v, out var o) ? o as long? : null;
     public IReadOnlyList<string> GetValueNames(string k) => Key(k).Keys.ToList();
     public IReadOnlyList<string> GetSubKeyNames(string k) => Array.Empty<string>();
     private void Deny(string k) { if (DeniedKeys.Contains(k)) throw new UnauthorizedAccessException(k); }

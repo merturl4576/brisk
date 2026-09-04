@@ -23,6 +23,11 @@ public interface IRegistryProbe
     void SetBytes(string keyPath, string valueName, byte[] value);
     int? GetInt(string keyPath, string valueName);
     void SetInt(string keyPath, string valueName, int value);
+    /// A QWORD, or null when the value is absent or not one. Windows keeps
+    /// FILETIME stamps as QWORDs (CapabilityAccessManager's LastUsedTimeStop
+    /// is one), and GetInt reads those as null. No SetLong: nothing in brisk
+    /// writes one.
+    long? GetLong(string keyPath, string valueName);
     IReadOnlyList<string> GetValueNames(string keyPath);
     IReadOnlyList<string> GetSubKeyNames(string keyPath);
 }

@@ -531,6 +531,7 @@ public class ReadBackTests
 
         public string? GetString(string k, string v) { Refuse(k); return _inner.GetString(k, v); }
         public int? GetInt(string k, string v) { Refuse(k); return _inner.GetInt(k, v); }
+        public long? GetLong(string k, string v) { Refuse(k); return _inner.GetLong(k, v); }
         public byte[]? GetBytes(string k, string v) { Refuse(k); return _inner.GetBytes(k, v); }
         public IReadOnlyList<string> GetValueNames(string k) { Refuse(k); return _inner.GetValueNames(k); }
         public IReadOnlyList<string> GetSubKeyNames(string k) { Refuse(k); return _inner.GetSubKeyNames(k); }

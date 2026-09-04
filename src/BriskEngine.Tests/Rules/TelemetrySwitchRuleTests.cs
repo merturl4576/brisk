@@ -165,6 +165,40 @@ public class TelemetrySwitchRuleTests
             $"{id} moved the health score to {HealthScore.Compute(new[] { finding! })}");
     }
 
+    /// The one hook this wave adds to the family. Info stays the default for
+    /// every shipped switch; a subclass that says otherwise is heard by
+    /// Detect, which is what makes the Warning on uac-prompts possible
+    /// without making Kind or the finding's shape virtual.
+    private sealed class LouderSwitch : TelemetrySwitchRule
+    {
+        public override string Id => "test-louder";
+        public override IReadOnlyList<RegistryValue> Values { get; } = new[]
+        {
+            new RegistryValue(@"HKCU\Test", "V", OnValue: 1, OffValue: 0),
+        };
+        protected override Severity Severity => Severity.Warning;
+        protected override string Title => "t";
+        protected override string Evidence => "e";
+        protected override string FixDescription => "f";
+    }
+
+    [Fact]
+    public void ASubclass_MayRaiseTheSeverity_AndTheFindingCarriesIt()
+    {
+        var (ctx, _) = Context();
+        var finding = new LouderSwitch().Detect(ctx)!;
+        Assert.Equal(Severity.Warning, finding.Severity);
+        Assert.Equal(FindingKind.Notice, finding.Kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllSwitches))]
+    public void EveryShippedSwitch_KeepsInfo(string id)
+    {
+        var (ctx, _) = Context();
+        Assert.Equal(Severity.Info, Rule(id).Detect(ctx)!.Severity);
+    }
+
     /// The keys the GUI renders from, and the absence of one it must not
     /// render: these four measure no number, so they lead with no headline.
     [Theory]

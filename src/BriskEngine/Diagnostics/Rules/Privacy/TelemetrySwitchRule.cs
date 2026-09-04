@@ -159,6 +159,13 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     public virtual WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
         WriteEffect.NotAPolicy;
 
+    /// Info for every switch in the family but one. Severity says how loud
+    /// the row is; Kind says whether brisk may call it a problem, and Kind
+    /// stays Notice for all of them, so raising this moves no score. Only
+    /// uac-prompts overrides it (to Warning), and a test walks the shipped
+    /// switches to keep it that way.
+    protected virtual Severity Severity => Severity.Info;
+
     /// Public, and read from outside this class by the tests that pin the
     /// family's registry surface and by the tests that plant a switch back on
     /// — not by the read-back, which was the reason it was made public and
@@ -215,12 +222,13 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
         if (!IsOn(ctx)) return null;
         return new DiagnosticFinding(
             Id, $"rule.{Id}.title", Title, Evidence,
-            // Info, one star. The impact scale measures expected PERFORMANCE
-            // impact and a switch left on costs none — one rather than zero
-            // only because the field is documented 1..5. A surface that shows
-            // privacy findings has no business rendering a speed meter over
-            // them at all.
-            Severity.Info, Category, ImpactStars: 1, CanFix: true,
+            // One star, and the severity the rule declares (Info for all but
+            // one). The impact scale measures expected PERFORMANCE impact and
+            // a switch left on costs none — one rather than zero only because
+            // the field is documented 1..5. A surface that shows privacy
+            // findings has no business rendering a speed meter over them at
+            // all.
+            Severity, Category, ImpactStars: 1, CanFix: true,
             FixDescription: FixDescription,
             EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: null,
             // No headline: these measure no number, and the spec forbids

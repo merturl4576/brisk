@@ -101,6 +101,11 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
         Ints.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
     public void SetInt(string keyPath, string valueName, int value) =>
         Ints[Key(keyPath, valueName)] = value;
+    /// Nothing the app layer reads is a QWORD, and this fake keeps a
+    /// dictionary per shape — so there is nothing to read a long out of, and
+    /// no way to plant one either. Both would arrive together, the way Ints
+    /// arrived when the Store rows needed them.
+    public long? GetLong(string keyPath, string valueName) => null;
     /// Run values are strings, so listing only Strings is what the real key
     /// holds — the binaries and DWORDs above live under different keys and
     /// are read by name, never enumerated.
