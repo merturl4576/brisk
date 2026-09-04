@@ -34,6 +34,10 @@ public static class DiagnosticRuleRegistry
         // this list means brisk detects them and `brisk scan` prints them,
         // not that anything flips them without being asked.
         new LocationRule(), new ActivityHistoryRule(),
+        // The security switch. Confirm like the two above it, for the same
+        // reason: the user will see consent prompts again and is told so
+        // before it happens. Absence raises nothing here — see the rule.
+        new UacPromptRule(),
         // The report-only disclosures: no switch, no fix, just what Windows
         // has already written down, counted. They are Advise, which is the
         // consent level FixRunner refuses to apply a fix for at all — and

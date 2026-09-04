@@ -298,6 +298,10 @@
   <data name="rule.activity-history.evidence" xml:space="preserve"><value>brisk bu ilkenin kullandığı iki değeri bu makinede okudu ve en az biri kapalı okunmuyor. brisk yalnızca ayarların kendisini okur, ötesini değil. Bu anahtarın bir bedeli var — kapatırsan Timeline biter. İki değer yazar, yönetici yetkisi ister ve geri alınabilir. brisk bir sonraki taramada kendi yazdığı ilke değerini yeniden okur, yani yazma başarılı olunca bu anahtarı kapalı diye raporlar; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
   <data name="rule.activity-history.advice" xml:space="preserve"><value>Bu, brisk'in bedeli var saydığı iki anahtardan biri: Timeline biter. Açık olanların geri kaydırıp bakabildiğin listesi odur; brisk o listeyi hiç okumaz. Kapatmak yönetici yetkisi ister. brisk bunu kapatabilir ve geri açabilir. Ama bu bir ilke: brisk bir sonraki taramada kendi yazdığı ilke değerini yeniden okur; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
   <data name="rule.activity-history.cost" xml:space="preserve"><value>Timeline biter</value></data>
+  <data name="rule.uac-prompts.title" xml:space="preserve"><value>Windows, bir program kontrolü almadan önce sormuyor</value></data>
+  <data name="rule.uac-prompts.evidence" xml:space="preserve"><value>brisk Windows'un üç UAC değerini okudu; bir programın ekranda hiçbir soru çıkmadan yönetici hakkı alıp alamayacağına karar veren değer "hiç sorma" olarak okunuyor. O hakkı isteyen her program alıyor ve ekranda hiçbir şey görünmüyor. Windows'un varsayılanı sormaktır, kararan bir ekranda. Varsayılanı geri getirmek en fazla üç değer yazar ve geri alınabilir. Programlar yeniden soracak; amaç zaten bu.</value></data>
+  <data name="rule.uac-prompts.advice" xml:space="preserve"><value>brisk Windows'un varsayılanını geri koyabilir ve bunu geri alabilir. Senin için değişen şu: bir program yönetici hakkı istediğinde kararan bir ekran ve bir soru. 0 okunan değer EnableLUA idiyse sorular yeniden başlatmadan sonra döner.</value></data>
+  <data name="rule.uac-prompts.cost" xml:space="preserve"><value>Programlar yeniden izin ister, kararan bir ekranda</value></data>
   <data name="rule.usb-history.title" xml:space="preserve"><value>Windows bu makineye takılan USB depolama aygıtlarının kaydını tutuyor</value></data>
   <data name="rule.usb-history.title.unread" xml:space="preserve"><value>Kayıtlı USB depolama aygıtı sayısı belirlenemedi</value></data>
   <data name="rule.usb-history.evidence" xml:space="preserve"><value>Windows bu makineye takılmış USB depolama aygıtlarının kaydını tutuyor. brisk bunlardan {0} tane saydı; aralarında okuyabildiği en eski tarih {1}. brisk kaydı aygıt adları dahil okur ve adları yalnızca Gizlilik sayfasında gösterir — paylaşılmak için yapılmış hiçbir yüzeyde değil.</value></data>
@@ -350,6 +354,7 @@
   <data name="rule.speech-typing.done" xml:space="preserve"><value>Konuşma ve yazma kişiselleştirmesi kısıtlandı</value></data>
   <data name="rule.location.done" xml:space="preserve"><value>Konum erişimi kapatıldı</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Etkinlik geçmişi ilkesi kapalı olarak ayarlandı</value></data>
+  <data name="rule.uac-prompts.done" xml:space="preserve"><value>Windows bir program kontrolü almadan önce yeniden soruyor</value></data>
   <data name="readback.held" xml:space="preserve"><value>{0} gün önce kapattın, hâlâ kapalı</value></data>
   <data name="readback.held.today" xml:space="preserve"><value>Bugün kapattın, hâlâ kapalı</value></data>
   <data name="readback.held.yesterday" xml:space="preserve"><value>Dün kapattın, hâlâ kapalı</value></data>

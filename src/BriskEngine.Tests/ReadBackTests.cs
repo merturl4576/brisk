@@ -943,6 +943,9 @@ public class ReadBackTests
             ["diagnostic-level"] = true,
             // Overrides IsOn and matches its word without regard to case.
             ["location"] = true,
+            // Overrides IsOn: absence and every non-zero number read as off,
+            // and none of those is the 1/5/1 the fix writes.
+            ["uac-prompts"] = true,
         };
 
     /// Three outcomes, and the third is the one that matters: a rule the

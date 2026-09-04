@@ -111,15 +111,17 @@ public sealed class ProgramFixTests : IDisposable
     /// are meant to be: nothing a user relies on stops working when an
     /// advertising ID goes off.
     ///
-    /// These two are the line. `--all` may never take Find my device or
+    /// These three are the line. `--all` may never take Find my device or
     /// Timeline away from somebody who typed --all and was shown no
-    /// consequence. Today they are outside the selection because they ship as
-    /// Confirm; this test is what makes that a guarantee rather than a
-    /// coincidence, and it fails the moment either rule is made Auto or the
-    /// selection stops filtering on the category.
+    /// consequence, and it may never hand back the consent prompt on every
+    /// elevation without naming that change either. Today they are outside the
+    /// selection because they ship as Confirm; this test is what makes that a
+    /// guarantee rather than a coincidence, and it fails the moment one of
+    /// them is made Auto or the selection stops filtering on the category.
     [Theory]
     [InlineData("location")]
     [InlineData("activity-history")]
+    [InlineData("uac-prompts")]
     public void CliFixAll_NeverReachesASwitchThatCostsTheUserSomething(string ruleId)
     {
         // Not vacuous: the rule has to BE in the registry for its absence from

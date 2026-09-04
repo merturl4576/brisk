@@ -129,7 +129,7 @@ public class PrivacyRedLineTests
     /// rule hardcodes its own Id — and a typo there routes the finding to
     /// Sağlık without a word of complaint. Reading the shipped rule objects
     /// against the shipped list, from the one project that can see both, is
-    /// what turns that silence into a failure. It reaches the six telemetry
+    /// what turns that silence into a failure. It reaches the seven telemetry
     /// switches; its sibling below reaches the four report-only disclosures,
     /// which are not TelemetrySwitchRules and so are invisible to this one.
     /// A privacy rule arriving under some third base class needs the same
@@ -140,7 +140,7 @@ public class PrivacyRedLineTests
         var switches = DiagnosticRuleRegistry.All
             .OfType<TelemetrySwitchRule>().ToList();
 
-        Assert.Equal(6, switches.Count);
+        Assert.Equal(7, switches.Count);
         foreach (var rule in switches)
             Assert.True(FindingSections.IsPrivacy(rule.Id),
                 $"rule '{rule.Id}' is a telemetry switch, but no id in " +
@@ -279,7 +279,7 @@ public class PrivacyRedLineTests
     /// above proves whatever is IN the list routes correctly; only this
     /// notices something dropping OUT of it, or an id arriving unannounced.
     [Fact]
-    public void PrivacyRuleIds_AreTheTenThisWaveDeclares()
+    public void PrivacyRuleIds_AreTheElevenThisWaveDeclares()
     {
         Assert.Equal(
             new[]
@@ -287,7 +287,7 @@ public class PrivacyRedLineTests
                 "advertising-id", "diagnostic-level", "tailored-experiences",
                 "speech-typing", "location", "activity-history",
                 "recall-status", "usb-history", "run-history",
-                "delivery-optimization",
+                "delivery-optimization", "uac-prompts",
             },
             PrivacyRuleIds.All);
     }
@@ -777,6 +777,16 @@ public class PrivacyRedLineTests
     /// business and is not listed here — the assertions below hold for both
     /// answers.
     ///
+    /// THERE IS NOW A THIRD ANSWER, and uac-prompts is the only rule that
+    /// gives it: absence reads as OFF for that switch. Windows' default for
+    /// its three values is to prompt, so an unwritten value cannot be read as
+    /// "never prompt" and brisk reports nothing at all here. That silence IS
+    /// the red line held — nothing unreadable became a claim — so it is what
+    /// the theory asserts for it, and the rule is then read again from the
+    /// state its own IsOn calls the bad one, because a rule that says nothing
+    /// walks past every sentence scan below without one of them looking at a
+    /// word it ships.
+    ///
     /// WHAT IS ASSERTED. No headline, because a headline is the number a
     /// finding leads with and there is no reading here to make one out of.
     /// No digit in any sentence a reader is shown — the engine's own English,
@@ -790,12 +800,27 @@ public class PrivacyRedLineTests
     [MemberData(nameof(AllPrivacyRuleIds))]
     public void NoPrivacyRule_TurnsAnUnreadableProbeIntoANumber(string ruleId)
     {
-        var finding = ShippedRule(ruleId).Detect(NothingReadsAtAll());
+        var rule = ShippedRule(ruleId);
+        var finding = rule.Detect(NothingReadsAtAll());
 
-        Assert.True(finding is not null,
-            $"{ruleId} reports nothing at all on a machine it could read " +
-            "nothing from. A probe that failed belongs in okuyamadıklarım, and " +
-            "silence puts it nowhere");
+        if (ruleId == "uac-prompts")
+        {
+            Assert.True(finding is null,
+                $"{ruleId} reports something on a machine it could read " +
+                "nothing from — an absent value is Windows' own default " +
+                "there, not a hole, and this is the one rule in the topic that " +
+                "reads it that way");
+            finding = rule.Detect(EverythingReadsAsOn());
+            Assert.True(finding is not null,
+                $"{ruleId} reports nothing even at the state its own read calls " +
+                "the bad one, so nothing below ever looked at a word of its copy");
+        }
+        else
+            Assert.True(finding is not null,
+                $"{ruleId} reports nothing at all on a machine it could read " +
+                "nothing from. A probe that failed belongs in okuyamadıklarım, and " +
+                "silence puts it nowhere");
+
         Assert.True(finding!.Headline is null,
             $"{ruleId} leads with \"{finding.Headline?.Value}\" on a machine it " +
             "could read nothing from — a headline is the number a finding leads " +
@@ -844,7 +869,7 @@ public class PrivacyRedLineTests
     }
 
     /// A machine where every switch this topic reads is on and every record
-    /// it counts has something in it — the one state in which all ten rules
+    /// it counts has something in it — the one state in which all eleven rules
     /// have something to report.
     ///
     /// The numbered switches are planted from their OWN Values collection, so

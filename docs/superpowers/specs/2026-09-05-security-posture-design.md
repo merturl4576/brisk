@@ -130,14 +130,16 @@ out of `brisk fix --all`, the same reason location and activity-history are
 Confirm. **Severity: Warning** (the override above). **Kind: Notice.**
 
 **Copy.** Title: "Windows does not ask before a program takes control".
-Evidence, with the three values as arguments: "brisk read Windows' three UAC
-values: EnableLUA {0}, ConsentPromptBehaviorAdmin {1}, PromptOnSecureDesktop
-{2}. A 0 in the second means any program that asks for administrator rights
-gets them with no prompt on screen. Windows' default is to ask, on a dimmed
-screen. Restoring the default writes up to three values and can be undone.
-Programs will ask again; that is the point." Fix description: "Ask before a
-program takes control again (undoable)". Done: "Windows asks again before a
-program takes control". An absent value renders as "not set" in the argument.
+Evidence (fixed sentence, no arguments — the family's Detect passes none):
+"brisk read Windows' three UAC values, and the one that decides whether a
+program gets administrator rights with no prompt on screen reads as
+"never prompt". Any program that asks for those rights gets them, and
+nothing appears. Windows' default is to ask, on a dimmed screen. Restoring
+the default writes up to three values and can be undone. Programs will ask
+again; that is the point." Fix description: "Ask before a program takes
+control again (undoable)". Done: "Windows asks again before a program takes
+control". Cost line (Privacy page): "Programs ask for permission again, on
+a dimmed screen".
 
 **Read-back:** free from the family: Held or Reverted. An optimizer that
 turns prompting off again after brisk turned it on shows as Reverted on the
