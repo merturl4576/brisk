@@ -216,9 +216,13 @@ public class PrivacyViewModelTests
     /// may name them. The order is the snapshot's — newest use first, which
     /// is what CapabilityUseRule.ReadAllRecent hands over — and the line
     /// carries the app's name, which capability it used and the day it last
-    /// did. A desktop app carries its PATH beside the name too: this page is
-    /// the owner's own screen, and a name alone cannot tell two
-    /// same-named executables apart.
+    /// did. A desktop app carries its PATH on a SECOND line beneath that one:
+    /// this page is the owner's own screen and a name alone cannot tell two
+    /// same-named executables apart, but a full path folded into the name
+    /// line wraps it into unreadability. A packaged app has no path and gets
+    /// no second line — null rather than an empty string, so the markup
+    /// collapses it instead of leaving a gap a reader takes for missing
+    /// information.
     ///
     /// None of this is on a finding. The names arrive on
     /// ScanSnapshot.CapabilityUses, exactly as the USB models above do, so
@@ -240,11 +244,18 @@ public class PrivacyViewModelTests
         await state.ScanAsync();
 
         Assert.Equal(2, vm.CapabilityUseRows.Count);
-        Assert.Contains("5319275A.WhatsAppDesktop", vm.CapabilityUseRows[0]);
-        Assert.Contains("camera", vm.CapabilityUseRows[0]);
-        Assert.Contains("2026-09-01", vm.CapabilityUseRows[0]);
-        Assert.Contains("chrome.exe", vm.CapabilityUseRows[1]);
-        Assert.Contains(@"C:\Program Files\Google\Chrome\Application\chrome.exe", vm.CapabilityUseRows[1]);
+        Assert.Contains("5319275A.WhatsAppDesktop", vm.CapabilityUseRows[0].Text);
+        Assert.Contains("camera", vm.CapabilityUseRows[0].Text);
+        Assert.Contains("2026-09-01", vm.CapabilityUseRows[0].Text);
+        Assert.Null(vm.CapabilityUseRows[0].AppPath);
+
+        Assert.Contains("chrome.exe", vm.CapabilityUseRows[1].Text);
+        Assert.Contains("microphone", vm.CapabilityUseRows[1].Text);
+        Assert.Equal(@"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            vm.CapabilityUseRows[1].AppPath);
+        // The path is its own line and not folded into the name line — the
+        // whole point of the second line.
+        Assert.DoesNotContain(@"C:\", vm.CapabilityUseRows[1].Text);
     }
 
     /// A machine whose consent store brisk could not read leaves this fold

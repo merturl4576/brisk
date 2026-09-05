@@ -157,6 +157,26 @@ public sealed class ReadBackRow
         .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }
 
+/// One line of the capability fold, in two parts because it renders as two.
+/// Text is what a reader reads — the app's name, which capability it used
+/// and the day it last did. AppPath is the desktop executable's full path,
+/// on a second and fainter line beneath it, and NULL for a packaged app,
+/// which has none.
+///
+/// TWO LINES RATHER THAN ONE. The path belongs on this page — it is the
+/// owner's own screen, and a name alone cannot tell two same-named
+/// executables apart, which is exactly the case worth looking at. Folded
+/// into the name line it wraps a program directory across three lines and
+/// buries the name and the date it was there for. Null rather than an empty
+/// string for the same reason UsbDeviceRows prints a dash: the markup
+/// collapses a null, where an empty line under a name is a gap a reader
+/// takes for information brisk failed to get.
+///
+/// Strings and not the record, on the same reasoning as UsbDeviceRows: which
+/// sentence and which date spelling are rendering decisions, and they belong
+/// on the side of the split that knows the language.
+public sealed record CapabilityUseRow(string Text, string? AppPath);
+
 /// The Privacy page: what this machine has written down, what its switches
 /// currently read as, and what happened to the ones brisk changed.
 ///
@@ -284,12 +304,12 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// knows the language. What the markup binds is a list of lines.
     public ObservableCollection<string> UsbDeviceRows { get; } = new();
 
-    /// Name, capability, date — one line per app that used the microphone
-    /// or camera in the window, newest first, off ScanSnapshot.CapabilityUses
-    /// and never off a finding. Desktop apps carry their path on the line:
-    /// this page is the owner's own screen, and "Desktop\system-helper.exe"
-    /// is the whole point of showing it.
-    public ObservableCollection<string> CapabilityUseRows { get; } = new();
+    /// Name, capability, date — one row per app that used the microphone or
+    /// camera in the window, newest first, off ScanSnapshot.CapabilityUses
+    /// and never off a finding. A desktop app's path rides the row's second
+    /// line: this page is the owner's own screen, and
+    /// "Desktop\system-helper.exe" is the whole point of showing it.
+    public ObservableCollection<CapabilityUseRow> CapabilityUseRows { get; } = new();
 
     /// The four the one button turns off.
     public ObservableCollection<FindingRow> SafeSwitchRows { get; } = new();
@@ -494,9 +514,10 @@ public sealed class PrivacyViewModel : ViewModelBase
         {
             var what = _loc[use.Capability == Capability.Microphone
                 ? "privacy.capability.microphone" : "privacy.capability.camera"];
-            var name = use.Path is null ? use.AppName : $"{use.AppName}  ({use.Path})";
-            CapabilityUseRows.Add(_loc.F("privacy.capability.use", name, what,
-                use.LastUsedUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            CapabilityUseRows.Add(new CapabilityUseRow(
+                _loc.F("privacy.capability.use", use.AppName, what,
+                    use.LastUsedUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                use.Path));
         }
 
         ReadBackRows.Clear();

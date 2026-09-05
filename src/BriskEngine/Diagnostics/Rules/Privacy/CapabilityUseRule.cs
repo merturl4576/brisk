@@ -21,8 +21,18 @@ public sealed record CapabilityUseRecord(
 /// Which apps used the microphone and the camera in the last 30 days, from
 /// CapabilityAccessManager's consent store: one subkey per packaged app (a
 /// package family name) and, under NonPackaged, one per desktop executable
-/// with '#' where its path has '\'. Each carries LastUsedTimeStop as a
-/// FILETIME QWORD; 0 or absent means never used.
+/// with '#' where its path has '\'. Each carries two FILETIME QWORDs:
+/// LastUsedTimeStart, written when the app ACQUIRED the device, and
+/// LastUsedTimeStop, written when it RELEASED it.
+///
+/// A USE IS DATED BY STOP, AND BY START WHEN THERE IS NO STOP. Windows
+/// leaves Stop at 0 for a session that never ended — a device still held,
+/// which Settings shows as "currently in use", and an app that crashed
+/// without releasing one — so a rule reading Stop alone would drop exactly
+/// the persistent listener it exists to surface. Both stamps 0 or absent is
+/// the only thing that means never used. brisk does not report the
+/// Start-only case as in use NOW: an open session and a crash remnant read
+/// identically from here, and neither is something this read measured.
 ///
 /// ONE APP COUNTS ONCE. Discord and Wispr Flow keep one subkey per installed
 /// version, and the machine this was written on holds 40 Discord entries for
@@ -47,7 +57,8 @@ public sealed class CapabilityUseRule : PrivacyDisclosureRule
     public const string MicrophoneKey = StoreRoot + @"\microphone";
     public const string WebcamKey = StoreRoot + @"\webcam";
     public const string NonPackaged = "NonPackaged";
-    public const string LastUsedValueName = "LastUsedTimeStop";
+    public const string LastUsedStopValueName = "LastUsedTimeStop";
+    public const string LastUsedStartValueName = "LastUsedTimeStart";
     public static readonly TimeSpan Window = TimeSpan.FromDays(30);
 
     private readonly Func<DateTime> _utcNow;
@@ -76,14 +87,26 @@ public sealed class CapabilityUseRule : PrivacyDisclosureRule
             var found = new Dictionary<string, CapabilityUseRecord>(StringComparer.OrdinalIgnoreCase);
             void Consider(string subKey, string appName, string? path)
             {
-                var stamp = ctx.Registry.GetLong(subKey, LastUsedValueName);
-                if (stamp is null or <= 0) return;
-                DateTime used;
-                try { used = DateTime.FromFileTimeUtc(stamp.Value); }
-                catch (ArgumentOutOfRangeException) { return; }
-                if (used < nowUtc - Window) return;
-                if (!found.TryGetValue(appName, out var prior) || prior.LastUsedUtc < used)
-                    found[appName] = new CapabilityUseRecord(capability, appName, path, used);
+                // WHEN THE APP RELEASED THE DEVICE, OR FAILING THAT WHEN IT
+                // TOOK IT. Stop is written when a session ENDS, so it is 0
+                // while the device is still held — Settings' "currently in
+                // use" — and after an app crashed without releasing one.
+                // Reading Stop alone drops exactly the entry this rule exists
+                // to surface, so Start is the FALLBACK — not a maximum. A
+                // session that ended is dated by when it ended, which is what
+                // "last used" means. KNOWN AND NOT CLAIMED AWAY: an app that
+                // has taken the device AGAIN since — Start moved, Stop still
+                // holding the earlier release — is therefore dated by that
+                // earlier release. That is an older date than the truth, and
+                // it is a date brisk measured; "in use now" is not, so brisk
+                // does not print it. An open session and a crash remnant read
+                // the same from here, and nothing measured which it is.
+                var used = Stamp(ctx, subKey, LastUsedStopValueName)
+                    ?? Stamp(ctx, subKey, LastUsedStartValueName);
+                if (used is not { } when) return;
+                if (when < nowUtc - Window) return;
+                if (!found.TryGetValue(appName, out var prior) || prior.LastUsedUtc < when)
+                    found[appName] = new CapabilityUseRecord(capability, appName, path, when);
             }
 
             foreach (var name in names)
@@ -111,6 +134,21 @@ public sealed class CapabilityUseRule : PrivacyDisclosureRule
         }
     }
 
+    /// ONE FILETIME stamp, or nothing. Nothing is what a read that cannot be
+    /// turned into a date returns: a value that is not there, a 0 — which
+    /// Windows writes for a stamp it has never set, and which converts
+    /// happily into the first instant of 1601 — and a number that will not
+    /// convert at all. The conversion is caught here rather than escaping to
+    /// the walk's own catch, where one bad entry would cost the capability.
+    private static DateTime? Stamp(
+        DiagnosticContext ctx, string subKey, string valueName)
+    {
+        var raw = ctx.Registry.GetLong(subKey, valueName);
+        if (raw is null or <= 0) return null;
+        try { return DateTime.FromFileTimeUtc(raw.Value); }
+        catch (ArgumentOutOfRangeException) { return null; }
+    }
+
     /// Both capabilities in one list, newest first. An unreadable half adds
     /// nothing; the finding is where "could not read" is said.
     public static IReadOnlyList<CapabilityUseRecord> ReadAllRecent(
@@ -135,15 +173,30 @@ public sealed class CapabilityUseRule : PrivacyDisclosureRule
         var camText = camCount.ToString(CultureInfo.InvariantCulture);
         var headline = HeadlineFor(micCount, camCount);
 
+        // ONE HALF UNREADABLE AND THE OTHER COUNTING NOTHING. Past the early
+        // return above, a zero on both sides means one of them could not be
+        // read — and the only reading that DID arrive is a zero, so nothing
+        // here used anything. Titling that "Apps have used the microphone or
+        // camera recently" claims a use brisk measured the absence of, over a
+        // fold with nothing in it to back it up. The title is the unreadable
+        // one and the headline is already null, which is also what routes the
+        // row to the page's "what brisk could not read" band. The EVIDENCE
+        // stays the half-unread sentence: an honest 0 for the half brisk read
+        // and "could not be read" for the half it did not is exactly this
+        // state, and the both-unread sentence would overstate the silence.
+        var nothingCounted = micCount == 0 && camCount == 0;
+        var titleKey = nothingCounted ? $"rule.{Id}.title.unread" : $"rule.{Id}.title";
+        var title = nothingCounted ? UnreadTitleText : TitleText;
+
         if (mic is null)
-            return Disclosure($"rule.{Id}.title", TitleText,
+            return Disclosure(titleKey, title,
                 $"rule.{Id}.evidence.mic-unread",
                 $"By Windows' own record of when each app last used it, {camText} apps " +
                 "used the camera in the last 30 days. The microphone record could not " +
                 "be read, so brisk says nothing about it. " + WhereTheNamesAre,
                 new[] { camText }, headline);
         if (cam is null)
-            return Disclosure($"rule.{Id}.title", TitleText,
+            return Disclosure(titleKey, title,
                 $"rule.{Id}.evidence.cam-unread",
                 $"By Windows' own record of when each app last used it, {micText} apps " +
                 "used the microphone in the last 30 days. The camera record could not " +
@@ -158,6 +211,11 @@ public sealed class CapabilityUseRule : PrivacyDisclosureRule
     }
 
     private const string TitleText = "Apps have used the microphone or camera recently";
+
+    /// The title for every state where brisk has no use to report: both
+    /// records unreadable, and one unreadable with the other counting none.
+    private const string UnreadTitleText =
+        "Which apps used the microphone or camera could not be established";
 
     /// Said on every reading brisk did take, unreadable halves included: the
     /// finding carries counts, and the page it points at is the only place
@@ -190,8 +248,7 @@ public sealed class CapabilityUseRule : PrivacyDisclosureRule
     /// No digits anywhere in this one: a reading that never arrived is not
     /// reported with a number, and the window is not mentioned by its length.
     private DiagnosticFinding Unread() => Disclosure(
-        $"rule.{Id}.title.unread",
-        "Which apps used the microphone or camera could not be established",
+        $"rule.{Id}.title.unread", UnreadTitleText,
         $"rule.{Id}.evidence.unread",
         "brisk looked where Windows records when each app last used the " +
         "microphone and the camera and found nothing there it could read. A " +

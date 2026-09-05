@@ -170,8 +170,16 @@ leaves it alone (ProgramFixTests).
 Direct subkeys are packaged apps (a package family name such as
 `5319275A.WhatsAppDesktop_cv1g1gvanyjgm`); the `NonPackaged` subkey holds
 one subkey per desktop executable, its path with `#` in place of `\`
-(`C:#Users#MERT#Desktop#system-helper.exe`). Each carries `LastUsedTimeStop`
-(QWORD FILETIME; 0 or absent = never used), read with `GetLong`.
+(`C:#Users#MERT#Desktop#system-helper.exe`). Each carries two QWORD
+FILETIMEs read with `GetLong`: `LastUsedTimeStart`, written when the app
+acquired the device, and `LastUsedTimeStop`, written when it released it. A
+use is dated by `Stop`, and by `Start` when `Stop` is 0 or absent — Windows
+leaves `Stop` at 0 for a session that never ended (a device still held,
+which Settings shows as "currently in use", and an app that crashed without
+releasing one), so reading `Stop` alone drops exactly the persistent
+listener this rule exists to surface. Only both stamps 0 or absent means
+never used, and brisk does not report the `Start`-only case as in use *now*:
+an open session and a crash remnant read identically from here.
 
 **Window:** 30 days back from now. "Now" is injected (`Func<DateTime>` on the
 constructor, default `DateTime.UtcNow`) so the table tests plant dates.

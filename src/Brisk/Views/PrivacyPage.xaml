@@ -172,10 +172,32 @@
                                       ElementName=CapabilityUsesFold,
                                       Converter={x:Static Brisk:BoolToVis.Instance}}">
                         <ItemsControl.ItemTemplate>
+                            <!-- Name, capability and date on the row; the
+                                 desktop executable's path beneath it, quieter
+                                 and indented, so a program directory cannot
+                                 wrap the line a reader is actually reading.
+                                 A packaged app has no path and the second
+                                 line collapses on the null. -->
                             <DataTemplate>
-                                <TextBlock Style="{StaticResource Muted}"
-                                           TextWrapping="Wrap" Margin="0,0,0,3"
-                                           Text="{Binding}" />
+                                <StackPanel Margin="0,0,0,5">
+                                    <TextBlock Style="{StaticResource Muted}"
+                                               TextWrapping="Wrap" Text="{Binding Text}" />
+                                    <TextBlock TextWrapping="Wrap" Margin="12,1,0,0"
+                                               Text="{Binding AppPath}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock"
+                                                   BasedOn="{StaticResource Faint}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AppPath}"
+                                                                 Value="{x:Null}">
+                                                        <Setter Property="Visibility"
+                                                                Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

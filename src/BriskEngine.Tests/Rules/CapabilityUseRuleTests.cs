@@ -11,8 +11,8 @@ using Xunit;
 namespace BriskEngine.Tests.Rules;
 
 /// Which apps used the microphone and the camera in the last 30 days, by
-/// Windows' own LastUsedTimeStop stamps. Numbers on the finding, names on
-/// the snapshot list the Privacy page reads, and nowhere else.
+/// Windows' own LastUsedTimeStart/Stop stamps. Numbers on the finding, names
+/// on the snapshot list the Privacy page reads, and nowhere else.
 public class CapabilityUseRuleTests
 {
     private static readonly DateTime Now = new(2026, 9, 5, 12, 0, 0, DateTimeKind.Utc);
@@ -44,7 +44,7 @@ public class CapabilityUseRuleTests
         Store(reg, key);
         Sub(reg, key, family);
         if (lastUsedUtc is { } t)
-            reg.SetLong($@"{key}\{family}", CapabilityUseRule.LastUsedValueName, t.ToFileTimeUtc());
+            reg.SetLong($@"{key}\{family}", CapabilityUseRule.LastUsedStopValueName, t.ToFileTimeUtc());
     }
 
     private static void Desktop(FakeRegistry reg, string key, string exePath, DateTime? lastUsedUtc)
@@ -55,7 +55,7 @@ public class CapabilityUseRuleTests
         Sub(reg, $@"{key}\{CapabilityUseRule.NonPackaged}", hashed);
         if (lastUsedUtc is { } t)
             reg.SetLong($@"{key}\{CapabilityUseRule.NonPackaged}\{hashed}",
-                CapabilityUseRule.LastUsedValueName, t.ToFileTimeUtc());
+                CapabilityUseRule.LastUsedStopValueName, t.ToFileTimeUtc());
     }
 
     private static IEnumerable<string> EverythingAReaderWouldSee(DiagnosticFinding f)
@@ -125,17 +125,77 @@ public class CapabilityUseRuleTests
         Assert.Null(one.Path);
     }
 
+    /// BOTH stamps zero or absent is what "never used" looks like. Zero on
+    /// Stop alone is not — see the theory below it.
     [Fact]
     public void AZeroOrAbsentStamp_IsNeverUsed()
     {
         var (ctx, reg) = Context();
         Packaged(reg, CapabilityUseRule.MicrophoneKey, "Never.Used_x", null);
         Packaged(reg, CapabilityUseRule.MicrophoneKey, "Zero.Stamp_x", null);
-        reg.SetLong($@"{CapabilityUseRule.MicrophoneKey}\Zero.Stamp_x", CapabilityUseRule.LastUsedValueName, 0);
+        reg.SetLong($@"{CapabilityUseRule.MicrophoneKey}\Zero.Stamp_x",
+            CapabilityUseRule.LastUsedStopValueName, 0);
+        reg.SetLong($@"{CapabilityUseRule.MicrophoneKey}\Zero.Stamp_x",
+            CapabilityUseRule.LastUsedStartValueName, 0);
         Store(reg, CapabilityUseRule.WebcamKey);
 
         Assert.Empty(CapabilityUseRule.ReadRecent(ctx, Capability.Microphone, Now)!);
         Assert.Null(Rule().Detect(ctx));
+    }
+
+    /// A SESSION THAT WAS NEVER CLOSED. Windows writes LastUsedTimeStart when
+    /// an app acquires the device and LastUsedTimeStop when it releases it,
+    /// so Stop stays 0 while the device is still held — what Settings shows
+    /// as "currently in use" — and after an app crashed without releasing
+    /// one. Reading Stop alone drops exactly the entry this rule exists to
+    /// surface, so the use is counted at its START, and the window is applied
+    /// to that same measured stamp rather than to the moment the test runs.
+    ///
+    /// brisk does not call it "in use now": nothing here measured that, and
+    /// an open session and a crash remnant read identically from here.
+    [Theory]
+    [InlineData(2, true)]
+    [InlineData(40, false)]
+    public void ASessionLeftOpen_IsCountedAtItsStart_AndStillObeysTheWindow(
+        int daysAgo, bool counted)
+    {
+        var (ctx, reg) = Context();
+        var key = $@"{CapabilityUseRule.MicrophoneKey}\Held.App_x";
+        Packaged(reg, CapabilityUseRule.MicrophoneKey, "Held.App_x", null);
+        reg.SetLong(key, CapabilityUseRule.LastUsedStopValueName, 0);
+        reg.SetLong(key, CapabilityUseRule.LastUsedStartValueName,
+            Now.AddDays(-daysAgo).ToFileTimeUtc());
+        Store(reg, CapabilityUseRule.WebcamKey);
+
+        var records = CapabilityUseRule.ReadRecent(ctx, Capability.Microphone, Now)!;
+        if (!counted)
+        {
+            Assert.Empty(records);
+            return;
+        }
+        var one = Assert.Single(records);
+        Assert.Equal("Held.App", one.AppName);
+        Assert.Equal(Now.AddDays(-daysAgo), one.LastUsedUtc);
+    }
+
+    /// A number in the value that is not a FILETIME brisk can convert is
+    /// skipped rather than guessed at, on either stamp — and it is skipped
+    /// quietly, because an ArgumentOutOfRangeException escaping the walk
+    /// would cost the whole capability rather than one entry.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AStampThatWillNotConvert_IsSkipped_NotGuessedAt(bool onStop)
+    {
+        var (ctx, reg) = Context();
+        Packaged(reg, CapabilityUseRule.MicrophoneKey, "Bad.Stamp_x", null);
+        reg.SetLong($@"{CapabilityUseRule.MicrophoneKey}\Bad.Stamp_x",
+            onStop ? CapabilityUseRule.LastUsedStopValueName
+                   : CapabilityUseRule.LastUsedStartValueName,
+            long.MaxValue);
+        Store(reg, CapabilityUseRule.WebcamKey);
+
+        Assert.Empty(CapabilityUseRule.ReadRecent(ctx, Capability.Microphone, Now)!);
     }
 
     [Fact]
@@ -161,6 +221,36 @@ public class CapabilityUseRuleTests
         Assert.Equal($"rule.{CapabilityUseRule.RuleId}.evidence.cam-unread", finding.EvidenceKey);
         Assert.Equal(new[] { "1" }, finding.EvidenceArgs);
         Assert.Equal("1", finding.Headline!.Value);
+    }
+
+    /// ONE HALF UNREADABLE AND THE OTHER COUNTING NOTHING. The only reading
+    /// that arrived is a zero, so nothing here USED anything — and a finding
+    /// titled "Apps have used the microphone or camera recently" over that,
+    /// pointing at a fold with nothing in it, is a claim brisk did not
+    /// measure. It takes the unreadable title and no headline, which is also
+    /// what puts it in the page's "what brisk could not read" band; the
+    /// evidence stays the half-unread sentence, which is the honest one — a
+    /// measured 0 on the half brisk read and "could not be read" on the half
+    /// it did not.
+    ///
+    /// The readable half holds an app whose last use is OUTSIDE the window,
+    /// so the registry has a name in it that the count legitimately does not
+    /// reach — which is what makes the name assertion say something.
+    [Theory]
+    [InlineData("mic-unread-zero", "mic-unread")]
+    [InlineData("cam-unread-zero", "cam-unread")]
+    public void OneRecordUnreadable_AndTheOtherCountingNothing_IsAnUnreadableFinding(
+        string state, string evidence)
+    {
+        var finding = Detect(state);
+
+        Assert.Equal($"rule.{CapabilityUseRule.RuleId}.title.unread", finding.TitleKey);
+        Assert.Equal($"rule.{CapabilityUseRule.RuleId}.evidence.{evidence}",
+            finding.EvidenceKey);
+        Assert.Equal(new[] { "0" }, finding.EvidenceArgs);
+        Assert.Null(finding.Headline);
+        Assert.DoesNotContain("ZZZ", string.Join(" | ", EverythingAReaderWouldSee(finding))
+            + " | " + JsonSerializer.Serialize(finding), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -228,18 +318,45 @@ public class CapabilityUseRuleTests
     public static TheoryData<string> EveryStateItCanReport()
     {
         var data = new TheoryData<string>();
-        foreach (var state in new[] { "both", "mic-unread", "cam-unread", "unread" })
+        foreach (var state in new[]
+                 {
+                     "both", "mic-unread", "cam-unread",
+                     "mic-unread-zero", "cam-unread-zero", "unread",
+                 })
             data.Add(state);
         return data;
     }
 
+    /// The plant for each of those states. The two `-zero` states put an app
+    /// OUTSIDE the window in the half brisk can read, so the readable count
+    /// is an honest 0 over a record that does hold a name.
     private static DiagnosticFinding Detect(string state)
     {
         var (ctx, reg) = Context();
-        if (state is "both" or "cam-unread")
-            Packaged(reg, CapabilityUseRule.MicrophoneKey, "A.App_x", Now.AddDays(-1));
-        if (state is "both" or "mic-unread")
-            Packaged(reg, CapabilityUseRule.WebcamKey, "B.App_x", Now.AddDays(-2));
+        switch (state)
+        {
+            case "both":
+                Packaged(reg, CapabilityUseRule.MicrophoneKey, "A.App_x", Now.AddDays(-1));
+                Packaged(reg, CapabilityUseRule.WebcamKey, "B.App_x", Now.AddDays(-2));
+                break;
+            case "mic-unread":
+                Packaged(reg, CapabilityUseRule.WebcamKey, "B.App_x", Now.AddDays(-2));
+                break;
+            case "cam-unread":
+                Packaged(reg, CapabilityUseRule.MicrophoneKey, "A.App_x", Now.AddDays(-1));
+                break;
+            case "mic-unread-zero":
+                Packaged(reg, CapabilityUseRule.WebcamKey, "ZZZ.LongAgo_x", Now.AddDays(-40));
+                break;
+            case "cam-unread-zero":
+                Packaged(reg, CapabilityUseRule.MicrophoneKey, "ZZZ.LongAgo_x", Now.AddDays(-40));
+                break;
+            case "unread":
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(state), state, "no plant for this state");
+        }
         return Rule().Detect(ctx)!;
     }
 
