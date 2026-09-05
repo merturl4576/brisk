@@ -334,6 +334,20 @@
   <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk bu sayacı yalnızca okur; Delivery Optimization'ı değiştirmez ve bunun için bir düzeltme sunmaz. Sayaçtan aldığı tek şey Delivery Optimization'ın bu ay başka makinelere yüklediği bayt miktarıdır — içinde ne olduğu asla.</value></data>
   <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>bu ay bu makineden başka makinelere yüklendi</value></data>
+  <data name="rule.camera-mic-use.title" xml:space="preserve"><value>Uygulamalar yakın zamanda mikrofonu veya kamerayı kullandı</value></data>
+  <data name="rule.camera-mic-use.title.unread" xml:space="preserve"><value>Mikrofonu veya kamerayı hangi uygulamaların kullandığı belirlenemedi</value></data>
+  <data name="rule.camera-mic-use.evidence" xml:space="preserve"><value>Windows'un her uygulamanın en son ne zaman kullandığını tuttuğu kayda göre son 30 günde {0} uygulama mikrofonu, {1} uygulama kamerayı kullandı. Hangileri ve ne zaman, bu sayfada; paylaşılmak için yapılmış hiçbir yüzeyde değil. brisk kaydı okur, ötesini okumaz: bir uygulamanın mikrofonla veya kamerayla ne yaptığı bu okumadan çıkmaz.</value></data>
+  <data name="rule.camera-mic-use.evidence.mic-unread" xml:space="preserve"><value>Windows'un her uygulamanın en son ne zaman kullandığını tuttuğu kayda göre son 30 günde {0} uygulama kamerayı kullandı. Mikrofon kaydı okunamadı, bu yüzden brisk onun hakkında bir şey söylemiyor. Hangileri ve ne zaman, bu sayfada; paylaşılmak için yapılmış hiçbir yüzeyde değil.</value></data>
+  <data name="rule.camera-mic-use.evidence.cam-unread" xml:space="preserve"><value>Windows'un her uygulamanın en son ne zaman kullandığını tuttuğu kayda göre son 30 günde {0} uygulama mikrofonu kullandı. Kamera kaydı okunamadı, bu yüzden brisk onun hakkında bir şey söylemiyor. Hangileri ve ne zaman, bu sayfada; paylaşılmak için yapılmış hiçbir yüzeyde değil.</value></data>
+  <data name="rule.camera-mic-use.evidence.unread" xml:space="preserve"><value>brisk, Windows'un her uygulamanın mikrofonu ve kamerayı en son ne zaman kullandığını kaydettiği yere baktı ve orada okuyabildiği bir şey bulamadı. İçinde hiçbir şey olmayan bir kayıt ile brisk'in açamadığı bir kayıt buradan aynı okunur; bu yüzden brisk hiçbir uygulamanın kullanmadığını söylemez.</value></data>
+  <data name="rule.camera-mic-use.advice" xml:space="preserve"><value>brisk bu kaydı yalnızca okur; değiştirmez ve düzeltme önermez. Aşağıdaki liste hangi uygulamaların ne zaman kullandığını söyler. Orada seni şaşırtan bir isim varsa bakılacak şey odur; uygulamanın mikrofonla veya kamerayla ne yaptığını brisk söyleyemez.</value></data>
+  <data name="rule.camera-mic-use.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.camera-mic-use.headline.caption.mic" xml:space="preserve"><value>uygulama son 30 günde mikrofonu kullandı</value></data>
+  <data name="rule.camera-mic-use.headline.caption.cam" xml:space="preserve"><value>uygulama son 30 günde kamerayı kullandı</value></data>
+  <data name="privacy.capability.title" xml:space="preserve"><value>Hangi uygulamalar, ne zaman</value></data>
+  <data name="privacy.capability.use" xml:space="preserve"><value>{0} — {1} · son kullanım {2}</value></data>
+  <data name="privacy.capability.microphone" xml:space="preserve"><value>mikrofon</value></data>
+  <data name="privacy.capability.camera" xml:space="preserve"><value>kamera</value></data>
   <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>

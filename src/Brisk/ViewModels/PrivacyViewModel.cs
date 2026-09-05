@@ -284,6 +284,13 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// knows the language. What the markup binds is a list of lines.
     public ObservableCollection<string> UsbDeviceRows { get; } = new();
 
+    /// Name, capability, date — one line per app that used the microphone
+    /// or camera in the window, newest first, off ScanSnapshot.CapabilityUses
+    /// and never off a finding. Desktop apps carry their path on the line:
+    /// this page is the owner's own screen, and "Desktop\system-helper.exe"
+    /// is the whole point of showing it.
+    public ObservableCollection<string> CapabilityUseRows { get; } = new();
+
     /// The four the one button turns off.
     public ObservableCollection<FindingRow> SafeSwitchRows { get; } = new();
 
@@ -481,6 +488,16 @@ public sealed class PrivacyViewModel : ViewModelBase
         foreach (var device in snapshot.UsbDevices)
             UsbDeviceRows.Add(_loc.F("privacy.usb.device", device.Model,
                 Stamp(device.FirstSeen), Stamp(device.LastSeen)));
+
+        CapabilityUseRows.Clear();
+        foreach (var use in snapshot.CapabilityUses)
+        {
+            var what = _loc[use.Capability == Capability.Microphone
+                ? "privacy.capability.microphone" : "privacy.capability.camera"];
+            var name = use.Path is null ? use.AppName : $"{use.AppName}  ({use.Path})";
+            CapabilityUseRows.Add(_loc.F("privacy.capability.use", name, what,
+                use.LastUsedUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+        }
 
         ReadBackRows.Clear();
         var now = _utcNow();

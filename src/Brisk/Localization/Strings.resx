@@ -334,6 +334,20 @@
   <data name="rule.delivery-optimization.advice" xml:space="preserve"><value>brisk only reads this counter; it does not change Delivery Optimization and offers no fix for it. What it takes from the counter is how many bytes Delivery Optimization uploaded to other machines this month — never what was in them.</value></data>
   <data name="rule.delivery-optimization.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.delivery-optimization.headline.caption" xml:space="preserve"><value>uploaded from this machine to other machines this month</value></data>
+  <data name="rule.camera-mic-use.title" xml:space="preserve"><value>Apps have used the microphone or camera recently</value></data>
+  <data name="rule.camera-mic-use.title.unread" xml:space="preserve"><value>Which apps used the microphone or camera could not be established</value></data>
+  <data name="rule.camera-mic-use.evidence" xml:space="preserve"><value>By Windows' own record of when each app last used them, {0} apps used the microphone and {1} used the camera in the last 30 days. Which ones, and when, is on this page and on nothing built to be shared. brisk reads the record and nothing past it: what an app did with the microphone or the camera is not something that read can tell you.</value></data>
+  <data name="rule.camera-mic-use.evidence.mic-unread" xml:space="preserve"><value>By Windows' own record of when each app last used it, {0} apps used the camera in the last 30 days. The microphone record could not be read, so brisk says nothing about it. Which ones, and when, is on this page and on nothing built to be shared.</value></data>
+  <data name="rule.camera-mic-use.evidence.cam-unread" xml:space="preserve"><value>By Windows' own record of when each app last used it, {0} apps used the microphone in the last 30 days. The camera record could not be read, so brisk says nothing about it. Which ones, and when, is on this page and on nothing built to be shared.</value></data>
+  <data name="rule.camera-mic-use.evidence.unread" xml:space="preserve"><value>brisk looked where Windows records when each app last used the microphone and the camera and found nothing there it could read. A record with nothing in it and a record brisk could not open read the same from here, so brisk does not report that no app used them.</value></data>
+  <data name="rule.camera-mic-use.advice" xml:space="preserve"><value>brisk only reads this record; it does not change it and offers no fix for it. The list below says which apps and when. If a name there surprises you, that is the thing to look into — brisk cannot tell you what the app did with the microphone or the camera.</value></data>
+  <data name="rule.camera-mic-use.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.camera-mic-use.headline.caption.mic" xml:space="preserve"><value>apps used the microphone in the last 30 days</value></data>
+  <data name="rule.camera-mic-use.headline.caption.cam" xml:space="preserve"><value>apps used the camera in the last 30 days</value></data>
+  <data name="privacy.capability.title" xml:space="preserve"><value>Which apps, and when</value></data>
+  <data name="privacy.capability.use" xml:space="preserve"><value>{0} — {1} · last used {2}</value></data>
+  <data name="privacy.capability.microphone" xml:space="preserve"><value>microphone</value></data>
+  <data name="privacy.capability.camera" xml:space="preserve"><value>camera</value></data>
   <data name="privacy.title" xml:space="preserve"><value>Privacy on this machine</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>

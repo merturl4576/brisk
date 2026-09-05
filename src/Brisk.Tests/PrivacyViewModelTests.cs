@@ -212,6 +212,55 @@ public class PrivacyViewModelTests
         Assert.Single(vm.UsbDeviceRows);
     }
 
+    /// WHICH APPS USED THE MICROPHONE OR THE CAMERA, on the one surface that
+    /// may name them. The order is the snapshot's — newest use first, which
+    /// is what CapabilityUseRule.ReadAllRecent hands over — and the line
+    /// carries the app's name, which capability it used and the day it last
+    /// did. A desktop app carries its PATH beside the name too: this page is
+    /// the owner's own screen, and a name alone cannot tell two
+    /// same-named executables apart.
+    ///
+    /// None of this is on a finding. The names arrive on
+    /// ScanSnapshot.CapabilityUses, exactly as the USB models above do, so
+    /// every surface built to be shared carries the count and cannot carry
+    /// more — the spec's red line 2 held by the shape of the pipeline.
+    [Fact]
+    public async Task CapabilityUses_RenderBehindTheFold_NewestFirst_WithNameCapabilityAndDate()
+    {
+        var uses = new[]
+        {
+            new CapabilityUseRecord(Capability.Camera, "5319275A.WhatsAppDesktop", null,
+                new DateTime(2026, 9, 1, 14, 59, 0, DateTimeKind.Utc)),
+            new CapabilityUseRecord(Capability.Microphone, "chrome.exe",
+                @"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                new DateTime(2026, 8, 11, 16, 48, 0, DateTimeKind.Utc)),
+        };
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(findings: null, capabilityUses: uses);
+        await state.ScanAsync();
+
+        Assert.Equal(2, vm.CapabilityUseRows.Count);
+        Assert.Contains("5319275A.WhatsAppDesktop", vm.CapabilityUseRows[0]);
+        Assert.Contains("camera", vm.CapabilityUseRows[0]);
+        Assert.Contains("2026-09-01", vm.CapabilityUseRows[0]);
+        Assert.Contains("chrome.exe", vm.CapabilityUseRows[1]);
+        Assert.Contains(@"C:\Program Files\Google\Chrome\Application\chrome.exe", vm.CapabilityUseRows[1]);
+    }
+
+    /// A machine whose consent store brisk could not read leaves this fold
+    /// empty, which is what collapses it in the markup — the same answer the
+    /// USB fold gives above, and for the same reason: the claim that brisk
+    /// could not read something belongs on the finding, not on a row here.
+    [Fact]
+    public async Task NoCapabilityUseRead_LeavesTheFoldEmpty()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[] { Unreadable("camera-mic-use") });
+        await state.ScanAsync();
+
+        Assert.Empty(vm.CapabilityUseRows);
+    }
+
     /// The spec's fourth red line, on this page: what could not be read is
     /// never a silent zero. The unreadable disclosures carry no Headline —
     /// that is the disclosure family's own contract — and this page reads

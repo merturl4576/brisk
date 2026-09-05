@@ -153,13 +153,26 @@ public sealed class EngineHost : IEngineHost
         {
             usbDevices = Array.Empty<UsbDeviceRecord>();
         }
+        // Guarded for the same reason and at the same seam: the walk reads
+        // two registry roots the process may be refused, and a throw here is
+        // outside the rule loop's catch, so it would cost the whole snapshot
+        // rather than one fold that does not open.
+        IReadOnlyList<CapabilityUseRecord> capabilityUses;
+        try
+        {
+            capabilityUses = CapabilityUseRule.ReadAllRecent(_ctx, DateTime.UtcNow);
+        }
+        catch (Exception)
+        {
+            capabilityUses = Array.Empty<CapabilityUseRecord>();
+        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
             HealthScore.Compute(findings), DateTime.UtcNow,
             new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
                 MemoryIntegrityOn: integrityOn),
-            readBack, usbDevices, bootTrend);
+            readBack, usbDevices, bootTrend, capabilityUses);
     }, ct);
 
     /// Serves RecentBoots(n) as a prefix of the deepest fetch made so far —

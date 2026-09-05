@@ -56,7 +56,12 @@ public sealed record ScanSnapshot(
     SensorStatus Sensors,
     IReadOnlyList<ReadBackResult> ReadBack,
     IReadOnlyList<UsbDeviceRecord> UsbDevices,
-    BootTrend? BootTrend);
+    BootTrend? BootTrend,
+    // The apps that used the microphone or camera in the last 30 days, by
+    // name — the ONE channel an app name travels on, for the same reason and
+    // on the same terms as UsbDevices above. Required: an empty list says
+    // "brisk read no such use", and there is no default that says less.
+    IReadOnlyList<CapabilityUseRecord> CapabilityUses);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

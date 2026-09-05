@@ -565,6 +565,10 @@ public class SnapshotTests
                 new SensorStatus(false, false, null),
                 ReRead(),
                 Recorded(),
+                // No capability use planted: the fold collapses on an empty
+                // list, so the rendered page is the one these baselines were
+                // approved against.
+                Array.Empty<CapabilityUseRecord>(),
                 TestData.Target("user-temp", CleanupLevel.Safe, 2048)),
         };
         var loc = new Loc();

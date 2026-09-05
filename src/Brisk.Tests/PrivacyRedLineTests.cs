@@ -130,7 +130,7 @@ public class PrivacyRedLineTests
     /// Sağlık without a word of complaint. Reading the shipped rule objects
     /// against the shipped list, from the one project that can see both, is
     /// what turns that silence into a failure. It reaches the seven telemetry
-    /// switches; its sibling below reaches the four report-only disclosures,
+    /// switches; its sibling below reaches the five report-only disclosures,
     /// which are not TelemetrySwitchRules and so are invisible to this one.
     /// A privacy rule arriving under some third base class needs the same
     /// line extended to it again.
@@ -148,7 +148,7 @@ public class PrivacyRedLineTests
     }
 
     /// The same cross-check for the other half of the privacy topic. These
-    /// four share no base class with the switches — they can be fixed by
+    /// five share no base class with the switches — they can be fixed by
     /// nobody, so they are AdviseRuleBase rules — which is exactly why the
     /// theory above cannot see them and why this one exists rather than a
     /// widened OfType. The count is asserted first, so deleting a rule shows
@@ -159,7 +159,7 @@ public class PrivacyRedLineTests
         var disclosures = DiagnosticRuleRegistry.All
             .OfType<PrivacyDisclosureRule>().ToList();
 
-        Assert.Equal(4, disclosures.Count);
+        Assert.Equal(5, disclosures.Count);
         foreach (var rule in disclosures)
             Assert.True(FindingSections.IsPrivacy(rule.Id),
                 $"rule '{rule.Id}' is a privacy disclosure, but no id in " +
@@ -279,7 +279,7 @@ public class PrivacyRedLineTests
     /// above proves whatever is IN the list routes correctly; only this
     /// notices something dropping OUT of it, or an id arriving unannounced.
     [Fact]
-    public void PrivacyRuleIds_AreTheElevenThisWaveDeclares()
+    public void PrivacyRuleIds_AreTheTwelveThisWaveDeclares()
     {
         Assert.Equal(
             new[]
@@ -287,7 +287,7 @@ public class PrivacyRedLineTests
                 "advertising-id", "diagnostic-level", "tailored-experiences",
                 "speech-typing", "location", "activity-history",
                 "recall-status", "usb-history", "run-history",
-                "delivery-optimization", "uac-prompts",
+                "delivery-optimization", "uac-prompts", "camera-mic-use",
             },
             PrivacyRuleIds.All);
     }

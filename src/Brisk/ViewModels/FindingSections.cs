@@ -12,7 +12,7 @@ namespace Brisk.ViewModels;
 /// and the mismatch fails SILENTLY rather than loudly — an id that matches no
 /// rule simply never fires, and a rule whose Id is missing here falls through
 /// to Sağlık like any unknown id. Read the two against each other by hand
-/// when adding a rule; the test pinning these eleven is what makes a change to
+/// when adding a rule; the test pinning these twelve is what makes a change to
 /// the list deliberate, not what makes it correct.
 public static class PrivacyRuleIds
 {
@@ -21,7 +21,7 @@ public static class PrivacyRuleIds
         "advertising-id", "diagnostic-level", "tailored-experiences",
         "speech-typing", "location", "activity-history",
         "recall-status", "usb-history", "run-history",
-        "delivery-optimization", "uac-prompts",
+        "delivery-optimization", "uac-prompts", "camera-mic-use",
     });
 }
 

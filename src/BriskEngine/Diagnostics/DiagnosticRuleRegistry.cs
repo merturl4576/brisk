@@ -53,5 +53,8 @@ public static class DiagnosticRuleRegistry
         // still reports the unreadable case, which is the distinction the
         // rule exists to keep.
         new DeliveryOptimizationRule(),
+        // The fifth disclosure: which apps used the microphone and camera
+        // in the last 30 days, counted here, named on the Privacy page only.
+        new CapabilityUseRule(),
     };
 }

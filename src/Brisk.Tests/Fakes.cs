@@ -248,6 +248,13 @@ public static class TestData
     /// in its hands can reach the card.
     private static readonly UsbDeviceRecord[] NoDevicesRead = Array.Empty<UsbDeviceRecord>();
 
+    /// The fixture's registry holds no consent-store record either, so no app
+    /// used the microphone or camera as far as this snapshot is concerned —
+    /// stated for the same reason as the three above. A test about the uses
+    /// passes its own list.
+    private static readonly CapabilityUseRecord[] NoUsesRead =
+        Array.Empty<CapabilityUseRecord>();
+
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
         params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);
 
@@ -258,7 +265,7 @@ public static class TestData
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
         SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
         params TargetScanResult[] targets) =>
-        Snapshot(findings, sensors, readBack, NoDevicesRead, targets);
+        Snapshot(findings, sensors, readBack, NoDevicesRead, NoUsesRead, targets);
 
     /// The whole shape, for the one fixture that plants device records: the
     /// card must print no name off a snapshot that CARRIES one, which is a
@@ -266,19 +273,28 @@ public static class TestData
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
         SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
         IReadOnlyList<UsbDeviceRecord> usbDevices,
+        IReadOnlyList<CapabilityUseRecord>? capabilityUses = null,
         params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
         sensors, readBack, usbDevices,
         // No trend is the honest default; the boot-trend tests build one
         // with `snapshot with { BootTrend = ... }`.
-        BootTrend: null);
+        BootTrend: null,
+        capabilityUses ?? NoUsesRead);
 
     /// A snapshot whose only distinguishing feature is what brisk found when
     /// it looked again — the shape most read-back tests want.
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
         IReadOnlyList<ReadBackResult> readBack) =>
         Snapshot(findings, NothingAnswered, readBack);
+
+    /// The same shape for the capability uses: the Privacy page's second fold
+    /// is the only reader, and a test about it cares about nothing else on
+    /// the snapshot.
+    public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
+        IReadOnlyList<CapabilityUseRecord> capabilityUses) =>
+        Snapshot(findings, NothingAnswered, NothingReRead, NoDevicesRead, capabilityUses);
 }
 
 public sealed class FakeEngineHost : IEngineHost
