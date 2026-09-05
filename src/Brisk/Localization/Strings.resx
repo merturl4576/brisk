@@ -346,7 +346,7 @@
   <data name="privacy.switches.none" xml:space="preserve"><value>Every switch brisk reads here already reads as off.</value></data>
   <data name="privacy.turnoff.safe" xml:space="preserve"><value>Switch all {0} off</value></data>
   <data name="privacy.turnoff.refused" xml:space="preserve"><value>{0} of them did not switch off, and this is what the attempt reported: {1}</value></data>
-  <data name="privacy.readback.section" xml:space="preserve"><value>What brisk switched off, and whether it held</value></data>
+  <data name="privacy.readback.section" xml:space="preserve"><value>What brisk changed, and whether it held</value></data>
   <data name="privacy.setting.failed" xml:space="preserve"><value>Windows' own settings did not open on this machine.</value></data>
   <data name="rule.advertising-id.done" xml:space="preserve"><value>Advertising ID switched off</value></data>
   <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Diagnostic data policy set to basic</value></data>
@@ -363,4 +363,8 @@
   <data name="readback.unverified" xml:space="preserve"><value>You switched this off {0} days ago and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
   <data name="readback.unverified.today" xml:space="preserve"><value>You switched this off today and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
   <data name="readback.unverified.yesterday" xml:space="preserve"><value>You switched this off yesterday and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
+  <data name="readback.on.held" xml:space="preserve"><value>You switched this on {0} days ago; it still reads as on.</value></data>
+  <data name="readback.on.held.today" xml:space="preserve"><value>You switched this on today; it still reads as on.</value></data>
+  <data name="readback.on.held.yesterday" xml:space="preserve"><value>You switched this on yesterday; it still reads as on.</value></data>
+  <data name="readback.on.reverted" xml:space="preserve"><value>On {0} you switched this on; it reads as off again now.</value></data>
 </root>

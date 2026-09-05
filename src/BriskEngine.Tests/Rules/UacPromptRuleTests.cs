@@ -131,6 +131,26 @@ public class UacPromptRuleTests
                 $"{rule.Id} raised its severity; only uac-prompts does that");
     }
 
+    /// THE SECOND THING THIS RULE INVERTS: its fix turns a setting ON. Every
+    /// other switch turns one off, and the read-back's sentences on the
+    /// Privacy page are written that way — "You switched this off 3 days ago;
+    /// it still reads as off" over a row where brisk switched prompting ON
+    /// would say the opposite of what happened.
+    ///
+    /// Declared on the rule and asserted over the whole registry, so an
+    /// eighth switch that also turns something on is a row somebody has to
+    /// look at rather than a page that quietly renders the wrong line.
+    [Fact]
+    public void TheFixTurnsThisOn_AndEveryOtherSwitchStillTurnsSomethingOff()
+    {
+        Assert.True(new UacPromptRule().FixTurnsItOn);
+        foreach (var rule in DiagnosticRuleRegistry.All.OfType<TelemetrySwitchRule>()
+                     .Where(r => r.Id != UacPromptRule.RuleId))
+            Assert.False(rule.FixTurnsItOn,
+                $"{rule.Id} says its fix turns something on; only uac-prompts " +
+                "does that, and only its two states have an on-direction line");
+    }
+
     [Theory]
     [InlineData("Strings.resx")]
     [InlineData("Strings.tr.resx")]

@@ -40,6 +40,13 @@ public sealed class UacPromptRule : TelemetrySwitchRule
 
     protected override Severity Severity => Severity.Warning;
 
+    /// The family's other inversion: the fix turns a setting ON — Windows'
+    /// consent prompts — where the six older switches turn one off. The
+    /// read-back's line about this rule is the on-direction one because of
+    /// this, and Held or Reverted are the only two states it can reach, so
+    /// those are the only two lines that direction needs.
+    public override bool FixTurnsItOn => true;
+
     /// OffValue is Windows' default for each; OnValue is the written 0 that
     /// means "never prompt". The family's Fix writes all three and records
     /// every prior value by path; its Undo restores them and deletes what

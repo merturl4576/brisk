@@ -642,17 +642,29 @@ public class ReadBackTests
 
     // ---- The sentences -----------------------------------------------
 
-    /// The four sentences, in both languages, keyed the way the wave keys
-    /// everything else. The Privacy page's read-back block renders all four,
-    /// one per ReadBackState. This file reads them off disk to pin what they
-    /// SAY; that the renderer hands each one the argument it takes is a
-    /// different claim and is pinned on the other side, by
-    /// PrivacyViewModelTests.EachRow_RendersItsOwnSentenceWithItsOwnArgument.
+    /// The sentences, in both languages, keyed the way the wave keys
+    /// everything else. The Privacy page's read-back block renders one per
+    /// ReadBackState — and, for the two states a switch whose fix turns
+    /// something ON can reach, the `readback.on.*` line instead. This file
+    /// reads them off disk to pin what they SAY; that the renderer hands each
+    /// one the argument it takes is a different claim and is pinned on the
+    /// other side, by PrivacyViewModelTests.EachRow_RendersItsOwnSentenceWith
+    /// ItsOwnArgument, and which of the two sets a row takes by
+    /// EachRow_TakesTheSentenceWrittenForTheDirectionItsRuleMoved.
+    ///
+    /// There is no `readback.on.ignored` and no `readback.on.unverified`, and
+    /// that is a decision: only a POLICY reaches either state, and the one
+    /// switch whose fix turns something on writes the values UAC itself reads
+    /// — EffectOfTheWrite is NotAPolicy — so it can only land on Held or
+    /// Reverted. An on-direction policy would need both twins written before
+    /// it shipped.
     [Theory]
     [InlineData("readback.held")]
     [InlineData("readback.reverted")]
     [InlineData("readback.ignored")]
     [InlineData("readback.unverified")]
+    [InlineData("readback.on.held")]
+    [InlineData("readback.on.reverted")]
     public void EachSentence_IsInBothResxFiles(string key)
     {
         foreach (var file in new[] { "Strings.resx", "Strings.tr.resx" })
@@ -674,6 +686,11 @@ public class ReadBackTests
         "Bunu {0} tarihinde kapatmıştın; şu an yeniden açık.")]
     [InlineData("readback.ignored",
         "Ayar kapalı yazıyor ama bu Windows sürümü onu dikkate almıyor.")]
+    // The on-direction pair, in the same plain informal voice — "açtın" where
+    // the six older switches say "kapattın", and the verdict flipped with it.
+    [InlineData("readback.on.held", "{0} gün önce açtın, hâlâ açık")]
+    [InlineData("readback.on.reverted",
+        "Bunu {0} tarihinde açmıştın; şu an yeniden kapalı.")]
     public void TheTurkishSentences_AreTheOnesThePlanNames(string key, string sentence)
     {
         Assert.True(
@@ -713,6 +730,10 @@ public class ReadBackTests
     [InlineData("readback.reverted", true)]
     [InlineData("readback.unverified", true)]
     [InlineData("readback.ignored", false)]
+    // The on-direction pair takes what its off-direction twin takes: the same
+    // renderer, the same two arguments, only the sentence differs.
+    [InlineData("readback.on.held", true)]
+    [InlineData("readback.on.reverted", true)]
     public void EachSentence_TakesTheArgumentItsRendererWillHaveToPass(
         string key, bool takesOne)
     {
@@ -750,6 +771,8 @@ public class ReadBackTests
     [InlineData("readback.reverted")]
     [InlineData("readback.ignored")]
     [InlineData("readback.unverified")]
+    [InlineData("readback.on.held")]
+    [InlineData("readback.on.reverted")]
     public void NoSentence_ClaimsAnythingAboutWhatLeavesTheMachine(string key)
     {
         string[] banned =

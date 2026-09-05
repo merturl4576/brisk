@@ -159,6 +159,26 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     public virtual WriteEffect EffectOfTheWrite(DiagnosticContext ctx) =>
         WriteEffect.NotAPolicy;
 
+    /// WHICH DIRECTION THIS SWITCH'S FIX MOVES THE SETTING. False for every
+    /// member but one: the family turns something OFF, and the read-back's
+    /// lines on the Privacy page are written that way — "You switched this
+    /// off 3 days ago; it still reads as off". uac-prompts is the inversion,
+    /// its fix turns Windows' consent prompts back ON, so that sentence over
+    /// a uac row would tell the reader the opposite of what brisk did.
+    ///
+    /// It lives on the RULE because it is a fact about the switch, not
+    /// something looking again found out: a ReadBackResult carries what the
+    /// re-read established, and a copy of this on it would be rule metadata a
+    /// future construction site could set wrong. The Privacy page asks the
+    /// rule, resolved from the registry by the id the row already carries, so
+    /// no surface routes on a rule id written down in a view model.
+    ///
+    /// It says nothing about which read-back STATES a switch can reach. The
+    /// on-direction copy covers Held and Reverted only, because the one rule
+    /// that turns something on is not a policy and cannot land anywhere else;
+    /// an on-direction policy would need the other two lines written first.
+    public virtual bool FixTurnsItOn => false;
+
     /// Info for every switch in the family but one. Severity says how loud
     /// the row is; Kind says whether brisk may call it a problem, and Kind
     /// stays Notice for all of them, so raising this moves no score. Only

@@ -12,10 +12,11 @@ using BriskEngine.Models;
 
 namespace Brisk.ViewModels;
 
-/// One line of the read-back: a switch brisk turned off, and what looking
-/// again found. The verdict is the engine's (ReadBackState); everything here
-/// is rendering — which sentence it takes, what argument that sentence needs,
-/// and the arithmetic ReadBack deliberately does not do.
+/// One line of the read-back: a switch brisk changed, and what looking again
+/// found. The verdict is the engine's (ReadBackState); everything here is
+/// rendering — which sentence it takes, which DIRECTION that sentence is
+/// written in, what argument it needs, and the arithmetic ReadBack
+/// deliberately does not do.
 public sealed class ReadBackRow
 {
     public ReadBackRow(ReadBackResult result, Loc loc, DateTime nowUtc,
@@ -48,24 +49,40 @@ public sealed class ReadBackRow
     public string StateBrushKey { get; }
     public RelayCommand UndoCommand { get; }
 
-    /// Which key, and which argument. The four sentences do NOT take the same
-    /// one — `readback.reverted` takes a date, `readback.held` and
-    /// `readback.unverified` take a day count, and `readback.ignored` takes
-    /// nothing at all — so passing the wrong one renders "You switched this
-    /// off 2026-08-12 days ago" without failing anything. That is what
+    /// Which key, and which argument. The sentences do NOT take the same one
+    /// — the reverted lines take a date, the held and unverified lines take a
+    /// day count, and `readback.ignored` takes nothing at all — so passing the
+    /// wrong one renders "You switched this off 2026-08-12 days ago" without
+    /// failing anything. That is what
     /// EachRow_RendersItsOwnSentenceWithItsOwnArgument pins.
+    ///
+    /// AND WHICH DIRECTION IT IS WRITTEN IN. Six of the seven switches turn
+    /// something off and the family's lines say so; uac-prompts turns Windows'
+    /// consent prompts back ON, and telling that user "you switched this off
+    /// 3 days ago; it still reads as off" is the opposite of what brisk did.
+    /// The direction is the rule's own (TelemetrySwitchRule.FixTurnsItOn), so
+    /// this asks the rule rather than testing an id.
+    ///
+    /// The other two states keep ONE line each. Only a policy can reach
+    /// WrittenButIgnored or WrittenButUnverified, and the one rule whose fix
+    /// turns something on writes the values UAC itself reads — it is not a
+    /// policy, and it can only land on Held or Reverted. An on-direction
+    /// policy would need those two twins written before it shipped; nothing
+    /// here invents one, and EachSentence_IsInBothResxFiles records why.
     ///
     /// The final arm throws rather than picking a sentence, the same way
     /// ReadBack.StateOf refuses to pick a state: a fifth member added to
     /// ReadBackState without a line here would otherwise be rendered with
     /// copy written for a different verdict.
-    private static string Sentence(ReadBackResult result, Loc loc, DateTime nowUtc) =>
-        result.State switch
+    private static string Sentence(ReadBackResult result, Loc loc, DateTime nowUtc)
+    {
+        var keySet = FixTurnsItOn(result.RuleId) ? "readback.on" : "readback";
+        return result.State switch
         {
             ReadBackState.Held =>
-                ByAge(loc, "readback.held", DaysAgo(result.FixedAtUtc, nowUtc)),
+                ByAge(loc, $"{keySet}.held", DaysAgo(result.FixedAtUtc, nowUtc)),
             ReadBackState.Reverted =>
-                loc.F("readback.reverted", LocalDate(result.FixedAtUtc)),
+                loc.F($"{keySet}.reverted", LocalDate(result.FixedAtUtc)),
             ReadBackState.WrittenButIgnored => loc["readback.ignored"],
             ReadBackState.WrittenButUnverified =>
                 ByAge(loc, "readback.unverified", DaysAgo(result.FixedAtUtc, nowUtc)),
@@ -74,6 +91,25 @@ public sealed class ReadBackRow
                 $"'{result.RuleId}' came back in a read-back state this row has " +
                 "no sentence for"),
         };
+    }
+
+    /// Which way the rule's fix moved the setting, asked of the rule and not
+    /// decided here: a list of "the ones that turn something on" kept in a
+    /// view model is the second channel this page was built to avoid, and it
+    /// is also how a rule id ends up hardcoded in a renderer.
+    ///
+    /// Resolved from the shipped registry by the id the row carries — the
+    /// canonical one, which is exactly why ReadBack puts the RULE's spelling
+    /// on the result rather than the journal's. A row only exists where
+    /// ReadBack.For matched that id to a TelemetrySwitchRule in the same
+    /// registry, so the miss below is unreachable from the live page; it
+    /// falls back to the family default (the fix turns something off) rather
+    /// than throwing, because a sentence is not worth a dead Privacy page.
+    private static bool FixTurnsItOn(string ruleId) =>
+        DiagnosticRuleRegistry.All.OfType<TelemetrySwitchRule>()
+            .FirstOrDefault(rule => string.Equals(rule.Id, ruleId,
+                StringComparison.OrdinalIgnoreCase))
+            ?.FixTurnsItOn ?? false;
 
     /// The two days a person has a word for. A day count is right from the
     /// day after tomorrow onward and wrong before it: the live workbench read
@@ -122,7 +158,7 @@ public sealed class ReadBackRow
 }
 
 /// The Privacy page: what this machine has written down, what its switches
-/// currently read as, and what happened to the ones brisk turned off.
+/// currently read as, and what happened to the ones brisk changed.
 ///
 /// Built on HealthViewModel's shape rather than beside it — it subscribes to
 /// AppState.Changed, rebuilds in Refresh, and its finding rows are the same
@@ -255,7 +291,7 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// FindingRow.CostText beside it.
     public ObservableCollection<FindingRow> CostlySwitchRows { get; } = new();
 
-    /// What brisk found when it looked again at the switches it turned off,
+    /// What brisk found when it looked again at the switches it changed,
     /// newest fix first. Straight from the snapshot: the read-back was taken
     /// in the same pass that produced the findings above, which is what lets
     /// a reverted switch and a switch brisk is reporting again be the same

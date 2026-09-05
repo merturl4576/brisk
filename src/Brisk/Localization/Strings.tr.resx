@@ -346,7 +346,7 @@
   <data name="privacy.switches.none" xml:space="preserve"><value>brisk'in buradan okuduğu her anahtar zaten kapalı okunuyor.</value></data>
   <data name="privacy.turnoff.safe" xml:space="preserve"><value>{0} ayarı birden kapat</value></data>
   <data name="privacy.turnoff.refused" xml:space="preserve"><value>Bunlardan {0} tanesi kapanmadı; denemenin bildirdiği şu: {1}</value></data>
-  <data name="privacy.readback.section" xml:space="preserve"><value>brisk neyi kapattı, tuttu mu</value></data>
+  <data name="privacy.readback.section" xml:space="preserve"><value>brisk neyi değiştirdi, tuttu mu</value></data>
   <data name="privacy.setting.failed" xml:space="preserve"><value>Windows'un kendi ayarları bu makinede açılmadı.</value></data>
   <data name="rule.advertising-id.done" xml:space="preserve"><value>Reklam kimliği kapatıldı</value></data>
   <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Tanılama verisi ilkesi temel düzeye ayarlandı</value></data>
@@ -363,4 +363,8 @@
   <data name="readback.unverified" xml:space="preserve"><value>Bunu {0} gün önce kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
   <data name="readback.unverified.today" xml:space="preserve"><value>Bunu bugün kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
   <data name="readback.unverified.yesterday" xml:space="preserve"><value>Bunu dün kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
+  <data name="readback.on.held" xml:space="preserve"><value>{0} gün önce açtın, hâlâ açık</value></data>
+  <data name="readback.on.held.today" xml:space="preserve"><value>Bugün açtın, hâlâ açık</value></data>
+  <data name="readback.on.held.yesterday" xml:space="preserve"><value>Dün açtın, hâlâ açık</value></data>
+  <data name="readback.on.reverted" xml:space="preserve"><value>Bunu {0} tarihinde açmıştın; şu an yeniden kapalı.</value></data>
 </root>

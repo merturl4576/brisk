@@ -412,6 +412,45 @@ public class PrivacyViewModelTests
         Assert.Equal(expected, row.Text);
     }
 
+    /// WHICH DIRECTION THE LINE IS WRITTEN IN. Six of the seven switches turn
+    /// something OFF and the read-back's sentences say so — "You switched
+    /// this off 3 days ago; it still reads as off". uac-prompts is the
+    /// inversion: its fix turns Windows' consent prompts back ON, so the
+    /// family's line over a uac row would tell the reader the opposite of
+    /// what brisk did, and a Held row — the good news — would be the loudest
+    /// place it happened.
+    ///
+    /// The direction is the RULE's (TelemetrySwitchRule.FixTurnsItOn) and the
+    /// row resolves it from the registry by the id it already carries, so no
+    /// rule id is written down in the view model or in this theory's
+    /// expectation. Both directions are here on purpose: an on-direction key
+    /// set that also captured the other six would pass a theory that only
+    /// looked at uac-prompts.
+    [Theory]
+    [InlineData("advertising-id", ReadBackState.Held, "readback.held")]
+    [InlineData("advertising-id", ReadBackState.Reverted, "readback.reverted")]
+    [InlineData("uac-prompts", ReadBackState.Held, "readback.on.held")]
+    [InlineData("uac-prompts", ReadBackState.Reverted, "readback.on.reverted")]
+    public async Task EachRow_TakesTheSentenceWrittenForTheDirectionItsRuleMoved(
+        string ruleId, ReadBackState state, string key)
+    {
+        var loc = EnglishLoc();
+        var fixedAt = new DateTime(2026, 8, 12, 9, 30, 0, DateTimeKind.Utc);
+        var now = new DateTime(2026, 8, 15, 9, 30, 0, DateTimeKind.Utc);
+        var expected = state == ReadBackState.Held
+            ? ByAge(loc, key, ReadBackRow.DaysAgo(fixedAt, now))
+            : loc.F(key, ReadBackRow.LocalDate(fixedAt));
+
+        var row = await OneReadBackRow(new ReadBackResult(ruleId, state, fixedAt), now);
+
+        Assert.Equal(expected, row.Text);
+        // Loc answers a miss with the key itself and this theory builds its
+        // expectation from the same key the renderer picks, so a key missing
+        // from the resx would make both sides read "readback.on.held" and
+        // pass. Nothing on screen may be a key.
+        Assert.DoesNotContain("readback.", row.Text, StringComparison.Ordinal);
+    }
+
     /// The two days a person has a word for. A count is right from the day
     /// after tomorrow onward and wrong before it: the live workbench read
     /// "0 gün önce kapattın" the afternoon of the fix, and the morning after
@@ -425,21 +464,30 @@ public class PrivacyViewModelTests
         _ => loc.F(key, days),
     };
 
+    /// Both directions, because ByAge builds the two spellings by SUFFIX: an
+    /// on-direction switch whose `.today` twin was never written renders
+    /// "readback.on.held.today" on a page, and the theory above cannot see it
+    /// (it builds its expectation with the same helper, so both sides read
+    /// the key). Here the raw-key guard is what catches it.
     [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public async Task TheFreshestReadBacks_SayTodayAndYesterday(int daysAgo)
+    [InlineData("advertising-id", 0, "readback.held")]
+    [InlineData("advertising-id", 1, "readback.held")]
+    [InlineData("uac-prompts", 0, "readback.on.held")]
+    [InlineData("uac-prompts", 1, "readback.on.held")]
+    public async Task TheFreshestReadBacks_SayTodayAndYesterday(
+        string ruleId, int daysAgo, string key)
     {
         var loc = EnglishLoc();
         var now = new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc);
 
         var row = await OneReadBackRow(
-            new ReadBackResult("advertising-id", ReadBackState.Held,
+            new ReadBackResult(ruleId, ReadBackState.Held,
                 now.AddDays(-daysAgo)), now);
 
-        Assert.Equal(HeldText(loc, daysAgo), row.Text);
+        Assert.Equal(ByAge(loc, key, daysAgo), row.Text);
         Assert.DoesNotContain("0 ", row.Text);
         Assert.DoesNotContain("1 days", row.Text);
+        Assert.DoesNotContain("readback.", row.Text, StringComparison.Ordinal);
     }
 
     /// Every member of the enum reaches the theory above, read off the enum

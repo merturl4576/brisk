@@ -246,6 +246,19 @@ public class LocTests
     [InlineData("readback.reverted")]
     [InlineData("readback.ignored")]
     [InlineData("readback.unverified")]
+    // The on-direction pair, and both of its spellings for the two days a
+    // person has a word for. One switch's fix turns something ON rather than
+    // off — uac-prompts — and its Held and Reverted lines are written the
+    // other way round; the page picks between the two key sets by asking the
+    // rule, so a gap here is a raw key on the same line the off-direction
+    // sentences render fine on. The `.today` and `.yesterday` twins are
+    // listed and the off-direction ones are not, deliberately: the renderer
+    // builds those two by SUFFIX, so a missing twin is a gap this list is
+    // the cheapest real check for.
+    [InlineData("readback.on.held")]
+    [InlineData("readback.on.held.today")]
+    [InlineData("readback.on.held.yesterday")]
+    [InlineData("readback.on.reverted")]
     // The Gizlilik page's own strings. Every one of them is a heading, a
     // button caption or a sentence with no other guard: Loc answers a miss
     // with the key itself, so a gap prints "privacy.switches.section" over
