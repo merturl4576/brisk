@@ -120,9 +120,17 @@ is not part of the test: the third position of Windows' own UAC slider
 (`EnableLUA=1`, `ConsentPromptBehaviorAdmin=5`, `PromptOnSecureDesktop=1`)
 and `OnValue=0`. The family's Fix writes all three and records every prior
 value by path; Undo restores them, deleting what was absent. Restoring
-`EnableLUA` from 0 takes effect at the next restart; the done copy says so
-("prompts return after a restart") when and only when `EnableLUA` was the
-value that read 0.
+`EnableLUA` from 0 takes effect at the next restart, and the copy is split
+around that: the DONE line names the write and nothing else ("UAC values
+restored to Windows' defaults"), true the instant the write lands and
+promising nothing about what appears on screen, while the ADVICE line carries
+the restart caveat as one static conditional sentence the user reads before
+choosing ("If `EnableLUA` was the value that read 0, the prompts return after
+a restart"). The split is not a preference: `rule.<id>.done` is one static
+string per rule — it is also the read-back row's title — so it cannot say
+"after a restart" only on the runs where `EnableLUA` was the value that read
+0, and a done line that promised prompts unconditionally would be false on
+exactly the machine the user checks first.
 
 **Category: Confirm.** The user will see consent prompts again; that is a
 change in their day and it is shown before it happens. Confirm also keeps it
@@ -137,9 +145,9 @@ program gets administrator rights with no prompt on screen reads as
 nothing appears. Windows' default is to ask, on a dimmed screen. Restoring
 the default writes up to three values and can be undone. Programs will ask
 again; that is the point." Fix description: "Ask before a program takes
-control again (undoable)". Done: "Windows asks again before a program takes
-control". Cost line (Privacy page): "Programs ask for permission again, on
-a dimmed screen".
+control again (undoable)". Done: "UAC values restored to Windows' defaults"
+(the write, not the behaviour — see **Values** above). Cost line (Privacy
+page): "Programs ask for permission again, on a dimmed screen".
 
 **Read-back:** free from the family: Held or Reverted. An optimizer that
 turns prompting off again after brisk turned it on shows as Reverted on the

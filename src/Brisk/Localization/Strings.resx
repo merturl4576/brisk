@@ -354,7 +354,7 @@
   <data name="rule.speech-typing.done" xml:space="preserve"><value>Speech and typing personalisation restricted</value></data>
   <data name="rule.location.done" xml:space="preserve"><value>Location access switched off</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Activity history policy set to off</value></data>
-  <data name="rule.uac-prompts.done" xml:space="preserve"><value>Windows asks again before a program takes control</value></data>
+  <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC values restored to Windows' defaults</value></data>
   <data name="readback.held" xml:space="preserve"><value>You switched this off {0} days ago; it still reads as off.</value></data>
   <data name="readback.held.today" xml:space="preserve"><value>You switched this off today; it still reads as off.</value></data>
   <data name="readback.held.yesterday" xml:space="preserve"><value>You switched this off yesterday; it still reads as off.</value></data>

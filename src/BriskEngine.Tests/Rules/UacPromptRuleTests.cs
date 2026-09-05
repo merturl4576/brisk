@@ -143,6 +143,39 @@ public class UacPromptRuleTests
         Assert.False(string.IsNullOrWhiteSpace(resx["rule.uac-prompts.cost"]));
     }
 
+    /// THE DONE LINE NAMES THE WRITE AND NOT THE BEHAVIOUR, and the wording
+    /// IS the requirement here, so it is pinned as a literal in both files.
+    ///
+    /// Restoring EnableLUA from a written 0 takes effect at the next restart.
+    /// A done line that said "Windows asks again before a program takes
+    /// control" would therefore be false on exactly the machine the user
+    /// checks first: fix, elevate something, see no prompt. What the write
+    /// makes true the instant it lands is that UAC's three values are back at
+    /// Windows' defaults, and that is all this line claims. It is also the
+    /// read-back row's TITLE on the Privacy page (DoneLabel.For), so it reads
+    /// as a short outcome label like every other rule.&lt;id&gt;.done entry.
+    ///
+    /// The restart caveat is not dropped, it is moved: rule.uac-prompts.advice
+    /// carries it as a static conditional sentence, shown before the user
+    /// chooses. The second assertion is what keeps it there — a done line that
+    /// promises nothing and an advice line that says nothing would together
+    /// leave the caveat nowhere.
+    [Theory]
+    [InlineData("Strings.resx", "UAC values restored to Windows' defaults",
+        "If EnableLUA was the value that read 0, the prompts return after a restart.")]
+    [InlineData("Strings.tr.resx", "UAC değerleri Windows'un varsayılanlarına geri alındı",
+        "0 okunan değer EnableLUA idiyse sorular yeniden başlatmadan sonra döner.")]
+    public void TheDoneLine_NamesTheWrite_AndTheAdviceKeepsTheRestartCaveat(
+        string file, string done, string caveat)
+    {
+        var resx = Resx(file);
+        Assert.Equal(done, resx["rule.uac-prompts.done"]);
+        Assert.True(
+            resx["rule.uac-prompts.advice"].Contains(caveat, StringComparison.Ordinal),
+            $"rule.uac-prompts.advice in {file} no longer says \"{caveat}\", so " +
+            "nothing brisk shows this user mentions the restart");
+    }
+
     [Fact]
     public void TheEnglishTitle_MatchesTheResxEntry()
     {
