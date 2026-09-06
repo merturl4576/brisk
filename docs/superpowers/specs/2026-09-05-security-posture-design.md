@@ -241,9 +241,13 @@ references. Whole read fails (no Defender, namespace missing, throw) → null.
 RunningMode`, `int? ExclusionCount`, `IReadOnlyList<string> ExclusionPaths`,
 `DateTime? LastQuickScanUtc`, `DateTime? LastFullScanUtc`, `int?
 SignatureAgeDays`. **Exclusions are hidden from non-administrators by
-Windows itself** (an empty list, not an error), so the real probe checks its
-own token and reports `ExclusionCount = null` and an empty list when not
-elevated. brisk-app always runs elevated; the CLI may not, and then it says
+Windows itself** — not an error and not an empty list: each of the three
+exclusion properties comes back holding ONE sentinel string, "N/A: Must be
+an administrator to view exclusions" (measured unelevated 2026-09-06). The
+real probe checks its own token and reports `ExclusionCount = null` and an
+empty list when not elevated, and treats that sentinel as hidden as well, so
+a token and an answer that disagree cannot become three exclusions and a
+sentence printed as a path. brisk-app always runs elevated; the CLI may not, and then it says
 it could not read them. Verified 2026-09-05 on the maintainer's machine: the
 elevated read returns 5 paths, WMI and registry agree.
 
@@ -262,8 +266,25 @@ could not read the exclusion list without administrator rights";
 "Defender is not running in normal mode ({mode}); another product may be
 active, brisk cannot see which"; "last scan {d} days ago" / "no completed
 scan on record". The clauses that are fine are included, so the sentence is
-the full reading and not only the bad half. Headline, only when
-`ExclusionCount > 0`: "{n} paths" / "Defender skips". The paths themselves
+the full reading and not only the bad half.
+
+**Headline: the worst clause brisk MEASURED**, first match winning: (1)
+`ExclusionCount > 0` → "{n}" / "paths Defender skips"; (2) `RealTimeOn ==
+false` → "Off" / "real-time protection"; (3) `TamperOn == false` → "Off" /
+"tamper protection"; (4) `RunningMode` not "Normal" → "{mode}" / "Defender
+mode", the mode as WMI reports it; (5) newest scan older than 14 days →
+"{d}" / "days since the last scan"; (6) no completed scan on record → "None"
+/ "completed scans on record". Every state the rule reports as bad therefore
+carries one, because a disclosure WITHOUT a headline is how this family says
+nothing was read — `PrivacyViewModel` bands those into the page's
+could-not-read list and the report card prints their titles there. Each
+caption is a resx key in both languages; "Off" and "None" are keys too, not
+arguments, so they translate. **An unreadable exclusion list is not a
+measured fault:** `ExclusionCount` null with everything else reading fine
+takes the rule's UNREAD title and no headline (an unreadable disclosure);
+with another clause measured bad, the title is the ordinary one, that clause
+leads, and the evidence keeps the "could not read the list" sentence. The
+paths themselves
 never leave the snapshot: `ScanSnapshot.DefenderExclusions`
 (`IReadOnlyList<string>`, required) → a fold on the page, "What Defender
 skips".

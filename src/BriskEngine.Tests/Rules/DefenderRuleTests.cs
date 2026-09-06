@@ -49,29 +49,79 @@ public class DefenderRuleTests
         Assert.Null(Rule().Detect(ctx));
     }
 
-    public static TheoryData<string, DefenderStatus> EachTriggerAlone()
+    /// Each trigger with the title the finding takes. Every state brisk
+    /// MEASURED as bad is called by the rule's own name; the one state whose
+    /// only trigger is a reading that did not arrive — an exclusion list with
+    /// everything else reading fine — takes the unread title, and the row
+    /// below it pins the other orientation of the same read.
+    public static TheoryData<string, DefenderStatus, string> EachTriggerAlone()
     {
         var f = Fine();
-        return new TheoryData<string, DefenderStatus>
+        const string named = "title";
+        const string unread = "title.unread";
+        return new TheoryData<string, DefenderStatus, string>
         {
-            { "exclusions", f with { ExclusionCount = 5, ExclusionPaths = new[] { @"C:\a", @"C:\b", @"C:\c", @"C:\d", @"C:\e" } } },
-            { "exclusions unread", f with { ExclusionCount = null } },
-            { "real-time off", f with { RealTimeOn = false } },
-            { "tamper off", f with { TamperOn = false } },
-            { "passive mode", f with { RunningMode = "Passive Mode" } },
-            { "stale scan", f with { LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = Now.AddDays(-40) } },
-            { "no scan on record", f with { LastQuickScanUtc = null, LastFullScanUtc = null } },
+            { "exclusions", f with { ExclusionCount = 5, ExclusionPaths = new[] { @"C:\a", @"C:\b", @"C:\c", @"C:\d", @"C:\e" } }, named },
+            { "exclusions unread", f with { ExclusionCount = null }, unread },
+            { "exclusions unread beside a protection off",
+                f with { ExclusionCount = null, RealTimeOn = false }, named },
+            { "real-time off", f with { RealTimeOn = false }, named },
+            { "tamper off", f with { TamperOn = false }, named },
+            { "passive mode", f with { RunningMode = "Passive Mode" }, named },
+            { "stale scan", f with { LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = Now.AddDays(-40) }, named },
+            { "no scan on record", f with { LastQuickScanUtc = null, LastFullScanUtc = null }, named },
         };
     }
 
     [Theory]
     [MemberData(nameof(EachTriggerAlone))]
-    public void EachTrigger_FiresAlone(string why, DefenderStatus status)
+    public void EachTrigger_FiresAlone(string why, DefenderStatus status, string titleKey)
     {
         var (ctx, _) = Context(status);
         var finding = Rule().Detect(ctx);
         Assert.True(finding is not null, $"{why} did not fire");
-        Assert.Equal($"rule.{DefenderRule.RuleId}.title", finding!.TitleKey);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.{titleKey}", finding!.TitleKey);
+    }
+
+    /// EVERY MEASURED BAD STATE LEADS WITH THE READING THAT MADE IT BAD, and
+    /// in this order. A disclosure with no headline is how this family says
+    /// "nothing was read" — the Privacy page bands those into what brisk
+    /// could not read and the report card lists them there — so a state brisk
+    /// measured and did not lead with would be filed as a failed read.
+    public static TheoryData<string, DefenderStatus, string, string> EveryLead()
+    {
+        var f = Fine();
+        return new TheoryData<string, DefenderStatus, string, string>
+        {
+            { "exclusions outrank everything",
+                f with { ExclusionCount = 5, RealTimeOn = false, TamperOn = false },
+                "5", "headline.caption" },
+            { "real-time outranks tamper",
+                f with { RealTimeOn = false, TamperOn = false },
+                "Off", "headline.caption.realtime" },
+            { "tamper", f with { TamperOn = false }, "Off", "headline.caption.tamper" },
+            { "the mode is Windows' own word",
+                f with { RunningMode = "Passive Mode" }, "Passive Mode", "headline.caption.mode" },
+            { "scan age", f with { LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = null },
+                "15", "headline.caption.scan-age" },
+            { "no scan at all", f with { LastQuickScanUtc = null, LastFullScanUtc = null },
+                "None", "headline.caption.no-scan" },
+            { "an unread list does not stop the clause that was read",
+                f with { ExclusionCount = null, TamperOn = false },
+                "Off", "headline.caption.tamper" },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryLead))]
+    public void EveryMeasuredBadState_LeadsWithItsWorstReading(
+        string why, DefenderStatus status, string value, string captionKey)
+    {
+        var (ctx, _) = Context(status);
+        var headline = Rule().Detect(ctx)!.Headline;
+        Assert.True(headline is not null, $"{why}: the finding leads with nothing");
+        Assert.Equal(value, headline!.Value);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.{captionKey}", headline.CaptionKey);
     }
 
     [Fact]
@@ -94,14 +144,32 @@ public class DefenderRuleTests
         Assert.Equal(new[] { "5", "0", "0", "Normal", "2" }, finding.EvidenceArgs);
     }
 
+    /// With everything else reading fine, an exclusion list brisk could not
+    /// read is an UNREADABLE disclosure: the unread title, no headline, and
+    /// an evidence sentence that says so without ever saying zero.
     [Fact]
     public void ExclusionsUnread_SaysSo_AndNeverSaysZero()
     {
         var (ctx, _) = Context(Fine() with { ExclusionCount = null });
         var finding = Rule().Detect(ctx)!;
         Assert.Equal($"rule.{DefenderRule.RuleId}.evidence.exclusions-unread", finding.EvidenceKey);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.title.unread", finding.TitleKey);
         Assert.Null(finding.Headline);
         Assert.DoesNotContain("0 paths", finding.Evidence, StringComparison.Ordinal);
+        Assert.Contains("administrator", finding.Evidence, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// The other orientation: something brisk DID measure as bad is the
+    /// finding's own reading, so the rule's name is on it and that clause
+    /// leads — and the evidence still carries the list it could not read.
+    [Fact]
+    public void ExclusionsUnread_BesideAMeasuredFault_IsNamedAndLedByThatFault()
+    {
+        var (ctx, _) = Context(Fine() with { ExclusionCount = null, RealTimeOn = false });
+        var finding = Rule().Detect(ctx)!;
+        Assert.Equal($"rule.{DefenderRule.RuleId}.title", finding.TitleKey);
+        Assert.Equal("Off", finding.Headline!.Value);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.evidence.exclusions-unread", finding.EvidenceKey);
         Assert.Contains("administrator", finding.Evidence, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -165,19 +233,34 @@ public class DefenderRuleTests
     public static TheoryData<string> EveryStateItCanReport()
     {
         var data = new TheoryData<string>();
-        foreach (var state in new[] { "exclusions", "no-scan", "exclusions-unread", "unread" })
+        foreach (var state in new[]
+                 {
+                     "exclusions", "real-time-off", "tamper-off", "passive-mode",
+                     "stale-scan", "no-scan", "exclusions-unread",
+                     "exclusions-unread-and-real-time-off", "unread",
+                 })
             data.Add(state);
         return data;
     }
 
-    /// The probe answer for each of those states.
+    /// The probe answer for each of those states. Every one of the rule's
+    /// titles, evidence keys and headline keys is named by one of them.
     private static DiagnosticFinding Detect(string state)
     {
         var status = state switch
         {
             "exclusions" => Fine() with { ExclusionCount = 5 },
+            "real-time-off" => Fine() with { RealTimeOn = false },
+            "tamper-off" => Fine() with { TamperOn = false },
+            "passive-mode" => Fine() with { RunningMode = "Passive Mode" },
+            "stale-scan" => Fine() with
+            {
+                LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = Now.AddDays(-40),
+            },
             "no-scan" => Fine() with { LastQuickScanUtc = null, LastFullScanUtc = null },
             "exclusions-unread" => Fine() with { ExclusionCount = null },
+            "exclusions-unread-and-real-time-off" =>
+                Fine() with { ExclusionCount = null, RealTimeOn = false },
             "unread" => null,
             _ => throw new ArgumentOutOfRangeException(
                 nameof(state), state, "no probe answer for this state"),
@@ -206,6 +289,19 @@ public class DefenderRuleTests
             $"{finding.EvidenceKey} is missing from Strings.resx");
         Assert.Equal(finding.Evidence, string.Format(CultureInfo.InvariantCulture,
             evidence!, (finding.EvidenceArgs ?? Array.Empty<string>()).ToArray<object>()));
+
+        // The headline as well, which the family's older tests do not reach:
+        // its English Caption renders straight to the reader whenever the key
+        // is missing, so a caption that never arrived in the resx would look
+        // right in English and be invisible in Turkish.
+        if (finding.Headline is not { } h) return;
+        Assert.True(en.TryGetValue(h.ValueKey, out var value),
+            $"{h.ValueKey} is missing from Strings.resx");
+        Assert.Equal(h.Value, string.Format(CultureInfo.InvariantCulture,
+            value!, h.ValueArgs.ToArray<object>()));
+        Assert.True(en.TryGetValue(h.CaptionKey, out var caption),
+            $"{h.CaptionKey} is missing from Strings.resx");
+        Assert.Equal(h.Caption, caption);
     }
 
     /// LocTests holds the two key sets equal to each other; nothing there

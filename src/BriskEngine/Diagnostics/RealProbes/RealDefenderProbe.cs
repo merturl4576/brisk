@@ -65,7 +65,8 @@ public sealed class RealDefenderProbe : IDefenderProbe
             var paths = new List<string>();
             if (IsElevated())
             {
-                count = 0;
+                var total = 0;
+                var hidden = false;
                 using var prefs = new ManagementObjectSearcher(new ManagementScope(Scope),
                     new ObjectQuery("SELECT ExclusionPath, ExclusionExtension, ExclusionProcess " +
                                     "FROM MSFT_MpPreference"));
@@ -77,12 +78,18 @@ public sealed class RealDefenderProbe : IDefenderProbe
                         foreach (var name in new[] { "ExclusionPath", "ExclusionExtension", "ExclusionProcess" })
                         {
                             if (row[name] is not string[] items) continue;
-                            count += items.Length;
+                            if (IsHidden(items)) { hidden = true; break; }
+                            total += items.Length;
                             if (name == "ExclusionPath") paths.AddRange(items);
                         }
                     }
                     break;
                 }
+                // The token said administrator and Windows answered with the
+                // sentinel anyway: whatever produced that, brisk did not read
+                // the list, and it says so rather than counting a sentence.
+                if (hidden) paths.Clear();
+                else count = total;
             }
             return new DefenderStatus(realTime, tamper, mode, count, paths, quick, full, signatureAge);
         }
@@ -100,6 +107,22 @@ public sealed class RealDefenderProbe : IDefenderProbe
         try { return ManagementDateTimeConverter.ToDateTime(s).ToUniversalTime(); }
         catch (Exception) { return null; }
     }
+
+    /// THE ANSWER THAT IS NOT A LIST. Windows does not refuse a
+    /// non-administrator the exclusions and does not answer empty either: it
+    /// answers each of the three properties with ONE string, "N/A: Must be an
+    /// administrator to view exclusions" (verified 2026-09-06, unelevated).
+    /// The elevation check above is what normally keeps that out, and this is
+    /// the second line: a token that reads elevated while Windows answers the
+    /// sentinel would otherwise count three entries that do not exist and put
+    /// that sentence on the Privacy page as an excluded path.
+    ///
+    /// The prefix and not the whole sentence, ordinally: the text is
+    /// Microsoft's and localised builds may word it differently, while a real
+    /// exclusion is a path, an extension or a process name and none of those
+    /// begins "N/A:".
+    internal static bool IsHidden(string[] items) =>
+        items.Length == 1 && items[0].StartsWith("N/A:", StringComparison.Ordinal);
 
     private static bool IsElevated() =>
         new WindowsPrincipal(WindowsIdentity.GetCurrent())

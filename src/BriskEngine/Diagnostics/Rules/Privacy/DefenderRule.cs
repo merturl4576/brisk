@@ -86,20 +86,27 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             $"{offText} of the two protections brisk checks, real-time and tamper, " +
             $"read as off, and {unreadText} could not be read. Defender's running mode " +
             $"reads {mode}.";
-        var headline = exclusions > 0
-            ? new Headline(n, "paths Defender skips",
-                $"rule.{Id}.headline.value", new[] { n },
-                $"rule.{Id}.headline.caption", Array.Empty<string>())
-            : null;
+        var headline = Lead(s, exclusions, mode, notNormal, scanAgeDays, stale);
 
+        // THE EXCLUSION LIST BRISK COULD NOT READ. What the finding is called
+        // depends on whether anything else here was MEASURED as bad. With
+        // everything brisk did read reading fine, the only reason this fires
+        // is the reading that never arrived, and titling that "Defender has
+        // blind spots" claims blind spots off a hole: the unread title, no
+        // headline, and the page bands it with what brisk could not read.
+        // With something else measured bad, the title is the ordinary one and
+        // that clause leads. The evidence is the same sentence either way —
+        // the measured clauses plus "could not read the list".
         if (exclusionsUnread)
-            return Disclosure($"rule.{Id}.title", TitleText,
+            return Disclosure(
+                headline is null ? $"rule.{Id}.title.unread" : $"rule.{Id}.title",
+                headline is null ? UnreadTitleText : TitleText,
                 $"rule.{Id}.evidence.exclusions-unread",
                 "brisk could not read Defender's exclusion list without administrator " +
                 "rights, so it does not say how many entries are skipped. " + protections +
                 " " + TrailerWithoutPaths,
                 new[] { offText, unreadText, mode },
-                headline: null);
+                headline);
 
         if (scanAgeDays is null)
             return Disclosure($"rule.{Id}.title", TitleText,
@@ -115,6 +122,57 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             $" The newest completed scan is {age} days old. " + Trailer,
             new[] { n, offText, unreadText, mode, age }, headline);
     }
+
+    /// THE WORST CLAUSE BRISK MEASURED, and never one it did not. Every state
+    /// this rule reports as bad leads with the reading that makes it bad, in
+    /// the order below, first match winning: what Defender is told to skip,
+    /// then each protection that reads off, then a mode that is not Windows'
+    /// normal one, then a scan too old, then no scan at all.
+    ///
+    /// WHY EVERY MEASURED STATE HAS ONE. A disclosure with no headline is how
+    /// this family says "nothing was read": PrivacyViewModel bands exactly
+    /// those into the page's could-not-read list and the report card prints
+    /// their titles under the same heading. A rule that read "real-time
+    /// protection is off" and led with nothing would be filed there as
+    /// something brisk failed to read — on a card built to be shared. Null
+    /// comes back only for a machine with nothing measured to report, which
+    /// is either silence or the unread finding.
+    ///
+    /// A WORD IS A WHOLE KEY, A READING IS AN ARGUMENT. "Off" and "None" are
+    /// brisk's own English and would reach a Turkish reader untranslated as
+    /// arguments — RecallStatusRule made the same call for the same reason.
+    /// The running mode is Windows' word for its own state, so it travels as
+    /// an argument and is not translated by anybody.
+    private Headline? Lead(DefenderStatus s, int exclusions, string mode,
+        bool notNormal, int? scanAgeDays, bool stale)
+    {
+        if (exclusions > 0)
+            return Reading(exclusions.ToString(CultureInfo.InvariantCulture),
+                "paths Defender skips", "");
+        if (s.RealTimeOn == false) return Word("off", "Off", "real-time protection", ".realtime");
+        if (s.TamperOn == false) return Word("off", "Off", "tamper protection", ".tamper");
+        if (notNormal) return Reading(mode, "Defender mode", ".mode");
+        if (stale && scanAgeDays is { } days)
+            return Reading(days.ToString(CultureInfo.InvariantCulture),
+                "days since the last scan", ".scan-age");
+        if (scanAgeDays is null)
+            return Word("none", "None", "completed scans on record", ".no-scan");
+        return null;
+    }
+
+    /// A value brisk read, substituted into the one numeric value key.
+    private Headline Reading(string value, string caption, string captionSuffix) =>
+        new(value, caption,
+            $"rule.{Id}.headline.value", new[] { value },
+            $"rule.{Id}.headline.caption{captionSuffix}", Array.Empty<string>());
+
+    /// A value that is a word of brisk's own, which is a key and not an
+    /// argument.
+    private Headline Word(string valueSuffix, string english, string caption,
+        string captionSuffix) =>
+        new(english, caption,
+            $"rule.{Id}.headline.value.{valueSuffix}", Array.Empty<string>(),
+            $"rule.{Id}.headline.caption{captionSuffix}", Array.Empty<string>());
 
     private const string TitleText = "Windows Defender has blind spots";
 
@@ -142,15 +200,11 @@ public sealed class DefenderRule : PrivacyDisclosureRule
         "the question; brisk cannot tell which from here and does not report " +
         "any of them as fine.");
 
-    /// The title for the state where brisk read nothing at all about
-    /// Defender. The exclusions-unread state keeps the ORDINARY title and
-    /// drops the headline instead, which is what the spec asks for: an
-    /// unreadable exclusion list is a trigger beside the others, and the
-    /// finding it makes still carries the protections, the mode and the scan
-    /// age brisk did read. Known and written down rather than assumed: on a
-    /// machine where nothing else reads badly, that title names blind spots
-    /// over the one reading that did not arrive, and the absent headline is
-    /// all that keeps a number brisk never took off the front of it.
+    /// The title for the two states where brisk has no bad reading of its
+    /// own to report: nothing about Defender could be read at all, and an
+    /// exclusion list that could not be read with everything else reading
+    /// fine. Both carry no headline, which is what puts them in the page's
+    /// could-not-read band.
     private const string UnreadTitleText =
         "Windows Defender's state could not be established";
 }
