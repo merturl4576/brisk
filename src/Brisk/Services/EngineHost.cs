@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -64,7 +64,17 @@ public sealed class EngineHost : IEngineHost
         // readers and parses every record's XML. The trend runs FIRST so its
         // deeper fetch seeds the cache and the rule's 8 is served as a prefix
         // of the same newest-first list (2026-08-30 review).
-        var ctx = _ctx with { EventLog = new PrefixCachingEventLog(_ctx.EventLog) };
+        //
+        // ForScan() first, and it is not decoration: this host holds ONE
+        // context for the life of the app (AppServices.Build runs once), a
+        // record `with` copies the memo REFERENCE, and every memoized read
+        // below — Defender, the posture, FileStats — would otherwise answer
+        // the second scan out of the first one's table until the app was
+        // restarted. Everything after this line reads `ctx`, never `_ctx`.
+        var ctx = _ctx.ForScan() with
+        {
+            EventLog = new PrefixCachingEventLog(_ctx.EventLog),
+        };
 
         BootTrend? bootTrend = null;
         try
@@ -122,7 +132,7 @@ public sealed class EngineHost : IEngineHost
         IReadOnlyList<ReadBackResult> readBack;
         try
         {
-            readBack = ReadBack.For(_ctx, _journal.ListUndoable(), _rules);
+            readBack = ReadBack.For(ctx, _journal.ListUndoable(), _rules);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -147,7 +157,7 @@ public sealed class EngineHost : IEngineHost
         IReadOnlyList<UsbDeviceRecord> usbDevices;
         try
         {
-            usbDevices = UsbHistoryRule.ReadDevices(_ctx);
+            usbDevices = UsbHistoryRule.ReadDevices(ctx);
         }
         catch (Exception)
         {
@@ -160,20 +170,20 @@ public sealed class EngineHost : IEngineHost
         IReadOnlyList<CapabilityUseRecord> capabilityUses;
         try
         {
-            capabilityUses = CapabilityUseRule.ReadAllRecent(_ctx, DateTime.UtcNow);
+            capabilityUses = CapabilityUseRule.ReadAllRecent(ctx, DateTime.UtcNow);
         }
         catch (Exception)
         {
             capabilityUses = Array.Empty<CapabilityUseRecord>();
         }
-        // The paths Defender skips, at the same seam and guarded for the same
-        // reason. Status is memoized on the context: the rule read it during
-        // the loop above, so this is the same answer and not a second WMI
-        // round trip.
+        // The entries Defender skips, at the same seam and guarded for the
+        // same reason. Status is memoized on THIS scan's context: the rule
+        // read it during the loop above, so this is the same answer and not a
+        // second WMI round trip.
         IReadOnlyList<string> defenderExclusions;
         try
         {
-            defenderExclusions = DefenderRule.Status(_ctx)?.ExclusionPaths ?? Array.Empty<string>();
+            defenderExclusions = DefenderRule.Status(ctx)?.ExclusionPaths ?? Array.Empty<string>();
         }
         catch (Exception)
         {
@@ -187,7 +197,7 @@ public sealed class EngineHost : IEngineHost
         SecurityPostureReport posture;
         try
         {
-            posture = SecurityPosture.Read(_ctx);
+            posture = SecurityPosture.Read(ctx);
         }
         catch (Exception)
         {

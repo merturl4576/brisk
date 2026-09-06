@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -204,6 +204,26 @@ file sealed class NullDefender : IDefenderProbe
     public DefenderStatus? Read() => null;
 }
 
+/// A machine that changed between two scans: real-time protection goes off
+/// and the exclusion list is a different list. Counts its reads, so a memo
+/// that outlived one scan shows up as a second scan that never asked.
+file sealed class FlippingDefender : IDefenderProbe
+{
+    public int Reads { get; private set; }
+
+    public DefenderStatus? Read()
+    {
+        Reads++;
+        var first = Reads == 1;
+        return new DefenderStatus(
+            RealTimeOn: first, TamperOn: true, RunningMode: "Normal",
+            ExclusionCount: 1,
+            ExclusionPaths: new[] { first ? @"C:\first" : @"C:\second" },
+            LastQuickScanUtc: new DateTime(2026, 9, 4, 0, 0, 0, DateTimeKind.Utc),
+            LastFullScanUtc: null, SignatureAgeDays: 0);
+    }
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -254,27 +274,32 @@ public sealed class EngineHostTests : IDisposable
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-eh-").FullName;
 
     private EngineHost Host(params IDiagnosticRule[] rules) =>
-        Host(new NullSensors(), new NullRegistry(), rules);
+        Host(new NullSensors(), new NullRegistry(), new NullDefender(), rules);
 
     /// Same fixture with the sensor probe swapped — the context is built here,
     /// so a test that needs to watch the probes has to come in through this
     /// door rather than assemble a second one.
     private EngineHost Host(ISensorProbe sensors, params IDiagnosticRule[] rules) =>
-        Host(sensors, new NullRegistry(), rules);
+        Host(sensors, new NullRegistry(), new NullDefender(), rules);
 
     /// The same door for the registry, which the read-back reads a second
     /// time after the rule loop has read it once.
     private EngineHost Host(IRegistryProbe registry, params IDiagnosticRule[] rules) =>
-        Host(new NullSensors(), registry, rules);
+        Host(new NullSensors(), registry, new NullDefender(), rules);
+
+    /// And for Defender, whose answer the posture block and the exclusions
+    /// fold both read through the scan's memo.
+    private EngineHost Host(IDefenderProbe defender, params IDiagnosticRule[] rules) =>
+        Host(new NullSensors(), new NullRegistry(), defender, rules);
 
     private EngineHost Host(ISensorProbe sensors, IRegistryProbe registry,
-        params IDiagnosticRule[] rules)
+        IDefenderProbe defender, params IDiagnosticRule[] rules)
     {
         var ctx = new DiagnosticContext(new NullPowercfg(), registry,
             new NullProcessInfo(), sensors, new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
             new NothingRuns(), new NullMemoryIntegrity(),
-            new NullDeliveryOptimization(), new NullDefender(), _root);
+            new NullDeliveryOptimization(), defender, _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(_root, "fix-journal.jsonl"));
@@ -532,6 +557,32 @@ public sealed class EngineHostTests : IDisposable
         Assert.True(sensors.CpuIndex < rule.DetectIndex,
             $"sensors read at #{sensors.CpuIndex}, rules ran at #{rule.DetectIndex} — "
             + "the probes must be read before the rule loop, not after the disk walk");
+    }
+
+    /// A MEMO BELONGS TO ONE SCAN. This host holds one DiagnosticContext for
+    /// the life of the app, and a record `with` copies the memo REFERENCE, so
+    /// a scan that only swapped the event log kept answering out of the first
+    /// scan's table: the machine changed, the user pressed rescan, and the
+    /// posture rows and the exclusions fold showed what brisk read at startup
+    /// until the window was closed.
+    ///
+    /// The probe flips its answer between scans, which is what the fix the
+    /// user just applied does to the real one. Two reads, and the second
+    /// snapshot follows the machine.
+    [Fact]
+    public async Task ScanAsync_ReadsDefenderAgain_OnTheNextScan()
+    {
+        var defender = new FlippingDefender();
+        var host = Host(defender, Array.Empty<IDiagnosticRule>());
+
+        var first = await host.ScanAsync();
+        var second = await host.ScanAsync();
+
+        Assert.True(first.Posture.DefenderRealTime);
+        Assert.False(second.Posture.DefenderRealTime);
+        Assert.Equal(new[] { @"C:\first" }, first.DefenderExclusions);
+        Assert.Equal(new[] { @"C:\second" }, second.DefenderExclusions);
+        Assert.Equal(2, defender.Reads);
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
