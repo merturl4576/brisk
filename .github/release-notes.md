@@ -1,3 +1,13 @@
+### What changed in 0.9.0
+
+- **Windows asks before a program takes control.** A new rule reads the three UAC values and reports when one of them has been written to elevate silently — the change an "optimizer" makes and never mentions. The fix restores Windows' own defaults, asks before it acts because you will see prompts again, and is undoable; every later scan re-reads it and says whether it held.
+- **Which apps used the microphone and camera.** A report-only finding counts the apps that used each in the last 30 days, from the record Windows already keeps. The names and dates are on the Privacy page and the paths sit under them; nothing is graded and nothing is changed.
+- **What Defender is told to skip.** A report-only finding reads Defender's exclusion list, real-time protection, tamper protection, running mode and scan age, with a link to Windows Security. Unelevated it cannot read the exclusion list, and it says so rather than reporting a zero.
+- **Windows' suggestion and silent-install flags.** Six content-delivery values — the suggested apps, the tips, the silently installed ones — read as one switch, with a one-click fix that costs nothing visible.
+- **The lines that are fine, said once.** A posture block leads the Privacy page and `brisk scan` prints one line: firewall per profile, Remote Desktop, UAC, Defender real-time and tamper protection. A value brisk could not read is never shown as fine.
+
+Nothing on the Privacy page moves the score, and no path or app name reaches the report card, the JSON, or anything built to be shared.
+
 ### What changed in 0.8.0
 
 - **The largest files in your profile, named.** A new report-only finding lists the ten biggest files (500 MB and up) under your profile, with size and date, and leads the Overview when the largest is 1 GB or more. brisk names them and touches none of them.
