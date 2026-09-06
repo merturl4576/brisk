@@ -268,7 +268,13 @@ elevated read returns 5 paths, WMI and registry agree.
 `TamperOn == false`; `RunningMode` is a mode that is not "Normal"; the newer
 of the two scan times is more than 14 WHOLE days old (the age the finding
 prints is the age it judges, so 14.5 days is 14 and does not fire), or both
-are null while the rest was read; or any of `ExclusionCount`, `RealTimeOn`,
+are null while the rest was read — **"the rest" is the rest of the
+`MSFT_MpComputerStatus` row: `RealTimeOn`, `TamperOn` and `RunningMode` all
+read.** That row comes back whether or not Windows knows anything, so two
+empty scan stamps beside three nulls are a read that did not arrive, not a
+machine that has never scanned; the exclusions do NOT gate it, because
+Windows hides those from an unelevated process by design and that is the
+common case. Or any of `ExclusionCount`, `RealTimeOn`,
 `TamperOn`, `RunningMode` is null while the rest was read. Whole read null →
 the unreadable sentence ("brisk could not read Windows Defender's state on
 this machine"), `UnreadableRows`, no headline.
@@ -279,10 +285,11 @@ off and how many could not be read), the running mode, the newest scan, and
 where the paths are — each in the form its reading took: measured, or the
 sentence for a reading that did not arrive. The clauses that are fine are
 included, so the sentence is the full reading and not only the bad half, and
-no headline can name a clause the sentence lacks. Four parts have two forms
-(exclusions, mode, scan, and the protections' own counts), which the rule
-composes into EIGHT whole evidence keys named for the forms taken
-(`.evidence`, `.evidence.mode-unread.no-scan`, …) rather than into one
+no headline can name a clause the sentence lacks. Exclusions and mode have
+two forms each and the scan clause has three — an age, "no completed scan is
+on record", and the stamp that never arrived — which the rule
+composes into TEN whole evidence keys named for the forms taken
+(`.evidence`, `.evidence.mode-unread.scan-unread`, …) rather than into one
 template of per-clause keys: `DiagnosticFinding.EvidenceArgs` are
 substituted verbatim by `LocalizedText`, so a clause passed as an argument
 would reach a Turkish reader in English.
@@ -292,7 +299,8 @@ would reach a Turkish reader in English.
 false` → "Off" / "real-time protection"; (3) `TamperOn == false` → "Off" /
 "tamper protection"; (4) `RunningMode` not "Normal" → "{mode}" / "Defender
 mode", the mode as WMI reports it; (5) newest scan older than 14 days →
-"{d}" / "days since the last scan"; (6) no completed scan on record → "None"
+"{d}" / "days since the last scan"; (6) no completed scan on record — the
+MEASURED one, per the Finding paragraph above → "None"
 / "completed scans on record". Every state the rule reports as bad therefore
 carries one, because a disclosure WITHOUT a headline is how this family says
 nothing was read — `PrivacyViewModel` bands those into the page's

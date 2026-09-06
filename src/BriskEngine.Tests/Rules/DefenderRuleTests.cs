@@ -77,6 +77,14 @@ public class DefenderRuleTests
             { "passive mode", f with { RunningMode = "Passive Mode" }, named },
             { "stale scan", f with { LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = Now.AddDays(-40) }, named },
             { "no scan on record", f with { LastQuickScanUtc = null, LastFullScanUtc = null }, named },
+            // The two scan stamps are empty because the row they ride in
+            // answered nothing, not because this machine has never scanned.
+            { "no stamps out of a row that read nothing",
+                f with
+                {
+                    RealTimeOn = null, TamperOn = null, RunningMode = null,
+                    LastQuickScanUtc = null, LastFullScanUtc = null,
+                }, unread },
         };
     }
 
@@ -122,6 +130,15 @@ public class DefenderRuleTests
             { "an unread mode does not either",
                 f with { RunningMode = null, TamperOn = false },
                 "Off", "headline.caption.tamper" },
+            // Ruling 22's positive row: the exclusion list is the one thing
+            // Windows hides from an unelevated process, which is the common
+            // case and says nothing about the row the scan stamps ride in.
+            { "an unread exclusion list does not stop no-scan leading",
+                f with
+                {
+                    ExclusionCount = null,
+                    LastQuickScanUtc = null, LastFullScanUtc = null,
+                }, "None", "headline.caption.no-scan" },
         };
     }
 
@@ -246,6 +263,57 @@ public class DefenderRuleTests
         Assert.Equal(new[] { "0", "0", "0", "Normal" }, finding.EvidenceArgs);
     }
 
+    /// "NO COMPLETED SCAN IS ON RECORD" IS A READING OF THE MACHINE, and
+    /// MSFT_MpComputerStatus hands back a row whether or not it knows
+    /// anything: a row that answered null for both protections and the mode
+    /// answered null for the two scan stamps as well. Reported as measured,
+    /// that machine took the rule's own title and led with "None / completed
+    /// scans on record" - brisk naming a state it had not read, on the one
+    /// finding family whose no-headline shape means the opposite.
+    ///
+    /// The exclusion list does not gate it: Windows hides that from an
+    /// unelevated process by design, which is the common case and says
+    /// nothing about the row (EveryLead carries that orientation).
+    [Fact]
+    public void NoScan_IsMeasuredOnly_WhenTheRestOfTheRowWasRead()
+    {
+        var (ctx, _) = Context(Fine() with
+        {
+            RealTimeOn = null, TamperOn = null, RunningMode = null,
+            LastQuickScanUtc = null, LastFullScanUtc = null,
+        });
+
+        var finding = Rule().Detect(ctx)!;
+
+        Assert.Null(finding.Headline);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.title.unread", finding.TitleKey);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.evidence.mode-unread.scan-unread",
+            finding.EvidenceKey);
+        Assert.Contains("could not read when Defender last completed a scan",
+            finding.Evidence, StringComparison.Ordinal);
+        Assert.DoesNotContain("No completed scan is on record", finding.Evidence,
+            StringComparison.Ordinal);
+    }
+
+    /// The same row read one protection short: the scan clause is still the
+    /// unread one and the mode clause is still the measured one, so the two
+    /// halves of the key move independently.
+    [Fact]
+    public void OneUnreadProtection_IsEnoughToMakeTheScanStampsUnread()
+    {
+        var (ctx, _) = Context(Fine() with
+        {
+            TamperOn = null, LastQuickScanUtc = null, LastFullScanUtc = null,
+        });
+
+        var finding = Rule().Detect(ctx)!;
+
+        Assert.Null(finding.Headline);
+        Assert.Equal($"rule.{DefenderRule.RuleId}.evidence.scan-unread",
+            finding.EvidenceKey);
+        Assert.Equal(new[] { "0", "0", "1", "Normal" }, finding.EvidenceArgs);
+    }
+
     [Fact]
     public void ProtectionsOff_AreCountedInTheEvidence()
     {
@@ -300,10 +368,12 @@ public class DefenderRuleTests
         foreach (var state in new[]
                  {
                      "exclusions", "real-time-off", "tamper-off", "passive-mode",
-                     "stale-scan", "no-scan", "mode-unread", "mode-unread-no-scan",
+                     "stale-scan", "no-scan", "mode-unread",
+                     "mode-unread-scan-unread", "protection-unread-scan-unread",
                      "exclusions-unread", "exclusions-unread-no-scan",
+                     "exclusions-unread-scan-unread",
                      "exclusions-unread-mode-unread",
-                     "exclusions-unread-mode-unread-no-scan",
+                     "exclusions-unread-mode-unread-scan-unread",
                      "exclusions-unread-and-real-time-off", "unread",
                  })
             data.Add(state);
@@ -326,20 +396,29 @@ public class DefenderRuleTests
             },
             "no-scan" => Fine() with { LastQuickScanUtc = null, LastFullScanUtc = null },
             "mode-unread" => Fine() with { RunningMode = null },
-            "mode-unread-no-scan" => Fine() with
+            "mode-unread-scan-unread" => Fine() with
             {
                 RunningMode = null, LastQuickScanUtc = null, LastFullScanUtc = null,
+            },
+            "protection-unread-scan-unread" => Fine() with
+            {
+                RealTimeOn = null, LastQuickScanUtc = null, LastFullScanUtc = null,
             },
             "exclusions-unread" => Fine() with { ExclusionCount = null },
             "exclusions-unread-no-scan" => Fine() with
             {
                 ExclusionCount = null, LastQuickScanUtc = null, LastFullScanUtc = null,
             },
+            "exclusions-unread-scan-unread" => Fine() with
+            {
+                ExclusionCount = null, TamperOn = null,
+                LastQuickScanUtc = null, LastFullScanUtc = null,
+            },
             "exclusions-unread-mode-unread" => Fine() with
             {
                 ExclusionCount = null, RunningMode = null,
             },
-            "exclusions-unread-mode-unread-no-scan" => Fine() with
+            "exclusions-unread-mode-unread-scan-unread" => Fine() with
             {
                 ExclusionCount = null, RunningMode = null,
                 LastQuickScanUtc = null, LastFullScanUtc = null,
@@ -435,7 +514,7 @@ public class DefenderRuleTests
                      ("what is skipped", new[] { "excluded from scanning", "exclusion list" }),
                      ("the protections", new[] { "protections brisk checks" }),
                      ("the mode", new[] { "running mode" }),
-                     ("the scan", new[] { "completed scan" }),
+                     ("the scan", new[] { "completed scan", "completed a scan" }),
                      ("where the paths are", new[] { "on this page", "nothing past it" }),
                  })
             Assert.True(words.Any(w => finding.Evidence.Contains(w, StringComparison.Ordinal)),

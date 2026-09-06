@@ -15,8 +15,9 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// completed scan, and where the paths are. Each clause has a measured form
 /// carrying a number or Windows' own word, and a form for the reading that
 /// did not arrive — an exclusion list an unelevated process cannot see, a
-/// mode Windows named nothing for, a scan that never completed. The evidence
-/// key names which forms were taken, which is why there are eight of them.
+/// mode Windows named nothing for, a scan date that never arrived. The
+/// evidence key names which forms were taken, which is why there are ten of
+/// them.
 ///
 /// The excluded entries never leave DefenderStatus.Exclusions except onto
 /// ScanSnapshot.DefenderExclusions, the Privacy page's own fold. Red line 2.
@@ -96,7 +97,19 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             && !string.Equals(mode, "Normal", StringComparison.OrdinalIgnoreCase);
         var exclusions = s.ExclusionCount ?? 0;
         var exclusionsUnread = s.ExclusionCount is null;
-        var noScan = scanAgeDays is null;
+        // NO SCAN ON RECORD IS A READING, AND ONLY WHEN THERE WAS ONE.
+        // MSFT_MpComputerStatus answers with a row whatever it knows, and a
+        // row that answered null for the protections and the mode answered
+        // null for the two scan stamps as well — not because this machine
+        // has never completed a scan, but because nothing in that row came
+        // back. Absent stamps beside readings that did arrive ARE the
+        // measured state: Windows leaves them empty until the first scan
+        // finishes. The exclusion list does not count here — Windows hides
+        // it from an unelevated process by design, which is the common case
+        // and says nothing about the row (spec, section 3).
+        var rowRead = s.RealTimeOn is not null && s.TamperOn is not null && !modeUnread;
+        var noScan = scanAgeDays is null && rowRead;
+        var scanUnread = scanAgeDays is null && !rowRead;
         var staleScan = scanAgeDays is { } days && days > ScanAgeLimitDays;
 
         if (exclusions == 0 && !exclusionsUnread && off == 0 && unread == 0
@@ -111,12 +124,15 @@ public sealed class DefenderRule : PrivacyDisclosureRule
         // could not read the exclusion list still says how old the scan is.
         //
         // The key names which forms were taken, so a reader of the resx can
-        // see the same eight sentences the rule can assemble, and the args
-        // arrive in the order the clauses do.
+        // see the same ten sentences the rule can assemble, and the args
+        // arrive in the order the clauses do. ".mode-unread.no-scan" is not
+        // among them and cannot be: an unread mode is a row that did not
+        // answer, and a row that did not answer never measured "no scan".
         var key = $"rule.{Id}.evidence"
             + (exclusionsUnread ? ".exclusions-unread" : "")
             + (modeUnread ? ".mode-unread" : "")
-            + (noScan ? ".no-scan" : "");
+            + (noScan ? ".no-scan" : "")
+            + (scanUnread ? ".scan-unread" : "");
         var args = new List<string>();
 
         var skipped = ExclusionsUnreadClause;
@@ -142,15 +158,15 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             running = $"Defender's running mode reads {mode}.";
         }
 
-        var scan = "No completed scan is on record.";
-        if (!noScan)
+        var scan = noScan ? "No completed scan is on record." : ScanUnreadClause;
+        if (scanAgeDays is { } scanned)
         {
-            var age = scanAgeDays!.Value.ToString(CultureInfo.InvariantCulture);
+            var age = scanned.ToString(CultureInfo.InvariantCulture);
             args.Add(age);
             scan = $"The newest completed scan is {age} days old.";
         }
 
-        var headline = Lead(s, exclusions, mode, notNormal, scanAgeDays, staleScan);
+        var headline = Lead(s, exclusions, mode, notNormal, scanAgeDays, staleScan, noScan);
 
         // WHAT THE FINDING IS CALLED FOLLOWS WHAT IT LED WITH. A headline is
         // this family's word for "brisk read this", so a finding with none
@@ -171,7 +187,8 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     /// this rule reports as bad leads with the reading that makes it bad, in
     /// the order below, first match winning: what Defender is told to skip,
     /// then each protection that reads off, then a mode that is not Windows'
-    /// normal one, then a scan too old, then no scan at all.
+    /// normal one, then a scan too old, then a machine brisk read as having
+    /// completed none.
     ///
     /// WHY EVERY MEASURED STATE HAS ONE. A disclosure with no headline is how
     /// this family says "nothing was read": PrivacyViewModel bands exactly
@@ -188,7 +205,7 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     /// The running mode is Windows' word for its own state, so it travels as
     /// an argument and is not translated by anybody.
     private Headline? Lead(DefenderStatus s, int exclusions, string mode,
-        bool notNormal, int? scanAgeDays, bool staleScan)
+        bool notNormal, int? scanAgeDays, bool staleScan, bool noScan)
     {
         if (exclusions > 0)
             return Reading(exclusions.ToString(CultureInfo.InvariantCulture),
@@ -199,7 +216,10 @@ public sealed class DefenderRule : PrivacyDisclosureRule
         if (staleScan && scanAgeDays is { } days)
             return Reading(days.ToString(CultureInfo.InvariantCulture),
                 "days since the last scan", ".scan-age");
-        if (scanAgeDays is null)
+        // noScan, not "scanAgeDays is null": a stamp that is missing because
+        // the row answered nothing is a reading brisk failed to take, and
+        // this family leads with nothing when that is all it has.
+        if (noScan)
             return Word("none", "None", "completed scans on record", ".no-scan");
         // Nothing brisk MEASURED is bad here, so nothing leads: what is left
         // is one or more readings that did not arrive, and the caller says so
@@ -236,6 +256,13 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     private const string ModeUnreadClause =
         "brisk could not read Defender's running mode.";
 
+    /// The scan clause when the row that carries the two scan stamps
+    /// answered nothing else either. "No completed scan is on record" is a
+    /// claim about this machine; two empty stamps out of a row that read
+    /// null throughout are a claim about the read.
+    private const string ScanUnreadClause =
+        "brisk could not read when Defender last completed a scan.";
+
     /// Said wherever brisk DID read something. The exclusions-unread state
     /// keeps the second half and drops the first: there are no paths on the
     /// page to point at when the list is the thing brisk could not read.
@@ -265,7 +292,9 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     /// all — and every finding where what is missing is one of the four
     /// readings Lead would have led with: the exclusion list, real-time
     /// protection, tamper protection, the running mode. Any one of them can
-    /// go unread while the rest read fine. None of these carries a headline,
+    /// go unread while the rest read fine. A scan stamp that never arrived
+    /// is here too, and never on its own: it is unread precisely when one of
+    /// those four was. None of these carries a headline,
     /// which is what puts them in the page's could-not-read band.
     private const string UnreadTitleText =
         "Windows Defender's state could not be established";
