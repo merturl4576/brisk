@@ -59,6 +59,8 @@ public sealed class FindingRow : ViewModelBase
         {
             ["recall-status"] = ("ms-settings:privacy",
                 "finding.action.windowssetting"),
+            ["defender-blind-spots"] = ("windowsdefender://threatsettings",
+                "finding.action.windowssecurity"),
         };
 
     private bool _isExpanded;

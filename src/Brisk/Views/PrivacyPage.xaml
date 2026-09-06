@@ -202,6 +202,43 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
+                <!-- The third fold, on the terms of the two above it: the
+                     excluded paths arrive on ScanSnapshot.DefenderExclusions
+                     and never on a finding, so this page can show them in
+                     full and no shareable surface can carry one. -->
+                <StackPanel Margin="0,6,0,16">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DefenderExclusionRows.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <ToggleButton x:Name="DefenderFold" Cursor="Hand"
+                                  HorizontalAlignment="Left" Margin="2,0,0,0">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <TextBlock Style="{StaticResource Faint}"
+                                           Text="{Binding [privacy.defender.title],
+                                               Source={x:Static loc:Loc.Instance}}" />
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                    <ItemsControl Margin="2,6,0,0" ItemsSource="{Binding DefenderExclusionRows}"
+                                  Visibility="{Binding IsChecked,
+                                      ElementName=DefenderFold,
+                                      Converter={x:Static Brisk:BoolToVis.Instance}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{StaticResource Muted}"
+                                           TextWrapping="Wrap" Margin="0,0,0,3"
+                                           Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
                 <!-- The spec's fourth red line, given a place to stand: a
                      probe that could not read its source is never a silent
                      zero. The heading is the report card's own key, not a

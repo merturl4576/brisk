@@ -213,6 +213,16 @@ public sealed class FakeDeliveryOptimization : IDeliveryOptimizationProbe
     public PeerUpload? UploadedToPeers() => Upload;
 }
 
+/// Null by default: a test that never speaks to Defender says nothing about
+/// it, and null is how the probe says it could not read. Reads counts the
+/// calls so the memo can be seen working.
+public sealed class FakeDefender : IDefenderProbe
+{
+    public DefenderStatus? Status;
+    public int Reads;
+    public DefenderStatus? Read() { Reads++; return Status; }
+}
+
 public static class TestContext
 {
     /// All context data dirs live under ONE per-run root that the next run
@@ -236,7 +246,7 @@ public static class TestContext
         new FakePowercfg(), new FakeRegistry(), new FakeProcessInfo(),
         new FakeSensors(), new FakeDisplays(), new FakeEventLog(), new FakeHardware(),
         new FakeDisk(), new FakeFiles(), new FakeRunningApps(),
-        new FakeMemoryIntegrity(), new FakeDeliveryOptimization(),
+        new FakeMemoryIntegrity(), new FakeDeliveryOptimization(), new FakeDefender(),
         dataDir ?? System.IO.Directory.CreateDirectory(System.IO.Path.Combine(
             CtxRoot, System.IO.Path.GetRandomFileName())).FullName);
 }

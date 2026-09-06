@@ -311,6 +311,12 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// "Desktop\system-helper.exe" is the whole point of showing it.
     public ObservableCollection<CapabilityUseRow> CapabilityUseRows { get; } = new();
 
+    /// The paths Defender is told to skip, off ScanSnapshot.DefenderExclusions
+    /// and never off a finding — the third fold, on the terms the two above
+    /// it already hold: the count is what every shareable surface carries,
+    /// and the paths themselves are on this page alone.
+    public ObservableCollection<string> DefenderExclusionRows { get; } = new();
+
     /// The four the one button turns off.
     public ObservableCollection<FindingRow> SafeSwitchRows { get; } = new();
 
@@ -519,6 +525,9 @@ public sealed class PrivacyViewModel : ViewModelBase
                     use.LastUsedUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
                 use.Path));
         }
+
+        DefenderExclusionRows.Clear();
+        foreach (var path in snapshot.DefenderExclusions) DefenderExclusionRows.Add(path);
 
         ReadBackRows.Clear();
         var now = _utcNow();

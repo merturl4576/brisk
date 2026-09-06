@@ -56,5 +56,9 @@ public static class DiagnosticRuleRegistry
         // The fifth disclosure: which apps used the microphone and camera
         // in the last 30 days, counted here, named on the Privacy page only.
         new CapabilityUseRule(),
+        // The sixth disclosure, and the second that reads through a probe:
+        // what Defender skips and whether it is on. Report-only; the Privacy
+        // page adds a link to Windows Security.
+        new DefenderRule(),
     };
 }

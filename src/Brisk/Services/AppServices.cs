@@ -38,7 +38,7 @@ public static class AppServices
             new RealEventLogProbe(), new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
             new RealProcessLister(), new RealMemoryIntegrityProbe(),
-            new RealDeliveryOptimizationProbe(), dataDir);
+            new RealDeliveryOptimizationProbe(), new RealDefenderProbe(), dataDir);
         var logPath = Path.Combine(dataDir, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(dataDir, "fix-journal.jsonl"));

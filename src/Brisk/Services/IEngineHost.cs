@@ -61,7 +61,10 @@ public sealed record ScanSnapshot(
     // name — the ONE channel an app name travels on, for the same reason and
     // on the same terms as UsbDevices above. Required: an empty list says
     // "brisk read no such use", and there is no default that says less.
-    IReadOnlyList<CapabilityUseRecord> CapabilityUses);
+    IReadOnlyList<CapabilityUseRecord> CapabilityUses,
+    // The paths Defender is told to skip — on the same terms as the two
+    // lists above: the page's fold reads it, no finding carries one.
+    IReadOnlyList<string> DefenderExclusions);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

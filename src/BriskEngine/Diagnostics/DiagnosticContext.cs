@@ -15,6 +15,7 @@ public sealed record DiagnosticContext(
     IProcessLister RunningApps,
     IMemoryIntegrityProbe MemoryIntegrity,
     IDeliveryOptimizationProbe DeliveryOptimization,
+    IDefenderProbe Defender,
     string DataDirectory)    // %LOCALAPPDATA%\brisk — history store, journals
 {
     /// What this scan has already measured, so it does not measure it

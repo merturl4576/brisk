@@ -569,6 +569,9 @@ public class SnapshotTests
                 // list, so the rendered page is the one these baselines were
                 // approved against.
                 Array.Empty<CapabilityUseRecord>(),
+                // No excluded path either, and the third fold collapses on
+                // the empty list the same way.
+                Array.Empty<string>(),
                 TestData.Target("user-temp", CleanupLevel.Safe, 2048)),
         };
         var loc = new Loc();

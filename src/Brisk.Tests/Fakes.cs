@@ -124,7 +124,7 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
         SubKeys.TryGetValue(keyPath, out var s) ? s : (System.Collections.Generic.IReadOnlyList<string>)Array.Empty<string>();
 }
 
-/// The other eleven probes a DiagnosticContext takes, for a test that runs a
+/// The other twelve probes a DiagnosticContext takes, for a test that runs a
 /// rule reading the registry and nothing else.
 ///
 /// EVERY MEMBER THROWS. The tempting alternative — answer null, empty, zero —
@@ -135,7 +135,8 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
 public sealed class NoOtherProbes
     : IPowercfgProbe, IProcessInfoProbe, ISensorProbe, IDisplayProbe,
         IEventLogProbe, IHardwareProbe, IDiskInfoProbe, IFileProbe,
-        IProcessLister, IMemoryIntegrityProbe, IDeliveryOptimizationProbe
+        IProcessLister, IMemoryIntegrityProbe, IDeliveryOptimizationProbe,
+        IDefenderProbe
 {
     private static T No<T>([CallerMemberName] string member = "") =>
         throw new NotSupportedException(
@@ -183,6 +184,13 @@ public sealed class NoOtherProbes
     public bool? IsOn() => No<bool?>();
 
     public PeerUpload? UploadedToPeers() => No<PeerUpload?>();
+
+    /// THE ONE MEMBER HERE THAT ANSWERS, and it answers what a machine with
+    /// no Defender reading answers: nothing. DefenderRule catches whatever
+    /// its probe throws and reports the same "could not be read" either way,
+    /// so a throw would arrive at this answer through a longer path while
+    /// costing the loud failure nothing. Null says it directly.
+    public DefenderStatus? Read() => null;
 }
 
 public static class TestData
@@ -197,7 +205,7 @@ public static class TestData
     {
         var none = new NoOtherProbes();
         return new DiagnosticContext(none, registry, none, none, none, none, none,
-            none, none, none, none, none,
+            none, none, none, none, none, none,
             System.IO.Path.Combine(System.IO.Path.GetTempPath(),
                 "brisk-registry-only-context"));
     }
@@ -255,6 +263,11 @@ public static class TestData
     private static readonly CapabilityUseRecord[] NoUsesRead =
         Array.Empty<CapabilityUseRecord>();
 
+    /// The fixture's Defender read named no exclusion, for the same reason
+    /// as the four above: an empty list is what a machine with nothing
+    /// skipped looks like, and a test about the fold passes its own.
+    private static readonly string[] NoExclusionsRead = Array.Empty<string>();
+
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
         params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);
 
@@ -265,7 +278,8 @@ public static class TestData
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
         SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
         params TargetScanResult[] targets) =>
-        Snapshot(findings, sensors, readBack, NoDevicesRead, NoUsesRead, targets);
+        Snapshot(findings, sensors, readBack, NoDevicesRead, NoUsesRead,
+            NoExclusionsRead, targets);
 
     /// The whole shape, for the one fixture that plants device records: the
     /// card must print no name off a snapshot that CARRIES one, which is a
@@ -274,6 +288,7 @@ public static class TestData
         SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
         IReadOnlyList<UsbDeviceRecord> usbDevices,
         IReadOnlyList<CapabilityUseRecord>? capabilityUses = null,
+        IReadOnlyList<string>? defenderExclusions = null,
         params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
@@ -281,7 +296,8 @@ public static class TestData
         // No trend is the honest default; the boot-trend tests build one
         // with `snapshot with { BootTrend = ... }`.
         BootTrend: null,
-        capabilityUses ?? NoUsesRead);
+        capabilityUses ?? NoUsesRead,
+        defenderExclusions ?? NoExclusionsRead);
 
     /// A snapshot whose only distinguishing feature is what brisk found when
     /// it looked again — the shape most read-back tests want.
@@ -293,8 +309,10 @@ public static class TestData
     /// is the only reader, and a test about it cares about nothing else on
     /// the snapshot.
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
-        IReadOnlyList<CapabilityUseRecord> capabilityUses) =>
-        Snapshot(findings, NothingAnswered, NothingReRead, NoDevicesRead, capabilityUses);
+        IReadOnlyList<CapabilityUseRecord> capabilityUses,
+        IReadOnlyList<string>? defenderExclusions = null) =>
+        Snapshot(findings, NothingAnswered, NothingReRead, NoDevicesRead, capabilityUses,
+            defenderExclusions);
 }
 
 public sealed class FakeEngineHost : IEngineHost

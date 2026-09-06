@@ -258,6 +258,23 @@ public class PrivacyViewModelTests
         Assert.DoesNotContain(@"C:\", vm.CapabilityUseRows[1].Text);
     }
 
+    /// The third fold, on the same one-way terms as the two above it: the
+    /// excluded paths arrive on the snapshot, this page renders them, and no
+    /// finding is ever handed one.
+    [Fact]
+    public async Task DefenderExclusions_RenderBehindTheFold_AndNowhereElse()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(findings: null,
+            capabilityUses: Array.Empty<CapabilityUseRecord>(),
+            defenderExclusions: new[] { @"C:\Users\U\.claude", @"C:\Temp\claude" });
+        await state.ScanAsync();
+
+        Assert.Equal(2, vm.DefenderExclusionRows.Count);
+        Assert.Equal(@"C:\Users\U\.claude", vm.DefenderExclusionRows[0]);
+        Assert.Equal(@"C:\Temp\claude", vm.DefenderExclusionRows[1]);
+    }
+
     /// A machine whose consent store brisk could not read leaves this fold
     /// empty, which is what collapses it in the markup — the same answer the
     /// USB fold gives above, and for the same reason: the claim that brisk
@@ -947,7 +964,17 @@ public class PrivacyViewModelTests
     public void EveryWindowsSettingRule_NamesAPageAndACaptionTheResxCarries(
         string ruleId, string uri, string captionKey)
     {
-        Assert.StartsWith("ms-settings:", uri, StringComparison.Ordinal);
+        // TWO PROTOCOLS, not one. WindowsSettingsLink.Open hands whatever is
+        // declared here to the shell, and Windows Security's pages are not
+        // under ms-settings: at all — its threat settings are reached through
+        // windowsdefender://, the app's own protocol. Pinning the Settings
+        // prefix alone would have banned the only URI that opens the page
+        // defender-blind-spots is about.
+        Assert.True(
+            uri.StartsWith("ms-settings:", StringComparison.Ordinal)
+            || uri.StartsWith("windowsdefender:", StringComparison.Ordinal),
+            $"{ruleId} points at \"{uri}\", which is neither a Settings page " +
+            "nor a Windows Security one");
 
         foreach (var language in new[] { "en", "tr" })
         {

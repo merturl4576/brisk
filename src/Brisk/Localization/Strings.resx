@@ -64,6 +64,7 @@
   <data name="finding.details" xml:space="preserve"><value>Details</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
   <data name="finding.action.windowssetting" xml:space="preserve"><value>Open Windows privacy settings</value></data>
+  <data name="finding.action.windowssecurity" xml:space="preserve"><value>Open Windows Security</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Fixing…</value></data>
   <data name="finding.undoing" xml:space="preserve"><value>Undoing…</value></data>
   <data name="health.crosslink" xml:space="preserve"><value>{0} more findings in Performance →</value></data>
@@ -344,10 +345,20 @@
   <data name="rule.camera-mic-use.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.camera-mic-use.headline.caption.mic" xml:space="preserve"><value>apps used the microphone in the last 30 days</value></data>
   <data name="rule.camera-mic-use.headline.caption.cam" xml:space="preserve"><value>apps used the camera in the last 30 days</value></data>
+  <data name="rule.defender-blind-spots.title" xml:space="preserve"><value>Windows Defender has blind spots</value></data>
+  <data name="rule.defender-blind-spots.title.unread" xml:space="preserve"><value>Windows Defender's state could not be established</value></data>
+  <data name="rule.defender-blind-spots.evidence" xml:space="preserve"><value>{0} entries are excluded from scanning. {1} of the two protections brisk checks, real-time and tamper, read as off, and {2} could not be read. Defender's running mode reads {3}. The newest completed scan is {4} days old. The excluded paths are on this page and on nothing built to be shared. brisk reads what Defender reports about itself and nothing past it; whether another product protects this machine is not something that read can tell you.</value></data>
+  <data name="rule.defender-blind-spots.evidence.no-scan" xml:space="preserve"><value>{0} entries are excluded from scanning. {1} of the two protections brisk checks, real-time and tamper, read as off, and {2} could not be read. Defender's running mode reads {3}. No completed scan is on record. The excluded paths are on this page and on nothing built to be shared. brisk reads what Defender reports about itself and nothing past it; whether another product protects this machine is not something that read can tell you.</value></data>
+  <data name="rule.defender-blind-spots.evidence.exclusions-unread" xml:space="preserve"><value>brisk could not read Defender's exclusion list without administrator rights, so it does not say how many entries are skipped. {0} of the two protections brisk checks, real-time and tamper, read as off, and {1} could not be read. Defender's running mode reads {2}. brisk reads what Defender reports about itself and nothing past it; whether another product protects this machine is not something that read can tell you.</value></data>
+  <data name="rule.defender-blind-spots.evidence.unread" xml:space="preserve"><value>brisk asked Windows Defender about itself and got nothing back it can read. Defender may be absent, replaced by another product, or refusing the question; brisk cannot tell which from here and does not report any of them as fine.</value></data>
+  <data name="rule.defender-blind-spots.advice" xml:space="preserve"><value>brisk only reads this; it does not change Defender and offers no fix for it. The list below names what Defender is told to skip. Anything a program drops into an excluded folder is never scanned, and adding itself to that list is a common trick. Windows Security is where you remove an entry.</value></data>
+  <data name="rule.defender-blind-spots.headline.value" xml:space="preserve"><value>{0}</value></data>
+  <data name="rule.defender-blind-spots.headline.caption" xml:space="preserve"><value>paths Defender skips</value></data>
   <data name="privacy.capability.title" xml:space="preserve"><value>Which apps, and when</value></data>
   <data name="privacy.capability.use" xml:space="preserve"><value>{0} — {1} · last used {2}</value></data>
   <data name="privacy.capability.microphone" xml:space="preserve"><value>microphone</value></data>
   <data name="privacy.capability.camera" xml:space="preserve"><value>camera</value></data>
+  <data name="privacy.defender.title" xml:space="preserve"><value>What Defender skips</value></data>
   <data name="privacy.title" xml:space="preserve"><value>Privacy on this machine</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>

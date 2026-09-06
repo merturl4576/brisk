@@ -196,6 +196,14 @@ file sealed class NullDeliveryOptimization : IDeliveryOptimizationProbe
     public PeerUpload? UploadedToPeers() => null;
 }
 
+/// The same nothing, for the same reason: these host tests say nothing
+/// about Windows Defender, and null is how the probe reports a read that
+/// did not arrive.
+file sealed class NullDefender : IDefenderProbe
+{
+    public DefenderStatus? Read() => null;
+}
+
 file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
@@ -266,7 +274,7 @@ public sealed class EngineHostTests : IDisposable
             new NullProcessInfo(), sensors, new NullDisplays(), new NullEventLog(),
             new NullHardware(), new NullDisk(), new NullFiles(),
             new NothingRuns(), new NullMemoryIntegrity(),
-            new NullDeliveryOptimization(), _root);
+            new NullDeliveryOptimization(), new NullDefender(), _root);
         var logPath = Path.Combine(_root, "action-log.jsonl");
         var log = new ActionLog(logPath);
         var journal = new FixJournal(Path.Combine(_root, "fix-journal.jsonl"));

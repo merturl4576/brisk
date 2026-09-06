@@ -166,13 +166,26 @@ public sealed class EngineHost : IEngineHost
         {
             capabilityUses = Array.Empty<CapabilityUseRecord>();
         }
+        // The paths Defender skips, at the same seam and guarded for the same
+        // reason. Status is memoized on the context: the rule read it during
+        // the loop above, so this is the same answer and not a second WMI
+        // round trip.
+        IReadOnlyList<string> defenderExclusions;
+        try
+        {
+            defenderExclusions = DefenderRule.Status(_ctx)?.ExclusionPaths ?? Array.Empty<string>();
+        }
+        catch (Exception)
+        {
+            defenderExclusions = Array.Empty<string>();
+        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
             HealthScore.Compute(findings), DateTime.UtcNow,
             new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
                 MemoryIntegrityOn: integrityOn),
-            readBack, usbDevices, bootTrend, capabilityUses);
+            readBack, usbDevices, bootTrend, capabilityUses, defenderExclusions);
     }, ct);
 
     /// Serves RecentBoots(n) as a prefix of the deepest fetch made so far —
