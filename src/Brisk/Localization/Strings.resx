@@ -374,7 +374,24 @@
   <data name="privacy.capability.microphone" xml:space="preserve"><value>microphone</value></data>
   <data name="privacy.capability.camera" xml:space="preserve"><value>camera</value></data>
   <data name="privacy.defender.title" xml:space="preserve"><value>What Defender skips</value></data>
-  <data name="privacy.title" xml:space="preserve"><value>Privacy on this machine</value></data>
+  <data name="privacy.title" xml:space="preserve"><value>Privacy and security on this machine</value></data>
+  <data name="privacy.security.section" xml:space="preserve"><value>Security</value></data>
+  <data name="privacy.security.note" xml:space="preserve"><value>brisk reads these values and grades none of them. Fine means the value reads as Windows' safer setting; it says nothing about what else is on this machine.</value></data>
+  <data name="privacy.posture.firewall.fine" xml:space="preserve"><value>Firewall on for all three network profiles</value></data>
+  <data name="privacy.posture.firewall.attention" xml:space="preserve"><value>Firewall off for at least one network profile</value></data>
+  <data name="privacy.posture.firewall.unread" xml:space="preserve"><value>Firewall: brisk could not read this</value></data>
+  <data name="privacy.posture.rdp.fine" xml:space="preserve"><value>Remote Desktop off</value></data>
+  <data name="privacy.posture.rdp.attention" xml:space="preserve"><value>Remote Desktop on: this machine accepts remote sign-ins</value></data>
+  <data name="privacy.posture.rdp.unread" xml:space="preserve"><value>Remote Desktop: brisk could not read this</value></data>
+  <data name="privacy.posture.uac.fine" xml:space="preserve"><value>Windows asks before a program takes control</value></data>
+  <data name="privacy.posture.uac.attention" xml:space="preserve"><value>Windows does not ask before a program takes control (see below)</value></data>
+  <data name="privacy.posture.uac.unread" xml:space="preserve"><value>UAC prompts: brisk could not read this</value></data>
+  <data name="privacy.posture.defender-rtp.fine" xml:space="preserve"><value>Defender real-time protection on</value></data>
+  <data name="privacy.posture.defender-rtp.attention" xml:space="preserve"><value>Defender real-time protection off (see below)</value></data>
+  <data name="privacy.posture.defender-rtp.unread" xml:space="preserve"><value>Defender real-time protection: brisk could not read this</value></data>
+  <data name="privacy.posture.defender-tamper.fine" xml:space="preserve"><value>Defender tamper protection on</value></data>
+  <data name="privacy.posture.defender-tamper.attention" xml:space="preserve"><value>Defender tamper protection off (see below)</value></data>
+  <data name="privacy.posture.defender-tamper.unread" xml:space="preserve"><value>Defender tamper protection: brisk could not read this</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>
   <data name="privacy.usb.devices.title" xml:space="preserve"><value>What the USB record holds</value></data>

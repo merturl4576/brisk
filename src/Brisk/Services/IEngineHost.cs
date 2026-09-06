@@ -64,7 +64,13 @@ public sealed record ScanSnapshot(
     IReadOnlyList<CapabilityUseRecord> CapabilityUses,
     // The paths Defender is told to skip — on the same terms as the two
     // lists above: the page's fold reads it, no finding carries one.
-    IReadOnlyList<string> DefenderExclusions);
+    IReadOnlyList<string> DefenderExclusions,
+    // The five positive lines. Required like Sensors: there is no default
+    // that adds no claim. A record of nulls says "brisk read none of these",
+    // which is a sentence the page prints; anything a caller could omit
+    // would have to stand in for one of the two readings, and both of them
+    // are claims about a machine.
+    SecurityPostureReport Posture);
 
 /// The only door between view models and the engine. Everything here is
 /// fakeable; nothing in ViewModels/ touches probes, registry or files.

@@ -285,6 +285,16 @@ public class LocTests
     // Loc, so a break there lands twice.
     [InlineData("privacy.usb.devices.title")]
     [InlineData("privacy.usb.device")]
+    // The Security tier's two, which lead the page: a heading and the
+    // sentence that says brisk grades none of what is under it. Nothing else
+    // reads either one, so a gap in the English resx puts
+    // "privacy.security.note" where the page's own limit is stated. The
+    // eighteen `privacy.posture.*` keys are NOT listed: PrivacyViewModelTests
+    // renders all five rows through a real English Loc and refuses a value
+    // that echoes its key, which is the stronger guard and reaches every one
+    // of them.
+    [InlineData("privacy.security.section")]
+    [InlineData("privacy.security.note")]
     // The `privacy.*` key this list went without while the page's headings
     // were added: what the page says when Windows refuses to open its own
     // Settings app. It is not a heading — it is the whole of the message the

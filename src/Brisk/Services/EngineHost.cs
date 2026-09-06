@@ -179,13 +179,28 @@ public sealed class EngineHost : IEngineHost
         {
             defenderExclusions = Array.Empty<string>();
         }
+        // The five positive lines, at the same seam and guarded the same way.
+        // A throw here would cost the whole snapshot for a block that is
+        // ALLOWED to say it read nothing — so it says exactly that, in the
+        // one shape the page renders as "brisk could not read this" and never
+        // as fine.
+        SecurityPostureReport posture;
+        try
+        {
+            posture = SecurityPosture.Read(_ctx);
+        }
+        catch (Exception)
+        {
+            posture = new SecurityPostureReport(null, null, null, null, null, null, null);
+        }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));
         return new ScanSnapshot(findings, cleaner,
             HealthScore.Compute(findings), DateTime.UtcNow,
             new SensorStatus(CpuRead: cpuRead, GpuRead: gpuRead,
                 MemoryIntegrityOn: integrityOn),
-            readBack, usbDevices, bootTrend, capabilityUses, defenderExclusions);
+            readBack, usbDevices, bootTrend, capabilityUses, defenderExclusions,
+            posture);
     }, ct);
 
     /// Serves RecentBoots(n) as a prefix of the deepest fetch made so far —

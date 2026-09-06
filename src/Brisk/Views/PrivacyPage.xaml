@@ -71,6 +71,51 @@
         </TextBlock>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel MaxWidth="{StaticResource ContentMaxWidth}">
+                <!-- BLOCK 0: security. The posture rows say what reads as
+                     Windows' safer setting; the finding rows below them are
+                     the ones that do not. Nothing here is graded and nothing
+                     here sums to a verdict — no count, no badge, no ring, and
+                     the sentence under the header says what brisk read and
+                     that it reads nothing past that (spec red lines 2 and 4).
+
+                     Colour by DataTrigger on the row's State, and by
+                     DynamicResource so a theme switch repaints it: an unread
+                     row keeps Muted, which is the quiet colour every "brisk
+                     could not read this" line on this page already wears, so
+                     a null can never take the green one. -->
+                <TextBlock Style="{StaticResource PanelHeader}" Margin="0,0,0,8"
+                           Text="{Binding [privacy.security.section],
+                               Source={x:Static loc:Loc.Instance}}" />
+                <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
+                           Margin="2,0,0,8"
+                           Text="{Binding [privacy.security.note],
+                               Source={x:Static loc:Loc.Instance}}" />
+                <ItemsControl ItemsSource="{Binding PostureRows}" Margin="2,0,0,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock TextWrapping="Wrap" Margin="0,0,0,3"
+                                       Text="{Binding Text}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding State}" Value="Fine">
+                                                <Setter Property="Foreground"
+                                                        Value="{DynamicResource Good}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding State}" Value="Attention">
+                                                <Setter Property="Foreground"
+                                                        Value="{DynamicResource SeverityWarning}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding SecurityRows}"
+                              ItemTemplate="{StaticResource FindingCard}" Margin="0,0,0,16" />
+
                 <!-- BLOCK 1: the numbers. -->
                 <TextBlock Style="{StaticResource PanelHeader}" Margin="0,0,0,0"
                            Text="{Binding [privacy.disclosure.section],

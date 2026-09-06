@@ -997,10 +997,81 @@ public class PrivacyViewModelTests
         return data;
     }
 
+    // ---- The Security tier ----------------------------------------------
+
+    /// The two security ids leave the bands they would otherwise fall into,
+    /// and both are asserted because they arrive at the tier from opposite
+    /// sides of Band: uac-prompts is Confirm and fixable, so without the
+    /// routing it is a costly switch; defender-blind-spots carries a reading,
+    /// so without it it is one of the numbers.
+    [Fact]
+    public async Task ASecurityFinding_LandsInSecurityRows_NotInTheSwitchBands()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[]
+        {
+            Switch("uac-prompts", RuleCategory.Confirm),
+            Disclosure("defender-blind-spots", "5"),
+        });
+        await state.ScanAsync();
+
+        Assert.Equal(
+            new[] { "defender-blind-spots", "uac-prompts" },
+            vm.SecurityRows.Select(r => r.RuleId)
+                .OrderBy(id => id, StringComparer.Ordinal));
+        Assert.Empty(vm.CostlySwitchRows);
+        Assert.Empty(vm.SafeSwitchRows);
+        Assert.Empty(vm.DisclosureRows);
+        Assert.Empty(vm.UnreadableRows);
+    }
+
+    /// The page moves the row; the shareable card's "could not read" list
+    /// does not move with it. ReportCardModel asks IsUnreadableDisclosure of
+    /// the SNAPSHOT's findings rather than of this page's bands, so a
+    /// Defender read that arrived empty is still named as unread on the card
+    /// while standing under Security here — one claim, two surfaces, and the
+    /// routing change must not have quietly taken it off one of them.
+    [Fact]
+    public async Task ASecurityFindingThatReadNothing_IsStillUnreadForTheCard()
+    {
+        var finding = Unreadable("defender-blind-spots");
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(new[] { finding });
+        await state.ScanAsync();
+
+        Assert.Single(vm.SecurityRows);
+        Assert.Empty(vm.UnreadableRows);
+        Assert.True(PrivacyViewModel.IsUnreadableDisclosure(finding),
+            "the card's own unread section is fed from this predicate, and a " +
+            "Defender read that arrived empty must still be named on it");
+    }
+
+    /// Three states, one row each, and the null row is Unread rather than
+    /// Fine — the spec's second red line on the surface it was written for.
+    /// The last assertion is about the strings: Loc answers a miss with the
+    /// key itself, so a gap in the resx renders "privacy.posture.uac.unread"
+    /// where the sentence goes, in the tier that leads the page.
+    [Fact]
+    public async Task PostureRows_RenderThreeStates_AndNullIsNeverFine()
+    {
+        var (vm, host, state) = Build();
+        host.NextSnapshot = TestData.Snapshot(findings: null,
+            posture: new SecurityPostureReport(true, true, true, false, null, true, true));
+        await state.ScanAsync();
+
+        Assert.Equal(5, vm.PostureRows.Count);
+        Assert.Equal(PostureState.Fine, vm.PostureRows[0].State);       // firewall
+        Assert.Equal(PostureState.Attention, vm.PostureRows[1].State);  // remote desktop
+        Assert.Equal(PostureState.Unread, vm.PostureRows[2].State);     // uac
+        Assert.DoesNotContain(vm.PostureRows,
+            r => r.Text.Length == 0
+                 || r.Text.StartsWith("privacy.posture.", StringComparison.Ordinal));
+    }
+
     // ---- Helpers --------------------------------------------------------
 
     private static IReadOnlyList<FindingRow> AllRows(PrivacyViewModel vm) =>
-        vm.DisclosureRows.Concat(vm.UnreadableRows)
+        vm.DisclosureRows.Concat(vm.UnreadableRows).Concat(vm.SecurityRows)
             .Concat(vm.SafeSwitchRows).Concat(vm.CostlySwitchRows).ToList();
 
     /// Every privacy rule this wave ships, each reporting on a machine where

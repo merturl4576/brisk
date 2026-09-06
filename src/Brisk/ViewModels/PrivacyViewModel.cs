@@ -177,6 +177,23 @@ public sealed class ReadBackRow
 /// on the side of the split that knows the language.
 public sealed record CapabilityUseRow(string Text, string? AppPath);
 
+/// What one posture row reads as. THREE states and not two: a value brisk
+/// did not read is its own answer, and folding it into either of the others
+/// is the spec's second red line broken — a null rendered as Fine is brisk
+/// vouching for a value nobody saw, and a null rendered as Attention is
+/// brisk alarming over one.
+public enum PostureState { Fine, Attention, Unread }
+
+/// One line of the Security tier's posture block: the sentence and which of
+/// the three readings it is.
+///
+/// A string, like UsbDeviceRows and CapabilityUseRow above and for the same
+/// reason: which sentence a reading takes is a rendering decision that
+/// belongs on the side of the split that knows the language. The state rides
+/// beside it because the page COLOURS by it, and the page must not colour by
+/// parsing the sentence.
+public sealed record PostureRow(string Text, PostureState State);
+
 /// The Privacy page: what this machine has written down, what its switches
 /// currently read as, and what happened to the ones brisk changed.
 ///
@@ -317,6 +334,35 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// and the paths themselves are on this page alone.
     public ObservableCollection<string> DefenderExclusionRows { get; } = new();
 
+    /// The two rules whose rows sit under the Security header rather than in
+    /// a switch band. A second list beside PrivacyRuleIds, and like it a
+    /// copy nothing cross-checks: read it against the registry by hand when
+    /// adding a security rule.
+    public static readonly ReadOnlyCollection<string> SecurityRuleIds =
+        new(new[] { "uac-prompts", "defender-blind-spots" });
+
+    /// Named ids rather than a predicate over category or headline, because
+    /// the two rules have neither in common: one is a Confirm switch with a
+    /// fix, the other a report-only disclosure. What puts them together is
+    /// the TOPIC, and the topic is not something a finding carries.
+    public static bool IsSecurity(DiagnosticFinding finding) =>
+        SecurityRuleIds.Contains(finding.RuleId, StringComparer.OrdinalIgnoreCase);
+
+    /// The Security tier's finding rows: the values that did NOT read as
+    /// Windows' safer setting, under the posture block that says which did.
+    ///
+    /// This band does not change what the report card says. The card's own
+    /// "could not read" list asks IsUnreadableDisclosure of the SNAPSHOT's
+    /// findings rather than of this page's bands, so a Defender read that
+    /// arrived empty is still named there while standing here.
+    public ObservableCollection<FindingRow> SecurityRows { get; } = new();
+
+    /// The five positive lines, one row each, in the order the page prints
+    /// them. Rendered from the snapshot's own reading and NEVER summed: five
+    /// rows are five rows, and there is no count, badge or verdict on this
+    /// page saying what they add up to (spec red line 4).
+    public ObservableCollection<PostureRow> PostureRows { get; } = new();
+
     /// The four the one button turns off.
     public ObservableCollection<FindingRow> SafeSwitchRows { get; } = new();
 
@@ -354,7 +400,7 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// in is this page's business and not the caller's.
     public void ExpandFinding(string ruleId)
     {
-        foreach (var row in DisclosureRows.Concat(UnreadableRows)
+        foreach (var row in DisclosureRows.Concat(UnreadableRows).Concat(SecurityRows)
                      .Concat(SafeSwitchRows).Concat(CostlySwitchRows))
             if (string.Equals(row.RuleId, ruleId, StringComparison.OrdinalIgnoreCase))
             {
@@ -495,6 +541,8 @@ public sealed class PrivacyViewModel : ViewModelBase
 
         DisclosureRows.Clear();
         UnreadableRows.Clear();
+        SecurityRows.Clear();
+        PostureRows.Clear();
         SafeSwitchRows.Clear();
         CostlySwitchRows.Clear();
         // Ordered before it is split, so each band keeps the one order this
@@ -509,6 +557,16 @@ public sealed class PrivacyViewModel : ViewModelBase
                 undoable.Contains(finding.RuleId),
                 row => _ = FixAsync(row), row => _ = UndoAsync(row),
                 onOpenWindowsSetting: OpenWindowsSetting));
+
+        // The order is the page's, fixed here rather than sorted: the two
+        // firewall-and-network rows first, then the consent prompt, then
+        // Defender's two. Nothing about the order is a ranking.
+        var p = snapshot.Posture;
+        PostureRows.Add(Posture("firewall", p.Firewall));
+        PostureRows.Add(Posture("rdp", p.RemoteDesktopOff));
+        PostureRows.Add(Posture("uac", p.UacPrompts));
+        PostureRows.Add(Posture("defender-rtp", p.DefenderRealTime));
+        PostureRows.Add(Posture("defender-tamper", p.DefenderTamper));
 
         UsbDeviceRows.Clear();
         foreach (var device in snapshot.UsbDevices)
@@ -566,11 +624,33 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// That last band is asked through IsUnreadableDisclosure rather than
     /// inline, because the report card's own unread section asks the same
     /// question and the two surfaces must not come to answer it differently.
+    ///
+    /// The Security arm is FIRST, and that is the point of it: uac-prompts is
+    /// a Confirm switch with a fix, so every arm below would have taken it,
+    /// and the topic is what decides where it goes rather than its consent
+    /// level. Nothing else on this page changes because of it — the one
+    /// button still walks SafeSwitchRows, and a security switch has never
+    /// been reachable from there.
     private ObservableCollection<FindingRow> Band(DiagnosticFinding finding) =>
-        IsConsequenceFree(finding) ? SafeSwitchRows
+        IsSecurity(finding) ? SecurityRows
+        : IsConsequenceFree(finding) ? SafeSwitchRows
         : CostsTheUserSomething(finding) ? CostlySwitchRows
         : IsUnreadableDisclosure(finding) ? UnreadableRows
         : DisclosureRows;
+
+    /// One posture row, and the three sentences a reading can take. Three
+    /// keys per row rather than one with a state beside it, because the row
+    /// is a SENTENCE in each state and they are not variations of one:
+    /// "Remote Desktop off", "Remote Desktop on: this machine accepts remote
+    /// sign-ins" and "Remote Desktop: brisk could not read this" say
+    /// different things, and a null must never be able to render as the
+    /// first (spec red line 2).
+    private PostureRow Posture(string key, bool? state) => state switch
+    {
+        true => new PostureRow(_loc[$"privacy.posture.{key}.fine"], PostureState.Fine),
+        false => new PostureRow(_loc[$"privacy.posture.{key}.attention"], PostureState.Attention),
+        null => new PostureRow(_loc[$"privacy.posture.{key}.unread"], PostureState.Unread),
+    };
 
     /// A date brisk read, or the dash this app prints where it has no
     /// reading. Never a guess and never a blank, which an eye reads as a

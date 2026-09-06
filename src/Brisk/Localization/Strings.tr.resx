@@ -374,7 +374,24 @@
   <data name="privacy.capability.microphone" xml:space="preserve"><value>mikrofon</value></data>
   <data name="privacy.capability.camera" xml:space="preserve"><value>kamera</value></data>
   <data name="privacy.defender.title" xml:space="preserve"><value>Defender'ın atladıkları</value></data>
-  <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik</value></data>
+  <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik ve güvenlik</value></data>
+  <data name="privacy.security.section" xml:space="preserve"><value>Güvenlik</value></data>
+  <data name="privacy.security.note" xml:space="preserve"><value>brisk bu değerleri okur ve hiçbirine not vermez. "İyi", değerin Windows'un daha güvenli ayarı olarak okunduğu anlamına gelir; bu makinede başka ne olduğu hakkında bir şey söylemez.</value></data>
+  <data name="privacy.posture.firewall.fine" xml:space="preserve"><value>Güvenlik duvarı üç ağ profilinde de açık</value></data>
+  <data name="privacy.posture.firewall.attention" xml:space="preserve"><value>Güvenlik duvarı en az bir ağ profilinde kapalı</value></data>
+  <data name="privacy.posture.firewall.unread" xml:space="preserve"><value>Güvenlik duvarı: brisk bunu okuyamadı</value></data>
+  <data name="privacy.posture.rdp.fine" xml:space="preserve"><value>Uzak Masaüstü kapalı</value></data>
+  <data name="privacy.posture.rdp.attention" xml:space="preserve"><value>Uzak Masaüstü açık: bu makine uzaktan oturum açmayı kabul ediyor</value></data>
+  <data name="privacy.posture.rdp.unread" xml:space="preserve"><value>Uzak Masaüstü: brisk bunu okuyamadı</value></data>
+  <data name="privacy.posture.uac.fine" xml:space="preserve"><value>Windows bir program kontrolü almadan önce soruyor</value></data>
+  <data name="privacy.posture.uac.attention" xml:space="preserve"><value>Windows bir program kontrolü almadan önce sormuyor (aşağıda)</value></data>
+  <data name="privacy.posture.uac.unread" xml:space="preserve"><value>UAC soruları: brisk bunu okuyamadı</value></data>
+  <data name="privacy.posture.defender-rtp.fine" xml:space="preserve"><value>Defender gerçek zamanlı koruma açık</value></data>
+  <data name="privacy.posture.defender-rtp.attention" xml:space="preserve"><value>Defender gerçek zamanlı koruma kapalı (aşağıda)</value></data>
+  <data name="privacy.posture.defender-rtp.unread" xml:space="preserve"><value>Defender gerçek zamanlı koruma: brisk bunu okuyamadı</value></data>
+  <data name="privacy.posture.defender-tamper.fine" xml:space="preserve"><value>Defender kurcalama koruması açık</value></data>
+  <data name="privacy.posture.defender-tamper.attention" xml:space="preserve"><value>Defender kurcalama koruması kapalı (aşağıda)</value></data>
+  <data name="privacy.posture.defender-tamper.unread" xml:space="preserve"><value>Defender kurcalama koruması: brisk bunu okuyamadı</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>
   <data name="privacy.usb.devices.title" xml:space="preserve"><value>USB kaydının tuttukları</value></data>

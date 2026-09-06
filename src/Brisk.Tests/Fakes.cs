@@ -268,6 +268,16 @@ public static class TestData
     /// skipped looks like, and a test about the fold passes its own.
     private static readonly string[] NoExclusionsRead = Array.Empty<string>();
 
+    /// The fixture read no posture value either — stated for the same reason
+    /// as the five above, and with the one difference that matters here: a
+    /// record of nulls is not an empty list, it is five rows that each say
+    /// "brisk could not read this". A default of all-true would have put
+    /// "firewall on for all three profiles" on a page built from a snapshot
+    /// that read no firewall, which is the spec's second red line broken by
+    /// a convenience.
+    private static readonly SecurityPostureReport NothingRead =
+        new(null, null, null, null, null, null, null);
+
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
         params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);
 
@@ -279,7 +289,11 @@ public static class TestData
         SensorStatus sensors, IReadOnlyList<ReadBackResult> readBack,
         params TargetScanResult[] targets) =>
         Snapshot(findings, sensors, readBack, NoDevicesRead, NoUsesRead,
-            NoExclusionsRead, targets);
+            // Named through rather than defaulted past: `targets` is the
+            // params array and every optional parameter added in front of it
+            // displaces it by one, which the compiler reports as a cast
+            // failure five arguments away from the cause.
+            NoExclusionsRead, NothingRead, targets);
 
     /// The whole shape, for the one fixture that plants device records: the
     /// card must print no name off a snapshot that CARRIES one, which is a
@@ -289,6 +303,7 @@ public static class TestData
         IReadOnlyList<UsbDeviceRecord> usbDevices,
         IReadOnlyList<CapabilityUseRecord>? capabilityUses = null,
         IReadOnlyList<string>? defenderExclusions = null,
+        SecurityPostureReport? posture = null,
         params TargetScanResult[] targets) => new(
         findings ?? Array.Empty<DiagnosticFinding>(),
         new ScanResult(targets), 72, new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
@@ -297,7 +312,8 @@ public static class TestData
         // with `snapshot with { BootTrend = ... }`.
         BootTrend: null,
         capabilityUses ?? NoUsesRead,
-        defenderExclusions ?? NoExclusionsRead);
+        defenderExclusions ?? NoExclusionsRead,
+        posture ?? NothingRead);
 
     /// A snapshot whose only distinguishing feature is what brisk found when
     /// it looked again — the shape most read-back tests want.
@@ -313,6 +329,14 @@ public static class TestData
         IReadOnlyList<string>? defenderExclusions = null) =>
         Snapshot(findings, NothingAnswered, NothingReRead, NoDevicesRead, capabilityUses,
             defenderExclusions);
+
+    /// The same shape for the posture block: the Security tier is the only
+    /// reader, and a test about the five rows cares about nothing else on
+    /// the snapshot.
+    public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings,
+        SecurityPostureReport posture) =>
+        Snapshot(findings, NothingAnswered, NothingReRead, NoDevicesRead, NoUsesRead,
+            NoExclusionsRead, posture);
 }
 
 public sealed class FakeEngineHost : IEngineHost

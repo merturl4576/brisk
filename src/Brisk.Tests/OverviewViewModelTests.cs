@@ -259,7 +259,8 @@ public class OverviewViewModelTests
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
             new SensorStatus(false, false, null), Array.Empty<ReadBackResult>(),
             Array.Empty<UsbDeviceRecord>(), null, Array.Empty<CapabilityUseRecord>(),
-            Array.Empty<string>());
+            Array.Empty<string>(),
+            new SecurityPostureReport(null, null, null, null, null, null, null));
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);

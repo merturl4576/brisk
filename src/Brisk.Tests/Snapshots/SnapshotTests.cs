@@ -572,6 +572,11 @@ public class SnapshotTests
                 // No excluded path either, and the third fold collapses on
                 // the empty list the same way.
                 Array.Empty<string>(),
+                // Nothing read for the posture block, which does NOT collapse:
+                // five rows saying "brisk could not read this" is what the
+                // Security tier renders over a fixture whose probes answer
+                // nothing, and it is the state the image should photograph.
+                null,
                 TestData.Target("user-temp", CleanupLevel.Safe, 2048)),
         };
         var loc = new Loc();

@@ -1403,7 +1403,8 @@ public class HealthViewModelTests
             new DateTime(2026, 8, 15, 12, 0, 0, DateTimeKind.Utc),
             new SensorStatus(false, false, null), Array.Empty<ReadBackResult>(),
             Array.Empty<UsbDeviceRecord>(), null, Array.Empty<CapabilityUseRecord>(),
-            Array.Empty<string>());
+            Array.Empty<string>(),
+            new SecurityPostureReport(null, null, null, null, null, null, null));
         var state = new AppState(host);
         var vm = new HealthViewModel(state, host, EnglishLoc(), () => false,
             new FixAllService(host));
