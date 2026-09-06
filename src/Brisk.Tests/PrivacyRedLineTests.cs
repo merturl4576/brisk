@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -454,12 +454,12 @@ public class PrivacyRedLineTests
     /// records the change and quotes what it replaced.
     ///
     /// NEITHER THIS LIST NOR THE ENGINE'S IS A SUPERSET OF THE OTHER, and
-    /// both run. ReadBackTests bans "leaves your machine" over its own four
+    /// both run. ReadBackTests bans "leaves your machine" over its own six
     /// sentences and this does not, on purpose: the page's own note says
     /// "what leaves this machine is not something those reads can tell you",
     /// which is the honest limit and not a claim, and no phrase list can tell
     /// a claim from a denial of knowledge. A ban of that shape is affordable
-    /// over four sentences one person wrote together and is not over the
+    /// over six sentences one person wrote together and is not over the
     /// whole topic's copy in two languages. The engine's lists are also blind
     /// to `privacy.*` and to PrivacyRuleIds.All, which BriskEngine cannot
     /// see.

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using BriskEngine.Models;
 
 namespace BriskEngine.Diagnostics.Rules.Privacy;
@@ -51,7 +51,7 @@ public sealed class UacPromptRule : TelemetrySwitchRule
     protected override Severity Severity => Severity.Warning;
 
     /// The family's other inversion: the fix turns a setting ON — Windows'
-    /// consent prompts — where the six older switches turn one off. The
+    /// consent prompts — where the seven other switches turn one off. The
     /// read-back's line about this rule is the on-direction one because of
     /// this, and Held or Reverted are the only two states it can reach, so
     /// those are the only two lines that direction needs.

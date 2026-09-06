@@ -277,7 +277,12 @@ Windows hides those from an unelevated process by design and that is the
 common case. Or any of `ExclusionCount`, `RealTimeOn`,
 `TamperOn`, `RunningMode` is null while the rest was read. Whole read null →
 the unreadable sentence ("brisk could not read Windows Defender's state on
-this machine"), `UnreadableRows`, no headline.
+this machine"), no headline. **Where the finding lands on the page is the
+Routing section's answer and not the headline's:** `defender-blind-spots`
+sits in the Security tier in every shape it takes, because
+`PrivacyViewModel.Band` asks the Security arm before the unreadable one,
+while the report card's "could not read" list still carries it off the same
+no-headline predicate.
 
 Title: "Windows Defender has blind spots". **The evidence is five clauses
 and always all five** — what is skipped, the two protections (how many read
@@ -303,8 +308,8 @@ mode", the mode as WMI reports it; (5) newest scan older than 14 days →
 MEASURED one, per the Finding paragraph above → "None"
 / "completed scans on record". Every state the rule reports as bad therefore
 carries one, because a disclosure WITHOUT a headline is how this family says
-nothing was read — `PrivacyViewModel` bands those into the page's
-could-not-read list and the report card prints their titles there. Each
+nothing was read — and the report card prints their titles under what brisk
+could not read. Each
 caption is a resx key in both languages; "Off" and "None" are keys too, not
 arguments, so they translate. **A part brisk could not read is not a
 measured fault**, and the four that can go unread — `ExclusionCount`,
