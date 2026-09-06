@@ -291,6 +291,9 @@
   <data name="rule.speech-typing.title" xml:space="preserve"><value>Speech and typing personalisation is not restricted</value></data>
   <data name="rule.speech-typing.evidence" xml:space="preserve"><value>brisk read the two values this setting uses on this machine and at least one of them does not read as restricted: that value is either something other than the restricted number, or not set at all. brisk reads the settings themselves and nothing past them. Restricting it writes two values and can be undone.</value></data>
   <data name="rule.speech-typing.advice" xml:space="preserve"><value>Windows calls this setting inking and typing personalisation. brisk writes both of its values and can write them back.</value></data>
+  <data name="rule.windows-suggestions.title" xml:space="preserve"><value>Windows shows suggested apps and tips, and can install promoted apps on its own</value></data>
+  <data name="rule.windows-suggestions.evidence" xml:space="preserve"><value>Six values under Windows' content delivery settings read as on or not set: suggested apps in Start, tips and suggestions, lock-screen promotions, and silent installation of promoted apps. brisk reads the six values and nothing past them; what Windows has already installed this way is not something those reads can tell you. Switching them off writes six values and can be undone.</value></data>
+  <data name="rule.windows-suggestions.advice" xml:space="preserve"><value>brisk can switch these six off and switch them back on again. brisk counts them among the settings whose being off takes nothing away that you use; the master switch above them is left alone, because it also turns off things people keep.</value></data>
   <data name="rule.location.title" xml:space="preserve"><value>Location access is not switched off</value></data>
   <data name="rule.location.evidence" xml:space="preserve"><value>brisk read the location consent on this machine and it does not read as denied. brisk reads the setting itself and nothing past it; what any app does with it is not something brisk can see from here. This switch costs you something — switch it off and Find my device stops working. It writes one value and can be undone.</value></data>
   <data name="rule.location.advice" xml:space="preserve"><value>This is one of the two switches brisk counts as costing you something: Find my device stops working. That is the feature that locates this machine if it goes missing, and it needs location. brisk can switch location access off and switch it back on again.</value></data>
@@ -389,6 +392,7 @@
   <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Diagnostic data policy set to basic</value></data>
   <data name="rule.tailored-experiences.done" xml:space="preserve"><value>Tailored experiences switched off</value></data>
   <data name="rule.speech-typing.done" xml:space="preserve"><value>Speech and typing personalisation restricted</value></data>
+  <data name="rule.windows-suggestions.done" xml:space="preserve"><value>Suggestions and silent installs switched off</value></data>
   <data name="rule.location.done" xml:space="preserve"><value>Location access switched off</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Activity history policy set to off</value></data>
   <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC values restored to Windows' defaults</value></data>

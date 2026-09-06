@@ -309,7 +309,7 @@ public class LocTests
     // cost line is the same one that would swallow these.
     [InlineData("rule.location.cost")]
     [InlineData("rule.activity-history.cost")]
-    // The seven switches' past-tense labels. DoneLabel falls back to
+    // The eight switches' past-tense labels. DoneLabel falls back to
     // "Fixed: {title}" when a rule has no .done key, and a finding title is
     // a sentence about the switch being ON — so a gap here puts "Fixed: The
     // advertising ID is not switched off" on a read-back line whose own
@@ -319,6 +319,7 @@ public class LocTests
     [InlineData("rule.diagnostic-level.done")]
     [InlineData("rule.tailored-experiences.done")]
     [InlineData("rule.speech-typing.done")]
+    [InlineData("rule.windows-suggestions.done")]
     [InlineData("rule.location.done")]
     [InlineData("rule.activity-history.done")]
     [InlineData("rule.uac-prompts.done")]

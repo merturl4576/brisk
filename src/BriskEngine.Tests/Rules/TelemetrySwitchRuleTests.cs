@@ -31,6 +31,7 @@ public class TelemetrySwitchRuleTests
     {
         "advertising-id", "diagnostic-level",
         "tailored-experiences", "speech-typing",
+        "windows-suggestions",
         "location", "activity-history",
     };
 
@@ -61,6 +62,7 @@ public class TelemetrySwitchRuleTests
         "diagnostic-level" => new DiagnosticLevelRule(),
         "tailored-experiences" => new TailoredExperiencesRule(),
         "speech-typing" => new SpeechTypingRule(),
+        "windows-suggestions" => new ContentSuggestionsRule(),
         "location" => new LocationRule(),
         "activity-history" => new ActivityHistoryRule(),
         _ => throw new ArgumentOutOfRangeException(
@@ -246,6 +248,7 @@ public class TelemetrySwitchRuleTests
     [InlineData("diagnostic-level", RuleCategory.Auto)]
     [InlineData("tailored-experiences", RuleCategory.Auto)]
     [InlineData("speech-typing", RuleCategory.Auto)]
+    [InlineData("windows-suggestions", RuleCategory.Auto)]
     [InlineData("location", RuleCategory.Confirm)]
     [InlineData("activity-history", RuleCategory.Confirm)]
     public void TheConsentLevel_MatchesWhatTheSwitchCosts(string id, RuleCategory expected)
@@ -647,6 +650,18 @@ public class TelemetrySwitchRuleTests
                     "RestrictImplicitTextCollection", 0, 1),
                 (@"HKCU\Software\Microsoft\InputPersonalization",
                     "RestrictImplicitInkCollection", 0, 1),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+                    "SilentInstalledAppsEnabled", 1, 0),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+                    "SystemPaneSuggestionsEnabled", 1, 0),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+                    "SoftLandingEnabled", 1, 0),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+                    "RotatingLockScreenOverlayEnabled", 1, 0),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+                    "SubscribedContent-338388Enabled", 1, 0),
+                (@"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
+                    "SubscribedContent-338389Enabled", 1, 0),
                 (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
                     "PublishUserActivities", 1, 0),
                 (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
@@ -677,5 +692,18 @@ public class TelemetrySwitchRuleTests
                  })
             Assert.True(expected == actual,
                 $"location's {name} is \"{actual}\", not \"{expected}\"");
+    }
+
+    /// The eighth switch's own pin: six values, all under its one key, and
+    /// ContentDeliveryAllowed — the master switch above them — deliberately
+    /// never among them.
+    [Fact]
+    public void WindowsSuggestions_TouchesSixValues_AndNeverTheMasterSwitch()
+    {
+        var rule = new ContentSuggestionsRule();
+        Assert.Equal(6, rule.Values.Count);
+        Assert.All(rule.Values, v => Assert.Equal(ContentSuggestionsRule.KeyPath, v.KeyPath));
+        Assert.DoesNotContain(rule.Values, v => v.ValueName == "ContentDeliveryAllowed");
+        Assert.Contains(rule.Values, v => v.ValueName == "SilentInstalledAppsEnabled");
     }
 }

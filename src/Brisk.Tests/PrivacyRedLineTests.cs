@@ -129,7 +129,7 @@ public class PrivacyRedLineTests
     /// rule hardcodes its own Id — and a typo there routes the finding to
     /// Sağlık without a word of complaint. Reading the shipped rule objects
     /// against the shipped list, from the one project that can see both, is
-    /// what turns that silence into a failure. It reaches the seven telemetry
+    /// what turns that silence into a failure. It reaches the eight telemetry
     /// switches; its sibling below reaches the six report-only disclosures,
     /// which are not TelemetrySwitchRules and so are invisible to this one.
     /// A privacy rule arriving under some third base class needs the same
@@ -140,7 +140,7 @@ public class PrivacyRedLineTests
         var switches = DiagnosticRuleRegistry.All
             .OfType<TelemetrySwitchRule>().ToList();
 
-        Assert.Equal(7, switches.Count);
+        Assert.Equal(8, switches.Count);
         foreach (var rule in switches)
             Assert.True(FindingSections.IsPrivacy(rule.Id),
                 $"rule '{rule.Id}' is a telemetry switch, but no id in " +
@@ -279,13 +279,13 @@ public class PrivacyRedLineTests
     /// above proves whatever is IN the list routes correctly; only this
     /// notices something dropping OUT of it, or an id arriving unannounced.
     [Fact]
-    public void PrivacyRuleIds_AreTheThirteenThisWaveDeclares()
+    public void PrivacyRuleIds_AreTheFourteenThisWaveDeclares()
     {
         Assert.Equal(
             new[]
             {
                 "advertising-id", "diagnostic-level", "tailored-experiences",
-                "speech-typing", "location", "activity-history",
+                "speech-typing", "windows-suggestions", "location", "activity-history",
                 "recall-status", "usb-history", "run-history",
                 "delivery-optimization", "uac-prompts", "camera-mic-use",
                 "defender-blind-spots",

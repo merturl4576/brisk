@@ -40,6 +40,7 @@ public class ReadBackTests
     {
         "advertising-id", "diagnostic-level",
         "tailored-experiences", "speech-typing",
+        "windows-suggestions",
         "location", "activity-history",
     };
 
@@ -55,7 +56,10 @@ public class ReadBackTests
     /// WhichSwitchesReadAsOff_AtAStateTheirOwnFixDidNotWrite is where the
     /// other question is answered, and it answers it differently.
     private static readonly string[] SettingIds =
-        { "advertising-id", "tailored-experiences", "speech-typing", "location" };
+        {
+            "advertising-id", "tailored-experiences", "speech-typing",
+            "windows-suggestions", "location",
+        };
 
     public static TheoryData<string> AllSwitches()
     {
@@ -91,6 +95,7 @@ public class ReadBackTests
         "diagnostic-level" => new DiagnosticLevelRule(),
         "tailored-experiences" => new TailoredExperiencesRule(),
         "speech-typing" => new SpeechTypingRule(),
+        "windows-suggestions" => new ContentSuggestionsRule(),
         "location" => new LocationRule(),
         "activity-history" => new ActivityHistoryRule(),
         _ => throw new ArgumentOutOfRangeException(
@@ -132,7 +137,7 @@ public class ReadBackTests
             : string.Join(", ", rows.Select(r => $"{r.RuleId}={r.State}"));
 
     /// Puts the switch back the way something other than brisk would. The
-    /// five numbered switches take their own on number; location takes a
+    /// six numbered switches take their own on number; location takes a
     /// WORD, because it has no number to take — which is the whole reason
     /// this helper is a switch statement and not a loop over Values.
     private static void WriteBackOn(FakeRegistry reg, string id)
@@ -961,6 +966,7 @@ public class ReadBackTests
             ["advertising-id"] = false,
             ["tailored-experiences"] = false,
             ["speech-typing"] = false,
+            ["windows-suggestions"] = false,
             ["activity-history"] = false,
             // Overrides ReadsAsOn with a threshold.
             ["diagnostic-level"] = true,

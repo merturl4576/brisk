@@ -291,6 +291,9 @@
   <data name="rule.speech-typing.title" xml:space="preserve"><value>Konuşma ve yazma kişiselleştirmesi kısıtlanmamış</value></data>
   <data name="rule.speech-typing.evidence" xml:space="preserve"><value>brisk bu ayarın kullandığı iki değeri okudu ve en az biri kısıtlanmış okunmuyor: o değer ya kısıtlı değerden başka bir şey ya da hiç ayarlanmamış. brisk yalnızca ayarların kendisini okur, ötesini değil. Kısıtlamak iki değer yazar ve geri alınabilir.</value></data>
   <data name="rule.speech-typing.advice" xml:space="preserve"><value>Windows bu ayara mürekkep ve yazma kişiselleştirmesi diyor. brisk ayarın iki değerini de yazar ve geri yazabilir.</value></data>
+  <data name="rule.windows-suggestions.title" xml:space="preserve"><value>Windows önerilen uygulamalar ve ipuçları gösteriyor, tanıtılan uygulamaları kendi başına kurabiliyor</value></data>
+  <data name="rule.windows-suggestions.evidence" xml:space="preserve"><value>Windows'un içerik teslim ayarları altındaki altı değer açık ya da ayarlanmamış okunuyor: Başlat'ta önerilen uygulamalar, ipuçları ve öneriler, kilit ekranı tanıtımları ve tanıtılan uygulamaların sessiz kurulumu. brisk altı değeri okur, ötesini okumaz; Windows'un bu yolla neyi çoktan kurduğu bu okumalardan çıkmaz. Kapatmak altı değer yazar ve geri alınabilir.</value></data>
+  <data name="rule.windows-suggestions.advice" xml:space="preserve"><value>brisk bu altısını kapatabilir ve yeniden açabilir. brisk bunları kapalı olması kullandığın hiçbir şeyi eksiltmeyen ayarlardan sayar; üstlerindeki ana şaltere dokunmaz, çünkü o, insanların sakladığı şeyleri de kapatır.</value></data>
   <data name="rule.location.title" xml:space="preserve"><value>Konum erişimi kapalı değil</value></data>
   <data name="rule.location.evidence" xml:space="preserve"><value>brisk bu makinedeki konum iznini okudu ve reddedildi diye okunmuyor. brisk yalnızca ayarın kendisini okur, ötesini değil; herhangi bir uygulamanın onunla ne yaptığı buradan görebileceği bir şey değil. Bu anahtarın bir bedeli var — kapatırsan 'Cihazımı bul' çalışmaz. Tek bir değer yazar ve geri alınabilir.</value></data>
   <data name="rule.location.advice" xml:space="preserve"><value>Bu, brisk'in bedeli var saydığı iki anahtardan biri: 'Cihazımı bul' çalışmaz. Makine kaybolursa onu bulan özellik odur ve konuma ihtiyacı vardır. brisk konum erişimini kapatabilir ve geri açabilir.</value></data>
@@ -389,6 +392,7 @@
   <data name="rule.diagnostic-level.done" xml:space="preserve"><value>Tanılama verisi ilkesi temel düzeye ayarlandı</value></data>
   <data name="rule.tailored-experiences.done" xml:space="preserve"><value>Uyarlanmış deneyimler kapatıldı</value></data>
   <data name="rule.speech-typing.done" xml:space="preserve"><value>Konuşma ve yazma kişiselleştirmesi kısıtlandı</value></data>
+  <data name="rule.windows-suggestions.done" xml:space="preserve"><value>Öneriler ve sessiz kurulumlar kapatıldı</value></data>
   <data name="rule.location.done" xml:space="preserve"><value>Konum erişimi kapatıldı</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Etkinlik geçmişi ilkesi kapalı olarak ayarlandı</value></data>
   <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC değerleri Windows'un varsayılanlarına geri alındı</value></data>

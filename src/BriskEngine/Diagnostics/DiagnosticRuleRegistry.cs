@@ -29,6 +29,11 @@ public static class DiagnosticRuleRegistry
         // they are what puts them on the one that does not.
         new AdvertisingIdRule(), new DiagnosticLevelRule(),
         new TailoredExperiencesRule(), new SpeechTypingRule(),
+        // The eighth switch: six content-delivery flags — suggested apps,
+        // tips, lock-screen promotions, silent installs — as one Auto
+        // switch. ContentDeliveryAllowed, the master switch above them, is
+        // deliberately not here; see the rule's own doc for why.
+        new ContentSuggestionsRule(),
         // The two that cost the user something. They are Confirm rather than
         // Auto, which is what keeps them out of `brisk fix --all` — being in
         // this list means brisk detects them and `brisk scan` prints them,
