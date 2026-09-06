@@ -515,7 +515,7 @@ public class DefenderRuleTests
                      ("the protections", new[] { "protections brisk checks" }),
                      ("the mode", new[] { "running mode" }),
                      ("the scan", new[] { "completed scan", "completed a scan" }),
-                     ("where the paths are", new[] { "on this page", "nothing past it" }),
+                     ("where the entries are", new[] { "on this page", "nothing past it" }),
                  })
             Assert.True(words.Any(w => finding.Evidence.Contains(w, StringComparison.Ordinal)),
                 $"{state}: the evidence says nothing about {clause} — " +

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -754,16 +754,16 @@ public class ReadBackTests
         }
     }
 
-    /// The red line, over this task's own four keys. brisk measured a local
+    /// The red line, over this task's own six keys. brisk measured a local
     /// policy and a local setting; it measured nothing about what any company
     /// receives, and the read-back is exactly where that claim would be
     /// tempting to make. The wider version over every privacy string now
-    /// exists and reads these four keys as well: PrivacyRedLineTests'
+    /// exists and reads these six keys as well: PrivacyRedLineTests'
     /// NoPrivacyCopy_ClaimsAnythingAboutWhatAnybodyElseSees, in Brisk.Tests,
     /// which is the only project that can see PrivacyRuleIds.All and the
     /// page's own strings. This one stays because it is the engine's guard on
     /// the engine's own sentences, and because its list is not the same list:
-    /// it bans "leaves your machine" over these four and the wider one does
+    /// it bans "leaves your machine" over these six and the wider one does
     /// not, for the reason recorded there.
     ///
     /// The Turkish entries are written with the real letters — göremez, not

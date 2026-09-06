@@ -467,9 +467,9 @@ public class PrivacyRedLineTests
     /// THE RESX BAN REACHES THE ENGINE'S OWN PROSE, which matters because
     /// that prose is concatenated C# and a phrase split across a `+` is
     /// invisible to any matcher. It does not have to be visible here.
-    /// TheEnglishResx_SaysWhatTheEngineSays — which exists in THREE engine
-    /// files, between them covering all six switches, the three registry
-    /// disclosures and delivery-optimization — asserts the English resx
+    /// TheEnglishResx_SaysWhatTheEngineSays — which exists in FIVE engine
+    /// files, between them covering all eight switches and all six
+    /// disclosures — asserts the English resx
     /// string EQUALS the concatenated whole, so a banned phrase assembled
     /// from fragments in a rule's Title or Evidence arrives in this file in
     /// one piece. The Turkish side needs no such bridge: this reads that file
@@ -484,12 +484,12 @@ public class PrivacyRedLineTests
     /// none is: NoPrivacyFixDescription_ClaimsAnythingAboutWhatAnybodyElseSees
     /// below runs the same predicate over it off the shipped rules. What
     /// remains of this residual is the missing key, not a missing scan. Only
-    /// the six switches carry one; the four disclosures ship it null.
+    /// the eight switches carry one; the six disclosures ship it null.
     ///
     /// Headline.Caption, which has the same status and a sharper edge.
     /// Headline declares Caption as ENGLISH PROSE beside CaptionKey, on the
-    /// same convention as Evidence — and the three TheEnglishResx tests
-    /// assert Title and Evidence ONLY. Nothing in this suite asserts a
+    /// same convention as Evidence — and three of the five TheEnglishResx
+    /// tests assert Title and Evidence ONLY. Nothing in this suite asserts a
     /// privacy rule's Headline.Caption equals rule.<id>.headline.caption, so
     /// that English never has to arrive in the resx and this guard never sees
     /// it. It is not dead text either: LocalizedText.Headline renders the

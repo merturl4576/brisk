@@ -12,7 +12,7 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// THE EVIDENCE IS FIVE CLAUSES AND ALWAYS ALL FIVE: what Defender is told
 /// to skip, how many of the two protections read off and how many could not
 /// be read, the running mode as Windows names it, the age of the newest
-/// completed scan, and where the paths are. Each clause has a measured form
+/// completed scan, and where the entries are. Each clause has a measured form
 /// carrying a number or Windows' own word, and a form for the reading that
 /// did not arrive — an exclusion list an unelevated process cannot see, a
 /// mode Windows named nothing for, a scan date that never arrived. The
@@ -118,7 +118,7 @@ public sealed class DefenderRule : PrivacyDisclosureRule
 
         // FIVE CLAUSES, ALWAYS ALL FIVE, each in the form the reading took:
         // what is skipped, the two protections, the mode, the newest scan,
-        // and where the paths are. The sentence is the whole reading and not
+        // and where the entries are. The sentence is the whole reading and not
         // its bad half (spec), which is also what keeps a headline from
         // leading with a clause the sentence never made — the state that
         // could not read the exclusion list still says how old the scan is.
@@ -179,7 +179,7 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             headline is null ? UnreadTitleText : TitleText,
             key,
             string.Join(" ", skipped, protections, running, scan,
-                exclusionsUnread ? TrailerWithoutPaths : Trailer),
+                exclusionsUnread ? TrailerWithoutEntries : Trailer),
             args, headline);
     }
 
@@ -264,16 +264,20 @@ public sealed class DefenderRule : PrivacyDisclosureRule
         "brisk could not read when Defender last completed a scan.";
 
     /// Said wherever brisk DID read something. The exclusions-unread state
-    /// keeps the second half and drops the first: there are no paths on the
+    /// keeps the second half and drops the first: there are no entries on the
     /// page to point at when the list is the thing brisk could not read.
+    ///
+    /// ENTRIES, because the fold holds every kind the count counted — a path,
+    /// an extension, a process — and a sentence that named only the paths
+    /// would describe a shorter list than the one below it.
     private const string Trailer =
-        "The excluded paths are on this page and on nothing built to be shared. " +
+        "The excluded entries are on this page and on nothing built to be shared. " +
         "brisk reads what Defender reports about itself and nothing past it; " +
         "whether another product protects this machine is not something that " +
         "read can tell you.";
 
-    /// The same limit, without the sentence about paths brisk has none of.
-    private const string TrailerWithoutPaths =
+    /// The same limit, without the sentence about entries brisk has none of.
+    private const string TrailerWithoutEntries =
         "brisk reads what Defender reports about itself and nothing past it; " +
         "whether another product protects this machine is not something that " +
         "read can tell you.";

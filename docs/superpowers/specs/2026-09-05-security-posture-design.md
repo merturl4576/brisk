@@ -287,7 +287,8 @@ no-headline predicate.
 Title: "Windows Defender has blind spots". **The evidence is five clauses
 and always all five** — what is skipped, the two protections (how many read
 off and how many could not be read), the running mode, the newest scan, and
-where the paths are — each in the form its reading took: measured, or the
+where the entries are ("The excluded entries are on this page and on nothing
+built to be shared") — each in the form its reading took: measured, or the
 sentence for a reading that did not arrive. The clauses that are fine are
 included, so the sentence is the full reading and not only the bad half, and
 no headline can name a clause the sentence lacks. Exclusions and mode have
@@ -442,7 +443,7 @@ real machine.
   → fires. After the fix: (1,5,1), read-back Held.
 - Defender: 5 excluded paths (WMI and registry agree), real-time on, tamper
   on, mode Normal, quick scan 2 days old, full scan 21 days old, signature
-  age 0 → fires on exclusions alone, headline "5 paths / Defender skips".
+  age 0 → fires on exclusions alone, headline "5 entries / Defender skips".
 - Content delivery: all six values present and 1 → fires; after fix all 0.
 - Microphone, last 30 days (window from 2026-09-05, so from 08-06): Chrome
   (08-11) and Wispr Flow (08-11, newest of 17 version entries) → 2 apps.
