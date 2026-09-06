@@ -183,6 +183,34 @@ public static class Program
             : unread + why + " Running as administrator can help other sensors.";
     }
 
+    /// The positive lines for the console. A row that is not fine is left
+    /// out: it is already a finding above. A row brisk did not read is named
+    /// on its own line, never folded into "fine".
+    ///
+    /// Two lines and no third, because there is no third thing to say. These
+    /// never count, never grade and never conclude — the spec's fourth red
+    /// line is that brisk does not tell anyone their machine is secure, and a
+    /// "4 of 5 fine" would be exactly that with the verdict hidden in a
+    /// fraction.
+    public static (string? Fine, string? Unread) PostureLines(SecurityPostureReport p)
+    {
+        var fine = new List<string>();
+        var unread = new List<string>();
+        void Row(bool? state, string fineText, string name)
+        {
+            if (state == true) fine.Add(fineText);
+            else if (state is null) unread.Add(name);
+        }
+        Row(p.Firewall, "firewall on for all 3 profiles", "firewall");
+        Row(p.RemoteDesktopOff, "Remote Desktop off", "Remote Desktop");
+        Row(p.UacPrompts, "Windows asks before a program takes control", "UAC prompts");
+        Row(p.DefenderRealTime, "Defender real-time protection on", "Defender real-time protection");
+        Row(p.DefenderTamper, "Defender tamper protection on", "Defender tamper protection");
+        return (
+            fine.Count > 0 ? "Checked and fine: " + string.Join(", ", fine) + "." : null,
+            unread.Count > 0 ? "Not read: " + string.Join(", ", unread) + "." : null);
+    }
+
     private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner,
         bool elevated)
     {
@@ -193,6 +221,9 @@ public static class Program
             .Select(f => f!)
             .ToList();
         var scan = scanner.Scan();
+        // After the rules, so Defender's answer comes out of the memo the
+        // rule loop already filled: one WMI read per scan.
+        var posture = SecurityPosture.Read(ctx);
 
         if (cmd.Json)
         {
@@ -224,6 +255,11 @@ public static class Program
                     gpuC = ctx.Sensors.GpuTempC(),
                     notice = sensorNotice,
                 },
+                // Booleans and nulls, and a null is a null: anything parsing
+                // this must be able to tell a value that read as Windows'
+                // safer setting from one brisk never read. No path and no
+                // app name rides here — this record holds neither.
+                posture,
             };
             Console.WriteLine(JsonSerializer.Serialize(payload));
             return 0;
@@ -242,6 +278,10 @@ public static class Program
         }
 
         if (sensorNotice is not null) Console.WriteLine($"[i ] {sensorNotice}");
+
+        var (fineLine, unreadLine) = PostureLines(posture);
+        if (fineLine is not null) Console.WriteLine($"[ok] {fineLine}");
+        if (unreadLine is not null) Console.WriteLine($"[i ] {unreadLine}");
 
         // ReclaimableBytes, not TotalBytes: the printed promise counts only
         // what 'brisk clean' can actually take right now (running-app and
