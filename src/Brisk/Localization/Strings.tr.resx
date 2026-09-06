@@ -361,7 +361,7 @@
   <data name="rule.defender-blind-spots.evidence.unread" xml:space="preserve"><value>brisk Windows Defender'a kendisini sordu ve okuyabildiği bir yanıt almadı. Defender yok olabilir, yerini başka bir ürün almış olabilir ya da soruyu reddediyor olabilir; brisk buradan hangisi olduğunu söyleyemez ve hiçbirini iyi diye bildirmez.</value></data>
   <data name="rule.defender-blind-spots.advice" xml:space="preserve"><value>brisk bunu yalnızca okur; Defender'ı değiştirmez ve düzeltme önermez. Aşağıdaki liste Defender'a atlaması söylenenleri adlandırır. Dışarıda tutulan bir klasöre bırakılan hiçbir şey taranmaz ve kendini o listeye eklemek yaygın bir numaradır. Bir girdiyi Windows Güvenliği'nden kaldırırsın.</value></data>
   <data name="rule.defender-blind-spots.headline.value" xml:space="preserve"><value>{0}</value></data>
-  <data name="rule.defender-blind-spots.headline.caption" xml:space="preserve"><value>yolu Defender atlıyor</value></data>
+  <data name="rule.defender-blind-spots.headline.caption" xml:space="preserve"><value>girdiyi Defender atlıyor</value></data>
   <data name="rule.defender-blind-spots.headline.value.off" xml:space="preserve"><value>Kapalı</value></data>
   <data name="rule.defender-blind-spots.headline.value.none" xml:space="preserve"><value>Yok</value></data>
   <data name="rule.defender-blind-spots.headline.caption.realtime" xml:space="preserve"><value>gerçek zamanlı koruma</value></data>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Management;
 using System.Security.Principal;
@@ -62,10 +62,9 @@ public sealed class RealDefenderProbe : IDefenderProbe
             if (!answered) return null;
 
             int? count = null;
-            var paths = new List<string>();
+            var exclusions = new List<string>();
             if (IsElevated())
             {
-                var total = 0;
                 var hidden = false;
                 // The same guard the status query above keeps: a query that
                 // answered no rows read nothing, and nothing is not zero
@@ -80,28 +79,54 @@ public sealed class RealDefenderProbe : IDefenderProbe
                     using (row)
                     {
                         listed = true;
-                        foreach (var name in new[] { "ExclusionPath", "ExclusionExtension", "ExclusionProcess" })
-                        {
-                            if (row[name] is not string[] items) continue;
-                            if (IsHidden(items)) { hidden = true; break; }
-                            total += items.Length;
-                            if (name == "ExclusionPath") paths.AddRange(items);
-                        }
+                        var paths = Items(row, "ExclusionPath");
+                        var extensions = Items(row, "ExclusionExtension");
+                        var processes = Items(row, "ExclusionProcess");
+                        hidden = IsHidden(paths) || IsHidden(extensions)
+                            || IsHidden(processes);
+                        if (!hidden) exclusions = Entries(paths, extensions, processes);
                     }
                     break;
                 }
                 // The token said administrator and Windows answered with the
                 // sentinel anyway: whatever produced that, brisk did not read
                 // the list, and it says so rather than counting a sentence.
-                if (hidden || !listed) paths.Clear();
-                else count = total;
+                if (hidden || !listed) exclusions.Clear();
+                else count = exclusions.Count;
             }
-            return new DefenderStatus(realTime, tamper, mode, count, paths, quick, full, signatureAge);
+            return new DefenderStatus(realTime, tamper, mode, count, exclusions, quick, full, signatureAge);
         }
         catch (Exception)
         {
             return null;
         }
+    }
+
+    /// A property Windows did not answer with a string array is no entries,
+    /// which is what the caller counts it as.
+    private static string[] Items(ManagementBaseObject row, string name) =>
+        row[name] as string[] ?? Array.Empty<string>();
+
+    /// THE COUNT AND THE LIST ARE ONE READING. Defender is told to skip
+    /// paths, file extensions and processes, and all three are blind spots;
+    /// the count has always covered all three, so the list has to as well or
+    /// a machine with two process exclusions and no folder reads "2 entries
+    /// Defender skips" over an empty fold.
+    ///
+    /// A path travels bare, because a path is the shape a reader recognises
+    /// at a glance. The other two carry the kind they are: ".vdi" and
+    /// "chrome.exe" listed among folders would read as files Defender skips
+    /// rather than as an extension and a process, which is a different and
+    /// smaller claim than the true one.
+    internal static List<string> Entries(string[] paths, string[] extensions,
+        string[] processes)
+    {
+        var entries = new List<string>(
+            paths.Length + extensions.Length + processes.Length);
+        entries.AddRange(paths);
+        foreach (var extension in extensions) entries.Add("extension: " + extension);
+        foreach (var process in processes) entries.Add("process: " + process);
+        return entries;
     }
 
     /// WMI dates are DMTF strings; an unset one is null or empty. A string

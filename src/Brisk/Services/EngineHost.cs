@@ -183,7 +183,7 @@ public sealed class EngineHost : IEngineHost
         IReadOnlyList<string> defenderExclusions;
         try
         {
-            defenderExclusions = DefenderRule.Status(ctx)?.ExclusionPaths ?? Array.Empty<string>();
+            defenderExclusions = DefenderRule.Status(ctx)?.Exclusions ?? Array.Empty<string>();
         }
         catch (Exception)
         {

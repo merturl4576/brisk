@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BriskEngine.Models;
@@ -18,7 +18,7 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// mode Windows named nothing for, a scan that never completed. The evidence
 /// key names which forms were taken, which is why there are eight of them.
 ///
-/// The excluded paths never leave DefenderStatus.ExclusionPaths except onto
+/// The excluded entries never leave DefenderStatus.Exclusions except onto
 /// ScanSnapshot.DefenderExclusions, the Privacy page's own fold. Red line 2.
 ///
 /// One WMI read per scan: Status memoizes on the context, and the posture
@@ -192,7 +192,7 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     {
         if (exclusions > 0)
             return Reading(exclusions.ToString(CultureInfo.InvariantCulture),
-                "paths Defender skips", "");
+                "entries Defender skips", "");
         if (s.RealTimeOn == false) return Word("off", "Off", "real-time protection", ".realtime");
         if (s.TamperOn == false) return Word("off", "Off", "tamper protection", ".tamper");
         if (notNormal) return Reading(mode, "Defender mode", ".mode");

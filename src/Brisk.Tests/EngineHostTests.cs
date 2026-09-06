@@ -218,7 +218,7 @@ file sealed class FlippingDefender : IDefenderProbe
         return new DefenderStatus(
             RealTimeOn: first, TamperOn: true, RunningMode: "Normal",
             ExclusionCount: 1,
-            ExclusionPaths: new[] { first ? @"C:\first" : @"C:\second" },
+            Exclusions: new[] { first ? @"C:\first" : @"C:\second" },
             LastQuickScanUtc: new DateTime(2026, 9, 4, 0, 0, 0, DateTimeKind.Utc),
             LastFullScanUtc: null, SignatureAgeDays: 0);
     }

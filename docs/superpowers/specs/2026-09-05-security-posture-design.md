@@ -60,7 +60,8 @@ page moves it by zero, and that stays true with a Security tier on it.
 ## The red lines (each becomes a test)
 
 1. **Numbers, never contents, on every surface built to be shared.** "5
-   paths Defender skips" on the finding; the paths on the Privacy page only.
+   entries Defender skips" on the finding; the entries on the Privacy page
+   only.
    "6 apps used the microphone" on the finding; the app names and paths on
    the Privacy page only. `brisk scan --json` is a shared surface (bug
    reports carry it): no path and no app name in any finding string,
@@ -242,10 +243,18 @@ the records and the finding does not.
 references. Whole read fails (no Defender, namespace missing, throw) → null.
 
 `DefenderStatus`: `bool? RealTimeOn`, `bool? TamperOn`, `string?
-RunningMode`, `int? ExclusionCount`, `IReadOnlyList<string> ExclusionPaths`,
+RunningMode`, `int? ExclusionCount`, `IReadOnlyList<string> Exclusions`,
 `DateTime? LastQuickScanUtc`, `DateTime? LastFullScanUtc`, `int?
-SignatureAgeDays`. **Exclusions are hidden from non-administrators by
-Windows itself** — not an error and not an empty list: each of the three
+SignatureAgeDays`. **The count and the list are one reading.**
+`ExclusionCount` has always covered all three exclusion kinds, and so does
+`Exclusions`: a path travels bare, an extension as `extension: .vdi`, a
+process as `process: chrome.exe`, and the list's length equals the count
+wherever the list was read. A count that summed three kinds over a fold
+holding one would read "2 entries Defender skips" above an empty list on a
+machine that excludes two processes and no folder.
+
+**Exclusions are hidden from non-administrators by Windows itself** — not an
+error and not an empty list: each of the three
 exclusion properties comes back holding ONE sentinel string, "N/A: Must be
 an administrator to view exclusions" (measured unelevated 2026-09-06). The
 real probe checks its own token and reports `ExclusionCount = null` and an
@@ -279,7 +288,7 @@ substituted verbatim by `LocalizedText`, so a clause passed as an argument
 would reach a Turkish reader in English.
 
 **Headline: the worst clause brisk MEASURED**, first match winning: (1)
-`ExclusionCount > 0` → "{n}" / "paths Defender skips"; (2) `RealTimeOn ==
+`ExclusionCount > 0` → "{n}" / "entries Defender skips"; (2) `RealTimeOn ==
 false` → "Off" / "real-time protection"; (3) `TamperOn == false` → "Off" /
 "tamper protection"; (4) `RunningMode` not "Normal" → "{mode}" / "Defender
 mode", the mode as WMI reports it; (5) newest scan older than 14 days →
@@ -297,7 +306,7 @@ no headline (an unreadable disclosure); beside a measured fault, the title
 is the ordinary one, that fault leads, and the evidence keeps the unread
 clause. A null `RunningMode` is never the word "unknown" and never travels
 as an argument. The
-paths themselves
+entries themselves
 never leave the snapshot: `ScanSnapshot.DefenderExclusions`
 (`IReadOnlyList<string>`, required) → a fold on the page, "What Defender
 skips".

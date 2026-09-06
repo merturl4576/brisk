@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -19,7 +19,7 @@ public class DefenderRuleTests
 
     private static DefenderStatus Fine() => new(
         RealTimeOn: true, TamperOn: true, RunningMode: "Normal", ExclusionCount: 0,
-        ExclusionPaths: Array.Empty<string>(),
+        Exclusions: Array.Empty<string>(),
         LastQuickScanUtc: Now.AddDays(-2), LastFullScanUtc: Now.AddDays(-21), SignatureAgeDays: 0);
 
     private static (DiagnosticContext ctx, FakeDefender probe) Context(DefenderStatus? status)
@@ -61,7 +61,7 @@ public class DefenderRuleTests
         const string unread = "title.unread";
         return new TheoryData<string, DefenderStatus, string>
         {
-            { "exclusions", f with { ExclusionCount = 5, ExclusionPaths = new[] { @"C:\a", @"C:\b", @"C:\c", @"C:\d", @"C:\e" } }, named },
+            { "exclusions", f with { ExclusionCount = 5, Exclusions = new[] { @"C:\a", @"C:\b", @"C:\c", @"C:\d", @"C:\e" } }, named },
             { "exclusions unread", f with { ExclusionCount = null }, unread },
             { "real-time unread", f with { RealTimeOn = null }, unread },
             { "tamper unread", f with { TamperOn = null }, unread },
@@ -200,7 +200,7 @@ public class DefenderRuleTests
     [Fact]
     public void Exclusions_LeadTheHeadline_AndTheEvidenceCarriesTheCount()
     {
-        var (ctx, _) = Context(Fine() with { ExclusionCount = 5, ExclusionPaths = new[] { @"C:\ZZZ-excluded" } });
+        var (ctx, _) = Context(Fine() with { ExclusionCount = 5, Exclusions = new[] { @"C:\ZZZ-excluded" } });
         var finding = Rule().Detect(ctx)!;
         Assert.Equal("5", finding.Headline!.Value);
         Assert.Equal($"rule.{DefenderRule.RuleId}.headline.caption", finding.Headline.CaptionKey);
@@ -269,7 +269,7 @@ public class DefenderRuleTests
     [Fact]
     public void NoExcludedPath_ReachesAnyFindingString_OrTheJson()
     {
-        var (ctx, _) = Context(Fine() with { ExclusionCount = 2, ExclusionPaths = new[] { @"C:\ZZZ-excluded", @"D:\ZZZ-two" } });
+        var (ctx, _) = Context(Fine() with { ExclusionCount = 2, Exclusions = new[] { @"C:\ZZZ-excluded", @"D:\ZZZ-two" } });
         var finding = Rule().Detect(ctx)!;
         var everything = string.Join(" | ", EverythingAReaderWouldSee(finding))
             + " | " + JsonSerializer.Serialize(finding);

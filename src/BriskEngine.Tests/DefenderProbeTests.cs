@@ -1,4 +1,4 @@
-using BriskEngine.Diagnostics.RealProbes;
+﻿using BriskEngine.Diagnostics.RealProbes;
 using Xunit;
 
 namespace BriskEngine.Tests;
@@ -45,5 +45,47 @@ public class DefenderProbeTests
     public void AnEmptyList_IsNotHidden()
     {
         Assert.False(RealDefenderProbe.IsHidden(System.Array.Empty<string>()));
+    }
+
+    /// THE COUNT IS THE LIST'S LENGTH. The finding counts paths, extensions
+    /// and processes together, so the fold the Privacy page opens has to hold
+    /// all three or a machine excluding two processes and no folder reads
+    /// "2 entries Defender skips" over an empty list.
+    [Fact]
+    public void EveryKindOfExclusion_IsInTheList_AndTheListIsTheCount()
+    {
+        var entries = RealDefenderProbe.Entries(
+            new[] { @"C:\Users\U\.claude", @"D:\vm" },
+            new[] { ".vdi" },
+            new[] { "chrome.exe", "node.exe" });
+
+        Assert.Equal(5, entries.Count);
+        Assert.Equal(
+            new[] { @"C:\Users\U\.claude", @"D:\vm", "extension: .vdi",
+                "process: chrome.exe", "process: node.exe" },
+            entries);
+    }
+
+    /// A path travels bare and the other two say what they are: ".vdi" and
+    /// "chrome.exe" listed among folders would read as files Defender skips,
+    /// which is a smaller claim than the true one.
+    [Fact]
+    public void OnlyPaths_TravelWithoutALabel()
+    {
+        var paths = RealDefenderProbe.Entries(
+            new[] { @"C:\only" }, System.Array.Empty<string>(),
+            System.Array.Empty<string>());
+
+        Assert.Equal(new[] { @"C:\only" }, paths);
+    }
+
+    /// Nothing excluded anywhere is an empty list and a count of zero, which
+    /// is a reading and not the shape the probe reports as unread.
+    [Fact]
+    public void NoExclusionsAtAll_IsAnEmptyList()
+    {
+        Assert.Empty(RealDefenderProbe.Entries(
+            System.Array.Empty<string>(), System.Array.Empty<string>(),
+            System.Array.Empty<string>()));
     }
 }
