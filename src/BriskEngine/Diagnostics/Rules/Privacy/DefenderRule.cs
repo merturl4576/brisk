@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using BriskEngine.Models;
 
@@ -8,13 +9,14 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// protections are on, what mode it runs in, and how old its newest scan is.
 /// Report-only; the one thing brisk offers is a link to Windows Security.
 ///
-/// THE EVIDENCE CARRIES NUMBERS AND WINDOWS' OWN MODE WORD, nothing brisk
-/// would have to translate: {0} excluded entries, {1} of the two protections
-/// reading off, {2} of them unread, {3} the running mode as Windows names
-/// it, {4} the age in days of the newest completed scan. Two states have no
-/// number to put in a slot and get their own key: no scan on record, and an
-/// exclusion list brisk could not read (an unelevated process — Windows
-/// hides the list rather than refusing it, so null is the honest count).
+/// THE EVIDENCE IS FIVE CLAUSES AND ALWAYS ALL FIVE: what Defender is told
+/// to skip, how many of the two protections read off and how many could not
+/// be read, the running mode as Windows names it, the age of the newest
+/// completed scan, and where the paths are. Each clause has a measured form
+/// carrying a number or Windows' own word, and a form for the reading that
+/// did not arrive — an exclusion list an unelevated process cannot see, a
+/// mode Windows named nothing for, a scan that never completed. The evidence
+/// key names which forms were taken, which is why there are eight of them.
 ///
 /// The excluded paths never leave DefenderStatus.ExclusionPaths except onto
 /// ScanSnapshot.DefenderExclusions, the Privacy page's own fold. Red line 2.
@@ -24,7 +26,10 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 public sealed class DefenderRule : PrivacyDisclosureRule
 {
     public const string RuleId = "defender-blind-spots";
-    public static readonly TimeSpan ScanAgeLimit = TimeSpan.FromDays(14);
+    /// Whole days, because whole days is what the finding reports. See
+    /// Detect: one measure, so the boundary and the printed age cannot
+    /// disagree.
+    public const int ScanAgeLimitDays = 14;
     private const string MemoKey = "defender";
     private static readonly object Missing = new();
 
@@ -62,65 +67,98 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             (null, { } f) => f,
             _ => null,
         };
-        // `stamp` and not `n`: the count's own `n` is declared further down in
-        // the same scope, and a pattern variable shares it.
+        // WHOLE DAYS, and the age the reader is shown is the age the rule
+        // judges. A TimeSpan comparison beside a truncated number made 14.5
+        // days fire and then print "14 days old" — two measures of one
+        // reading, disagreeing in the one place a reader can see both.
         int? scanAgeDays = newest is { } stamp
             ? Math.Max(0, (int)(now - stamp).TotalDays)
             : null;
 
         var off = (s.RealTimeOn == false ? 1 : 0) + (s.TamperOn == false ? 1 : 0);
         var unread = (s.RealTimeOn is null ? 1 : 0) + (s.TamperOn is null ? 1 : 0);
-        var mode = s.RunningMode ?? "unknown";
-        var notNormal = !string.Equals(mode, "Normal", StringComparison.OrdinalIgnoreCase);
+        // A MODE BRISK DID NOT READ IS NOT A MODE. Coalescing null to the word
+        // "unknown" made an unread reading into a measured one — and shipped
+        // brisk's own English through the value slot, where no resx can reach
+        // it. Null is its own clause, with a key.
+        // Empty counts as unread beside null: a mode with no name in it is
+        // not a mode Windows told brisk about, and it would otherwise lead
+        // with an empty headline.
+        var modeUnread = string.IsNullOrEmpty(s.RunningMode);
+        var mode = s.RunningMode ?? "";
+        var notNormal = !modeUnread
+            && !string.Equals(mode, "Normal", StringComparison.OrdinalIgnoreCase);
         var exclusions = s.ExclusionCount ?? 0;
         var exclusionsUnread = s.ExclusionCount is null;
-        var stale = scanAgeDays is null || now - newest!.Value > ScanAgeLimit;
+        var noScan = scanAgeDays is null;
+        var staleScan = scanAgeDays is { } days && days > ScanAgeLimitDays;
 
-        if (exclusions == 0 && !exclusionsUnread && off == 0 && unread == 0 && !notNormal && !stale)
+        if (exclusions == 0 && !exclusionsUnread && off == 0 && unread == 0
+            && !modeUnread && !notNormal && !noScan && !staleScan)
             return null;
 
-        var n = exclusions.ToString(CultureInfo.InvariantCulture);
+        // FIVE CLAUSES, ALWAYS ALL FIVE, each in the form the reading took:
+        // what is skipped, the two protections, the mode, the newest scan,
+        // and where the paths are. The sentence is the whole reading and not
+        // its bad half (spec), which is also what keeps a headline from
+        // leading with a clause the sentence never made — the state that
+        // could not read the exclusion list still says how old the scan is.
+        //
+        // The key names which forms were taken, so a reader of the resx can
+        // see the same eight sentences the rule can assemble, and the args
+        // arrive in the order the clauses do.
+        var key = $"rule.{Id}.evidence"
+            + (exclusionsUnread ? ".exclusions-unread" : "")
+            + (modeUnread ? ".mode-unread" : "")
+            + (noScan ? ".no-scan" : "");
+        var args = new List<string>();
+
+        var skipped = ExclusionsUnreadClause;
+        if (!exclusionsUnread)
+        {
+            var n = exclusions.ToString(CultureInfo.InvariantCulture);
+            args.Add(n);
+            skipped = $"{n} entries are excluded from scanning.";
+        }
+
         var offText = off.ToString(CultureInfo.InvariantCulture);
         var unreadText = unread.ToString(CultureInfo.InvariantCulture);
+        args.Add(offText);
+        args.Add(unreadText);
         var protections =
             $"{offText} of the two protections brisk checks, real-time and tamper, " +
-            $"read as off, and {unreadText} could not be read. Defender's running mode " +
-            $"reads {mode}.";
-        var headline = Lead(s, exclusions, mode, notNormal, scanAgeDays, stale);
+            $"read as off, and {unreadText} could not be read.";
 
-        // THE EXCLUSION LIST BRISK COULD NOT READ. What the finding is called
-        // depends on whether anything else here was MEASURED as bad. With
-        // everything brisk did read reading fine, the only reason this fires
-        // is the reading that never arrived, and titling that "Defender has
-        // blind spots" claims blind spots off a hole: the unread title, no
-        // headline, and the page bands it with what brisk could not read.
-        // With something else measured bad, the title is the ordinary one and
-        // that clause leads. The evidence is the same sentence either way —
-        // the measured clauses plus "could not read the list".
-        if (exclusionsUnread)
-            return Disclosure(
-                headline is null ? $"rule.{Id}.title.unread" : $"rule.{Id}.title",
-                headline is null ? UnreadTitleText : TitleText,
-                $"rule.{Id}.evidence.exclusions-unread",
-                "brisk could not read Defender's exclusion list without administrator " +
-                "rights, so it does not say how many entries are skipped. " + protections +
-                " " + TrailerWithoutPaths,
-                new[] { offText, unreadText, mode },
-                headline);
+        var running = ModeUnreadClause;
+        if (!modeUnread)
+        {
+            args.Add(mode);
+            running = $"Defender's running mode reads {mode}.";
+        }
 
-        if (scanAgeDays is null)
-            return Disclosure($"rule.{Id}.title", TitleText,
-                $"rule.{Id}.evidence.no-scan",
-                $"{n} entries are excluded from scanning. " + protections +
-                " No completed scan is on record. " + Trailer,
-                new[] { n, offText, unreadText, mode }, headline);
+        var scan = "No completed scan is on record.";
+        if (!noScan)
+        {
+            var age = scanAgeDays!.Value.ToString(CultureInfo.InvariantCulture);
+            args.Add(age);
+            scan = $"The newest completed scan is {age} days old.";
+        }
 
-        var age = scanAgeDays.Value.ToString(CultureInfo.InvariantCulture);
-        return Disclosure($"rule.{Id}.title", TitleText,
-            $"rule.{Id}.evidence",
-            $"{n} entries are excluded from scanning. " + protections +
-            $" The newest completed scan is {age} days old. " + Trailer,
-            new[] { n, offText, unreadText, mode, age }, headline);
+        var headline = Lead(s, exclusions, mode, notNormal, scanAgeDays, staleScan);
+
+        // WHAT THE FINDING IS CALLED FOLLOWS WHAT IT LED WITH. A headline is
+        // this family's word for "brisk read this", so a finding with none
+        // fires only because something could not be read — an exclusion list,
+        // a protection, the mode — and the unread title is what says so.
+        // Anything measured bad takes the rule's own name and leads with that
+        // reading, however many other parts went unread beside it.
+        return Disclosure(
+            headline is null ? $"rule.{Id}.title.unread" : $"rule.{Id}.title",
+            headline is null ? UnreadTitleText : TitleText,
+            key,
+            string.Join(" ", skipped, protections, running, scan,
+                exclusionsUnread ? TrailerWithoutPaths : Trailer),
+            args, headline);
     }
 
     /// THE WORST CLAUSE BRISK MEASURED, and never one it did not. Every state
@@ -144,7 +182,7 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     /// The running mode is Windows' word for its own state, so it travels as
     /// an argument and is not translated by anybody.
     private Headline? Lead(DefenderStatus s, int exclusions, string mode,
-        bool notNormal, int? scanAgeDays, bool stale)
+        bool notNormal, int? scanAgeDays, bool staleScan)
     {
         if (exclusions > 0)
             return Reading(exclusions.ToString(CultureInfo.InvariantCulture),
@@ -152,11 +190,14 @@ public sealed class DefenderRule : PrivacyDisclosureRule
         if (s.RealTimeOn == false) return Word("off", "Off", "real-time protection", ".realtime");
         if (s.TamperOn == false) return Word("off", "Off", "tamper protection", ".tamper");
         if (notNormal) return Reading(mode, "Defender mode", ".mode");
-        if (stale && scanAgeDays is { } days)
+        if (staleScan && scanAgeDays is { } days)
             return Reading(days.ToString(CultureInfo.InvariantCulture),
                 "days since the last scan", ".scan-age");
         if (scanAgeDays is null)
             return Word("none", "None", "completed scans on record", ".no-scan");
+        // Nothing brisk MEASURED is bad here, so nothing leads: what is left
+        // is one or more readings that did not arrive, and the caller says so
+        // with the unread title.
         return null;
     }
 
@@ -175,6 +216,19 @@ public sealed class DefenderRule : PrivacyDisclosureRule
             $"rule.{Id}.headline.caption{captionSuffix}", Array.Empty<string>());
 
     private const string TitleText = "Windows Defender has blind spots";
+
+    /// The exclusion clause when the list could not be read. Never a zero:
+    /// Windows hides the list from a process that is not elevated, and a
+    /// count brisk did not take is not a count of nothing.
+    private const string ExclusionsUnreadClause =
+        "brisk could not read Defender's exclusion list without administrator " +
+        "rights, so it does not say how many entries are skipped.";
+
+    /// The mode clause when Windows named no mode. Its own sentence rather
+    /// than a word in the measured one, so no reader is told brisk read
+    /// something it did not.
+    private const string ModeUnreadClause =
+        "brisk could not read Defender's running mode.";
 
     /// Said wherever brisk DID read something. The exclusions-unread state
     /// keeps the second half and drops the first: there are no paths on the

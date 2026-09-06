@@ -252,21 +252,27 @@ it could not read them. Verified 2026-09-05 on the maintainer's machine: the
 elevated read returns 5 paths, WMI and registry agree.
 
 **Finding:** fires when any of: `ExclusionCount > 0`; `RealTimeOn == false`;
-`TamperOn == false`; `RunningMode` is not "Normal"; the newer of the two scan
-times is more than 14 days old, or both are null while the rest was read;
-or `ExclusionCount` is null (unelevated) while the rest was read. Whole read
-null → the unreadable sentence ("brisk could not read Windows Defender's
-state on this machine"), `UnreadableRows`, no headline.
+`TamperOn == false`; `RunningMode` is a mode that is not "Normal"; the newer
+of the two scan times is more than 14 WHOLE days old (the age the finding
+prints is the age it judges, so 14.5 days is 14 and does not fire), or both
+are null while the rest was read; or any of `ExclusionCount`, `RealTimeOn`,
+`TamperOn`, `RunningMode` is null while the rest was read. Whole read null →
+the unreadable sentence ("brisk could not read Windows Defender's state on
+this machine"), `UnreadableRows`, no headline.
 
-Title: "Windows Defender has blind spots". Evidence is assembled from
-parts, each a short clause with its own resx key so the Turkish reads as a
-sentence and not a list: "{n} paths are excluded from scanning" / "brisk
-could not read the exclusion list without administrator rights";
-"real-time protection is off" / "on"; "tamper protection is off" / "on";
-"Defender is not running in normal mode ({mode}); another product may be
-active, brisk cannot see which"; "last scan {d} days ago" / "no completed
-scan on record". The clauses that are fine are included, so the sentence is
-the full reading and not only the bad half.
+Title: "Windows Defender has blind spots". **The evidence is five clauses
+and always all five** — what is skipped, the two protections (how many read
+off and how many could not be read), the running mode, the newest scan, and
+where the paths are — each in the form its reading took: measured, or the
+sentence for a reading that did not arrive. The clauses that are fine are
+included, so the sentence is the full reading and not only the bad half, and
+no headline can name a clause the sentence lacks. Four parts have two forms
+(exclusions, mode, scan, and the protections' own counts), which the rule
+composes into EIGHT whole evidence keys named for the forms taken
+(`.evidence`, `.evidence.mode-unread.no-scan`, …) rather than into one
+template of per-clause keys: `DiagnosticFinding.EvidenceArgs` are
+substituted verbatim by `LocalizedText`, so a clause passed as an argument
+would reach a Turkish reader in English.
 
 **Headline: the worst clause brisk MEASURED**, first match winning: (1)
 `ExclusionCount > 0` → "{n}" / "paths Defender skips"; (2) `RealTimeOn ==
@@ -279,11 +285,14 @@ carries one, because a disclosure WITHOUT a headline is how this family says
 nothing was read — `PrivacyViewModel` bands those into the page's
 could-not-read list and the report card prints their titles there. Each
 caption is a resx key in both languages; "Off" and "None" are keys too, not
-arguments, so they translate. **An unreadable exclusion list is not a
-measured fault:** `ExclusionCount` null with everything else reading fine
-takes the rule's UNREAD title and no headline (an unreadable disclosure);
-with another clause measured bad, the title is the ordinary one, that clause
-leads, and the evidence keeps the "could not read the list" sentence. The
+arguments, so they translate. **A part brisk could not read is not a
+measured fault**, and the four that can go unread — `ExclusionCount`,
+`RealTimeOn`, `TamperOn`, `RunningMode` — are treated alike: alone, with
+everything else reading fine, the finding takes the rule's UNREAD title and
+no headline (an unreadable disclosure); beside a measured fault, the title
+is the ordinary one, that fault leads, and the evidence keeps the unread
+clause. A null `RunningMode` is never the word "unknown" and never travels
+as an argument. The
 paths themselves
 never leave the snapshot: `ScanSnapshot.DefenderExclusions`
 (`IReadOnlyList<string>`, required) → a fold on the page, "What Defender

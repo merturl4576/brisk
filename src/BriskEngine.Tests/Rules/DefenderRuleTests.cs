@@ -63,8 +63,15 @@ public class DefenderRuleTests
         {
             { "exclusions", f with { ExclusionCount = 5, ExclusionPaths = new[] { @"C:\a", @"C:\b", @"C:\c", @"C:\d", @"C:\e" } }, named },
             { "exclusions unread", f with { ExclusionCount = null }, unread },
+            { "real-time unread", f with { RealTimeOn = null }, unread },
+            { "tamper unread", f with { TamperOn = null }, unread },
+            { "mode unread", f with { RunningMode = null }, unread },
             { "exclusions unread beside a protection off",
                 f with { ExclusionCount = null, RealTimeOn = false }, named },
+            { "a protection unread beside a protection off",
+                f with { TamperOn = null, RealTimeOn = false }, named },
+            { "mode unread beside a protection off",
+                f with { RunningMode = null, RealTimeOn = false }, named },
             { "real-time off", f with { RealTimeOn = false }, named },
             { "tamper off", f with { TamperOn = false }, named },
             { "passive mode", f with { RunningMode = "Passive Mode" }, named },
@@ -109,6 +116,12 @@ public class DefenderRuleTests
             { "an unread list does not stop the clause that was read",
                 f with { ExclusionCount = null, TamperOn = false },
                 "Off", "headline.caption.tamper" },
+            { "an unread protection does not either",
+                f with { TamperOn = null, RealTimeOn = false },
+                "Off", "headline.caption.realtime" },
+            { "an unread mode does not either",
+                f with { RunningMode = null, TamperOn = false },
+                "Off", "headline.caption.tamper" },
         };
     }
 
@@ -124,13 +137,64 @@ public class DefenderRuleTests
         Assert.Equal($"rule.{DefenderRule.RuleId}.{captionKey}", headline.CaptionKey);
     }
 
+    /// WHOLE DAYS, one measure. 14.5 days is a scan 14 days old by the only
+    /// number this rule prints, so it neither fires nor leads with a "14" a
+    /// reader would have to square with a rule that says over 14.
     [Fact]
     public void FourteenDays_IsTheScanAgeBoundary()
     {
         var (fresh, _) = Context(Fine() with { LastQuickScanUtc = Now.AddDays(-14), LastFullScanUtc = null });
+        var (half, _) = Context(Fine() with { LastQuickScanUtc = Now.AddDays(-14.5), LastFullScanUtc = null });
         var (stale, _) = Context(Fine() with { LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = null });
         Assert.Null(Rule().Detect(fresh));
+        Assert.Null(Rule().Detect(half));
         Assert.NotNull(Rule().Detect(stale));
+    }
+
+    /// EVERY PART THAT CAN GO UNREAD, ALONE, IS AN UNREADABLE DISCLOSURE.
+    /// The exclusion list, either protection, the running mode: with
+    /// everything else reading fine, the only reason the rule speaks is a
+    /// reading that did not arrive, so it takes the unread title and leads
+    /// with nothing — which is what puts it in the page's could-not-read band
+    /// instead of on the report card as a fault brisk measured.
+    public static TheoryData<string, DefenderStatus> EveryUnreadPart()
+    {
+        var f = Fine();
+        return new TheoryData<string, DefenderStatus>
+        {
+            { "the exclusion list", f with { ExclusionCount = null } },
+            { "real-time protection", f with { RealTimeOn = null } },
+            { "tamper protection", f with { TamperOn = null } },
+            { "the running mode", f with { RunningMode = null } },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryUnreadPart))]
+    public void AnUnreadPartAlone_IsUnreadable_AndLeadsWithNothing(
+        string what, DefenderStatus status)
+    {
+        var (ctx, _) = Context(status);
+        var finding = Rule().Detect(ctx)!;
+        Assert.True(finding.Headline is null,
+            $"{what} went unread and the finding leads with " +
+            $"\"{finding.Headline?.Value}\" — a reading brisk did not take");
+        Assert.Equal($"rule.{DefenderRule.RuleId}.title.unread", finding.TitleKey);
+    }
+
+    /// An unread mode is a clause of its own and never brisk's English word
+    /// for one. "unknown" travelled through the value slot as an argument,
+    /// where no resx can reach it.
+    [Fact]
+    public void AnUnreadMode_IsNeverTheWordUnknown()
+    {
+        var (ctx, _) = Context(Fine() with { RunningMode = null });
+        var finding = Rule().Detect(ctx)!;
+        Assert.DoesNotContain("unknown", finding.Evidence, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("unknown", string.Join(" ", finding.EvidenceArgs!),
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("could not read Defender's running mode", finding.Evidence,
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -236,7 +300,10 @@ public class DefenderRuleTests
         foreach (var state in new[]
                  {
                      "exclusions", "real-time-off", "tamper-off", "passive-mode",
-                     "stale-scan", "no-scan", "exclusions-unread",
+                     "stale-scan", "no-scan", "mode-unread", "mode-unread-no-scan",
+                     "exclusions-unread", "exclusions-unread-no-scan",
+                     "exclusions-unread-mode-unread",
+                     "exclusions-unread-mode-unread-no-scan",
                      "exclusions-unread-and-real-time-off", "unread",
                  })
             data.Add(state);
@@ -258,7 +325,25 @@ public class DefenderRuleTests
                 LastQuickScanUtc = Now.AddDays(-15), LastFullScanUtc = Now.AddDays(-40),
             },
             "no-scan" => Fine() with { LastQuickScanUtc = null, LastFullScanUtc = null },
+            "mode-unread" => Fine() with { RunningMode = null },
+            "mode-unread-no-scan" => Fine() with
+            {
+                RunningMode = null, LastQuickScanUtc = null, LastFullScanUtc = null,
+            },
             "exclusions-unread" => Fine() with { ExclusionCount = null },
+            "exclusions-unread-no-scan" => Fine() with
+            {
+                ExclusionCount = null, LastQuickScanUtc = null, LastFullScanUtc = null,
+            },
+            "exclusions-unread-mode-unread" => Fine() with
+            {
+                ExclusionCount = null, RunningMode = null,
+            },
+            "exclusions-unread-mode-unread-no-scan" => Fine() with
+            {
+                ExclusionCount = null, RunningMode = null,
+                LastQuickScanUtc = null, LastFullScanUtc = null,
+            },
             "exclusions-unread-and-real-time-off" =>
                 Fine() with { ExclusionCount = null, RealTimeOn = false },
             "unread" => null,
@@ -326,6 +411,36 @@ public class DefenderRuleTests
             foreach (var key in keys)
                 Assert.True(strings.ContainsKey(key), $"{key} is missing from {file}");
         }
+    }
+
+    /// FIVE CLAUSES IN EVERY SENTENCE THE RULE ASSEMBLES, so a headline can
+    /// never name a reading the evidence beside it left out — the state that
+    /// could not read the exclusion list still says how old the scan is, and
+    /// the state with no scan still says what is skipped.
+    ///
+    /// Matched on the words each clause is built from rather than the whole
+    /// string: both forms of a clause share them, which is what makes this a
+    /// check that the SLOT was filled either way.
+    [Theory]
+    [MemberData(nameof(EveryStateItCanReport))]
+    public void EveryEvidence_CarriesAllFiveClauses(string state)
+    {
+        var finding = Detect(state);
+        if (finding.TitleKey.EndsWith(".title.unread", StringComparison.Ordinal)
+            && finding.EvidenceKey == $"rule.{DefenderRule.RuleId}.evidence.unread")
+            return;   // nothing was read at all; that sentence has no clauses
+
+        foreach (var (clause, words) in new[]
+                 {
+                     ("what is skipped", new[] { "excluded from scanning", "exclusion list" }),
+                     ("the protections", new[] { "protections brisk checks" }),
+                     ("the mode", new[] { "running mode" }),
+                     ("the scan", new[] { "completed scan" }),
+                     ("where the paths are", new[] { "on this page", "nothing past it" }),
+                 })
+            Assert.True(words.Any(w => finding.Evidence.Contains(w, StringComparison.Ordinal)),
+                $"{state}: the evidence says nothing about {clause} — " +
+                $"\"{finding.Evidence}\"");
     }
 
     [Fact]

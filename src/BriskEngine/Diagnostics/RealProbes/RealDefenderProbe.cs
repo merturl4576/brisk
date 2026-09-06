@@ -67,6 +67,10 @@ public sealed class RealDefenderProbe : IDefenderProbe
             {
                 var total = 0;
                 var hidden = false;
+                // The same guard the status query above keeps: a query that
+                // answered no rows read nothing, and nothing is not zero
+                // exclusions.
+                var listed = false;
                 using var prefs = new ManagementObjectSearcher(new ManagementScope(Scope),
                     new ObjectQuery("SELECT ExclusionPath, ExclusionExtension, ExclusionProcess " +
                                     "FROM MSFT_MpPreference"));
@@ -75,6 +79,7 @@ public sealed class RealDefenderProbe : IDefenderProbe
                 {
                     using (row)
                     {
+                        listed = true;
                         foreach (var name in new[] { "ExclusionPath", "ExclusionExtension", "ExclusionProcess" })
                         {
                             if (row[name] is not string[] items) continue;
@@ -88,7 +93,7 @@ public sealed class RealDefenderProbe : IDefenderProbe
                 // The token said administrator and Windows answered with the
                 // sentinel anyway: whatever produced that, brisk did not read
                 // the list, and it says so rather than counting a sentence.
-                if (hidden) paths.Clear();
+                if (hidden || !listed) paths.Clear();
                 else count = total;
             }
             return new DefenderStatus(realTime, tamper, mode, count, paths, quick, full, signatureAge);
