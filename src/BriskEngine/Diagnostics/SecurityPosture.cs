@@ -23,16 +23,31 @@ public sealed record SecurityPostureReport(
     bool? DefenderRealTime,
     bool? DefenderTamper)
 {
-    /// All three profiles on; null when any profile was not read; false
-    /// when any read profile is off.
+    /// A report where brisk read nothing: five rows that each say "brisk
+    /// could not read this". It is spelled once here because the seven nulls
+    /// written out by hand are the kind of literal that acquires a stray
+    /// true — and an all-true default would put "firewall on for all three
+    /// profiles" on a surface built from a scan that read no firewall, which
+    /// is the spec's second red line broken by a convenience.
+    public static readonly SecurityPostureReport NothingRead =
+        new(null, null, null, null, null, null, null);
+
+    /// True when all three profiles read on; false as soon as any ONE of
+    /// them reads off; null only when nothing read off and at least one
+    /// profile was not read at all.
     ///
-    /// Null is asked FIRST, and that order is the whole point: an unread
-    /// profile beside two that read on must not answer "on for all three",
-    /// which is what a plain three-way && would have said about a machine
-    /// brisk had only two thirds of an answer for.
+    /// A MEASURED FALSE WINS OVER AN UNREAD SIBLING, and that order is the
+    /// whole point. (on, off, unread) is false: brisk read a profile that is
+    /// off, and no missing third reading can take that back — the row has
+    /// something to say and says it. Only when nothing measured bad does the
+    /// unread profile decide, and then it answers null rather than "on for
+    /// all three", which is what a plain three-way && would have said about a
+    /// machine brisk had two thirds of an answer for. Null never renders
+    /// green (spec red line 2), so neither branch can flatter a machine.
     public bool? Firewall =>
-        FirewallDomain is null || FirewallPrivate is null || FirewallPublic is null ? null
-        : FirewallDomain == true && FirewallPrivate == true && FirewallPublic == true;
+        FirewallDomain == false || FirewallPrivate == false || FirewallPublic == false ? false
+        : FirewallDomain is null || FirewallPrivate is null || FirewallPublic is null ? null
+        : true;
 }
 
 /// Reads the posture once per scan (memoized on the context) so the rules,
@@ -45,6 +60,11 @@ public static class SecurityPosture
         @"HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server";
     private const string MemoKey = "posture";
 
+    /// GetOrAdd's value factory is not atomic and DiagnosticContext reserves
+    /// the right to run rules in parallel, so two readers can race into
+    /// ReadUncached. The worst case is a second registry round trip whose
+    /// report is dropped — never a wrong answer, because both readers read
+    /// the same machine.
     public static SecurityPostureReport Read(DiagnosticContext ctx) =>
         (SecurityPostureReport)ctx.Memo.GetOrAdd(MemoKey, _ => ReadUncached(ctx));
 

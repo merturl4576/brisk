@@ -44,6 +44,12 @@ public sealed class DefenderRule : PrivacyDisclosureRule
     /// The probe's answer for this scan, read once. A null answer is
     /// memoized too (as a sentinel), so a probe that failed is not asked
     /// again by the next reader.
+    ///
+    /// GetOrAdd's value factory is not atomic and DiagnosticContext reserves
+    /// the right to run rules in parallel, so two readers can race into the
+    /// probe. The worst case is a second WMI round trip whose answer is
+    /// dropped — never a wrong answer, because both readers ask the same
+    /// machine the same question.
     public static DefenderStatus? Status(DiagnosticContext ctx)
     {
         var memo = ctx.Memo.GetOrAdd(MemoKey, _ =>
@@ -254,11 +260,13 @@ public sealed class DefenderRule : PrivacyDisclosureRule
         "the question; brisk cannot tell which from here and does not report " +
         "any of them as fine.");
 
-    /// The title for the two states where brisk has no bad reading of its
-    /// own to report: nothing about Defender could be read at all, and an
-    /// exclusion list that could not be read with everything else reading
-    /// fine. Both carry no headline, which is what puts them in the page's
-    /// could-not-read band.
+    /// The title wherever brisk has no bad reading of its own to report.
+    /// That is the whole-read failure — nothing about Defender came back at
+    /// all — and every finding where what is missing is one of the four
+    /// readings Lead would have led with: the exclusion list, real-time
+    /// protection, tamper protection, the running mode. Any one of them can
+    /// go unread while the rest read fine. None of these carries a headline,
+    /// which is what puts them in the page's could-not-read band.
     private const string UnreadTitleText =
         "Windows Defender's state could not be established";
 }

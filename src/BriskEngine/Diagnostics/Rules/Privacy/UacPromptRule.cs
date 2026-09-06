@@ -14,6 +14,16 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// WRITTEN 0 in EnableLUA or ConsentPromptBehaviorAdmin does. That is why
 /// IsOn is overridden rather than left to walk Values.
 ///
+/// ABSENT AND UNREADABLE ARE ONE ANSWER HERE, and both are silent. A value
+/// this process may not read comes back null exactly as an unwritten one
+/// does, so this rule cannot part a refused key from a machine nobody
+/// touched and does not pretend to. That is acceptable for a FINDING,
+/// because absence is Windows' own default and that default is prompting:
+/// the state brisk would report if it could tell them apart is the state it
+/// already reports. It is NOT acceptable for a posture row, which may never
+/// go green on a value nobody read — SecurityPosture takes two raw reads of
+/// its own in front of this rule for exactly that reason.
+///
 /// PromptOnSecureDesktop is restored by the fix (to Windows' default) but
 /// never decides the finding: the third position of Windows' own UAC slider
 /// ("notify me, don't dim the desktop") sets it to 0 with

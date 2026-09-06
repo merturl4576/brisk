@@ -279,6 +279,12 @@ public class PrivacyViewModelTests
     /// empty, which is what collapses it in the markup — the same answer the
     /// USB fold gives above, and for the same reason: the claim that brisk
     /// could not read something belongs on the finding, not on a row here.
+    ///
+    /// The fold being empty is half the fact and the weaker half: a snapshot
+    /// carrying no uses would empty it too. What is pinned with it is where
+    /// the FINDING went — an unreadable camera-mic-use into the page's
+    /// could-not-read band, a headlined one into the disclosures — because
+    /// that routing is what an empty fold is supposed to accompany.
     [Fact]
     public async Task NoCapabilityUseRead_LeavesTheFoldEmpty()
     {
@@ -287,6 +293,15 @@ public class PrivacyViewModelTests
         await state.ScanAsync();
 
         Assert.Empty(vm.CapabilityUseRows);
+        Assert.Contains("camera-mic-use", vm.UnreadableRows.Select(r => r.RuleId));
+        Assert.DoesNotContain("camera-mic-use", vm.DisclosureRows.Select(r => r.RuleId));
+
+        var (vm2, host2, state2) = Build();
+        host2.NextSnapshot = TestData.Snapshot(new[] { Disclosure("camera-mic-use", "3") });
+        await state2.ScanAsync();
+
+        Assert.Contains("camera-mic-use", vm2.DisclosureRows.Select(r => r.RuleId));
+        Assert.DoesNotContain("camera-mic-use", vm2.UnreadableRows.Select(r => r.RuleId));
     }
 
     /// The spec's fourth red line, on this page: what could not be read is
@@ -1063,6 +1078,8 @@ public class PrivacyViewModelTests
         Assert.Equal(PostureState.Fine, vm.PostureRows[0].State);       // firewall
         Assert.Equal(PostureState.Attention, vm.PostureRows[1].State);  // remote desktop
         Assert.Equal(PostureState.Unread, vm.PostureRows[2].State);     // uac
+        Assert.Equal(PostureState.Fine, vm.PostureRows[3].State);       // defender real-time
+        Assert.Equal(PostureState.Fine, vm.PostureRows[4].State);       // defender tamper
         Assert.DoesNotContain(vm.PostureRows,
             r => r.Text.Length == 0
                  || r.Text.StartsWith("privacy.posture.", StringComparison.Ordinal));

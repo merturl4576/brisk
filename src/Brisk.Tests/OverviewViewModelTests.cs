@@ -260,7 +260,7 @@ public class OverviewViewModelTests
             new SensorStatus(false, false, null), Array.Empty<ReadBackResult>(),
             Array.Empty<UsbDeviceRecord>(), null, Array.Empty<CapabilityUseRecord>(),
             Array.Empty<string>(),
-            new SecurityPostureReport(null, null, null, null, null, null, null));
+            SecurityPostureReport.NothingRead);
         await state.ScanAsync();
 
         Assert.Equal("Good", vm.ScoreBrushKey);

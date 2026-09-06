@@ -580,7 +580,7 @@ public sealed class PrivacyViewModel : ViewModelBase
                 ? "privacy.capability.microphone" : "privacy.capability.camera"];
             CapabilityUseRows.Add(new CapabilityUseRow(
                 _loc.F("privacy.capability.use", use.AppName, what,
-                    use.LastUsedUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                    Stamp(use.LastUsedUtc)),
                 use.Path));
         }
 
@@ -666,7 +666,9 @@ public sealed class PrivacyViewModel : ViewModelBase
     /// clock; what this dates is a stamp Windows wrote, and the rule that
     /// reads it is the surface this has to agree with.
     ///
-    /// yyyy-MM-dd invariant, the same shape the rule's evidence uses.
+    /// yyyy-MM-dd invariant, the same shape the rule's evidence uses. Every
+    /// date this page prints off a snapshot comes through here — the usb fold
+    /// and the capability-use fold both — so the shape is written down once.
     private static string Stamp(DateTime? utc) => utc is { } when
         ? when.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
         : "—";

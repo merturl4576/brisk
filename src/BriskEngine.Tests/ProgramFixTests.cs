@@ -145,7 +145,8 @@ public sealed class ProgramFixTests : IDisposable
     {
         var selected = Program.FixAllRules().Select(r => r.Id).ToArray();
         foreach (var id in new[] { "advertising-id", "diagnostic-level",
-                                   "tailored-experiences", "speech-typing" })
+                                   "tailored-experiences", "speech-typing",
+                                   "windows-suggestions" })
             Assert.True(selected.Contains(id),
                 $"`brisk fix --all` stopped reaching '{id}'");
     }

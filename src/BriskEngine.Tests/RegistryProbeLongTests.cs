@@ -1,4 +1,3 @@
-using BriskEngine.Diagnostics;
 using Xunit;
 
 namespace BriskEngine.Tests;

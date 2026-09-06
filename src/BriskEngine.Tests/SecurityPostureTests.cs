@@ -66,6 +66,10 @@ public class SecurityPostureTests
     /// that fold can go wrong are opposite: a profile that reads OFF makes the
     /// line false, a profile that was not read makes it null. Neither is the
     /// other.
+    ///
+    /// The third row is the tie-break, and it is the reason the fold asks
+    /// false before null: with one profile off and another unread, brisk HAS
+    /// read a profile that is off, and no missing reading takes that back.
     [Fact]
     public void OneFirewallProfileOff_IsFalse_AndOneUnread_IsNull()
     {
@@ -76,6 +80,10 @@ public class SecurityPostureTests
         var (unread, reg2, _) = Context();
         Firewall(reg2, 1, null, 1);
         Assert.Null(SecurityPosture.Read(unread).Firewall);
+
+        var (mixed, reg3, _) = Context();
+        Firewall(reg3, 1, 0, null);
+        Assert.False(SecurityPosture.Read(mixed).Firewall);
     }
 
     /// fDenyTSConnections reads inverted — 1 denies connections — so the row

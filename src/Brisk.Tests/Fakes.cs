@@ -113,8 +113,8 @@ public sealed class FakeRegistry : BriskEngine.Diagnostics.IRegistryProbe
     public long? GetLong(string keyPath, string valueName) =>
         Longs.TryGetValue(Key(keyPath, valueName), out var v) ? v : null;
     /// Run values are strings, so listing only Strings is what the real key
-    /// holds — the binaries and DWORDs above live under different keys and
-    /// are read by name, never enumerated.
+    /// holds — the binaries, DWORDs and QWORDs above live under different
+    /// keys and are read by name, never enumerated.
     public System.Collections.Generic.IReadOnlyList<string> GetValueNames(string keyPath) =>
         Strings.Keys
             .Where(k => k.StartsWith(keyPath + "\\", StringComparison.OrdinalIgnoreCase))
@@ -271,12 +271,10 @@ public static class TestData
     /// The fixture read no posture value either — stated for the same reason
     /// as the five above, and with the one difference that matters here: a
     /// record of nulls is not an empty list, it is five rows that each say
-    /// "brisk could not read this". A default of all-true would have put
-    /// "firewall on for all three profiles" on a page built from a snapshot
-    /// that read no firewall, which is the spec's second red line broken by
-    /// a convenience.
+    /// "brisk could not read this". The record owns the value; this is the
+    /// name the fixture reads it under.
     private static readonly SecurityPostureReport NothingRead =
-        new(null, null, null, null, null, null, null);
+        SecurityPostureReport.NothingRead;
 
     public static ScanSnapshot Snapshot(IReadOnlyList<DiagnosticFinding>? findings = null,
         params TargetScanResult[] targets) => Snapshot(findings, NothingAnswered, targets);

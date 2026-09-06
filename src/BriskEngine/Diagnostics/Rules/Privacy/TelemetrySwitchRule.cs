@@ -19,7 +19,7 @@ namespace BriskEngine.Diagnostics.Rules.Privacy;
 /// re-reads the value it wrote, so a successful write always reads back as
 /// off whether or not the edition honoured it.
 ///
-/// The four answers are not a description of the six switches, they are what
+/// The four answers are not a description of the eight switches, they are what
 /// a rule is allowed to say. Which one each switch actually says is asserted
 /// in ReadBackTests, from the registry paths themselves rather than from a
 /// list somebody maintains.
@@ -46,8 +46,8 @@ public enum WriteEffect
     Unread,
 }
 
-/// The six switches this wave gives brisk, on the Privacy page that shows
-/// them in two tiers. Five of them share one shape: a handful of registry
+/// The eight switches brisk ships, on the Privacy page that shows them in
+/// two tiers. Seven of them share one shape: a handful of registry
 /// values, a number that reads as on, a number the fix writes, and an undo
 /// that restores every value a COMPLETED fix recorded. Not every value a fix
 /// touched: FixRunner journals the prior state only after Fix returns, so a
@@ -55,7 +55,7 @@ public enum WriteEffect
 /// unrecorded and un-undoable. Nothing here is atomic and nothing here says
 /// it is.
 ///
-/// The sixth, LocationRule, keeps the family's finding and its undo discipline
+/// The remaining one, LocationRule, keeps the family's finding and its undo discipline
 /// but not its numbers: that switch's state is a WORD, so it carries no
 /// RegistryValue at all and overrides every member that would have read or
 /// written one. What it shares is what matters — the same finding, the same
@@ -69,6 +69,13 @@ public enum WriteEffect
 /// than write the off number over it. A number written where there was none is
 /// a second change wearing an undo's name — it would leave a machine reading
 /// "somebody decided this" on a setting nobody had touched.
+///
+/// Seven of the eight are that shape. UacPromptRule is the exception at both
+/// ends: absence is Windows' own default and that default is the GOOD state,
+/// so an empty registry is nothing to report, and its fix turns the values ON
+/// rather than off. It says so through the two hooks the family gives it —
+/// Severity, which makes its row a Warning, and FixTurnsItOn, which picks the
+/// on-direction read-back lines — and it changes nothing else here.
 ///
 /// What every subclass's copy says, and what none of it may say: it reports
 /// how a switch on this machine currently reads. brisk reads a registry
@@ -116,7 +123,7 @@ public abstract class TelemetrySwitchRule : IDiagnosticRule
     /// value this rule's fix wrote — see WriteEffect for what each answer
     /// means and why the question exists at all.
     ///
-    /// NotAPolicy is the default because four of the six switches are not
+    /// NotAPolicy is the default because six of the eight switches are not
     /// policies: their value IS the setting, and re-reading it is the whole
     /// answer. The two that live under a Policies key override this. Only
     /// DiagnosticLevelRule can answer it from a reading; ActivityHistoryRule

@@ -183,7 +183,7 @@ public class UacPromptRuleTests
     [Theory]
     [InlineData("Strings.resx", "UAC values restored to Windows' defaults",
         "If EnableLUA was the value that read 0, the prompts return after a restart.")]
-    [InlineData("Strings.tr.resx", "UAC değerleri Windows'un varsayılanlarına geri alındı",
+    [InlineData("Strings.tr.resx", "UAC değerleri Windows'un varsayılanlarına geri getirildi",
         "0 okunan değer EnableLUA idiyse sorular yeniden başlatmadan sonra döner.")]
     public void TheDoneLine_NamesTheWrite_AndTheAdviceKeepsTheRestartCaveat(
         string file, string done, string caveat)

@@ -90,6 +90,16 @@ public class PrivacyRedLineTests
         return data;
     }
 
+    /// The rules for which an ABSENT value is the good state, so a machine
+    /// brisk could read nothing from is a machine with nothing to report.
+    /// Every other privacy rule reads absence as on and must speak.
+    ///
+    /// A set beside the id list rather than a rule id spelled into the middle
+    /// of a theory: the theory below asserts one thing about every rule, and
+    /// a second rule joining this side should extend a list, not an if.
+    private static readonly HashSet<string> AbsenceReadsAsOff =
+        new(new[] { "uac-prompts" }, StringComparer.OrdinalIgnoreCase);
+
     /// IsHealth was `!IsPerformance` until this commit, so without the new
     /// exclusion every one of these landed on Sağlık — the page that grades
     /// the machine's condition. Asserted through both overloads because the
@@ -385,8 +395,11 @@ public class PrivacyRedLineTests
     /// THREE FAMILIES OF KEY, and the third is what this guard was widened
     /// for. `rule.<id>.*` is the rules' own copy, and two engine tests
     /// already ban a shorter list over parts of it. `readback.*` is the four
-    /// sentences the read-back block renders, and ReadBackTests bans a list
-    /// over exactly those four. `privacy.*` IS THE PAGE'S OWN COPY — its
+    /// sentences the read-back block renders for a fix that turned something
+    /// off, plus the `readback.on.*` set a fix that turned something on
+    /// reaches instead — held with its today and yesterday forms, and
+    /// reverted. ReadBackTests bans a list over all six. `privacy.*` IS THE
+    /// PAGE'S OWN COPY — its
     /// headings, its buttons, the sentence under each block — and nothing
     /// read what it CLAIMED until this test. LocTests lists `privacy.*` keys
     /// and proves each one it lists LOADS in English, which is a different
@@ -778,8 +791,9 @@ public class PrivacyRedLineTests
     /// business and is not listed here — the assertions below hold for both
     /// answers.
     ///
-    /// THERE IS NOW A THIRD ANSWER, and uac-prompts is the only rule that
-    /// gives it: absence reads as OFF for that switch. Windows' default for
+    /// THERE IS NOW A THIRD ANSWER, and the AbsenceReadsAsOff set above names
+    /// who gives it — today uac-prompts alone: absence reads as OFF for that
+    /// switch. Windows' default for
     /// its three values is to prompt, so an unwritten value cannot be read as
     /// "never prompt" and brisk reports nothing at all here. That silence IS
     /// the red line held — nothing unreadable became a claim — so it is what
@@ -804,12 +818,12 @@ public class PrivacyRedLineTests
         var rule = ShippedRule(ruleId);
         var finding = rule.Detect(NothingReadsAtAll());
 
-        if (ruleId == "uac-prompts")
+        if (AbsenceReadsAsOff.Contains(ruleId))
         {
             Assert.True(finding is null,
                 $"{ruleId} reports something on a machine it could read " +
                 "nothing from — an absent value is Windows' own default " +
-                "there, not a hole, and this is the one rule in the topic that " +
+                "there, not a hole, and AbsenceReadsAsOff says this rule " +
                 "reads it that way");
             finding = rule.Detect(EverythingReadsAsOn());
             Assert.True(finding is not null,
@@ -817,10 +831,12 @@ public class PrivacyRedLineTests
                 "the bad one, so nothing below ever looked at a word of its copy");
         }
         else
+        {
             Assert.True(finding is not null,
                 $"{ruleId} reports nothing at all on a machine it could read " +
                 "nothing from. A probe that failed belongs in okuyamadıklarım, and " +
                 "silence puts it nowhere");
+        }
 
         Assert.True(finding!.Headline is null,
             $"{ruleId} leads with \"{finding.Headline?.Value}\" on a machine it " +

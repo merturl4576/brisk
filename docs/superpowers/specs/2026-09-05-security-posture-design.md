@@ -151,7 +151,11 @@ page): "Programs ask for permission again, on a dimmed screen".
 
 **Read-back:** free from the family: Held or Reverted. An optimizer that
 turns prompting off again after brisk turned it on shows as Reverted on the
-next scan, which is the sentence this rule exists for.
+next scan, which is the sentence this rule exists for. The lines come from
+the on-direction key set (`readback.on.held`, its today and yesterday forms,
+and `readback.on.reverted`), chosen by `TelemetrySwitchRule.FixTurnsItOn`:
+the family's own `readback.*` sentences are written for a fix that turned
+something off and would tell a uac reader the opposite of what brisk did.
 
 **Page:** the new Security tier on the Privacy page, as a finding row with
 the Confirm flow the costly switches use. **CLI:** prints as any finding.
@@ -348,7 +352,7 @@ read. Rows, each `bool?` with null = not read:
 
 | Row | Read | Fine when |
 |---|---|---|
-| Firewall, domain / private / public | `HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\{DomainProfile,StandardProfile,PublicProfile}\EnableFirewall` | each reads 1; absent = not read |
+| Firewall, domain / private / public | `HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\{DomainProfile,StandardProfile,PublicProfile}\EnableFirewall` | each reads 1; absent = not read. The three fold into one row: any profile reading 0 makes the row false even when another profile was not read; the row is null only when none read 0 and at least one was not read |
 | Remote Desktop | `HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\fDenyTSConnections` | reads 1 (connections denied); 0 = on; absent = not read |
 | UAC prompts | the uac-prompts rule's own `IsOn` | not on |
 | Defender real-time | `DefenderStatus.RealTimeOn` | true |

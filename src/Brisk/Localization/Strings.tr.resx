@@ -412,7 +412,7 @@
   <data name="rule.windows-suggestions.done" xml:space="preserve"><value>Öneriler ve sessiz kurulumlar kapatıldı</value></data>
   <data name="rule.location.done" xml:space="preserve"><value>Konum erişimi kapatıldı</value></data>
   <data name="rule.activity-history.done" xml:space="preserve"><value>Etkinlik geçmişi ilkesi kapalı olarak ayarlandı</value></data>
-  <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC değerleri Windows'un varsayılanlarına geri alındı</value></data>
+  <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC değerleri Windows'un varsayılanlarına geri getirildi</value></data>
   <data name="readback.held" xml:space="preserve"><value>{0} gün önce kapattın, hâlâ kapalı</value></data>
   <data name="readback.held.today" xml:space="preserve"><value>Bugün kapattın, hâlâ kapalı</value></data>
   <data name="readback.held.yesterday" xml:space="preserve"><value>Dün kapattın, hâlâ kapalı</value></data>

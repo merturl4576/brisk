@@ -44,10 +44,10 @@ public class ReadBackTests
         "location", "activity-history",
     };
 
-    /// The four that are SETTINGS rather than policies: brisk writes the value
+    /// The five that are SETTINGS rather than policies: brisk writes the value
     /// the setting itself is kept in, so nothing sits between the write and
     /// the setting for an edition of Windows to ignore, and Held is the strong
-    /// form for all four.
+    /// form for all five.
     ///
     /// NOT "what brisk wrote is what is there" — a different claim, and false
     /// for location, which is on this list: it matches its word without regard

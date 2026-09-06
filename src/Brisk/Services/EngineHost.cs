@@ -191,7 +191,7 @@ public sealed class EngineHost : IEngineHost
         }
         catch (Exception)
         {
-            posture = new SecurityPostureReport(null, null, null, null, null, null, null);
+            posture = SecurityPostureReport.NothingRead;
         }
         var cleaner = _scanner.Scan(ct, new SyncProgressAdapter(p =>
             progress?.Report(p.TargetId)));

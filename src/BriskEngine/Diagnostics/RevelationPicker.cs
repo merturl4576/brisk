@@ -24,12 +24,14 @@ public static class RevelationPicker
     {
         "boot-degradation",
         "display-refresh",
-        // The three report-only disclosures that can lead at all —
-        // run-history, recall-status and delivery-optimization — are left
-        // off this list on purpose. Unlisted is the tail rank, and a count
-        // of program records, a policy word and a total of uploaded bytes
-        // are not what this project wants a scan to open with. The fourth,
-        // usb-history, is not merely unlisted: see NeverLeads below.
+        // The five report-only disclosures that can lead at all —
+        // run-history, recall-status, delivery-optimization, camera-mic-use
+        // and defender-blind-spots — are left off this list on purpose.
+        // Unlisted is the tail rank, and a count of program records, a
+        // policy word, a total of uploaded bytes, a count of apps that used
+        // a sensor and a count of Defender exclusions are not what this
+        // project wants a scan to open with. The sixth, usb-history, is not
+        // merely unlisted: see NeverLeads below.
         "startup-bloat",
         // A NAMED FILE OUTRANKS THE FOLDER THAT HOLDS IT. Both of these come
         // out of the same walk of the same four folders, and they describe

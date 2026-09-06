@@ -289,7 +289,7 @@ public class LocTests
     // sentence that says brisk grades none of what is under it. Nothing else
     // reads either one, so a gap in the English resx puts
     // "privacy.security.note" where the page's own limit is stated. The
-    // eighteen `privacy.posture.*` keys are NOT listed: PrivacyViewModelTests
+    // fifteen `privacy.posture.*` keys are NOT listed: PrivacyViewModelTests
     // renders all five rows through a real English Loc and refuses a value
     // that echoes its key, which is the stronger guard and reaches every one
     // of them.
@@ -311,14 +311,17 @@ public class LocTests
     // Strings.resx failed this row with Actual: "privacy.setting.failed";
     // deleting it from Strings.tr.resx left it green.)
     [InlineData("privacy.setting.failed")]
-    // The named loss beside each of the two switches that cost the user
+    // The named loss beside each of the three switches that cost the user
     // something. FindingRow reads these through the indexer and treats a miss
     // as "this rule declares no cost" — so a gap here does not print a key,
     // it silently removes the warning from the card. There is no louder
     // failure available: the mechanism that lets every other rule have no
-    // cost line is the same one that would swallow these.
+    // cost line is the same one that would swallow these. uac-prompts is the
+    // third: HealthViewModel reads rule.{id}.cost the same way, and the cost
+    // it declares is the prompts the user will start seeing again.
     [InlineData("rule.location.cost")]
     [InlineData("rule.activity-history.cost")]
+    [InlineData("rule.uac-prompts.cost")]
     // The eight switches' past-tense labels. DoneLabel falls back to
     // "Fixed: {title}" when a rule has no .done key, and a finding title is
     // a sentence about the switch being ON — so a gap here puts "Fixed: The

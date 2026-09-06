@@ -11,17 +11,19 @@ using Xunit;
 
 namespace BriskEngine.Tests.Rules;
 
-/// The six switches this wave gives brisk: four that cost the user nothing
-/// visible, and two — location and activity-history — that cost Find my
-/// device and Timeline. One thing makes them unlike every other fixable rule
-/// brisk ships, and it is asserted here rather than described: a value that is
+/// The eight switches brisk ships: five that cost the user nothing visible,
+/// two — location and activity-history — that cost Find my device and
+/// Timeline, and uac-prompts, whose fix moves the other way and which
+/// UacPromptRuleTests covers on its own. The seven driven from Ids below
+/// share one thing that makes them unlike every other fixable rule brisk
+/// ships, and it is asserted here rather than described: a value that is
 /// ABSENT reads as ON — not because brisk knows what Windows does with an
 /// unwritten value, but because it cannot read one as off. So Detect has to
 /// fire on an empty registry, and the undo of that fix has to DELETE the value
 /// again. Writing the off number where there was no value at all is not a
 /// restoration; it is a second change wearing an undo's name.
 ///
-/// Five of the six store a number. location stores a WORD — "Allow" or "Deny"
+/// Seven of the eight store a number. location stores a WORD — "Allow" or "Deny"
 /// — so it carries no RegistryValue at all and reads, writes and restores its
 /// own state; the theories driven by NumberValuedSwitches leave it out and the
 /// Location_* facts below cover it instead.
@@ -152,7 +154,7 @@ public class TelemetrySwitchRuleTests
     /// PrivacyRuleIds.All. That is the one reading that GROWS when a privacy
     /// rule is added; the three id lists do not, and BriskEngine cannot see
     /// PrivacyRuleIds at all. What stays here is the family's own coverage:
-    /// these six under the states this file knows how to build.
+    /// these seven under the states this file knows how to build.
     [Theory]
     [MemberData(nameof(AllSwitches))]
     public void TheFinding_IsANotice_AndCostsTheHealthScoreNothing(string id)
