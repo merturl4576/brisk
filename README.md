@@ -20,6 +20,10 @@ No installer. No account. No telemetry. No AI in the product. Every diagnosis is
 
 [Türkçe README](README.tr.md)
 
+![brisk 0.9.0: one scan, one click, the score goes from 53 to 86, then the Privacy page and the Storage page](docs/media/demo.gif)
+
+*Recorded on the maintainer's own PC with findings planted for the demo (a 60 Hz display, two fake startup programs, Bing in the Start menu, four privacy switches on, 3 GB of junk). Every one of them is a real Windows state brisk reads and fixes; nothing in the recording is mocked. 24 seconds, real time compressed about 2x.*
+
 ![The Privacy page, four-state read-back included](docs/media/privacy-readback.png)
 
 *The maintainer's own machine, 2026-09-03. Counts, never contents: 375 program records, 2 USB devices, Recall's state unreadable on this build. The bottom band is the read-back: four switches brisk turned off two days ago still read as off, and for the fifth brisk says it cannot tell whether this edition of Windows acts on the policy, instead of saying "done".*

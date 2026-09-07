@@ -20,6 +20,10 @@ Kurulum yok. Hesap yok. Telemetri yok. Ürünün içinde yapay zekâ yok. Her te
 
 [English README](README.md)
 
+![brisk 0.9.0: bir tarama, bir tık, skor 53'ten 86'ya; ardından Gizlilik ve Depolama sayfaları](docs/media/demo.gif)
+
+*Geliştiricinin kendi makinesinde, gösterim için bilerek ekilmiş bulgularla kaydedildi (60 Hz'e düşürülmüş ekran, iki sahte başlangıç programı, Başlat menüsünde Bing, dört açık gizlilik anahtarı, 3 GB çöp). Her biri brisk'in gerçekten okuduğu ve düzelttiği bir Windows durumu; kayıtta sahte hiçbir şey yok. Arayüz İngilizce; 24 saniye, gerçek zaman yaklaşık 2 kat hızlandırıldı.*
+
 ![Gizlilik sayfası, read-back dahil](docs/media/privacy-readback.tr.png)
 
 *Geliştiricinin kendi makinesi, 3 Eylül 2026. Sayı var, içerik yok: 375 program kaydı, 2 USB aygıtı, Recall'un durumu bu sürümde okunamıyor. Alttaki bant read-back: brisk'in iki gün önce kapattığı dört anahtar hâlâ kapalı okunuyor; beşincisi için brisk, bu Windows sürümünün ilkeyi uygulayıp uygulamadığını söyleyemediğini "tamam" demek yerine açıkça yazıyor.*
