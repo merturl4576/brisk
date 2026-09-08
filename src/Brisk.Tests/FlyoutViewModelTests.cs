@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
+using BriskEngine;
 using BriskEngine.Diagnostics;
 using BriskEngine.Models;
 using Xunit;
@@ -380,5 +381,56 @@ public class FlyoutViewModelTests
         await first;
 
         Assert.Single(host.Cleans);
+    }
+
+    /// "1.6 GB reclaimable" on a laptop holding a 40 GB Windows.old read as
+    /// brisk not having looked (2026-09-09). The second line names what it
+    /// measured and will not take without a decision — and is not printed
+    /// at all when there is nothing to decide.
+    [Fact]
+    public async Task YourCallLine_NamesTheShelvesCleanWillNotTouch_AndHidesAtZero()
+    {
+        var vm = Vm(HostWithSnapshot());
+        await vm.ScanNowAsync();
+
+        // old-installers 4096 (Deep) + npm-cache 1024 (Developer); user-temp
+        // is the safe default and chrome-cache is empty.
+        Assert.True(vm.HasYourCall);
+        Assert.Equal(Fmt.Bytes(5120) + " more with your say-so", vm.YourCallLine);
+
+        var safeOnly = new FakeEngineHost();
+        safeOnly.NextSnapshot = TestData.Snapshot(null,
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        var quiet = Vm(safeOnly);
+        await quiet.ScanNowAsync();
+
+        Assert.False(quiet.HasYourCall);
+        Assert.Equal("", quiet.YourCallLine);
+    }
+
+    /// "No difference" was both outside testers' verdict on the one-click
+    /// fix. The measured answer lived on the Performance page; the tray is
+    /// where they looked. Two of Windows' timings, no causal claim, and no
+    /// line at all until there is a boot since the change to read.
+    [Fact]
+    public async Task BootLine_ShowsWindowsOwnTimingsBeforeAndSince_OnlyOnceThereIsATrend()
+    {
+        var host = HostWithSnapshot();
+        host.NextSnapshot = host.NextSnapshot! with
+        {
+            BootTrend = new BootTrend(106_400, 5, 57_600, 1,
+                new DateTime(2026, 9, 9, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 9, 9, 0, 0, 0, DateTimeKind.Utc)),
+        };
+        var vm = Vm(host);
+        await vm.ScanNowAsync();
+
+        Assert.True(vm.HasBootLine);
+        Assert.Equal("Boot: 106 s before brisk's changes → 58 s since", vm.BootLine);
+
+        var none = Vm(HostWithSnapshot());
+        await none.ScanNowAsync();
+
+        Assert.False(none.HasBootLine);
     }
 }

@@ -20,6 +20,8 @@ public sealed class FlyoutViewModel : ViewModelBase
     private string _healthBrushKey = "";
     private string _findingsLine = "";
     private string _reclaimLine = "";
+    private string _yourCallLine = "";
+    private string _bootLine = "";
     private string _lastScanLine = "";
     private string _lastCleanLine = "";
     private bool _busy;
@@ -47,6 +49,16 @@ public sealed class FlyoutViewModel : ViewModelBase
     }
     public string FindingsLine { get => _findingsLine; private set => Set(ref _findingsLine, value); }
     public string ReclaimLine { get => _reclaimLine; private set => Set(ref _reclaimLine, value); }
+    /// What brisk measured and will not take without a decision — the line
+    /// that keeps "1.6 GB reclaimable" from reading as "brisk saw 1.6 GB".
+    /// Empty, and hidden, at zero: nothing to decide is not a sentence.
+    public string YourCallLine { get => _yourCallLine; private set => Set(ref _yourCallLine, value); }
+    public bool HasYourCall => _yourCallLine.Length > 0;
+    /// The boot read-back on the surface the owner actually looks at. Two
+    /// of Windows' own timings, before and since brisk's changes, on
+    /// BootTrend's terms: never a causal claim. Empty until there is one.
+    public string BootLine { get => _bootLine; private set => Set(ref _bootLine, value); }
+    public bool HasBootLine => _bootLine.Length > 0;
     public string LastScanLine { get => _lastScanLine; private set => Set(ref _lastScanLine, value); }
     public bool HasSnapshot => _state.Snapshot is not null;
     /// What the last flyout clean actually did (round 13) — the full result,
@@ -177,10 +189,29 @@ public sealed class FlyoutViewModel : ViewModelBase
         // never deep/dev shelves or locked bytes it would not touch.
         ReclaimLine = _loc.F("flyout.reclaimable",
             Fmt.Bytes(CleanService.ReclaimableNowBytes(snapshot.Cleaner)));
+        // The other half (2026-09-09): the shelves this Clean will not
+        // touch, summed, so the honest small number above stops reading as
+        // the whole of what brisk saw.
+        var yourCall = CleanService.WithConsentBytes(snapshot.Cleaner);
+        YourCallLine = yourCall > 0 ? _loc.F("flyout.yourcall", Fmt.Bytes(yourCall)) : "";
+        Raise(nameof(HasYourCall));
+        // "No difference" was both outside testers' verdict on the one-click
+        // fix. The Performance page had the measured answer all along; the
+        // tray, which is where they looked, did not.
+        BootLine = snapshot.BootTrend is { } trend
+            ? _loc.F("flyout.boottrend",
+                Seconds(trend.BeforeMedianMs), Seconds(trend.AfterMedianMs))
+            : "";
+        Raise(nameof(HasBootLine));
         LastScanLine = _loc.F("flyout.lastscan",
             snapshot.CompletedUtc.ToLocalTime().ToString("HH:mm"));
         Raise(nameof(HasSnapshot));
         FixAllCommand.RaiseCanExecuteChanged();
         CleanSafeCommand.RaiseCanExecuteChanged();
     }
+
+    /// HealthViewModel's rounding, kept identical so the tray and the
+    /// Performance page never print two different boots from one record.
+    private static string Seconds(int ms) =>
+        (int)Math.Round(ms / 1000.0, MidpointRounding.AwayFromZero) + " s";
 }

@@ -61,6 +61,17 @@ public sealed class CleanService
     public static long ReclaimableNowBytes(ScanResult scan) =>
         scan.Targets.Where(IsSafeDefault).Sum(t => t.ReclaimableBytes);
 
+    /// The other half of that promise: bytes brisk measured on the shelves
+    /// the tray's Clean will not touch — Developer, Deep, opt-in, pick-one-
+    /// by-one, and a Safe target held by its running app. A laptop holding
+    /// a 40 GB Windows.old read "1.6 GB reclaimable" in the tray
+    /// (2026-09-09) and its owner concluded brisk had not looked. It had,
+    /// and said nothing. TotalBytes rather than "right now": this line is
+    /// what a decision, or closing the app, would free, and it is paired
+    /// with words that say so.
+    public static long WithConsentBytes(ScanResult scan) =>
+        scan.Targets.Where(t => !IsSafeDefault(t)).Sum(t => t.TotalBytes);
+
     /// A safe-level target sitting out because its app is running: the
     /// actionable half of the promise ("+310 MB when you close WhatsApp").
     /// Same shape as IsSafeDefault minus the skip, so the two can never

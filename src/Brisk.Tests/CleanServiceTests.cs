@@ -104,4 +104,28 @@ public class CleanServiceTests
         Assert.Contains(outcome.Skipped,
             e => e.Action == "refused" && e.Reason!.Contains("administrator"));
     }
+
+    /// The second cleaning line (2026-09-09): everything the safe clean
+    /// will NOT take — the Developer and Deep shelves, a pick-one-by-one
+    /// target, and the Safe shelf a running app holds — by full size, since
+    /// this line is what a decision or a closed app would free. The safe
+    /// default itself is not in it: that is the line above.
+    [Fact]
+    public void WithConsentBytes_SumsExactlyWhatTheSafeCleanLeavesAlone()
+    {
+        var scan = new ScanResult(new[]
+        {
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048),
+            TestData.Target("whatsapp-cache", CleanupLevel.Safe, 310L << 20,
+                skipped: "WhatsApp is running — close it to include this target",
+                app: "WhatsApp|WhatsApp.Root"),
+            TestData.Target("npm-cache", CleanupLevel.Developer, 1024),
+            TestData.Target("old-installers", CleanupLevel.Deep, 512, pick: true),
+            TestData.Target("hibernation-file", CleanupLevel.Deep, 8L << 30),
+        });
+
+        Assert.Equal((310L << 20) + 1024 + 512 + (8L << 30), CleanService.WithConsentBytes(scan));
+        Assert.Equal(0, CleanService.WithConsentBytes(new ScanResult(new[]
+            { TestData.Target("user-temp", CleanupLevel.Safe, 2048) })));
+    }
 }

@@ -65,6 +65,25 @@
                 <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
                            Text="{Binding ReclaimLine}" />
             </StackPanel>
+            <!-- What brisk measured and will not take without a decision.
+                 Indented under the reclaimable line (7 px dot + 8 px gap)
+                 rather than dotted: it is the same subject, second half. -->
+            <StackPanel Orientation="Horizontal" Margin="31,3,16,0"
+                        Visibility="{Binding HasYourCall,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}">
+                <TextBlock Style="{StaticResource Muted}"
+                           Text="{Binding YourCallLine}" />
+            </StackPanel>
+            <!-- The boot read-back: Windows' own timings before and since
+                 brisk's changes. Shown only once there is a boot to read. -->
+            <StackPanel Orientation="Horizontal" Margin="16,7,16,0"
+                        Visibility="{Binding HasBootLine,
+                            Converter={x:Static Brisk:BoolToVis.Instance}}">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource SeverityNotice}"
+                         VerticalAlignment="Center" />
+                <TextBlock Style="{StaticResource Body}" Margin="8,0,0,0"
+                           Text="{Binding BootLine}" />
+            </StackPanel>
             <!-- The flyout is the app's DEFAULT surface and carries its own
                  Clean and Fix all, so a standard-account user who lives in the
                  tray has to meet this here — the main window's bar is on a
