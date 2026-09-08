@@ -458,4 +458,39 @@ public class BootDegradationRuleTests
         Assert.Equal("rule.boot-degradation.headline.caption", h.CaptionKey);
         Assert.Equal(new[] { "3" }, h.CaptionArgs);
     }
+
+    /// The friend's laptop (2026-09-09): Windows timed its boots over 90 s
+    /// and brisk scored the machine 89. Over CrawlBootMs the finding is
+    /// Critical and five stars — still a notice, still no fix, but measured,
+    /// so the gauge finally reads the machine: 75 on this alone.
+    [Fact]
+    public void ACrawlingBoot_IsCriticalAndMeasured()
+    {
+        var ctx = Context(Boot(106_000), Boot(98_500), Boot(121_000));
+
+        var finding = new BootDegradationRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Equal(Severity.Critical, finding!.Severity);
+        Assert.Equal(5, finding.ImpactStars);
+        Assert.Equal(FindingKind.Notice, finding.Kind);
+        Assert.Equal(ImpactClass.Measured, finding.ImpactClass);
+        Assert.False(finding.CanFix);
+        Assert.Equal(75, HealthScore.Compute(new[] { finding }));
+    }
+
+    /// Slow but not crawling keeps the Warning tier it always had — and now
+    /// charges its 12, where it used to charge nothing.
+    [Fact]
+    public void ASlowButNotCrawlingBoot_IsWarningAndMeasured()
+    {
+        var ctx = Context(Boot(51237), Boot(111814), Boot(57089));
+
+        var finding = new BootDegradationRule().Detect(ctx)!;
+
+        Assert.Equal(Severity.Warning, finding.Severity);
+        Assert.Equal(4, finding.ImpactStars);
+        Assert.Equal(ImpactClass.Measured, finding.ImpactClass);
+        Assert.Equal(88, HealthScore.Compute(new[] { finding }));
+    }
 }
