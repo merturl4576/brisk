@@ -45,6 +45,8 @@
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
   <data name="flyout.findings.only" xml:space="preserve"><value>{0} bulgu</value></data>
   <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
+  <data name="flyout.yourcall" xml:space="preserve"><value>{0} daha, senin kararınla</value></data>
+  <data name="flyout.boottrend" xml:space="preserve"><value>Açılış: brisk'in değişikliklerinden önce {0} → sonra {1}</value></data>
   <data name="flyout.lastscan" xml:space="preserve"><value>Son tarama: {0}</value></data>
   <data name="flyout.scanning" xml:space="preserve"><value>Taranıyor…</value></data>
   <data name="flyout.scan" xml:space="preserve"><value>Tara</value></data>
@@ -196,6 +198,7 @@
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Hiçbiri brisk'in ağır listesinde değil; hangilerinin sana gerçekten gerekli olduğu senin kararın — Performans sayfasındaki Açılış programları listesinden gözden geçir.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}.</value></data>
+  <data name="rule.startup-bloat.evidence.blamed" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}. Son açılışlarda geç kalmalarını Windows'un kendisi şu programlara yükledi: {2}.</value></data>
   <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>program Windows ile başlıyor</value></data>
   <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows "En iyi görünüm" ayarında; animasyonlar ve saydamlık efektleri her pencere çiziminde CPU/GPU gücü harcıyor.</value></data>

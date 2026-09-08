@@ -32,10 +32,13 @@ public static class AppServices
         var processInfo = new RealProcessInfoProbe();
         // RealSensorProbe is IDisposable but lives for the whole app lifetime.
         var sensors = new RealSensorProbe();
+        // Shared with StartupManager below: the Performance page's heavy
+        // badge reads the same boot log the startup rule does.
+        var eventLog = new RealEventLogProbe();
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), registry,
             processInfo, sensors, new RealDisplayProbe(),
-            new RealEventLogProbe(), new RealHardwareProbe(),
+            eventLog, new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
             new RealProcessLister(), new RealMemoryIntegrityProbe(),
             new RealDeliveryOptimizationProbe(), new RealDefenderProbe(), dataDir);
@@ -51,7 +54,7 @@ public static class AppServices
                     System.Security.Principal.WindowsIdentity.GetCurrent())
                     .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator),
                 new DeleteLockProbe()),
-            journal, new StartupManager(registry, log), logPath,
+            journal, new StartupManager(registry, log, eventLog), logPath,
             SelfPath, new RealSessionProbe());
 
         var settingsPath = Path.Combine(dataDir, "settings.json");

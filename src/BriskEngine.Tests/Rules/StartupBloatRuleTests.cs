@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using BriskEngine.Diagnostics.Rules;
 using BriskEngine.Models;
+using System.Linq;
+using BriskEngine.Diagnostics;
 using Xunit;
 
 namespace BriskEngine.Tests.Rules;
@@ -230,4 +232,90 @@ public class StartupBloatRuleTests
         Assert.Equal("rule.startup-bloat.headline.caption", h.CaptionKey);
         Assert.Empty(h.CaptionArgs);
     }
+
+    private static BootRecord Blaming(int day, params (string Exe, int LateMs)[] offenders) =>
+        new(new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc).AddDays(day), 70_000, 25_000,
+            offenders.Select(o => new BootOffender(o.Exe, "", $@"C:\apps\{o.Exe}", o.LateMs)).ToList());
+
+    /// The friend's laptop (2026-09-09): fourteen startup programs, none on
+    /// brisk's list, and Windows' own boot log naming the late ones. A Run
+    /// entry Windows blamed 5 s+ on two of the sampled boots is heavy: the
+    /// finding names it, says who blamed it and on how many boots, and the
+    /// fix disables it like any known-heavy entry.
+    [Fact]
+    public void AProgramWindowsBlamedOnTwoBoots_IsHeavy()
+    {
+        var (ctx, reg) = Ctx("Wondershare");
+        var log = (FakeEventLog)ctx.EventLog;
+        log.Boots.Add(Blaming(0, ("Wondershare.exe", 12_000)));
+        log.Boots.Add(Blaming(-1, ("wondershare.EXE", 8_000)));
+        log.Boots.Add(Blaming(-2));
+
+        var finding = new StartupBloatRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.True(finding!.CanFix);
+        Assert.Equal("rule.startup-bloat.evidence.blamed", finding.EvidenceKey);
+        Assert.Equal(new[] { "1", "Wondershare", "Wondershare (2/3 boots)" }, finding.EvidenceArgs);
+        Assert.Equal("1 programs start with Windows. Heavy ones that can be started " +
+            "manually instead: Wondershare. Windows itself blamed these for starting " +
+            "late on recent boots: Wondershare (2/3 boots).", finding.Evidence);
+
+        new StartupBloatRule().Fix(ctx);
+        Assert.Equal(0x03, reg.GetBytes(ApprovedKey, "Wondershare")![0]);
+    }
+
+    /// One late start is a one-off, not a habit — and a delay under 5 s is
+    /// not one anybody felt.
+    [Fact]
+    public void OneBlamedBoot_OrASmallDelay_IsNotHeavy()
+    {
+        var (ctx, _) = Ctx("Wondershare");
+        var log = (FakeEventLog)ctx.EventLog;
+        log.Boots.Add(Blaming(0, ("Wondershare.exe", 12_000)));
+        log.Boots.Add(Blaming(-1, ("Wondershare.exe", 3_000)));
+        log.Boots.Add(Blaming(-2));
+
+        Assert.Null(new StartupBloatRule().Detect(ctx));
+    }
+
+    /// OneDrive not starting means files silently not syncing; Windows
+    /// blaming it does not make that brisk's call.
+    [Fact]
+    public void OneDrive_IsNeverHeavyOnWindowsWordAlone()
+    {
+        var (ctx, _) = Ctx("OneDrive");
+        var log = (FakeEventLog)ctx.EventLog;
+        log.Boots.Add(Blaming(0, ("OneDrive.exe", 20_000)));
+        log.Boots.Add(Blaming(-1, ("OneDrive.exe", 20_000)));
+
+        Assert.Null(new StartupBloatRule().Detect(ctx));
+    }
+
+    /// A known-heavy name stays on the older template: the blame sentence
+    /// is only for entries heavy on Windows' word rather than brisk's list.
+    [Fact]
+    public void AKnownHeavyName_KeepsTheHeavyTemplate_EvenWhenWindowsBlamesItToo()
+    {
+        var (ctx, _) = Ctx("Steam");
+        var log = (FakeEventLog)ctx.EventLog;
+        log.Boots.Add(Blaming(0, ("Steam.exe", 20_000)));
+        log.Boots.Add(Blaming(-1, ("Steam.exe", 20_000)));
+
+        var finding = new StartupBloatRule().Detect(ctx)!;
+
+        Assert.Equal("rule.startup-bloat.evidence.heavy", finding.EvidenceKey);
+    }
+
+    /// The command decides, not the value name: a Run entry called
+    /// "Updater" that starts C:\Program Files\Foo\foo.exe matches Windows'
+    /// blame of foo.exe — quoted or not, whatever follows the path.
+    [Theory]
+    [InlineData("\"C:\\Program Files\\Foo\\foo.exe\" --minimized", "foo.exe")]
+    [InlineData("C:\\Program Files\\Foo\\foo.exe /background", "foo.exe")]
+    [InlineData("C:\\apps\\bar.EXE", "bar.EXE")]
+    [InlineData("rundll32.dll,Entry", null)]
+    [InlineData("", null)]
+    public void ExecutableName_ReadsTheProgramOutOfAnyRunCommand(string command, string? exe) =>
+        Assert.Equal(exe, BriskEngine.Diagnostics.StartupManager.ExecutableName(command));
 }

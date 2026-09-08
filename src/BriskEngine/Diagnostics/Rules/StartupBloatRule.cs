@@ -20,7 +20,7 @@ public sealed class StartupBloatRule : IDiagnosticRule
     /// moving the State value of every key in Tasks, because a package can
     /// register several and moving only one still leaves the app starting.
     private sealed record Item(string Hive, string Name,
-        string? Approved, IReadOnlyList<string> Tasks);
+        string? Approved, IReadOnlyList<string> Tasks, string? Command = null);
 
     /// Prefix marking a prior-state entry as a Store task State value rather
     /// than a StartupApproved blob. Registry paths start with a hive name, so
@@ -42,7 +42,8 @@ public sealed class StartupBloatRule : IDiagnosticRule
         {
             var bytes = ctx.Registry.GetBytes(approved, name);
             var disabled = bytes is { Length: > 0 } && (bytes[0] & 1) == 1;
-            if (!disabled) items.Add(new Item(hive, name, approved, Array.Empty<string>()));
+            if (!disabled) items.Add(new Item(hive, name, approved, Array.Empty<string>(),
+                ctx.Registry.GetString(run, name)));
         }
         foreach (var app in StartupManager.StoreApps(ctx.Registry))
             if (app.Enabled)
@@ -59,18 +60,42 @@ public sealed class StartupBloatRule : IDiagnosticRule
             : ctx.Files.ListFiles(folder).Where(f => f.EndsWith(".lnk")).ToList();
     }
 
+    /// Heavy the way StartupManager.List marks it — by name, or by Windows'
+    /// blame of the program the entry starts — so the Performance page's
+    /// badge and this rule's fix can never disagree about an entry.
+    private static List<Item> HeavyItems(DiagnosticContext ctx,
+        IReadOnlyDictionary<string, int> blamed) =>
+        EnabledItems(ctx).Where(i => StartupManager.IsHeavy(i.Name, i.Command, blamed)).ToList();
+
     public DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
         var enabled = EnabledItems(ctx);
         var links = StartupFolderLinks(ctx);
-        var heavy = enabled.Where(i => StartupManager.IsHeavy(i.Name)).Select(i => i.Name).ToList();
+        // One read of the boot channel for both the blame and the count.
+        var boots = ctx.EventLog.RecentBoots(StartupManager.SampledBoots);
+        var blamed = StartupManager.BlamedExes(boots);
+        var heavyItems = enabled.Where(i => StartupManager.IsHeavy(i.Name, i.Command, blamed)).ToList();
+        var heavy = heavyItems.Select(i => i.Name).ToList();
         var total = enabled.Count + links.Count;
         if (heavy.Count == 0 && total < ManyThreshold) return null;
+
+        // The entries that are heavy on Windows' word rather than brisk's
+        // list, each with the boots that blamed it — the sentence has to say
+        // where a judgement about a program brisk never heard of came from.
+        var bootsSampled = boots.Count;
+        var byBlame = heavyItems
+            .Where(i => !StartupManager.IsHeavy(i.Name))
+            .Select(i => (i.Name, Exe: StartupManager.ExecutableName(i.Command)!))
+            .Select(i => $"{i.Name} ({blamed[i.Exe]}/{bootsSampled} boots)")
+            .ToList();
+        var blamedNames = string.Join(", ", byBlame);
 
         var heavyNames = string.Join(", ", heavy);
         var evidence = $"{total} programs start with Windows.";
         if (heavy.Count > 0)
             evidence += $" Heavy ones that can be started manually instead: {heavyNames}.";
+        if (byBlame.Count > 0)
+            evidence += $" Windows itself blamed these for starting late on recent boots: {blamedNames}.";
         // This tail is what the reader sees just after a successful fix has
         // taken every heavy program out — the count alone still trips the
         // threshold. Read as a demand it would say the fix achieved nothing,
@@ -94,11 +119,12 @@ public sealed class StartupBloatRule : IDiagnosticRule
             FixDescription: heavy.Count > 0
                 ? $"Disable at startup: {heavyNames} (undoable; the apps still work when opened manually)"
                 : null,
-            // Two templates: with and without the heavy-programs tail.
-            EvidenceKey: heavy.Count > 0
-                ? $"rule.{Id}.evidence.heavy" : $"rule.{Id}.evidence",
-            EvidenceArgs: heavy.Count > 0
-                ? new[] { totalText, heavyNames } : new[] { totalText },
+            // Three templates: count only, with the heavy-programs tail, and
+            // with Windows' blame named behind the tail.
+            EvidenceKey: byBlame.Count > 0 ? $"rule.{Id}.evidence.blamed"
+                : heavy.Count > 0 ? $"rule.{Id}.evidence.heavy" : $"rule.{Id}.evidence",
+            EvidenceArgs: byBlame.Count > 0 ? new[] { totalText, heavyNames, blamedNames }
+                : heavy.Count > 0 ? new[] { totalText, heavyNames } : new[] { totalText },
             Headline: new Headline(
                 totalText, "programs start with Windows",
                 $"rule.{Id}.headline.value", new[] { totalText },
@@ -108,7 +134,7 @@ public sealed class StartupBloatRule : IDiagnosticRule
     public string Fix(DiagnosticContext ctx)
     {
         var prior = new Dictionary<string, string?>();
-        var heavyItems = EnabledItems(ctx).Where(i => StartupManager.IsHeavy(i.Name)).ToList();
+        var heavyItems = HeavyItems(ctx, StartupManager.BlamedExes(ctx.EventLog));
         foreach (var item in heavyItems)
         {
             if (item.Approved is not null)
