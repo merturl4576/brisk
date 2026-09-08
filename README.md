@@ -84,7 +84,7 @@ Every tool in this category says "done". brisk treats "done" as a claim, and cla
 
 > Boot before brisk's changes: about 60 s (middle of 7 boots) → since the last change: about 75 s (2 boots). Windows' own timings.
 
-There is no causal claim in that sentence. Two measurements, their counts, and your own conclusion. That line is from the maintainer's machine today, and the number went the wrong way: a delayed startup task planted during a test made boot slower, and brisk printed it. A tool that only shows you the good number is not measuring.
+There is no causal claim in that sentence. Two measurements, their counts, and your own conclusion. That line is from the maintainer's machine today, and the number went the wrong way: a delayed startup task planted during a test made boot slower, and brisk printed it. A tool that only shows you the good number is not measuring. Since 0.10.0 the short form of the same line sits in the tray popup too, because that is where people look.
 
 ![The Performance page: the boot read-back line, what brisk did, and what it can only report](docs/media/performance-readback.png)
 
@@ -94,7 +94,7 @@ There is no causal claim in that sentence. Two measurements, their counts, and y
 
 ![The brisk cockpit, Overview page](docs/media/cockpit.png)
 
-*The Overview on the same machine. 64, because a display is running below the refresh rate it supports (25 points) and ten programs start with Windows (9 points). Two measured findings carry 34 of the 36 points; everything else here is a notice, or a 2-point hygiene item. The 75 s boot leads because it is the largest measured number, and the 24.5 GB on the deep shelves is named and left alone until asked.*
+*The Overview on the same machine, on 0.9.0. 64, because a display is running below the refresh rate it supports (25 points) and ten programs start with Windows (9 points). The 75 s boot leads because it is the largest measured number, and the 24.5 GB on the deep shelves is named and left alone until asked. Since 0.10.0 that boot also costs 12 points, so the same machine reads 52: the first two outside testers both had slow laptops that scored 89, and both said "your system is wrong". They were right. A measured number now charges whether or not brisk holds the fix; the gauge is read as the machine, so it means the machine.*
 
 ---
 
@@ -104,7 +104,7 @@ Most of this category is built on claims nobody checks. brisk's list of refusals
 
 - **No registry cleaning.** The single most criticised feature of the tools brisk is an alternative to. It has never been shown to make a Windows machine faster, and it can break installed software.
 - **No unmeasured speed promises.** brisk never says a fix made your PC faster unless it can read a number that says so. Windows keeps its own boot measurements. brisk reads those, and where it has none, it says so.
-- **No inflated score.** The health score only moves far for findings brisk can measure the other side of: boot timings, the refresh rate a panel runs at, days until the disk is full. A setting brisk flips without a number to prove anyone felt it, such as the power plan or visual effects, costs 2 points whatever its stars. The whole formula is one short file, [`HealthScore.cs`](src/BriskEngine/Diagnostics/HealthScore.cs).
+- **No inflated score, and no flattering one.** The health score only moves far for findings brisk can measure: boot timings, the refresh rate a panel runs at, days until the disk is full. A measured number charges whether or not brisk can fix it; a boot Windows timed over 90 s costs 25 points on its own, and brisk says in the same finding that it will not shorten it. A setting brisk flips without a number to prove anyone felt it, such as the power plan or visual effects, costs 2 points whatever its stars. The whole formula is one short file, [`HealthScore.cs`](src/BriskEngine/Diagnostics/HealthScore.cs).
 - **No "we stopped Windows from collecting that".** The most brisk will ever say is "this setting reads as off right now, and here is when I last checked".
 - **No telemetry, no account, no cloud, no AI in the product.** Nothing leaves your machine. There is no server to send it to.
 - **No silent action.** Every fix is written to an action log, and the undoable ones can be undone from the same screen that applied them.
@@ -118,6 +118,7 @@ Most of this category is built on claims nobody checks. brisk's list of refusals
 - **31 deterministic diagnostic rules.** Power plan, startup load, boot time as Windows itself measured it, a display running below the refresh rate it supports, memory running below its rated speed, thermals, disk pressure, the largest files in your profile (named), fourteen privacy and security rules with the read-back above, and more. Each finding carries its evidence.
 - **Security posture, report first.** Whether Windows asks before a program takes control (one undoable fix, re-checked on every later scan), what Defender is told to skip and whether it is on, which apps used the microphone and camera in the last 30 days, Windows' suggestion and silent-install flags, and the lines that are fine: firewall, Remote Desktop. Nothing here is graded, and no path or app name reaches anything you would share.
 - **One-click fixes with undo.** Rules are classified Auto, Confirm or Advise. brisk never applies a Confirm rule without asking, and never offers a fix for something it only observed.
+- **Startup programs on Windows' word, not a list.** A program Windows' own boot log blamed for a late start (5 s or more, on two of the last eight boots) is treated as heavy, the same as a name on brisk's short list, and the finding says which boots blamed it. OneDrive and Windows' own components are never disabled this way.
 - **A cleaner that works from an allowlist**, not from a pattern. It touches caches and temp files that Windows and your applications rebuild on their own, and nothing else. Three levels: Safe, Developer, Deep.
 - **Deep shelves that speak up.** Windows.old, the hibernation file, the superseded half of the component store, stale dev caches. Each is sized and named on the front page ("32 GB more sits on the deep shelves"), each sits behind its own consent, and each row states the trade-off: what comes back, what does not, what stops working.
 - **A display fix you can see.** A 144 Hz monitor running at 60 Hz is common. brisk raises it, and auto-reverts after 15 seconds unless you confirm you can still see the screen.
@@ -192,7 +193,7 @@ What the maintainer owns: the product decisions, the safety rules, the architect
 
 What keeps that honest:
 
-- Every rule is a deterministic function over fake probes, and 1391 tests pin what each one says and refuses to say.
+- Every rule is a deterministic function over fake probes, and 1638 tests pin what each one says and refuses to say.
 - The specs and implementation plans that drove each wave are public under [`docs/superpowers`](docs/superpowers).
 - Every change was reviewed before merge, and the commit history records its own corrections instead of rewriting them.
 - Every rule and every fix ran on real machines the maintainer owns before it shipped. One of those runs showed the score moving 43 points on settings flips alone, with nothing brisk could measure having changed. That is why the score works the way it does now.
@@ -206,7 +207,7 @@ If you find a place where the code claims more than it proves, that is the bug r
 Requires the .NET 8 SDK. Windows only: brisk reads the registry, WMI, the Windows event log and hardware sensors, so there is nothing here that could honestly run anywhere else.
 
 ```
-dotnet test brisk.sln -c Release      # 1391 tests
+dotnet test brisk.sln -c Release      # 1638 tests
 dotnet run --project src/Brisk.Cli -- scan
 pwsh -File scripts/publish.ps1        # both single-file executables into artifacts/
 ```

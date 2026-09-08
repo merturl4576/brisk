@@ -84,7 +84,7 @@ Bu kategorideki her araç "tamam" der. brisk "tamam"ı bir iddia sayar ve iddial
 
 > brisk'in değişikliklerinden önce açılış: yaklaşık 60 sn (7 açılışın ortası) → son değişiklikten beri: yaklaşık 75 sn (2 açılış). Ölçüm Windows'un kendi zamanlayıcısından.
 
-Cümlenin hiçbir yerinde nedensellik iddiası yok. İki ölçüm, sayıları ve senin kendi çıkarımın. Bu satır bugün geliştiricinin makinesinden ve sayı kötüye gitmiş: bir test sırasında eklenen gecikmeli başlangıç görevi açılışı yavaşlattı, brisk de bunu bastı. Sadece iyi sayıyı gösteren bir araç ölçüm yapmıyordur.
+Cümlenin hiçbir yerinde nedensellik iddiası yok. İki ölçüm, sayıları ve senin kendi çıkarımın. Bu satır bugün geliştiricinin makinesinden ve sayı kötüye gitmiş: bir test sırasında eklenen gecikmeli başlangıç görevi açılışı yavaşlattı, brisk de bunu bastı. Sadece iyi sayıyı gösteren bir araç ölçüm yapmıyordur. 0.10.0'dan beri aynı satırın kısa hali tepsi penceresinde de duruyor, çünkü insanların baktığı yer orası.
 
 ![Performans sayfası: açılış read-back satırı, brisk'in yaptıkları ve yalnızca raporlayabildikleri](docs/media/performance-readback.tr.png)
 
@@ -94,7 +94,7 @@ Cümlenin hiçbir yerinde nedensellik iddiası yok. İki ölçüm, sayıları ve
 
 ![brisk kokpiti, Genel Bakış sayfası](docs/media/cockpit.tr.png)
 
-*Aynı makinede Genel Bakış. 64, çünkü bir ekran desteklediği yenileme hızının altında çalışıyor (25 puan) ve on program Windows'la başlıyor (9 puan). Ölçülü iki bulgu 36 puanın 34'ünü taşıyor; buradaki geri kalan her şey ya bir not ya da 2 puanlık bir düzen maddesi. 75 sn açılış en büyük ölçülü sayı olduğu için önde; derin raflardaki 24.5 GB adıyla anılmış ve istenmeden dokunulmamış.*
+*Aynı makinede Genel Bakış, 0.9.0'da. 64, çünkü bir ekran desteklediği yenileme hızının altında çalışıyor (25 puan) ve on program Windows'la başlıyor (9 puan). 75 sn açılış en büyük ölçülü sayı olduğu için önde; derin raflardaki 24.5 GB adıyla anılmış ve istenmeden dokunulmamış. 0.10.0'dan beri o açılış da 12 puan ediyor, yani aynı makine 52 okur: ilk iki dış testçinin ikisinin de laptopu yavaştı, ikisi de 89 aldı ve ikisi de "sistemin hatalı" dedi. Haklıydılar. Ölçülmüş bir sayı artık brisk düzeltebilse de düzeltemese de puan kesiyor; gösterge makine diye okunuyor, o yüzden makineyi anlatıyor.*
 
 ---
 
@@ -104,7 +104,7 @@ Bu kategori büyük ölçüde kimsenin kontrol etmediği iddialar üzerine kurul
 
 - **Registry temizliği yok.** brisk'in alternatifi olduğu araçların en çok eleştirilen özelliği. Bir Windows makinesini hızlandırdığı hiçbir zaman gösterilemedi, buna karşılık kurulu yazılımları bozabiliyor.
 - **Ölçülmemiş hız vaadi yok.** brisk, bir düzeltmenin bilgisayarını hızlandırdığını ancak bunu söyleyen bir sayı okuyabiliyorsa söyler. Windows kendi açılış ölçümlerini tutuyor. brisk onları okuyor, elinde ölçüm yoksa "yok" diyor.
-- **Şişirilmiş skor yok.** Sağlık skorunu yalnızca brisk'in öbür tarafını ölçebildiği bulgular uzağa oynatır: açılış süresi, ekranın çalıştığı yenileme hızı, diskin dolmasına kalan gün. Güç planı ya da görsel efektler gibi hissedildiğini kanıtlayan bir sayısı olmayan bir ayar, yıldızı ne olursa olsun 2 puan eder. Formülün tamamı kısa bir dosya: [`HealthScore.cs`](src/BriskEngine/Diagnostics/HealthScore.cs).
+- **Şişirilmiş skor yok, pohpohlayan skor da yok.** Sağlık skorunu yalnızca brisk'in ölçebildiği bulgular uzağa oynatır: açılış süresi, ekranın çalıştığı yenileme hızı, diskin dolmasına kalan gün. Ölçülmüş bir sayı brisk düzeltebilse de düzeltemese de puan keser; Windows'un 90 saniyenin üstünde ölçtüğü bir açılış tek başına 25 puan eder ve brisk aynı bulguda onu kısaltmayacağını söyler. Güç planı ya da görsel efektler gibi hissedildiğini kanıtlayan bir sayısı olmayan bir ayar, yıldızı ne olursa olsun 2 puan eder. Formülün tamamı kısa bir dosya: [`HealthScore.cs`](src/BriskEngine/Diagnostics/HealthScore.cs).
 - **"Windows'un veri toplamasını durdurduk" yok.** brisk'in söyleyebileceği en fazla şey şu: "bu ayar şu an kapalı okunuyor, en son şu tarihte baktım."
 - **Telemetri, hesap, bulut yok; ürünün içinde yapay zekâ yok.** Makinenden hiçbir şey çıkmıyor. Gönderilecek bir sunucu yok.
 - **Sessiz işlem yok.** Her düzeltme eylem günlüğüne yazılıyor; geri alınabilir olanlar uygulandıkları ekrandan geri alınabiliyor.
@@ -118,6 +118,7 @@ Bu kategori büyük ölçüde kimsenin kontrol etmediği iddialar üzerine kurul
 - **31 deterministik teşhis kuralı.** Güç planı, başlangıç yükü, Windows'un kendi ölçtüğü açılış süresi, desteklediğinin altında çalışan ekran yenileme hızı, kendi hız değerinin altında çalışan bellek, sıcaklıklar, disk baskısı, profilindeki en büyük dosyalar (adıyla), yukarıdaki read-back'li on dört gizlilik ve güvenlik kuralı ve dahası. Her bulgu kanıtını taşıyor.
 - **Güvenlik durumu, önce rapor.** Windows bir program kontrolü almadan önce soruyor mu (geri alınabilir tek düzeltme, sonraki her taramada yeniden okunur), Defender'a neyi atlaması söylenmiş ve açık mı, son 30 günde hangi uygulamalar mikrofonu ve kamerayı kullandı, Windows'un öneri ve sessiz kurulum bayrakları, ve iyi olan satırlar: güvenlik duvarı, Uzak Masaüstü. Burada hiçbir şeye not verilmez ve hiçbir yol ya da uygulama adı paylaşacağın bir şeye ulaşmaz.
 - **Tek tıkla düzeltme ve geri alma.** Kurallar Auto, Confirm ve Advise diye ayrılıyor. brisk bir Confirm kuralını sormadan uygulamıyor, yalnızca gözlemlediği bir şey için düzeltme düğmesi göstermiyor.
+- **Açılış programlarında listeye değil Windows'un sözüne bakar.** Windows'un kendi açılış günlüğünün geç kalmakla suçladığı bir program (5 sn ve üstü, son sekiz açılışın ikisinde) brisk'in kısa listesindeki bir adla aynı muameleyi görür, ağır sayılır ve bulgu hangi açılışların onu suçladığını söyler. OneDrive ve Windows'un kendi bileşenleri bu yolla asla kapatılmaz.
 - **Beyaz listeyle çalışan temizleyici**, desenle değil. Yalnızca Windows'un ve uygulamaların kendiliğinden yeniden ürettiği önbellek ve geçici dosyalara dokunuyor, başka hiçbir şeye değil. Üç seviye: Safe, Developer, Deep.
 - **Sesini yükselten derin raflar.** Windows.old, uyku modu dosyası, bileşen deposunun yeri doldurulmuş yarısı, bayat geliştirici önbellekleri. Her biri boyutlanmış ve ön sayfada adıyla anılmış ("Derin raflarda 32 GB daha var"), her biri kendi onayının arkasında ve her satır takasını yazıyor: ne geri gelir, ne gelmez, ne çalışmayı bırakır.
 - **Gözle görülen bir düzeltme.** 144 Hz monitörün 60 Hz'de çalışması çok yaygın. brisk hızı yükseltir ve 15 saniye içinde "görüyorum" onayı gelmezse kendiliğinden geri alır.
@@ -192,7 +193,7 @@ Geliştiricinin sahip olduğu kısım: ürün kararları, güvenlik kuralları, 
 
 Bunu dürüst tutan şeyler:
 
-- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1391 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
+- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1638 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
 - Her dalgayı yöneten spec'ler ve uygulama planları [`docs/superpowers`](docs/superpowers) altında herkese açık.
 - Her değişiklik birleştirilmeden önce review edildi ve commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
 - Her kural ve her düzeltme, yayınlanmadan önce geliştiricinin sahip olduğu gerçek makinelerde çalıştı. O çalıştırmalardan biri skorun yalnızca ayar çevirmeleriyle 43 puan oynadığını gösterdi; brisk'in ölçebildiği hiçbir şey değişmemişti. Skorun bugün böyle çalışmasının sebebi bu.
@@ -206,7 +207,7 @@ Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projeni
 .NET 8 SDK gerekiyor. Yalnızca Windows: brisk registry, WMI, Windows olay günlüğü ve donanım sensörlerini okuyor, burada başka bir yerde dürüstçe koşabilecek hiçbir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1391 test
+dotnet test brisk.sln -c Release      # 1638 test
 dotnet run --project src/Brisk.Cli -- scan
 pwsh -File scripts/publish.ps1        # iki tek dosyalık exe -> artifacts/
 ```
