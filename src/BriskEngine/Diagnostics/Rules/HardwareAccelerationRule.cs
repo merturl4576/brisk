@@ -19,9 +19,14 @@ public sealed class HardwareAccelerationRule : IDiagnosticRule
     public string Id => "hw-acceleration";
     public RuleCategory Category => RuleCategory.Confirm;
 
-    private static List<(string Process, string Path)> Offenders(DiagnosticContext ctx)
+    /// The readable files whose switch is off, and the files that exist but
+    /// could not be parsed. A missing file is neither: that browser is not
+    /// installed, and there is nothing to say about it.
+    private static (List<(string Process, string Path)> Off, List<string> Unread) Look(
+        DiagnosticContext ctx)
     {
-        var offenders = new List<(string, string)>();
+        var off = new List<(string, string)>();
+        var unread = new List<string>();
         foreach (var (process, template) in Browsers)
         {
             var path = PathExpander.Expand(template);
@@ -32,25 +37,54 @@ public sealed class HardwareAccelerationRule : IDiagnosticRule
             {
                 var enabled = JsonNode.Parse(text)?["hardware_acceleration_mode"]?["enabled"];
                 if (enabled is not null && enabled.GetValue<bool>() == false)
-                    offenders.Add((process, path));
+                    off.Add((process, path));
             }
-            catch (Exception) { /* unreadable Local State — not our problem */ }
+            catch (Exception)
+            {
+                // A Local State that exists and does not parse was swallowed
+                // here and reported as nothing — the same silence as a browser
+                // with acceleration on (2026-09-07 live-run finding). brisk
+                // did not read it, and Detect says so.
+                unread.Add(process);
+            }
         }
-        return offenders;
+        return (off, unread);
     }
+
+    private static List<(string Process, string Path)> Offenders(DiagnosticContext ctx) =>
+        Look(ctx).Off;
 
     public DiagnosticFinding? Detect(DiagnosticContext ctx)
     {
-        var offenders = Offenders(ctx);
-        if (offenders.Count == 0) return null;
-        var names = string.Join(", ", offenders.Select(o => o.Process));
-        return new DiagnosticFinding(Id, "rule.hw-acceleration.title",
-            "Browser hardware acceleration is turned off",
-            $"Hardware acceleration is disabled in: {names}. " +
-            "Video decoding falls back to the CPU, which stutters on YouTube.",
+        var (off, unread) = Look(ctx);
+        if (off.Count == 0 && unread.Count == 0) return null;
+        var unreadNames = string.Join(", ", unread);
+
+        // Nothing readable is off, but something could not be read: a free
+        // notice, no button. A fix over a file brisk cannot read would be a
+        // write into the dark.
+        if (off.Count == 0)
+            return new DiagnosticFinding(Id, $"rule.{Id}.unread.title",
+                "A browser's settings file could not be read",
+                $"brisk could not read the settings file (Local State) of: {unreadNames}, so it " +
+                "cannot tell whether hardware acceleration is on there. Nothing is changed over " +
+                "a file brisk cannot read.",
+                Severity.Info, Category, ImpactStars: 1, CanFix: false, FixDescription: null,
+                EvidenceKey: $"rule.{Id}.evidence.unread", EvidenceArgs: new[] { unreadNames },
+                Kind: FindingKind.Notice, ImpactClass: ImpactClass.Hygiene);
+
+        var names = string.Join(", ", off.Select(o => o.Process));
+        var evidence = $"Hardware acceleration is disabled in: {names}. " +
+            "Video decoding falls back to the CPU, which stutters on YouTube.";
+        if (unread.Count > 0)
+            evidence += $" brisk could not read the settings file of: {unreadNames}, so it " +
+                "cannot say for that one, and the fix leaves it alone.";
+        return new DiagnosticFinding(Id, $"rule.{Id}.title",
+            "Browser hardware acceleration is turned off", evidence,
             Severity.Warning, Category, ImpactStars: 4, CanFix: true,
             FixDescription: "Re-enable hardware acceleration (browser must be closed)",
-            EvidenceKey: $"rule.{Id}.evidence", EvidenceArgs: new[] { names });
+            EvidenceKey: unread.Count == 0 ? $"rule.{Id}.evidence" : $"rule.{Id}.evidence.partly",
+            EvidenceArgs: unread.Count == 0 ? new[] { names } : new[] { names, unreadNames });
     }
 
     public string Fix(DiagnosticContext ctx)
@@ -65,7 +99,8 @@ public sealed class HardwareAccelerationRule : IDiagnosticRule
         if (running.Count > 0)
             throw new InvalidOperationException($"Close {string.Join(", ", running)} first, then retry the fix.");
 
-        // All validated; now write
+        // All validated; now write. Only the files Look() could parse are
+        // offenders, so an unreadable one is never written.
         var prior = new Dictionary<string, bool>();
         foreach (var (process, path) in offenders)
         {
