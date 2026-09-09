@@ -21,6 +21,11 @@ public static class DiagnosticRuleRegistry
         new StaleDevCachesRule(), new VisualEffectsRule(), new StorageSenseRule(),
         new DisplayRefreshRule(), new SearchWebResultsRule(),
         new BootDegradationRule(), new MemorySpeedRule(),
+        // The disk under everything. Beside the boot rule that charges the
+        // symptom, because on the machine this was written for it is the
+        // cause — and it is the one finding whose remedy is a part, not a
+        // switch, which is why it is a notice with a price.
+        new SystemDiskHddRule(),
         // The telemetry switches. Their ids are what the privacy page routes
         // on; the list routed against lives in the Brisk project, which this
         // assembly cannot see — PrivacyRedLineTests reads the two against

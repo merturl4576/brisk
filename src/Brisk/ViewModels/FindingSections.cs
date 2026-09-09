@@ -37,7 +37,9 @@ public static class FindingSections
         new[] { "power-plan", "browser-gpu", "hw-acceleration",
                 "visual-effects", "startup-bloat", "ram-pressure",
                 "display-refresh", "search-web-results",
-                "boot-degradation", "memory-speed" },
+                "boot-degradation", "memory-speed",
+                // The disk under the boot: the cause files beside the symptom.
+                "system-disk-hdd" },
         StringComparer.OrdinalIgnoreCase);
 
     private static readonly HashSet<string> Privacy = new(

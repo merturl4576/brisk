@@ -168,6 +168,7 @@ public sealed class NoOtherProbes
 
     public long FreeBytes(string driveRoot) => No<long>();
     public long TotalBytes(string driveRoot) => No<long>();
+    public DiskMedium MediumOf(string driveRoot) => No<DiskMedium>();
 
     public bool FileExists(string path) => No<bool>();
     public string? ReadAllText(string path) => No<string?>();

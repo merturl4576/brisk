@@ -228,6 +228,7 @@ file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
     public long TotalBytes(string driveRoot) => 500L << 30;
+    public DiskMedium MediumOf(string driveRoot) => DiskMedium.Unknown;
 }
 
 file sealed class NullFiles : IFileProbe

@@ -65,10 +65,20 @@ public static class SensorReading
         celsius is { } value && double.IsFinite(value);
 }
 
+/// What a volume's disk is made of, as the disk itself reports it. Unknown is
+/// a real answer — a volume brisk could not map to one disk, a bridge that
+/// would not say, a drive letter with nothing behind it — and every rule
+/// that reads this stays silent on it. brisk never grades on a guess.
+public enum DiskMedium { Unknown, Rotational, Solid }
+
 public interface IDiskInfoProbe
 {
     long FreeBytes(string driveRoot);   // driveRoot like @"C:\"
     long TotalBytes(string driveRoot);
+    /// Rotational when the physical disk under driveRoot reports a seek
+    /// penalty — the same reading Task Manager labels HDD — Solid when it
+    /// reports none, Unknown when brisk could not ask.
+    DiskMedium MediumOf(string driveRoot);
 }
 
 /// What the machine is made of, as opposed to how it is behaving. Read from

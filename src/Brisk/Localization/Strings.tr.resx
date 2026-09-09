@@ -171,6 +171,7 @@
   <data name="rule.search-web-results.title" xml:space="preserve"><value>Başlat menüsü araması interneti bekliyor</value></data>
   <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows açılışı uzun sürüyor</value></data>
   <data name="rule.memory-speed.title" xml:space="preserve"><value>Bellek, anma hızının altında çalışıyor</value></data>
+  <data name="rule.system-disk-hdd.title" xml:space="preserve"><value>Windows dönen bir diskten çalışıyor</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
@@ -185,6 +186,7 @@
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
   <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows kendi açılışını ölçüyor ve beklediğinden yavaş başlayan programları adıyla yazıyor — bunlardan Performans sayfasındaki Açılış programları listesinde yer alanları oradan kapatabilirsin</value></data>
   <data name="rule.memory-speed.advice" xml:space="preserve"><value>Modüller, ayarlı olduklarından daha yüksek bir anma hızı bildiriyor — bu ya hiç açılmamış bir hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart olabilir; brisk Windows üzerinden hangisi olduğunu ayırt edemiyor</value></data>
+  <data name="rule.system-disk-hdd.advice" xml:space="preserve"><value>Windows'un çalıştığı diski bir SSD ile değiştir ya da değiştirt — böyle bir bilgisayarı yeni gibi hissettiren tek değişiklik bu ve hiçbir temizlik onun yerini tutmaz</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Güç planı yüksek performansa alındı</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Tarayıcılar artık hızlı GPU'yu kullanıyor</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Tarayıcı donanım hızlandırması açıldı</value></data>
@@ -220,6 +222,7 @@
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — her modülün ayarlı hızı, anma hızı üzerinden: soldaki şu an çalıştığı hız, sağdaki ise modülün anma hızı. Buna iki şey yol açabilir ve Windows hangisi olduğunu bildirmiyor: hiç açılmamış bir bellek hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart veya bellek denetleyicisi. brisk buradan ikisini birbirinden ayırt edemiyor; bu yüzden sana BIOS'ta bir şey değiştirmeni söylemiyor — yalnızca bu farkın var olduğunu söylüyor.</value></data>
   <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
   <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>anma hızı {0} MT/s</value></data>
+  <data name="rule.system-disk-hdd.evidence" xml:space="preserve"><value>Windows'un çalıştığı disk ({0}) dönen bir disk: okuma kafasının hareket etmesi gerektiğini (seek penalty) bildiriyor; Görev Yöneticisi'nin Performans sayfasında bir diske HDD derken okuduğu değer de bu. Bu makinede her şey o diski bekliyor — açılış, program açmak, güncellemeler — ve brisk'in temizlediği ya da çevirdiği hiçbir şey bunu değiştirmez. Yerine bir SSD, bu bilgisayarı yeni gibi hissettirecek tek değişiklik. Bu bulgu puan kesiyor, çünkü yavaşlık ölçülmüş; brisk düzeltebildiği için değil.</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
