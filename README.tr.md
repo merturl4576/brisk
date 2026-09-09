@@ -32,7 +32,7 @@ Kurulum yok. Hesap yok. Telemetri yok. Ürünün içinde yapay zekâ yok. Her te
 
 ## Kurulum
 
-Tek satır, güveniyorsan. Güvenmek zorunda kalma diye betik [44 okunur satır](get.ps1): son sürümü indirir, **SHA-256 özeti yayımlananla tutmuyorsa çalıştırmayı reddeder** ve tek klasöre açar. Kaldırmak, klasörü silmek demek.
+Tek satır, güveniyorsan. Güvenmek zorunda kalma diye betik [62 okunur satır](get.ps1): son sürümü indirir, **SHA-256 özeti yayımlananla tutmuyorsa çalıştırmayı reddeder** ve tek klasöre açar. Kaldırmak, klasörü silmek demek.
 
 ```powershell
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
@@ -49,6 +49,8 @@ brisk scan
 İki dosya da .NET kurulumu istemiyor ve hiçbiri diğerine muhtaç değil. İndirdiğini aynı sürümdeki `SHA256SUMS.txt` ile doğrulayabilirsin.
 
 > brisk henüz imzalı değil, bu yüzden SmartScreen ilk açılışta uyaracak. O uyarı haklı. Bu cümleye değil, checksum'a güven.
+>
+> Windows 11'inde **Smart App Control** açıksa imzasız bir programı "yine de çalıştır" seçeneği bile vermeden durdurur: kurulum betiği olan bunu söyler ve brisk imzalanana kadar açılmaz. Smart App Control'u kapatmak tek yönlü (Ayarlar › Gizlilik ve güvenlik › Windows Güvenliği › Uygulama ve tarayıcı denetimi), brisk için kapatma. İmzalı sürüm için SignPath başvurusu aşağıdaki SSS'de.
 
 ---
 

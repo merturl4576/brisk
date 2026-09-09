@@ -40,5 +40,23 @@ if ($actual -ne $expected) {
 
 Expand-Archive $zip -DestinationPath $dir -Force
 Remove-Item $zip
-Start-Process (Join-Path $dir 'brisk-app.exe')   # UAC istemini brisk'in kendisi acar
 Write-Host "brisk kuruldu: $dir  (kaldirmak = bu klasoru silmek)"
+
+# Baslatmak ayri bir istir ve ayri duser: SmartScreen'de "yine de calistir"
+# yerine kapat, UAC sorusuna Hayir, ya da Smart App Control — o acikken imzasiz
+# bir exe "yine de" secenegi olmadan durdurulur. Ucu de ayni cumleyle gelir,
+# "Islem kullanici tarafindan iptal edildi". Kurulum bitti; betik olmesin,
+# kullanici nerede kaldigini ve ne yapacagini gorsun.
+try {
+    Start-Process (Join-Path $dir 'brisk-app.exe')   # UAC istemini brisk'in kendisi acar
+} catch {
+    Write-Host "brisk baslatilamadi: $($_.Exception.Message)"
+    Write-Host "Elle ac: $dir\brisk-app.exe  (UAC sorusuna Evet de)"
+    # Windows 11'in Smart App Control'u: 1 = acik. Acikken imzasiz brisk hic
+    # calismaz; kapatmak tek yonludur, Windows yeniden kurulmadan geri acilmaz.
+    $ci  = 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy'
+    $sac = (Get-ItemProperty $ci -ErrorAction SilentlyContinue).VerifiedAndReputablePolicyState
+    if ($sac -eq 1) {
+        Write-Host 'Smart App Control acik: imzasiz bir programi Windows sormadan durdurur. Kapatmak icin Ayarlar > Gizlilik ve guvenlik > Windows Guvenligi > Uygulama ve tarayici denetimi; bir kez kapatinca geri acilmaz. brisk icin kapatma, imzali surumu bekle: README anlatiyor.'
+    }
+}

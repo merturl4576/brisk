@@ -32,7 +32,7 @@ No installer. No account. No telemetry. No AI in the product. Every diagnosis is
 
 ## Install
 
-One line, if you trust it. You should not have to, so the script is [44 readable lines](get.ps1). It downloads the latest release, **refuses to run it unless the SHA-256 digest matches** the one published beside it, and unpacks into one folder. Uninstall means deleting the folder.
+One line, if you trust it. You should not have to, so the script is [62 readable lines](get.ps1). It downloads the latest release, **refuses to run it unless the SHA-256 digest matches** the one published beside it, and unpacks into one folder. Uninstall means deleting the folder.
 
 ```powershell
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
@@ -49,6 +49,8 @@ brisk scan
 Neither file needs .NET installed, and neither needs the other. Verify your download against `SHA256SUMS.txt` in the same release.
 
 > brisk is not code-signed yet, so SmartScreen will warn the first time. That warning is fair. Trust the checksum, not this sentence.
+>
+> If your Windows 11 has **Smart App Control** on, it blocks an unsigned program outright, with no "run anyway": the install script tells you when that is what happened, and brisk will not open until it is signed. Turning Smart App Control off is one-way (Settings › Privacy & security › Windows Security › App & browser control), so do not do it for brisk. A signed build is what the SignPath application mentioned in the FAQ below is for.
 
 ---
 
