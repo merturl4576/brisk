@@ -117,10 +117,11 @@ Bu kategori büyük ölçüde kimsenin kontrol etmediği iddialar üzerine kurul
 
 ## Ne yapıyor
 
-- **31 deterministik teşhis kuralı.** Güç planı, başlangıç yükü, Windows'un kendi ölçtüğü açılış süresi, desteklediğinin altında çalışan ekran yenileme hızı, kendi hız değerinin altında çalışan bellek, sıcaklıklar, disk baskısı, profilindeki en büyük dosyalar (adıyla), yukarıdaki read-back'li on dört gizlilik ve güvenlik kuralı ve dahası. Her bulgu kanıtını taşıyor.
+- **32 deterministik teşhis kuralı.** Güç planı, başlangıç yükü, Windows'un kendi ölçtüğü açılış süresi, Windows'un dönen bir diskten çalışıp çalışmadığı, desteklediğinin altında çalışan ekran yenileme hızı, kendi hız değerinin altında çalışan bellek, sıcaklıklar, disk baskısı, profilindeki en büyük dosyalar (adıyla), yukarıdaki read-back'li on dört gizlilik ve güvenlik kuralı ve dahası. Her bulgu kanıtını taşıyor.
 - **Güvenlik durumu, önce rapor.** Windows bir program kontrolü almadan önce soruyor mu (geri alınabilir tek düzeltme, sonraki her taramada yeniden okunur), Defender'a neyi atlaması söylenmiş ve açık mı, son 30 günde hangi uygulamalar mikrofonu ve kamerayı kullandı, Windows'un öneri ve sessiz kurulum bayrakları, ve iyi olan satırlar: güvenlik duvarı, Uzak Masaüstü. Burada hiçbir şeye not verilmez ve hiçbir yol ya da uygulama adı paylaşacağın bir şeye ulaşmaz.
 - **Tek tıkla düzeltme ve geri alma.** Kurallar Auto, Confirm ve Advise diye ayrılıyor. brisk bir Confirm kuralını sormadan uygulamıyor, yalnızca gözlemlediği bir şey için düzeltme düğmesi göstermiyor.
 - **Açılış programlarında listeye değil Windows'un sözüne bakar.** Windows'un kendi açılış günlüğünün geç kalmakla suçladığı bir program (5 sn ve üstü, son sekiz açılışın ikisinde) brisk'in kısa listesindeki bir adla aynı muameleyi görür, ağır sayılır ve bulgu hangi açılışların onu suçladığını söyler. OneDrive ve Windows'un kendi bileşenleri bu yolla asla kapatılmaz.
+- **Her şeyin altındaki disk, adıyla.** Windows dönen bir diskten çalışıyorsa brisk bunu söyler, skordan 12 puan keser, işe yarayacak tek yükseltme olarak SSD'yi adlandırır ve Windows'un aynı değeri gösterdiği Görev Yöneticisi'ni işaret eder. brisk'in öbür kurallarının açıklayamadığı yavaş bilgisayarı açıklayan bulgu bu; brisk aynı nefeste temizlediği hiçbir şeyin onun yerini tutmayacağını da söyler.
 - **Beyaz listeyle çalışan temizleyici**, desenle değil. Yalnızca Windows'un ve uygulamaların kendiliğinden yeniden ürettiği önbellek ve geçici dosyalara dokunuyor, başka hiçbir şeye değil. Üç seviye: Safe, Developer, Deep.
 - **Sesini yükselten derin raflar.** Windows.old, uyku modu dosyası, bileşen deposunun yeri doldurulmuş yarısı, bayat geliştirici önbellekleri. Her biri boyutlanmış ve ön sayfada adıyla anılmış ("Derin raflarda 32 GB daha var"), her biri kendi onayının arkasında ve her satır takasını yazıyor: ne geri gelir, ne gelmez, ne çalışmayı bırakır.
 - **Gözle görülen bir düzeltme.** 144 Hz monitörün 60 Hz'de çalışması çok yaygın. brisk hızı yükseltir ve 15 saniye içinde "görüyorum" onayı gelmezse kendiliğinden geri alır.
@@ -195,7 +196,7 @@ Geliştiricinin sahip olduğu kısım: ürün kararları, güvenlik kuralları, 
 
 Bunu dürüst tutan şeyler:
 
-- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1638 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
+- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1653 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
 - Her dalgayı yöneten spec'ler ve uygulama planları [`docs/superpowers`](docs/superpowers) altında herkese açık.
 - Her değişiklik birleştirilmeden önce review edildi ve commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
 - Her kural ve her düzeltme, yayınlanmadan önce geliştiricinin sahip olduğu gerçek makinelerde çalıştı. O çalıştırmalardan biri skorun yalnızca ayar çevirmeleriyle 43 puan oynadığını gösterdi; brisk'in ölçebildiği hiçbir şey değişmemişti. Skorun bugün böyle çalışmasının sebebi bu.
@@ -209,7 +210,7 @@ Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projeni
 .NET 8 SDK gerekiyor. Yalnızca Windows: brisk registry, WMI, Windows olay günlüğü ve donanım sensörlerini okuyor, burada başka bir yerde dürüstçe koşabilecek hiçbir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1638 test
+dotnet test brisk.sln -c Release      # 1653 test
 dotnet run --project src/Brisk.Cli -- scan
 pwsh -File scripts/publish.ps1        # iki tek dosyalık exe -> artifacts/
 ```
