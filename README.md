@@ -196,7 +196,7 @@ What the maintainer owns: the product decisions, the safety rules, the architect
 
 What keeps that honest:
 
-- Every rule is a deterministic function over fake probes, and 1653 tests pin what each one says and refuses to say.
+- Every rule is a deterministic function over fake probes, and 1659 tests pin what each one says and refuses to say.
 - The specs and implementation plans that drove each wave are public under [`docs/superpowers`](docs/superpowers).
 - Every change was reviewed before merge, and the commit history records its own corrections instead of rewriting them.
 - Every rule and every fix ran on real machines the maintainer owns before it shipped. One of those runs showed the score moving 43 points on settings flips alone, with nothing brisk could measure having changed. That is why the score works the way it does now.
@@ -210,7 +210,7 @@ If you find a place where the code claims more than it proves, that is the bug r
 Requires the .NET 8 SDK. Windows only: brisk reads the registry, WMI, the Windows event log and hardware sensors, so there is nothing here that could honestly run anywhere else.
 
 ```
-dotnet test brisk.sln -c Release      # 1653 tests
+dotnet test brisk.sln -c Release      # 1659 tests
 dotnet run --project src/Brisk.Cli -- scan
 pwsh -File scripts/publish.ps1        # both single-file executables into artifacts/
 ```

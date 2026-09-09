@@ -377,6 +377,11 @@ public sealed class CleanViewModel : ViewModelBase
             // The report tells the problems' story in human language below;
             // the raw path-by-path English dump stays off the simple face.
             ProblemsText = "";
+            // The rescan is a phase too (2026-09-07 live run): without a
+            // name of its own the card sat on the purge label and a full
+            // bar for the one to two minutes the follow-up scan takes on a
+            // real disk, and the owner read the app as stuck.
+            Phase(_loc["clean.rescanning"]);
             await _state.ScanAsync();
             ShowReport(result, freeBefore, _host.FreeDiskBytes(), appHeld);
             RefreshHero();

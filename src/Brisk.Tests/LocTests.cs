@@ -163,6 +163,7 @@ public class LocTests
     [InlineData("rule.system-disk-hdd.title")]
     [InlineData("rule.system-disk-hdd.advice")]
     [InlineData("rule.system-disk-hdd.evidence")]
+    [InlineData("clean.rescanning")]
     [InlineData("clean.skipped.apprunning")]
     [InlineData("clean.target.user-temp")]
     [InlineData("clean.target.windows-temp")]

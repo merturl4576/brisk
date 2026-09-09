@@ -372,16 +372,24 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <Button Margin="0,0,8,0" Command="{Binding FixAllCommand}"
-                        Content="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}">
+                <!-- Content lives in the STYLE (a local value would beat the
+                     busy trigger). While THIS button's batch runs it says so;
+                     the follow-up scan has its own line above. -->
+                <Button Margin="0,0,8,0" Command="{Binding FixAllCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Setter Property="Content"
+                                    Value="{Binding [health.fixall], Source={x:Static loc:Loc.Instance}}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding IsBusy}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsFixingAll}" Value="True">
+                                    <Setter Property="Content"
+                                            Value="{Binding [finding.fixing], Source={x:Static loc:Loc.Instance}}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -391,10 +399,12 @@
                      JOBS — "Speed up this PC" (settings fixes) next to
                      "Free up 1.2 GB" (junk files, wearing the live honest
                      figure). Same commands, same wiring as before. -->
-                <Button Command="{Binding CleanSafeCommand}"
-                        Content="{Binding CleanSafeText}">
+                <Button Command="{Binding CleanSafeCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <!-- In the style, not a local value, so the busy
+                                 trigger below can replace it. -->
+                            <Setter Property="Content" Value="{Binding CleanSafeText}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
@@ -409,6 +419,15 @@
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding IsBusy}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <!-- IsCleaningSafe, not IsBusy or State.IsCleaning:
+                                     only the button whose own purge is running
+                                     wears the working label (2026-09-07 live
+                                     run — a greyed button with nothing moving
+                                     read as "stuck"). -->
+                                <DataTrigger Binding="{Binding IsCleaningSafe}" Value="True">
+                                    <Setter Property="Content"
+                                            Value="{Binding [clean.cleaning], Source={x:Static loc:Loc.Instance}}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

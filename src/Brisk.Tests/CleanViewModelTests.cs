@@ -507,10 +507,13 @@ public class CleanViewModelTests
         var (vm, _, _, state) = Build(SimpleHost());
         await state.ScanAsync();
         var totals = new List<string>();
+        var phases = new List<string>();
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(vm.SimpleTotalText))
                 totals.Add(vm.SimpleTotalText);
+            if (e.PropertyName == nameof(vm.ProgressText))
+                phases.Add(vm.ProgressText);
         };
 
         await vm.CleanSimpleAsync();
@@ -518,9 +521,15 @@ public class CleanViewModelTests
         Assert.Equal(new[] { "1 KB", "0 B", "3 KB" }, totals);
         Assert.Equal(1.0, vm.ProgressFraction);
         // Review round 1 (I7): the purge phase is VISIBLE — after the last
-        // "2 / 2" tick the label becomes the freeing state, which is the
-        // final text the busy card showed.
-        Assert.Equal(EnglishLoc()["clean.purging"], vm.ProgressText);
+        // "2 / 2" tick the label becomes the freeing state. Since the
+        // 2026-09-07 live run the rescan is a named phase after it, so the
+        // freeing label is the one BEFORE the last, and the last is the
+        // measuring one the card shows for the whole follow-up scan.
+        var loc = EnglishLoc();
+        var purging = phases.LastIndexOf(loc["clean.purging"]);
+        Assert.True(purging >= 0, "the purge phase never showed");
+        Assert.Equal(loc["clean.rescanning"], phases[purging + 1]);
+        Assert.Equal(loc["clean.rescanning"], vm.ProgressText);
     }
 
     /// UX ROUND 10 completion report: junk count, bytes moved to the bin,
@@ -845,6 +854,36 @@ public class CleanViewModelTests
         Assert.DoesNotContain(loc["clean.preparing"], vm.ProgressText);
         Assert.False(vm.IsProgressIndeterminate);
         Assert.False(vm.IsSimpleCleanBusy);
+    }
+
+    /// The frozen gap the 2026-09-07 live run photographed: after the purge
+    /// the card sat on a full bar and "2 / 2" for the whole follow-up scan —
+    /// one to two minutes on a real disk — and the owner read the app as
+    /// stuck. The rescan is a phase like the purge: it wears its own name and
+    /// the sweeping bar until the measured truth lands, and the run ending
+    /// takes the sweep off.
+    [Fact]
+    public async Task SimpleClean_NamesTheRescan_WhileTheFollowUpScanRuns()
+    {
+        var loc = EnglishLoc();
+        var host = SimpleHost();
+        var (vm, _, _, state) = Build(host);
+        await state.ScanAsync();
+        string? textDuringRescan = null;
+        bool? sweepDuringRescan = null;
+        // OnScan fires the moment the follow-up scan STARTS, so this is what
+        // the card showed for the whole wait — a fact, not a timing guess.
+        host.OnScan = () =>
+        {
+            textDuringRescan = vm.ProgressText;
+            sweepDuringRescan = vm.IsProgressIndeterminate;
+        };
+
+        await vm.CleanSimpleAsync();
+
+        Assert.Equal(loc["clean.rescanning"], textDuringRescan);
+        Assert.True(sweepDuringRescan);
+        Assert.False(vm.IsProgressIndeterminate);
     }
 
     /// ROUND 13 re-review (minors 14 + 15): a press that loses the runner's

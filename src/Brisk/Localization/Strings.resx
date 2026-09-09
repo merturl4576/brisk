@@ -126,6 +126,7 @@
   <data name="clean.cleaning" xml:space="preserve"><value>Cleaning…</value></data>
   <data name="clean.preparing" xml:space="preserve"><value>Getting ready…</value></data>
   <data name="clean.purging" xml:space="preserve"><value>Freeing the space…</value></data>
+  <data name="clean.rescanning" xml:space="preserve"><value>Measuring what changed…</value></data>
   <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
   <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} items cleaned — {1} of disk space freed</value></data>
   <data name="clean.report.none" xml:space="preserve"><value>Nothing needed cleaning — this area is already tidy.</value></data>

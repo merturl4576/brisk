@@ -105,11 +105,19 @@
             </StackPanel>
 
             <UniformGrid Columns="2" Margin="14,10,14,4">
-                <Button Margin="0,0,3,0" Command="{Binding FixAllCommand}"
-                        Content="{Binding [flyout.fixall], Source={x:Static loc:Loc.Instance}}">
+                <!-- Content lives in the STYLE (a local value would beat the
+                     busy trigger): while this button's own batch runs it
+                     says so, and hands over to the scanning line above. -->
+                <Button Margin="0,0,3,0" Command="{Binding FixAllCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Setter Property="Content"
+                                    Value="{Binding [flyout.fixall], Source={x:Static loc:Loc.Instance}}" />
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFixingAll}" Value="True">
+                                    <Setter Property="Content"
+                                            Value="{Binding [finding.fixing], Source={x:Static loc:Loc.Instance}}" />
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>
@@ -130,11 +138,18 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <Button Margin="3,0,0,0" Command="{Binding CleanSafeCommand}"
-                        Content="{Binding [flyout.clean], Source={x:Static loc:Loc.Instance}}">
+                <Button Margin="3,0,0,0" Command="{Binding CleanSafeCommand}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                            <Setter Property="Content"
+                                    Value="{Binding [flyout.clean], Source={x:Static loc:Loc.Instance}}" />
                             <Style.Triggers>
+                                <!-- IsCleaningSafe, not IsBusy: only the button
+                                     whose own purge is running wears the label. -->
+                                <DataTrigger Binding="{Binding IsCleaningSafe}" Value="True">
+                                    <Setter Property="Content"
+                                            Value="{Binding [clean.cleaning], Source={x:Static loc:Loc.Instance}}" />
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding State.IsScanning}" Value="True">
                                     <Setter Property="IsEnabled" Value="False" />
                                 </DataTrigger>

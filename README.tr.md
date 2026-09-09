@@ -196,7 +196,7 @@ Geliştiricinin sahip olduğu kısım: ürün kararları, güvenlik kuralları, 
 
 Bunu dürüst tutan şeyler:
 
-- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1653 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
+- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1659 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
 - Her dalgayı yöneten spec'ler ve uygulama planları [`docs/superpowers`](docs/superpowers) altında herkese açık.
 - Her değişiklik birleştirilmeden önce review edildi ve commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
 - Her kural ve her düzeltme, yayınlanmadan önce geliştiricinin sahip olduğu gerçek makinelerde çalıştı. O çalıştırmalardan biri skorun yalnızca ayar çevirmeleriyle 43 puan oynadığını gösterdi; brisk'in ölçebildiği hiçbir şey değişmemişti. Skorun bugün böyle çalışmasının sebebi bu.
@@ -210,7 +210,7 @@ Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projeni
 .NET 8 SDK gerekiyor. Yalnızca Windows: brisk registry, WMI, Windows olay günlüğü ve donanım sensörlerini okuyor, burada başka bir yerde dürüstçe koşabilecek hiçbir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1653 test
+dotnet test brisk.sln -c Release      # 1659 test
 dotnet run --project src/Brisk.Cli -- scan
 pwsh -File scripts/publish.ps1        # iki tek dosyalık exe -> artifacts/
 ```

@@ -5,6 +5,7 @@ using Brisk.Localization;
 using Brisk.Services;
 using Brisk.ViewModels;
 using BriskEngine;
+using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 using BriskEngine.Models;
 using Xunit;
@@ -54,6 +55,63 @@ public class FlyoutViewModelTests
             new SafeCleanRunner(new CleanService(host, settings ?? new Settings()), bin),
             fixAll, EnglishLoc(), isDryRun ?? (() => false));
         return (vm, bin);
+    }
+
+    /// Same gap, same answer as the overview (2026-09-07 live run): the tray
+    /// button doing the work says so in its own label, only while its own
+    /// work runs, and hands over to the scanning line before the rescan.
+    [Fact]
+    public async Task CleanSafe_WearsItsOwnBusyLabel_AndHandsOverToTheRescan()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true) },
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        var vm = Vm(host);
+        await vm.State.ScanAsync();
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, _) =>
+        {
+            gate.Wait();
+            return new CleanReport(scan.Items
+                .Select(i => new CleanEntry(scan.Target.Id, i.Path, i.Bytes, "recycled"))
+                .ToList());
+        };
+        bool? labelDuringRescan = null;
+        host.OnScan = () => labelDuringRescan = vm.IsCleaningSafe;
+
+        var clean = vm.CleanSafeAsync();
+
+        Assert.True(vm.IsCleaningSafe);
+        Assert.False(vm.IsFixingAll);
+        gate.Set();
+        await clean;
+
+        Assert.False(labelDuringRescan);
+        Assert.False(vm.IsCleaningSafe);
+    }
+
+    [Fact]
+    public async Task FixAll_WearsItsOwnBusyLabel_AndHandsOverToTheRescan()
+    {
+        var host = new FakeEngineHost();
+        host.NextSnapshot = TestData.Snapshot(
+            new[] { TestData.Finding("power-plan", cat: RuleCategory.Auto, canFix: true) },
+            TestData.Target("user-temp", CleanupLevel.Safe, 2048));
+        var vm = Vm(host);
+        await vm.State.ScanAsync();
+        var seen = new List<bool>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(vm.IsFixingAll)) seen.Add(vm.IsFixingAll);
+        };
+        bool? labelDuringRescan = null;
+        host.OnScan = () => labelDuringRescan = vm.IsFixingAll;
+
+        await vm.FixAllAsync();
+
+        Assert.Equal(new[] { true, false }, seen);
+        Assert.False(labelDuringRescan);
     }
 
     /// "one-click fixable" is a promise about the button beside it, and that

@@ -78,6 +78,14 @@ public sealed class FlyoutViewModel : ViewModelBase
     public AppState State => _state;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
 
+    /// Which button is doing the work, so it can say so in its own label —
+    /// the overview's answer to the 2026-09-07 live run, on the tray too.
+    /// True only while THAT job runs; each hands over to the scanning line
+    /// before the rescan starts.
+    private bool _cleaningSafe, _fixingAll;
+    public bool IsCleaningSafe { get => _cleaningSafe; private set => Set(ref _cleaningSafe, value); }
+    public bool IsFixingAll { get => _fixingAll; private set => Set(ref _fixingAll, value); }
+
     public RelayCommand ScanCommand { get; }
     public RelayCommand FixAllCommand { get; }
     public RelayCommand CleanSafeCommand { get; }
@@ -94,6 +102,7 @@ public sealed class FlyoutViewModel : ViewModelBase
         // batch on top of an unconfirmed display change.
         if (_busy || _state.IsAwaitingDisplayConfirmation) return;
         IsBusy = true;                   // set before the first await — re-entry guard
+        IsFixingAll = true;
         try
         {
             var snapshot = _state.Snapshot;
@@ -103,10 +112,12 @@ public sealed class FlyoutViewModel : ViewModelBase
             // See AppState.TrackFixes: the tray's fix-all is one of the
             // surfaces that can fix display-refresh, and the confirmation is
             // raised the moment the mode changes rather than here.
+            IsFixingAll = false;         // the scanning line takes it from here
             await _state.ScanAsync();
         }
         finally
         {
+            IsFixingAll = false;
             IsBusy = false;
         }
     }
@@ -115,6 +126,7 @@ public sealed class FlyoutViewModel : ViewModelBase
     {
         if (_busy) return;
         IsBusy = true;                   // set before the first await — re-entry guard
+        IsCleaningSafe = true;
         try
         {
             // Round-13 review (I1): the busy flag above guards only THIS
@@ -137,10 +149,12 @@ public sealed class FlyoutViewModel : ViewModelBase
                 : result.CleanedCount == 0
                     ? _loc["clean.report.none"]
                     : CleanedLine(result);
+            IsCleaningSafe = false;      // the scanning line takes it from here
             await _state.ScanAsync();
         }
         finally
         {
+            IsCleaningSafe = false;
             IsBusy = false;
         }
     }

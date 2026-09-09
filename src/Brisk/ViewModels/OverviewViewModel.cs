@@ -184,6 +184,15 @@ public sealed class OverviewViewModel : ViewModelBase
     public AppState State => _state;
     public bool HasSnapshot => _state.Snapshot is not null;
     public bool IsBusy { get => _busy; private set => Set(ref _busy, value); }
+
+    /// Which button is doing the work, so it can say so in its own label
+    /// (2026-09-07 live run: every button greyed and nothing else moved
+    /// while the purge ran, and the owner read the app as stuck). True only
+    /// while THAT job runs; the follow-up scan has its own line, so each
+    /// hands over before the rescan starts.
+    private bool _cleaningSafe, _fixingAll;
+    public bool IsCleaningSafe { get => _cleaningSafe; private set => Set(ref _cleaningSafe, value); }
+    public bool IsFixingAll { get => _fixingAll; private set => Set(ref _fixingAll, value); }
     public string ScoreText { get => _scoreText; private set => Set(ref _scoreText, value); }
     /// Numeric twin of ScoreText for the gauge sweep (0 until the first scan,
     /// which reads as an empty track under the "—" digits).
@@ -363,6 +372,7 @@ public sealed class OverviewViewModel : ViewModelBase
         // surface is, not just this one (AppState.IsAwaitingDisplayConfirmation).
         if (_busy || _state.IsAwaitingDisplayConfirmation) return;
         IsBusy = true;                   // set before the first await — re-entry guard
+        IsFixingAll = true;
         try
         {
             var snapshot = _state.Snapshot;
@@ -378,10 +388,12 @@ public sealed class OverviewViewModel : ViewModelBase
             // The display confirmation is raised as the mode changes, from
             // FixAllService itself (AppState.TrackFixes) — not from this
             // report-time loop, which only runs once the whole batch is done.
+            IsFixingAll = false;         // the scanning line takes it from here
             await _state.ScanAsync();
         }
         finally
         {
+            IsFixingAll = false;
             IsBusy = false;
         }
     }
@@ -390,6 +402,7 @@ public sealed class OverviewViewModel : ViewModelBase
     {
         if (_busy) return;
         IsBusy = true;                   // set before the first await — re-entry guard
+        IsCleaningSafe = true;
         try
         {
             // Round-13 review (I1): the busy flag above guards only THIS
@@ -424,10 +437,12 @@ public sealed class OverviewViewModel : ViewModelBase
                 ? ""
                 : _loc.F("overview.report.summary", _loc.F("overview.report.part.freed",
                     Fmt.Bytes(result.FreedBytes)));
+            IsCleaningSafe = false;      // the scanning line takes it from here
             await _state.ScanAsync();
         }
         finally
         {
+            IsCleaningSafe = false;
             IsBusy = false;
         }
     }

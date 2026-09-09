@@ -718,6 +718,58 @@ public class OverviewViewModelTests
         Assert.Equal(loc.F("overview.report.fixed", "custom-x"), row.Title);
     }
 
+    /// The 2026-09-07 live run: the one-click clean greyed every button and
+    /// showed nothing else while the purge ran, and the owner read the app
+    /// as stuck. The button doing the work says so in its own label, only
+    /// while ITS work runs — the follow-up scan has its own line, so the
+    /// label hands over to it before the rescan starts.
+    [Fact]
+    public async Task CleanSafe_WearsItsOwnBusyLabel_AndHandsOverToTheRescan()
+    {
+        var (vm, host, state) = Build();
+        await state.ScanAsync();
+        using var gate = new System.Threading.ManualResetEventSlim(false);
+        host.OnClean = (scan, _) =>
+        {
+            gate.Wait();
+            return new CleanReport(scan.Items
+                .Select(i => new CleanEntry(scan.Target.Id, i.Path, i.Bytes, "recycled"))
+                .ToList());
+        };
+        bool? labelDuringRescan = null;
+        host.OnScan = () => labelDuringRescan = vm.IsCleaningSafe;
+
+        var clean = vm.CleanSafeAsync();
+
+        Assert.True(vm.IsCleaningSafe);      // the clean is provably in flight
+        Assert.False(vm.IsFixingAll);        // and the other button is not lying
+        gate.Set();
+        await clean;
+
+        Assert.False(labelDuringRescan);
+        Assert.False(vm.IsCleaningSafe);
+    }
+
+    [Fact]
+    public async Task FixAll_WearsItsOwnBusyLabel_AndHandsOverToTheRescan()
+    {
+        var (vm, host, state) = Build();
+        await state.ScanAsync();
+        var seen = new List<bool>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(vm.IsFixingAll)) seen.Add(vm.IsFixingAll);
+        };
+        bool? labelDuringRescan = null;
+        host.OnScan = () => labelDuringRescan = vm.IsFixingAll;
+
+        await vm.FixAllAsync();
+
+        Assert.Equal(new[] { true, false }, seen);
+        Assert.False(labelDuringRescan);
+        Assert.False(vm.IsCleaningSafe);
+    }
+
     [Fact]
     public async Task BusyGuard_BlocksOtherActionsWhileOneIsInFlight()
     {
