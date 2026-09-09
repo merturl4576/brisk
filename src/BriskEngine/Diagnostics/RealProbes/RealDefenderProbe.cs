@@ -24,6 +24,50 @@ public sealed class RealDefenderProbe : IDefenderProbe
 {
     private const string Scope = @"root\Microsoft\Windows\Defender";
 
+    /// What Security Center lists under AntiVirusProduct — the same table
+    /// the Windows Security app reads, and readable without elevation.
+    /// Client Windows only: the namespace does not exist on Server, and a
+    /// missing namespace answers empty through the catch. A row with no
+    /// productState is skipped rather than decoded as "off". Verified live
+    /// 2026-09-09, unelevated, on the maintainer's machine: one row,
+    /// "Windows Defender", productState 397568, pathToSignedProductExe
+    /// "windowsdefender://".
+    public IReadOnlyList<AntivirusProduct> Registered()
+    {
+        var products = new List<AntivirusProduct>();
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(
+                new ManagementScope(@"root\SecurityCenter2"),
+                new ObjectQuery("SELECT displayName, productState, pathToSignedProductExe " +
+                                "FROM AntiVirusProduct"));
+            using var rows = searcher.Get();
+            foreach (ManagementBaseObject row in rows)
+            {
+                using (row)
+                {
+                    int? state = row["productState"] switch
+                    {
+                        uint u => (int)Math.Min(u, int.MaxValue),
+                        int i => i,
+                        _ => null,
+                    };
+                    if (state is null) continue;
+                    var name = (row["displayName"] as string ?? "").Trim();
+                    var path = row["pathToSignedProductExe"] as string ?? "";
+                    var (on, outdated) = AntivirusState.Decode(state.Value);
+                    products.Add(new AntivirusProduct(
+                        name, AntivirusState.IsDefender(name, path), on, outdated));
+                }
+            }
+        }
+        catch (Exception)
+        {
+            return Array.Empty<AntivirusProduct>();
+        }
+        return products;
+    }
+
     public DefenderStatus? Read()
     {
         try

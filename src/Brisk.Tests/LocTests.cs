@@ -146,6 +146,9 @@ public class LocTests
     [InlineData("rule.power-plan.evidence")]
     [InlineData("rule.browser-gpu.evidence")]
     [InlineData("rule.hw-acceleration.evidence")]
+    [InlineData("rule.hw-acceleration.evidence.unread")]
+    [InlineData("rule.hw-acceleration.evidence.partly")]
+    [InlineData("rule.hw-acceleration.unread.title")]
     [InlineData("rule.startup-bloat.evidence")]
     [InlineData("rule.startup-bloat.evidence.heavy")]
     [InlineData("rule.startup-bloat.evidence.blamed")]
@@ -163,6 +166,11 @@ public class LocTests
     [InlineData("rule.system-disk-hdd.title")]
     [InlineData("rule.system-disk-hdd.advice")]
     [InlineData("rule.system-disk-hdd.evidence")]
+    [InlineData("rule.third-party-av.title")]
+    [InlineData("rule.third-party-av.advice")]
+    [InlineData("rule.third-party-av.evidence")]
+    [InlineData("rule.third-party-av.evidence.off")]
+    [InlineData("rule.third-party-av.evidence.outdated")]
     [InlineData("clean.rescanning")]
     [InlineData("clean.skipped.apprunning")]
     [InlineData("clean.target.user-temp")]
@@ -621,6 +629,30 @@ public class LocTests
         {
             Assert.DoesNotContain(promise, evidence, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(promise, advice, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// The antivirus finding renders the product's name whole, names Defender
+    /// as what stands behind it, and says in every variant that brisk changes
+    /// nothing — a product someone chose is reported, never removed.
+    [Theory]
+    [InlineData("en", "brisk changes nothing")]
+    [InlineData("tr", "brisk hiçbir şeyi değiştirmez")]
+    public void ThirdPartyAvCopy_NamesTheProductAndDefender_AndChangesNothing(
+        string language, string promise)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        Assert.NotEqual("rule.third-party-av.title", loc["rule.third-party-av.title"]);
+        foreach (var key in new[] { "rule.third-party-av.evidence",
+                                    "rule.third-party-av.evidence.off",
+                                    "rule.third-party-av.evidence.outdated" })
+        {
+            var evidence = loc.F(key, "McAfee LiveSafe");
+            Assert.Contains("McAfee LiveSafe", evidence);
+            Assert.Contains("Defender", evidence);
+            Assert.Contains(promise, evidence);
         }
     }
 

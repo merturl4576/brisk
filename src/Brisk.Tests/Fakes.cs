@@ -192,6 +192,7 @@ public sealed class NoOtherProbes
     /// so a throw would arrive at this answer through a longer path while
     /// costing the loud failure nothing. Null says it directly.
     public DefenderStatus? Read() => null;
+    public IReadOnlyList<AntivirusProduct> Registered() => Array.Empty<AntivirusProduct>();
 }
 
 public static class TestData

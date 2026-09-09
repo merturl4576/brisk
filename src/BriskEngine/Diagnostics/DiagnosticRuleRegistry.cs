@@ -26,6 +26,10 @@ public static class DiagnosticRuleRegistry
         // cause — and it is the one finding whose remedy is a part, not a
         // switch, which is why it is a notice with a price.
         new SystemDiskHddRule(),
+        // Who holds the antivirus job when it is not Defender: the other
+        // common reason a consumer laptop is slow and blocks an unsigned
+        // program without a word. Report-only, free.
+        new ThirdPartyAntivirusRule(),
         // The telemetry switches. Their ids are what the privacy page routes
         // on; the list routed against lives in the Brisk project, which this
         // assembly cannot see — PrivacyRedLineTests reads the two against

@@ -227,7 +227,12 @@ public sealed class FakeDefender : IDefenderProbe
 {
     public DefenderStatus? Status;
     public int Reads;
+    /// Empty by default: every test that never thought about Security
+    /// Center's table keeps the silence it always had from the rule that
+    /// reads it.
+    public List<AntivirusProduct> Products = new();
     public DefenderStatus? Read() { Reads++; return Status; }
+    public IReadOnlyList<AntivirusProduct> Registered() => Products;
 }
 
 public static class TestContext

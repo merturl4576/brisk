@@ -158,6 +158,7 @@
   <data name="rule.power-plan.title" xml:space="preserve"><value>A performance power plan is available and not in use</value></data>
   <data name="rule.browser-gpu.title" xml:space="preserve"><value>Browsers are not using the fast GPU</value></data>
   <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Browser hardware acceleration is off</value></data>
+  <data name="rule.hw-acceleration.unread.title" xml:space="preserve"><value>A browser's settings file could not be read</value></data>
   <data name="rule.startup-bloat.title" xml:space="preserve"><value>Too many programs start with Windows</value></data>
   <data name="rule.ram-pressure.title" xml:space="preserve"><value>Memory pressure is high</value></data>
   <data name="rule.thermals.title" xml:space="preserve"><value>Running hot at idle</value></data>
@@ -173,6 +174,7 @@
   <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows takes a long time to start</value></data>
   <data name="rule.memory-speed.title" xml:space="preserve"><value>Memory is running below its rated speed</value></data>
   <data name="rule.system-disk-hdd.title" xml:space="preserve"><value>Windows runs from a spinning disk</value></data>
+  <data name="rule.third-party-av.title" xml:space="preserve"><value>A third-party antivirus holds the job</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
@@ -188,9 +190,12 @@
   <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows times its own boot and names the programs that started slower than it expected — the ones that turn up under Startup programs on the Performance page can be switched off there</value></data>
   <data name="rule.memory-speed.advice" xml:space="preserve"><value>The modules report a higher rated speed than they are set to — that can be a speed profile (XMP/EXPO) that was never switched on, or a board that does not support the rating, and brisk cannot tell which from Windows</value></data>
   <data name="rule.system-disk-hdd.advice" xml:space="preserve"><value>Replace the drive Windows runs from with an SSD, or have a shop do it — it is the one change that makes a PC like this feel new, and no cleanup substitutes for it</value></data>
+  <data name="rule.third-party-av.advice" xml:space="preserve"><value>Nothing to switch here: if the product was your choice, keep it up to date; if it came with the machine and you never chose it, removing it hands the job back to Defender, which is already here</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Power plan switched to high performance</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Browsers now use the fast GPU</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Browser hardware acceleration enabled</value></data>
+  <data name="rule.hw-acceleration.evidence.unread" xml:space="preserve"><value>brisk could not read the settings file (Local State) of: {0}, so it cannot tell whether hardware acceleration is on there. Nothing is changed over a file brisk cannot read.</value></data>
+  <data name="rule.hw-acceleration.evidence.partly" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube. brisk could not read the settings file of: {1}, so it cannot say for that one, and the fix leaves it alone.</value></data>
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Heavy startup programs disabled</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Visual effects tuned for performance</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
@@ -224,6 +229,9 @@
   <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
   <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>rated for {0} MT/s</value></data>
   <data name="rule.system-disk-hdd.evidence" xml:space="preserve"><value>The disk Windows runs from ({0}) is a spinning drive: it reports a seek penalty, the same reading Task Manager uses to label a disk HDD on its Performance page. Everything on this machine waits on that disk — starting up, opening programs, updates — and nothing brisk cleans or switches changes that. An SSD in its place is the one upgrade that would make this PC feel new. This finding charges the score because the slowness is measured, not because brisk can fix it.</value></data>
+  <data name="rule.third-party-av.evidence" xml:space="preserve"><value>{0} is the antivirus Windows Security lists as active, and Defender stands behind it, switched off while another product holds the job. Two things follow. Every file you open goes through that product's real-time scanner, which on an older machine is felt. And a program without a signature, brisk included, can be blocked by it without a word. If it came with the machine and you never chose it, removing it hands the job back to Defender, which is already here and updates with Windows. brisk changes nothing here; it reports.</value></data>
+  <data name="rule.third-party-av.evidence.off" xml:space="preserve"><value>{0} is listed as this machine's antivirus and reports itself as off — an expired trial looks exactly like this. Windows Security may have handed real-time scanning back to Defender, or nothing may be scanning at all; the Windows Security app says which. Removing a product that has stopped working gives Defender the job for certain. brisk changes nothing here; it reports.</value></data>
+  <data name="rule.third-party-av.evidence.outdated" xml:space="preserve"><value>{0} is the active antivirus and Windows reports its definitions as out of date, so it is scanning against an old list. Either update it or, if it came with the machine and you never chose it, remove it and let Defender, which updates with Windows, take the job. brisk changes nothing here; it reports.</value></data>
   <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
   <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
   <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
