@@ -102,4 +102,36 @@ public sealed class CliActionTests
         Assert.NotNull(engine.Runner);
         Assert.NotNull(engine.Builder);
     }
+
+    private static (ActionEngine Engine, string Data) PlanOnlyRun()
+    {
+        var data = Directory.CreateTempSubdirectory("brisk-cli-run-").FullName;
+        var engine = ActionEngine.CreateReal(TestContext.Empty(data), new FakeRunner(), () => false);
+        // An unknown id is dropped whenever the queue is processed, so a
+        // plan-only run that processes it shows up as an empty queue.
+        engine.Deferred.Add("no-such-target", DateTime.UtcNow);
+        var scanner = new BriskEngine.Cleaning.Scanner(Array.Empty<CleanupTarget>(), new FakeRunningApps());
+        Program.RunActions(new CliCommand("run"), scanner, engine, new StringWriter());
+        return (engine, data);
+    }
+
+    [Fact]
+    public void Run_WithoutYes_LeavesTheDeferredQueueAlone()
+    {
+        var (engine, data) = PlanOnlyRun();
+        try { Assert.Single(engine.Deferred.Pending()); }
+        finally { Directory.Delete(data, true); }
+    }
+
+    [Fact]
+    public void Run_WithoutYes_CreatesNoRunOrReceiptFolders()
+    {
+        var (_, data) = PlanOnlyRun();
+        try
+        {
+            Assert.False(Directory.Exists(Path.Combine(data, "runs")));
+            Assert.False(Directory.Exists(Path.Combine(data, "receipts")));
+        }
+        finally { Directory.Delete(data, true); }
+    }
 }

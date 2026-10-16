@@ -34,14 +34,14 @@ public sealed class ReceiptStore
 {
     private readonly string _dir;
 
-    public ReceiptStore(string directory)
-    {
-        _dir = directory;
-        Directory.CreateDirectory(directory);
-    }
+    /// Creates nothing until the first Save, like RunStore.
+    public ReceiptStore(string directory) { _dir = directory; }
 
-    public void Save(Receipt receipt) =>
+    public void Save(Receipt receipt)
+    {
+        Directory.CreateDirectory(_dir);
         File.WriteAllText(Path.Combine(_dir, $"{receipt.RunId}.json"), JsonSerializer.Serialize(receipt));
+    }
 
     public Receipt? Load(string runId)
     {
@@ -51,7 +51,7 @@ public sealed class ReceiptStore
         catch (JsonException) { return null; }
     }
 
-    public Receipt? Latest() => Directory.EnumerateFiles(_dir, "*.json")
+    public Receipt? Latest() => !Directory.Exists(_dir) ? null : Directory.EnumerateFiles(_dir, "*.json")
         .OrderByDescending(f => f, StringComparer.Ordinal)
         .Select(f => Load(Path.GetFileNameWithoutExtension(f)))
         .FirstOrDefault(r => r is not null);

@@ -636,9 +636,8 @@ public static class Program
         .Select(e => CleanupTargetRegistry.All.FirstOrDefault(t => t.Id == e.TargetId)?.AppDisplayName)
         .OfType<string>().Distinct().ToList();
 
-    private static int RunActions(CliCommand cmd, Scanner scanner, ActionEngine engine, TextWriter o)
+    public static int RunActions(CliCommand cmd, Scanner scanner, ActionEngine engine, TextWriter o)
     {
-        engine.ProcessDeferred();
         var plan = engine.BuildPlan(scanner.Scan());
         var selection = ActionSelection.Default(plan);
         if (cmd.Group is { } g)
@@ -651,6 +650,9 @@ public static class Program
             return 0;
         }
 
+        // Behind --yes: processing the queue deletes the caches whose apps
+        // have closed, and a plan-only run changes nothing.
+        engine.ProcessDeferred();
         var items = plan.Items.ToDictionary(i => i.Id);
         var run = engine.Runner.Run(plan, selection, r =>
         {

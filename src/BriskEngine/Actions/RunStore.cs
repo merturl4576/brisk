@@ -9,14 +9,14 @@ public sealed class RunStore
 {
     private readonly string _dir;
 
-    public RunStore(string directory)
-    {
-        _dir = directory;
-        Directory.CreateDirectory(directory);
-    }
+    /// Creates nothing until the first Save: a plan-only run leaves no trace.
+    public RunStore(string directory) { _dir = directory; }
 
-    public void Save(RunRecord run) =>
+    public void Save(RunRecord run)
+    {
+        Directory.CreateDirectory(_dir);
         File.WriteAllText(Path.Combine(_dir, $"{run.RunId}.json"), JsonSerializer.Serialize(run));
+    }
 
     public RunRecord? Load(string runId)
     {
@@ -27,7 +27,7 @@ public sealed class RunStore
     }
 
     /// Run ids start with a UTC timestamp, so the newest sorts last.
-    public RunRecord? Latest() => Directory.EnumerateFiles(_dir, "*.json")
+    public RunRecord? Latest() => !Directory.Exists(_dir) ? null : Directory.EnumerateFiles(_dir, "*.json")
         .OrderByDescending(f => f, StringComparer.Ordinal)
         .Select(f => Load(Path.GetFileNameWithoutExtension(f)))
         .FirstOrDefault(r => r is not null);
