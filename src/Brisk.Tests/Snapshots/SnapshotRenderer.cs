@@ -226,11 +226,11 @@ public static class SnapshotRenderer
         if (Application.Current is null)
             _ = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         if (_themeInstalled) return;
-        foreach (var file in new[] { "Dark.xaml", "Shared.xaml" })
+        foreach (var file in new[] { "Theming/Dark.xaml", "Theming/Shared.xaml", "Ui/Theme/Monster.xaml" })
             Application.Current!.Resources.MergedDictionaries.Add(new ResourceDictionary
             {
                 Source = new Uri(
-                    $"pack://application:,,,/brisk-app;component/Theming/{file}"),
+                    $"pack://application:,,,/brisk-app;component/{file}"),
             });
         _themeInstalled = true;
     }

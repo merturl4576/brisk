@@ -24,6 +24,18 @@ public sealed class SettingsTests : IDisposable
     }
 
     [Fact]
+    public void Motion_DefaultsOn_AndOldFilesWithoutItLoadOn()
+    {
+        Assert.True(Settings.Load(Path.Combine(_root, "nope.json")).Motion);
+        var path = Path.Combine(_root, "old.json");
+        File.WriteAllText(path, "{\"Language\":\"tr\"}");
+        Assert.True(Settings.Load(path).Motion);
+        var off = new Settings { Motion = false };
+        off.Save(path);
+        Assert.False(Settings.Load(path).Motion);
+    }
+
+    [Fact]
     public void Load_FileWithoutThemeKey_DefaultsToDark()
     {
         var path = Path.Combine(_root, "no-theme.json");
