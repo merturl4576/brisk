@@ -21,17 +21,20 @@ public sealed class TrayIcon : IDisposable
 
     public event Action? LeftClick;
     public event Action? OpenRequested;
-    public event Action? ScanRequested;
     public event Action? ExitRequested;
+
+    /// The menu's two items: the tray exists for queued cleanups, not as a
+    /// second way to run brisk.
+    public static string[] MenuLabels(Loc loc) => new[] { loc["tray.open"], loc["tray.exit"] };
 
     public TrayIcon(Color accent, Loc loc)
     {
         (_icon, _iconHandle) = DrawIcon(accent);
+        var labels = MenuLabels(loc);
         var menu = new ContextMenuStrip();
-        menu.Items.Add(loc["tray.open"], null, (_, _) => OpenRequested?.Invoke());
-        menu.Items.Add(loc["tray.scan"], null, (_, _) => ScanRequested?.Invoke());
+        menu.Items.Add(labels[0], null, (_, _) => OpenRequested?.Invoke());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(loc["tray.exit"], null, (_, _) => ExitRequested?.Invoke());
+        menu.Items.Add(labels[1], null, (_, _) => ExitRequested?.Invoke());
         _notify = new NotifyIcon
         {
             Icon = _icon,

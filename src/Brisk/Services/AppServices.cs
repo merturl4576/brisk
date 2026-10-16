@@ -16,6 +16,9 @@ public sealed class AppComposition
     public required Settings Settings { get; init; }
     public required string SettingsPath { get; init; }
     public required StartupLauncher Launcher { get; init; }
+    /// The window's engine: the one-click plan, run, undo and live readers.
+    public required BriskEngine.Actions.ActionEngine Engine { get; init; }
+    public required Scanner Scanner { get; init; }
 }
 
 public static class AppServices
@@ -58,8 +61,13 @@ public static class AppServices
             SelfPath, new RealSessionProbe());
 
         var settingsPath = Path.Combine(dataDir, "settings.json");
+        static bool IsElevated() => new System.Security.Principal.WindowsPrincipal(
+                System.Security.Principal.WindowsIdentity.GetCurrent())
+            .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
         return new AppComposition
         {
+            Engine = BriskEngine.Actions.ActionEngine.CreateReal(ctx, runner, IsElevated),
+            Scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(), new DeleteLockProbe()),
             Host = host,
             LiveMetrics = new LiveMetrics(sensors, processInfo, host.FreeDiskBytes),
             Settings = Settings.Load(settingsPath),

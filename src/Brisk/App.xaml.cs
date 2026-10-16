@@ -1,26 +1,35 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Brisk.Localization;
 using Brisk.Services;
-using Brisk.Theming;
+using Brisk.Session;
 using Brisk.Tray;
-using Brisk.ViewModels;
-using Brisk.Windows;
-using BriskEngine;
+using Brisk.Ui;
+using Brisk.Ui.Shell;
 
 namespace Brisk;
 
+/// One window, a tray icon only while brisk still has a job, and the engine
+/// behind both. `--tray` (the autostart task) starts without the window.
 public partial class App : Application
 {
+    public static readonly TimeSpan DeferredEvery = TimeSpan.FromSeconds(30);
+
     private Mutex? _single;
     private EventWaitHandle? _showSignal;
     private TrayIcon? _tray;
-    private MainWindow? _main;
-    private FlyoutWindow? _flyout;
+    private ShellWindow? _window;
+    private ActionSession? _session;
+    private IActionBackend? _backend;
+    private Settings? _settings;
+    private DispatcherTimer? _deferredTimer;
+    private bool _looked, _processingDeferred, _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -40,146 +49,46 @@ public partial class App : Application
         try
         {
             var composition = AppServices.Build();
-            Loc.Instance.SetLanguage(composition.Settings.Language);
-            var theme = new ThemeManager();
-            theme.Apply(composition.Settings.Theme);
+            _settings = composition.Settings;
+            Loc.Instance.SetLanguage(_settings.Language);
+            // An autostart Run value from before the scheduled task: migrated
+            // once, honouring the user's current setting (StartupLauncher).
+            composition.Launcher.Migrate(_settings.StartWithWindows);
 
-            // Before the scheduled task, brisk registered itself under HKCU's
-            // Run key. A machine that still carries that value shows a second,
-            // identical "brisk" row in brisk's own startup list whose toggle
-            // changes nothing real — and the value itself is an autostart that
-            // Windows skips anyway, now that brisk requires elevation.
-            // Migrated once, at startup.
-            // Gated on the setting, not on the value alone: the value is
-            // evidence of an OLD intent. A user who upgraded to the
-            // task-based build and then explicitly turned autostart OFF has
-            // exactly this machine state — stale value, no task — and
-            // recreating the task there would let the oldest implicit choice
-            // beat the newest explicit one, silently, before any window
-            // exists. The dead value goes either way.
-            composition.Launcher.Migrate(composition.Settings.StartWithWindows);
+            // Decorative motion needs a GPU-composed window; on software
+            // rendering it would cost the CPU the product is meant to free.
+            var settings = _settings;
+            AmbientClock.Install(new AmbientClock(() => settings.Motion && (RenderCapability.Tier >> 16) >= 2));
 
-            // Dispatcher.Invoke is the third use of the same precedent in
-            // this file (the tray's Changed handler, ShowMain below): the
-            // display rescue resolves on a thread-pool thread, and every
-            // Changed / DisplayNotice subscriber touches UI objects.
-            var state = new AppState(composition.Host, Loc.Instance,
-                action => Dispatcher.Invoke(action));
-            var cleanService = new CleanService(composition.Host, composition.Settings);
-            var fixAllService = new FixAllService(composition.Host);
-            // The confirmation starts at the mode change, not at the end of
-            // the batch: FixAllService reports each rule as it lands, and a
-            // display raised first would otherwise sit black through every
-            // remaining fix before its 15 seconds even began.
-            state.TrackFixes(fixAllService);
-            // ONE bin session and ONE safe-clean runner behind all three
-            // clean surfaces (round 13) — the flyout, the overview button
-            // and the Depolama card now run the identical recycle→purge
-            // sequence, so the same promise cannot mean two things.
-            var bin = new ShellRecycleBinSession();
-            var safeClean = new SafeCleanRunner(cleanService, bin);
-            // The lease refuses a second clean; this is how the UI SHOWS it
-            // (round-13 re-review N1) — every clean button disables while
-            // any surface holds the runner.
-            state.TrackCleaning(safeClean);
-            Func<bool> isDryRun = () => composition.Settings.DryRun;
-            var flyoutVm = new FlyoutViewModel(state, safeClean, fixAllService,
-                Loc.Instance, isDryRun);
-            var overviewVm = new OverviewViewModel(state, composition.Host,
-                fixAllService, safeClean, composition.LiveMetrics,
-                Loc.Instance, isDryRun);
-            var healthVm = new HealthViewModel(state, composition.Host, Loc.Instance,
-                isDryRun, fixAllService, FindingSections.IsHealth,
-                doneFilter: FindingSections.IsHealth,
-                crossLinkKey: "health.crosslink",
-                crossLinkFilter: FindingSections.IsPerformance);
-            var perfVm = new HealthViewModel(state, composition.Host, Loc.Instance,
-                isDryRun, fixAllService, FindingSections.IsPerformance,
-                doneFilter: FindingSections.IsPerformance,
-                crossLinkKey: "performance.crosslink",
-                crossLinkFilter: FindingSections.IsHealth,
-                // The performance read-back line: boot belongs to this page.
-                showBootTrend: true);
-            var startupVm = new StartupViewModel(state, composition.Host,
-                Loc.Instance, isDryRun, composition.Launcher);
-            var cleanVm = new CleanViewModel(state, composition.Host, cleanService,
-                safeClean, bin, Loc.Instance, isDryRun);
-            // The third findings page. It takes no FixAllService: "Fix all
-            // (safe)" excludes the whole privacy topic by rule id, and this
-            // page's own button carries a different consent over a different
-            // set — the four switches with no visible consequence, and never
-            // the two that cost the user something.
-            //
-            // The link is the last argument and not an optional one: the
-            // Recall row points at Windows' own setting instead of at a fix,
-            // and a page wired without an opener would withhold that link
-            // without a word — which is exactly how it went missing for a
-            // whole commit.
-            var privacyVm = new PrivacyViewModel(state, composition.Host,
-                Loc.Instance, isDryRun, WindowsSettingsLink.Open);
-            var settingsVm = new SettingsViewModel(composition.Settings,
-                composition.SettingsPath, composition.Launcher,
-                themeSetting =>
-                {
-                    theme.Apply(themeSetting);
-                    _main?.ApplyTitleBar();
-                    // Both of brisk's marks, not one. The tray icon is drawn
-                    // from the installed palette, and a switch that moved the
-                    // title bar without it would leave the notification area
-                    // carrying the previous theme's accent — the marks
-                    // disagreeing about what brisk looks like, which is what
-                    // sourcing the tray from the palette was meant to stop.
-                    _tray?.SetAccent(SignatureAccent());
-                },
-                state.SetLanguage);
+            Action<Action> post = a => Dispatcher.BeginInvoke(a);
+            Action<Action> background = a => Task.Run(a);
+            _backend = new RealActionBackend(composition.Engine, composition.Scanner);
+            _session = new ActionSession(_backend, post);
+            var settingsVm = new UiSettingsViewModel(_settings, composition.SettingsPath, Loc.Instance,
+                composition.Launcher.IsOn, composition.Launcher.Apply, AmbientClock.Instance.Reevaluate);
+            var shell = new ShellViewModel(post, background, _session, _backend, new DispatcherUiTimers(),
+                Loc.Instance, AmbientClock.Instance, settingsVm);
+            _window = new ShellWindow(shell);
+            _window.Closing += OnWindowClosing;
 
-            _flyout = new FlyoutWindow(flyoutVm);
-            _main = new MainWindow(state, overviewVm, healthVm, perfVm, startupVm,
-                cleanVm, privacyVm, settingsVm, theme);
-            flyoutVm.OpenDetailsRequested += () =>
-            {
-                _flyout.Hide();
-                _main?.ShowOverview();
-                ShowMain();
-            };
-            // The flyout, not the main window, is what --tray-less startup
-            // shows (below) — so a confirmation raised while only the
-            // flyout is open must bring the window with the overlay on
-            // screen itself, the same way the tray's "Open" item already
-            // does. ShowMain() is the one Show/Activate sequence; reused
-            // here rather than duplicated — marshalled, because TrackFixes
-            // raises this from the fix batch's worker thread and touching a
-            // window off the dispatcher throws. A confirmation nobody can see
-            // is the exact failure this whole mechanism exists to prevent.
-            state.ConfirmationRaised += () => Dispatcher.Invoke(ShowMain);
+            _tray = new TrayIcon(Accent(), Loc.Instance);
+            _tray.LeftClick += ShowWindow;
+            _tray.OpenRequested += ShowWindow;
+            _tray.ExitRequested += Quit;
 
-            _tray = new TrayIcon(SignatureAccent(), Loc.Instance);
-            _tray.LeftClick += () => _flyout.ShowAt();
-            _tray.OpenRequested += ShowMain;
-            _tray.ScanRequested += () => _ = state.ScanAsync();
-            _tray.ExitRequested += () =>
-            {
-                _tray?.Dispose();
-                _tray = null;
-                Shutdown();
-            };
-            state.Changed += () => Dispatcher.Invoke(() => _tray?.UpdateTooltip(
-                Loc.Instance.F("tray.tooltip",
-                    Fmt.Bytes(composition.Host.FreeDiskBytes()),
-                    state.Snapshot?.Health ?? 0)));
+            _deferredTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = DeferredEvery };
+            _deferredTimer.Tick += (_, _) => OnDeferredTick();
+            _deferredTimer.Start();
 
-            // The flyout is the product's face; the main window is the
-            // back-office reached via "Open details" or the tray menu.
             var showWaiter = new Thread(() =>
             {
                 while (_showSignal.WaitOne())
-                    Dispatcher.Invoke(() => _flyout?.ShowAt());
+                    Dispatcher.Invoke(ShowWindow);
             })
             { IsBackground = true };
             showWaiter.Start();
 
-            if (!e.Args.Contains("--tray")) _flyout.ShowAt();   // --tray = silent autostart
-            _ = state.ScanAsync();   // launching brisk is a user action — scan once
+            if (!e.Args.Contains("--tray")) ShowWindow();
         }
         catch (Exception ex)
         {
@@ -188,8 +97,86 @@ public partial class App : Application
         }
     }
 
-    private void OnDispatcherUnhandledException(object sender,
-        DispatcherUnhandledExceptionEventArgs e)
+    private void ShowWindow()
+    {
+        if (_window is null || _session is null) return;
+        _window.Show();
+        if (_window.WindowState == WindowState.Minimized) _window.WindowState = WindowState.Normal;
+        _window.Activate();
+        // Opening brisk is the user asking it to look: the first show starts
+        // the plan (a --tray start waits for it).
+        if (_looked) return;
+        _looked = true;
+        _ = _session.LookAsync();
+    }
+
+    private bool DeferredPending()
+    {
+        try { return _backend?.DeferredPending().Count > 0; }
+        catch (Exception) { return false; }
+    }
+
+    private bool Running => _session?.State == SessionState.Running;
+
+    private void OnWindowClosing(object? sender, CancelEventArgs e)
+    {
+        if (_exiting) return;
+        e.Cancel = true;
+        if (CloseRules.OnClose(DeferredPending(), Running, _settings?.StartWithWindows == true) == CloseAction.Hide)
+        {
+            _window?.Hide();
+            UpdateTooltip();
+        }
+        else Quit();
+    }
+
+    /// Every 30 s: clean the queued caches whose app has closed, and leave
+    /// once nothing keeps a hidden brisk alive.
+    private void OnDeferredTick()
+    {
+        var pending = DeferredPending();
+        if (pending && !_processingDeferred && _backend is { } backend)
+        {
+            _processingDeferred = true;
+            Task.Run(() =>
+            {
+                try { backend.ProcessDeferred(); }
+                catch (Exception) { }
+            }).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+            {
+                _processingDeferred = false;
+                UpdateTooltip();
+            }));
+        }
+        UpdateTooltip();
+        if (_window is { IsVisible: false } && !_processingDeferred
+            && CloseRules.ShouldExitWhileHidden(pending, Running, _settings?.StartWithWindows == true))
+            Quit();
+    }
+
+    private void UpdateTooltip()
+    {
+        if (_tray is null || _backend is null) return;
+        try
+        {
+            var apps = _backend.DeferredApps();
+            _tray.UpdateTooltip(apps.Count == 0
+                ? "brisk"
+                : "brisk · " + Loc.Instance.F("action.result.deferred", string.Join(", ", apps)));
+        }
+        catch (Exception) { }
+    }
+
+    private void Quit()
+    {
+        _exiting = true;
+        _deferredTimer?.Stop();
+        _tray?.Dispose();
+        _tray = null;
+        Shutdown();
+    }
+
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         MessageBox.Show(SafeFormat("app.unexpected", e.Exception.Message));
         e.Handled = true;
@@ -202,33 +189,16 @@ public partial class App : Application
         catch { return arg; }
     }
 
-    private void ShowMain()
-    {
-        if (_main is null) return;
-        _main.Show();
-        _main.WindowState = WindowState.Normal;
-        _main.Activate();
-    }
-
     protected override void OnExit(ExitEventArgs e)
     {
         _tray?.Dispose();
         base.OnExit(e);
     }
 
-    /// brisk's signature, as the tray's drawing code wants it, read from the
-    /// palette that is installed right now.
-    ///
-    /// The tray icon is brisk's mark in the notification area, so it wears
-    /// brisk's own colour rather than the Windows accent it used to be drawn
-    /// in — see ThemeManager.Apply for why the signature stopped following
-    /// the desktop. One method rather than two reads, because the first draw
-    /// and the after-a-theme-switch redraw have to agree, and two copies of
-    /// "where does the accent come from" is exactly how they would stop.
-    private static System.Drawing.Color SignatureAccent()
+    /// The tray mark wears the window's accent.
+    private static System.Drawing.Color Accent()
     {
-        var accent = ((SolidColorBrush)Current.Resources["AccentBrush"]).Color;
+        var accent = ((SolidColorBrush)Current.Resources["Ui.Accent"]).Color;
         return System.Drawing.Color.FromArgb(accent.R, accent.G, accent.B);
     }
-
 }
