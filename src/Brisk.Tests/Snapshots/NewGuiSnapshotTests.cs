@@ -81,6 +81,18 @@ public sealed class NewGuiSnapshotTests
     }
 
     [Fact]
+    public void Atmosphere_Alone_ShowsRainAndTheGridFloor()
+    {
+        var path = SnapshotRenderer.Capture(() => new Atmosphere(new Brisk.Ui.AmbientClock(() => false)),
+            Canvas, "new-atmosphere");
+        // Grid lines are accent ink on the floor; the sky above has only rain.
+        static bool Line(System.Windows.Media.Color c) => c.G > 70 && c.B > 80;
+        var floor = SnapshotRenderer.InkInBand(path, new System.Windows.Point(550, 680), 0, 160, Line);
+        var sky = SnapshotRenderer.InkInBand(path, new System.Windows.Point(550, 160), 0, 160, Line);
+        Assert.True(floor > 3 * sky + 500, $"grid floor ink: floor {floor}, sky {sky}");
+    }
+
+    [Fact]
     public void Home_Ready() => Shoot(() => Home(Rich()).Vm, "new-home-ready");
 
     [Fact]

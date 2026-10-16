@@ -25,7 +25,10 @@ public sealed class Atmosphere : Grid
 
     private readonly AmbientClock _clock;
     private readonly Canvas _rain = new() { ClipToBounds = true };
-    private readonly Viewport3D _floor = new() { IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Bottom };
+    private readonly Viewport3D _floor = new() { IsHitTestVisible = false };
+    // The fade to the horizon is on this host: an opacity mask set on the
+    // Viewport3D itself blanks the whole scene.
+    private readonly Grid _floorHost = new() { IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Bottom };
     private readonly TranslateTransform3D _floorShift = new();
     private readonly List<Column> _columns = new();
 
@@ -49,7 +52,8 @@ public sealed class Atmosphere : Grid
         BuildRain();
         Children.Add(_rain);
         BuildFloor();
-        Children.Add(_floor);
+        _floorHost.Children.Add(_floor);
+        Children.Add(_floorHost);
         SizeChanged += (_, _) => Arrange();
         Loaded += (_, _) => { if (Decorated) Register(); };
         Unloaded += (_, _) => _clock.Unregister(this);
@@ -62,7 +66,7 @@ public sealed class Atmosphere : Grid
     {
         var fade = new DoubleAnimation(on ? 1 : 0, TimeSpan.FromMilliseconds(300));
         _rain.BeginAnimation(OpacityProperty, fade);
-        _floor.BeginAnimation(OpacityProperty, fade);
+        _floorHost.BeginAnimation(OpacityProperty, fade);
         if (on) Register(); else _clock.Unregister(this);
     }
 
@@ -100,25 +104,28 @@ public sealed class Atmosphere : Grid
 
     private void BuildFloor()
     {
-        const double Width = 50, Near = 6, Far = -44;
-        // One bitmap of the whole grid, drawn once: a tiny tiled brush is
-        // realized too coarsely in 3D and its lines vanish.
-        const int Pixels = 1024, Cells = 50;
+        // One unit = one grid cell. The plane is far larger than the view so
+        // its edges never show; the shift below moves it one cell and loops.
+        const double Width = 160, Near = 8, Far = -150;
+        // One cell drawn once as a small bitmap, tiled across the plane.
+        const int Cell = 64;
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            var line = new SolidColorBrush(Color.FromArgb(0x70, 0x5F, 0xD4, 0xE8));
-            const double Step = (double)Pixels / Cells;
-            for (var i = 0; i <= Cells; i++)
-            {
-                dc.DrawRectangle(line, null, new Rect(i * Step, 0, 1.6, Pixels));
-                dc.DrawRectangle(line, null, new Rect(0, i * Step, Pixels, 1.6));
-            }
+            var line = new SolidColorBrush(Color.FromArgb(0x48, 0x5F, 0xD4, 0xE8));
+            dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, Cell, Cell));
+            dc.DrawRectangle(line, null, new Rect(0, 0, Cell, 2));
+            dc.DrawRectangle(line, null, new Rect(0, 0, 2, Cell));
         }
-        var grid = new System.Windows.Media.Imaging.RenderTargetBitmap(Pixels, Pixels, 96, 96, PixelFormats.Pbgra32);
-        grid.Render(visual);
-        grid.Freeze();
-        var brush = new ImageBrush(grid);
+        var tile = new System.Windows.Media.Imaging.RenderTargetBitmap(Cell, Cell, 96, 96, PixelFormats.Pbgra32);
+        tile.Render(visual);
+        tile.Freeze();
+        var brush = new ImageBrush(tile)
+        {
+            TileMode = TileMode.Tile,
+            Viewport = new Rect(0, 0, 1 / Width, 1 / (Near - Far)),
+            ViewportUnits = BrushMappingMode.RelativeToBoundingBox,
+        };
         brush.Freeze();
 
         var mesh = new MeshGeometry3D
@@ -136,9 +143,10 @@ public sealed class Atmosphere : Grid
         group.Children.Add(new AmbientLight(Colors.White));
         group.Children.Add(plane);
         _floor.Children.Add(new ModelVisual3D { Content = group });
-        _floor.Camera = new PerspectiveCamera(new Point3D(0, 1.4, 3), new Vector3D(0, -0.5, -1),
-            new Vector3D(0, 1, 0), 75);
-        _floor.OpacityMask = new LinearGradientBrush
+        // Looking down the floor at the mockup's 62° tilt (28° below the horizon).
+        _floor.Camera = new PerspectiveCamera(new Point3D(0, 9, 6), new Vector3D(0, -0.53, -1),
+            new Vector3D(0, 1, 0), 70);
+        _floorHost.OpacityMask = new LinearGradientBrush
         {
             StartPoint = new Point(0, 1),
             EndPoint = new Point(0, 0),
@@ -150,7 +158,7 @@ public sealed class Atmosphere : Grid
 
     private void Arrange()
     {
-        _floor.Height = Math.Max(1, ActualHeight * 0.48);
+        _floorHost.Height = Math.Max(1, ActualHeight * 0.48);
         foreach (var c in _columns)
         {
             Canvas.SetLeft(c.Text, c.LeftFraction * ActualWidth);

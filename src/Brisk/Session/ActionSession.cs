@@ -123,6 +123,16 @@ public sealed class ActionSession
         Changed?.Invoke();
     });
 
+    /// The last change of an operation: busy ends first, so the change that
+    /// announces the new state already allows the next operation (and undo).
+    /// No `finally` ends it again — that could clear an operation the
+    /// announcement itself started.
+    private void Finish(Action change)
+    {
+        End();
+        Apply(change);
+    }
+
     public Task LookAsync() => TryBegin() ? LookCore() : Task.CompletedTask;
 
     public Task RescanAsync() => LookAsync();
@@ -167,7 +177,7 @@ public sealed class ActionSession
             });
             await Task.WhenAll(fast, space, previous).ConfigureAwait(false);
             var plan = ActionPlanBuilder.Compose(DateTime.UtcNow, space.Result.Group, fast.Result, space.Result.Scan);
-            Apply(() =>
+            Finish(() =>
             {
                 Plan = plan;
                 // This session's own run (and its receipt) outlives "scan again".
@@ -182,13 +192,12 @@ public sealed class ActionSession
         catch (Exception ex)
         {
             var message = (ex as AggregateException)?.InnerException?.Message ?? ex.Message;
-            Apply(() =>
+            Finish(() =>
             {
                 State = SessionState.Failed;
                 Error = message;
             });
         }
-        finally { End(); }
     }
 
     public Task RunAsync(ActionGroupKind? group, bool skipUnrecoverable = false)
@@ -221,7 +230,7 @@ public sealed class ActionSession
                     row => Apply(() => _results[row.RowId] = row));
                 return (record, _backend.RefreshReceipt(record.RunId));
             }).ConfigureAwait(false);
-            Apply(() =>
+            Finish(() =>
             {
                 LastRun = run;
                 Receipt = receipt;
@@ -232,14 +241,13 @@ public sealed class ActionSession
         }
         catch (Exception ex)
         {
-            Apply(() =>
+            Finish(() =>
             {
                 CurrentRowId = null;
                 State = SessionState.Failed;
                 Error = ex.Message;
             });
         }
-        finally { End(); }
     }
 
     public async Task UndoAsync()
@@ -250,7 +258,7 @@ public sealed class ActionSession
         {
             var results = await Task.Run(() => _backend.Undo(runId)).ConfigureAwait(false);
             var latest = await Task.Run(_backend.LatestRun).ConfigureAwait(false);
-            Apply(() =>
+            Finish(() =>
             {
                 UndoResults = results;
                 LastRun = latest;
@@ -259,9 +267,8 @@ public sealed class ActionSession
         }
         catch (Exception ex)
         {
-            Apply(() => Error = ex.Message);
+            Finish(() => Error = ex.Message);
         }
-        finally { End(); }
         await LookAsync().ConfigureAwait(false);
     }
 

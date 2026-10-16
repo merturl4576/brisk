@@ -125,6 +125,29 @@ public sealed class ActionSessionTests
     }
 
     [Fact]
+    public async Task TheChangeThatSaysDone_AlreadyAllowsUndo()
+    {
+        var b = FakeBackend.Typical(); var s = NewSession(b);
+        await s.LookAsync();
+        var seen = new List<(SessionState State, bool CanUndo, bool Busy)>();
+        s.Changed += () => seen.Add((s.State, s.CanUndo, s.Busy));
+        await s.RunAsync(null);
+        var done = seen.First(x => x.State == SessionState.Done);
+        Assert.False(done.Busy);
+        Assert.True(done.CanUndo);
+    }
+
+    [Fact]
+    public async Task TheChangeThatSaysReady_IsNotBusy()
+    {
+        var b = FakeBackend.Typical(); var s = NewSession(b);
+        var seen = new List<(SessionState State, bool Busy)>();
+        s.Changed += () => seen.Add((s.State, s.Busy));
+        await s.LookAsync();
+        Assert.False(seen.First(x => x.State == SessionState.Ready).Busy);
+    }
+
+    [Fact]
     public async Task Run_EveryRowFails_EndsDoneWithResults()
     {
         var b = FakeBackend.Typical();
