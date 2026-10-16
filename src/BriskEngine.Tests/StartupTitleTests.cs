@@ -28,6 +28,17 @@ public sealed class StartupTitleTests
     }
 
     [Theory]
+    [InlineData(@"C:\Windows\System32\rundll32.exe C:\Logi\LogiDA.dll,LogiFetch", "Windows host process (Rundll32)")]
+    [InlineData(@"C:\Windows\System32\cmd.exe /c start helper.bat", "Windows Command Processor")]
+    [InlineData(@"""C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"" -File x.ps1", "Windows PowerShell")]
+    [InlineData(@"C:\Windows\System32\wscript.exe C:\x\run.vbs", "Microsoft ® Windows Based Script Host")]
+    public void For_AHostProgram_IsNamedByTheEntryNotTheHost(string command, string hostDescription)
+    {
+        var e = E("Logitech Download Assistant", command);
+        Assert.Equal("Logitech Download Assistant", StartupTitle.For(e, _ => hostDescription));
+    }
+
+    [Theory]
     [InlineData("MicrosoftEdgeAutoLaunch_F6C5A0B1C2D3E4F5", "MicrosoftEdgeAutoLaunch")]
     [InlineData("Teams_{8E1F2A3B-1111-2222-3333-444455556666}", "Teams")]
     [InlineData("Spotify.lnk", "Spotify")]

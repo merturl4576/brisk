@@ -261,7 +261,10 @@ public sealed class ActionRunner
                 results.Add(new RowResult(id, RowOutcome.Failed, ex.Message, null, 0, 0));
             }
         }
-        _runs.Save(record with { UndoneUtc = _now() });
+        // Undone only when every setting came back; a failed or refused row
+        // keeps the run undoable, so "Undo" can be tried again.
+        if (results.All(r => r.Outcome == RowOutcome.Done || r.Reason == "nothing to undo"))
+            _runs.Save(record with { UndoneUtc = _now() });
         return results;
     }
 }

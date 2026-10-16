@@ -9,7 +9,13 @@ sealed class FakeUi : IUiEffectsProbe
     public bool Minimize = true, ClientArea = true;
     public bool MinimizeAnimation() => Minimize;
     public bool ClientAreaAnimation() => ClientArea;
-    public void Set(bool minimize, bool clientArea) { Minimize = minimize; ClientArea = clientArea; }
+    public Exception? ThrowOnSet;
+    public void Set(bool minimize, bool clientArea)
+    {
+        if (ThrowOnSet is not null) throw ThrowOnSet;
+        Minimize = minimize;
+        ClientArea = clientArea;
+    }
 }
 
 public sealed class SpeedSwitchTests

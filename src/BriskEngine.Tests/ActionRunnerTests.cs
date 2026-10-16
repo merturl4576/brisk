@@ -226,6 +226,17 @@ public sealed class ActionRunnerTests : IDisposable
     }
 
     [Fact]
+    public void Undo_WithAFailedRow_LeavesTheRunUndoable()
+    {
+        var runner = Runner();
+        var run = runner.Run(Plan(NoScan, Row("speed.animations")), Select("speed.animations"));
+        _ui.ThrowOnSet = new InvalidOperationException("boom");
+        var results = runner.Undo(run.RunId);
+        Assert.Equal(RowOutcome.Failed, Assert.Single(results).Outcome);
+        Assert.Null(_runs.Load(run.RunId)!.UndoneUtc);
+    }
+
+    [Fact]
     public void RunRecord_FromBeforeUndoneExisted_StillLoads()
     {
         var dir = Path.Combine(_root, "old-runs");

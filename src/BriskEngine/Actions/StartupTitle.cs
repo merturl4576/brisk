@@ -17,9 +17,19 @@ public static class StartupTitle
     private static readonly Regex IdTail = new(
         @"[_ ](\{?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}?|[0-9A-Fa-f]{8,})$");
 
+    // Programs that only host someone else's code: their description names
+    // the host ("Windows host process (Rundll32)"), never the app.
+    private static readonly string[] Hosts =
+    {
+        "rundll32.exe", "cmd.exe", "powershell.exe", "pwsh.exe", "wscript.exe", "cscript.exe", "mshta.exe",
+        "conhost.exe", "explorer.exe", "msiexec.exe", "regsvr32.exe", "java.exe", "javaw.exe", "node.exe",
+        "python.exe", "pythonw.exe",
+    };
+
     public static string For(StartupEntry e, Func<string, string?> describe)
     {
         if (StartupManager.ExecutablePath(e.Command) is { } path
+            && !Hosts.Contains(System.IO.Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
             && describe(path) is { } d && !string.IsNullOrWhiteSpace(d)
             && !Generic.Contains(d.Trim(), StringComparer.OrdinalIgnoreCase))
             return d.Trim();
