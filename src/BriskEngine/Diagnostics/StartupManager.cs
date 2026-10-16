@@ -5,7 +5,8 @@ using BriskEngine.Logging;
 
 namespace BriskEngine.Diagnostics;
 
-public sealed record StartupEntry(string Hive, string Name, bool Enabled, bool KnownHeavy);
+public sealed record StartupEntry(string Hive, string Name, bool Enabled, bool KnownHeavy,
+    string? Command = null);
 
 /// One Store package's startup tasks, grouped so that one row speaks for one
 /// app. Name is both the label the GUI shows and the handle SetEnabled
@@ -31,6 +32,16 @@ public sealed class StartupManager
                  @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
         ("HKLM", @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
                  @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"),
+    };
+
+    /// The two Startup folders Task Manager lists, and the StartupApproved
+    /// key it disables their shortcuts under (value name = shortcut file name).
+    internal static readonly (string Hive, string Folder, string Approved)[] Folders =
+    {
+        ("Folder", @"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup",
+                   @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder"),
+        ("FolderAll", @"%ProgramData%\Microsoft\Windows\Start Menu\Programs\StartUp",
+                      @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder"),
     };
 
     /// Store apps register startup tasks here rather than under Run — the same
@@ -135,13 +146,15 @@ public sealed class StartupManager
     // and brisk does not survive one. Without this every HasWork check on
     // the fix-all button would reopen the Diagnostics-Performance channel.
     private IReadOnlyDictionary<string, int>? _blamed;
+    private readonly IFileProbe? _files;
 
     public StartupManager(IRegistryProbe registry, ActionLog? log,
-        IEventLogProbe? eventLog = null)
+        IEventLogProbe? eventLog = null, IFileProbe? files = null)
     {
         _registry = registry;
         _log = log;
         _eventLog = eventLog;
+        _files = files;
     }
 
     private IReadOnlyDictionary<string, int> Blamed() =>
@@ -157,8 +170,23 @@ public sealed class StartupManager
         {
             var bytes = _registry.GetBytes(approved, name);
             var disabled = bytes is { Length: > 0 } && (bytes[0] & 1) == 1;
+            var command = _registry.GetString(run, name);
             items.Add(new StartupEntry(hive, name, !disabled,
-                IsHeavy(name, _registry.GetString(run, name), Blamed())));
+                IsHeavy(name, command, Blamed()), command));
+        }
+        if (_files is not null)
+        foreach (var (hive, folder, approved) in Folders)
+        {
+            var dir = Paths.PathExpander.Expand(folder);
+            if (dir is null) continue;
+            foreach (var file in _files.ListFiles(dir))
+            {
+                var name = System.IO.Path.GetFileName(file);
+                if (string.Equals(name, "desktop.ini", StringComparison.OrdinalIgnoreCase)) continue;
+                var bytes = _registry.GetBytes(approved, name);
+                var disabled = bytes is { Length: > 0 } && (bytes[0] & 1) == 1;
+                items.Add(new StartupEntry(hive, name, !disabled, IsHeavy(name), file));
+            }
         }
         foreach (var app in StoreApps(_registry))
             items.Add(new StartupEntry(StoreHive, app.Name, app.Enabled, IsHeavy(app.Name)));
@@ -260,7 +288,8 @@ public sealed class StartupManager
     {
         if (string.Equals(hive, StoreHive, StringComparison.OrdinalIgnoreCase))
             return SetStoreEnabled(name, enabled);
-        var approved = Hives.FirstOrDefault(h => string.Equals(h.Hive, hive, StringComparison.OrdinalIgnoreCase)).Approved;
+        var approved = Hives.FirstOrDefault(h => string.Equals(h.Hive, hive, StringComparison.OrdinalIgnoreCase)).Approved
+            ?? Folders.FirstOrDefault(f => string.Equals(f.Hive, hive, StringComparison.OrdinalIgnoreCase)).Approved;
         if (approved is null) return false;
         try
         {
