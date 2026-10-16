@@ -60,7 +60,8 @@ public sealed class ActionRunner
         return info.Exists ? (info.Length, info.LastWriteTimeUtc) : null;
     }
 
-    public RunRecord Run(ActionPlan plan, ActionSelection selection, Action<RowResult>? onRow = null)
+    public RunRecord Run(ActionPlan plan, ActionSelection selection, Action<RowResult>? onRow = null,
+        Action<ActionItem>? onRowStart = null)
     {
         WriteAheadRegistry.RecoverPending(_ctx.Registry, WalPath);
         var started = _now();
@@ -76,6 +77,7 @@ public sealed class ActionRunner
                      .OrderBy(i => i.LinkIds.Contains("component-store") ? 1 : 0))
         {
             if (!selection.RowIds.Contains(item.Id)) continue;
+            onRowStart?.Invoke(item);
             var result = item.LinkKind == ActionLinkKind.Rules
                 ? RunRules(item, undoable)
                 : RunCleanup(item, plan.Scan, selection);
@@ -259,6 +261,7 @@ public sealed class ActionRunner
                 results.Add(new RowResult(id, RowOutcome.Failed, ex.Message, null, 0, 0));
             }
         }
+        _runs.Save(record with { UndoneUtc = _now() });
         return results;
     }
 }

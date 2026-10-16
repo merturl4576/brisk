@@ -51,5 +51,6 @@ public enum RowOutcome { Done, PendingRestart, Skipped, Failed }
 public sealed record RowResult(string RowId, RowOutcome Outcome, string? Reason,
     ReadBackState? ReadBack, long BytesFreed, long BytesDeferred);
 
+/// UndoneUtc is set once the run's settings were put back.
 public sealed record RunRecord(string RunId, DateTime StartedUtc, DateTime FinishedUtc,
-    IReadOnlyList<RowResult> Rows, IReadOnlyList<string> UndoableRuleIds);
+    IReadOnlyList<RowResult> Rows, IReadOnlyList<string> UndoableRuleIds, DateTime? UndoneUtc = null);

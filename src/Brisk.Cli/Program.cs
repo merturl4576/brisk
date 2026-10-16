@@ -607,20 +607,11 @@ public static class Program
             o.WriteLine("  The Windows update cleanup runs last and can take several minutes. Leave this window open.");
     }
 
-    public static string ResultWord(ActionItem? item, RowResult r) => r.Outcome switch
+    public static string ResultWord(ActionItem? item, RowResult r)
     {
-        RowOutcome.Skipped when r.Reason == ActionRunner.NeedsAdmin => ActionStrings.En("action.result.needs-admin"),
-        RowOutcome.Skipped => $"{ActionStrings.En("action.result.skipped")}: {r.Reason}",
-        RowOutcome.Failed => $"{ActionStrings.En("action.result.failed")}: {r.Reason}",
-        RowOutcome.PendingRestart => ActionStrings.En("action.result.pending"),
-        _ => r.ReadBack switch
-        {
-            ReadBackState.Reverted => ActionStrings.En("action.result.reverted"),
-            ReadBackState.WrittenButIgnored => ActionStrings.En("action.result.ignored"),
-            ReadBackState.WrittenButUnverified => ActionStrings.En("action.result.written"),
-            _ => ActionStrings.En(item?.Group == ActionGroupKind.Privacy ? "action.result.off" : "action.result.done"),
-        },
-    };
+        var w = ActionResultWords.For(item?.Group, r);
+        return w.Reason is null ? w.English : $"{w.English}: {w.Reason}";
+    }
 
     public static void PrintReceiptLines(Receipt? r, IReadOnlyList<string> deferredApps, TextWriter o)
     {

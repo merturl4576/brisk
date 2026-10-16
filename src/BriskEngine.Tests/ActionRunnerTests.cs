@@ -205,6 +205,39 @@ public sealed class ActionRunnerTests : IDisposable
     }
 
     [Fact]
+    public void Run_ReportsEachRowBeforeItStarts_InRunOrder()
+    {
+        var plan = Plan(NoScan, Row("privacy.ads"), Row("speed.animations"));
+        var started = new List<string>();
+        var finished = new List<string>();
+        Runner().Run(plan, Select("privacy.ads", "speed.animations"), r => finished.Add(r.RowId), i => started.Add(i.Id));
+        Assert.Equal(new[] { "privacy.ads", "speed.animations" }, started);
+        Assert.Equal(finished, started);
+    }
+
+    [Fact]
+    public void Undo_StampsTheRunAsUndone()
+    {
+        var runner = Runner();
+        var run = runner.Run(Plan(NoScan, Row("privacy.ads")), Select("privacy.ads"));
+        Assert.Null(_runs.Load(run.RunId)!.UndoneUtc);
+        runner.Undo(run.RunId);
+        Assert.NotNull(_runs.Load(run.RunId)!.UndoneUtc);
+    }
+
+    [Fact]
+    public void RunRecord_FromBeforeUndoneExisted_StillLoads()
+    {
+        var dir = Path.Combine(_root, "old-runs");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "20261016-120000-abcdef.json"),
+            "{\"RunId\":\"20261016-120000-abcdef\",\"StartedUtc\":\"2026-10-16T12:00:00Z\",\"FinishedUtc\":\"2026-10-16T12:01:00Z\",\"Rows\":[],\"UndoableRuleIds\":[]}");
+        var r = new RunStore(dir).Load("20261016-120000-abcdef");
+        Assert.NotNull(r);
+        Assert.Null(r!.UndoneUtc);
+    }
+
+    [Fact]
     public void Undo_UnknownRun_ReturnsNothing() =>
         Assert.Empty(Runner().Undo("no-such-run"));
 
