@@ -11,28 +11,30 @@ public static class CleanupTargetRegistry
         bool noBin = false, bool admin = false) =>
         new(id, name, level, paths, category, contents, regen, app, pick, optIn, noBin, admin);
 
+    /// Every Chromium profile, not only "Default": a second profile's cache
+    /// was invisible to brisk before.
+    private static string[] Chromium(string userData) => new[]
+    {
+        $@"{userData}\Default\Cache", $@"{userData}\Default\Code Cache", $@"{userData}\Default\GPUCache",
+        $@"{userData}\Profile *\Cache", $@"{userData}\Profile *\Code Cache", $@"{userData}\Profile *\GPUCache",
+    };
+
     public static readonly IReadOnlyList<CleanupTarget> All = new List<CleanupTarget>
     {
         // ---- Safe: regenerates on its own, no elevation, zero functional impact
         T("user-temp", "User temp files", CleanupLevel.Safe, "System",
             new[] { @"%TEMP%" }, contents: true, regen: true),
         T("chrome-cache", "Chrome cache", CleanupLevel.Safe, "Browser",
-            new[] { @"%LOCALAPPDATA%\Google\Chrome\User Data\Default\Cache",
-                    @"%LOCALAPPDATA%\Google\Chrome\User Data\Default\Code Cache",
-                    @"%LOCALAPPDATA%\Google\Chrome\User Data\Default\GPUCache" },
+            Chromium(@"%LOCALAPPDATA%\Google\Chrome\User Data"),
             contents: true, regen: true, app: "chrome"),
         T("edge-cache", "Edge cache", CleanupLevel.Safe, "Browser",
-            new[] { @"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Cache",
-                    @"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Code Cache",
-                    @"%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\GPUCache" },
+            Chromium(@"%LOCALAPPDATA%\Microsoft\Edge\User Data"),
             contents: true, regen: true, app: "msedge"),
         T("firefox-cache", "Firefox cache", CleanupLevel.Safe, "Browser",
             new[] { @"%LOCALAPPDATA%\Mozilla\Firefox\Profiles\*\cache2" },
             contents: true, regen: true, app: "firefox"),
         T("brave-cache", "Brave cache", CleanupLevel.Safe, "Browser",
-            new[] { @"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Cache",
-                    @"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Code Cache",
-                    @"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\GPUCache" },
+            Chromium(@"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data"),
             contents: true, regen: true, app: "brave"),
         T("opera-cache", "Opera cache", CleanupLevel.Safe, "Browser",
             new[] { @"%LOCALAPPDATA%\Opera Software\Opera Stable\Cache" },
@@ -129,5 +131,22 @@ public static class CleanupTargetRegistry
             pick: true),
         T("empty-recycle-bin", "Empty Recycle Bin", CleanupLevel.Deep, "System",
             System.Array.Empty<string>(), noBin: true, pick: true),
+        // ---- Action-flow additions (2026-10-16)
+        T("wer-system", "Windows Error Reporting queues (all users)", CleanupLevel.Deep, "System",
+            new[] { @"%ProgramData%\Microsoft\Windows\WER\ReportQueue",
+                    @"%ProgramData%\Microsoft\Windows\WER\ReportArchive" },
+            contents: true, regen: true, admin: true),
+        // Games rebuild these and stutter while they do, so they are opt-in.
+        T("nvidia-shader-cache", "NVIDIA shader cache", CleanupLevel.Deep, "Game",
+            new[] { @"%LOCALAPPDATA%\NVIDIA\DXCache", @"%LOCALAPPDATA%\NVIDIA\GLCache",
+                    @"%USERPROFILE%\AppData\LocalLow\NVIDIA\PerDriverVersion\DXCache" },
+            contents: true, regen: true, optIn: true),
+        T("amd-shader-cache", "AMD shader cache", CleanupLevel.Deep, "Game",
+            new[] { @"%LOCALAPPDATA%\AMD\DxCache", @"%LOCALAPPDATA%\AMD\GLCache",
+                    @"%LOCALAPPDATA%\AMD\DxcCache", @"%LOCALAPPDATA%\AMD\VkCache" },
+            contents: true, regen: true, optIn: true),
+        T("d3d-shader-cache", "DirectX shader cache", CleanupLevel.Deep, "Game",
+            new[] { @"%LOCALAPPDATA%\D3DSCache" },
+            contents: true, regen: true, optIn: true),
     };
 }

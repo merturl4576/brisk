@@ -178,4 +178,37 @@ public class CleanupTargetRegistryTests
         Assert.Empty(degenerate.AppProcessCandidates);
         Assert.Null(degenerate.AppDisplayName);
     }
+
+    [Theory]
+    [InlineData("nvidia-shader-cache")]
+    [InlineData("amd-shader-cache")]
+    [InlineData("d3d-shader-cache")]
+    public void ShaderCaches_AreDeepOptIn_AndNeedNoElevation(string id)
+    {
+        var t = CleanupTargetRegistry.All.Single(x => x.Id == id);
+        Assert.Equal(CleanupLevel.Deep, t.Level);
+        Assert.True(t.RequiresExplicitOptIn);
+        Assert.False(t.RequiresElevation);
+        Assert.True(t.Regenerates);
+        Assert.True(t.DeletesContentsNotDirectory);
+    }
+
+    [Fact]
+    public void WerSystem_IsDeepAndAdmin()
+    {
+        var t = CleanupTargetRegistry.All.Single(x => x.Id == "wer-system");
+        Assert.Equal(CleanupLevel.Deep, t.Level);
+        Assert.True(t.RequiresElevation);
+    }
+
+    [Theory]
+    [InlineData("chrome-cache")]
+    [InlineData("edge-cache")]
+    [InlineData("brave-cache")]
+    public void BrowserCaches_CoverEveryProfile(string id)
+    {
+        var t = CleanupTargetRegistry.All.Single(x => x.Id == id);
+        Assert.Contains(t.PathTemplates, p => p.Contains(@"\Default\Cache"));
+        Assert.Contains(t.PathTemplates, p => p.Contains(@"\Profile *\Cache"));
+    }
 }
