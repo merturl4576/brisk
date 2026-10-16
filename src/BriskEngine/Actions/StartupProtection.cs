@@ -18,7 +18,7 @@ public static class StartupProtection
             "Avast", "AVG", "Bitdefender", "Kaspersky", "ESET", "Malwarebytes", "Sophos", "Trend Micro",
             "Avira", "Webroot", "F-Secure" }),
         (StartupProtectionKind.Hardware, new[] { "Realtek", "RtkAud", "Synaptics", "SynTP", "ELAN",
-            "ETDCtrl", "igfx", "AMD", "Radeon", "NVIDIA", "Nahimic", "Dolby", "Waves", "MaxxAudio",
+            "ETDCtrl", "igfx", "IntelGraphics", "Intel Graphics", "IGCCTray", "AMD", "Radeon", "NVIDIA", "Nahimic", "Dolby", "Waves", "MaxxAudio",
             "Conexant", "Bluetooth", "Logitech", "Razer", "Corsair", "SteelSeries", "Armoury", "ASUS",
             "Lenovo Vantage", "Dell", "HP" }),
         (StartupProtectionKind.Sync, new[] { "OneDrive", "Google Drive", "GoogleDrive", "Dropbox", "iCloud",

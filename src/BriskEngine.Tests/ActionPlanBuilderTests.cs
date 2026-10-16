@@ -17,7 +17,7 @@ public sealed class ActionPlanBuilderTests
     private sealed record Kit(ActionPlanBuilder Builder, DiagnosticContext Ctx, FakeRegistry Reg,
         FakeFeatures Features, FakeSpace Space, FakeUi Ui);
 
-    private static Kit Make()
+    private static Kit Make(Func<string, string?>? describe = null)
     {
         var ctx = TestContext.Empty();
         var reg = (FakeRegistry)ctx.Registry;
@@ -27,7 +27,7 @@ public sealed class ActionPlanBuilderTests
         var startup = new StartupManager(reg, null);
         var rules = new ActionRules(new ActionProbes(new FakeRunner(), ui, new FakeOverlay(), features,
             new FakeTasks(), startup, () => false));
-        return new Kit(new ActionPlanBuilder(ctx, rules, startup, space, features), ctx, reg, features, space, ui);
+        return new Kit(new ActionPlanBuilder(ctx, rules, startup, space, features, describe), ctx, reg, features, space, ui);
     }
 
     private static TargetScanResult T(string id, long bytes, string? skipped = null) => new(
@@ -37,6 +37,15 @@ public sealed class ActionPlanBuilderTests
     private static ScanResult Scan(params TargetScanResult[] targets) => new(targets);
 
     private static ActionItem? Row(ActionPlan plan, string id) => plan.Items.FirstOrDefault(i => i.Id == id);
+
+    [Fact]
+    public void StartupRow_TitleIsTheFriendlyName()
+    {
+        var kit = Make(p => p.EndsWith("msedge.exe", StringComparison.OrdinalIgnoreCase) ? "Microsoft Edge" : null);
+        kit.Reg.SetString(Run, "MicrosoftEdgeAutoLaunch_F6C5A0B1C2D3E4F5", @"""C:\Edge\msedge.exe"" --auto");
+        var row = kit.Builder.BuildFast().SelectMany(g => g.Items).Single(i => i.Id.Contains("MicrosoftEdgeAutoLaunch"));
+        Assert.Equal("Microsoft Edge", row.Title);
+    }
 
     [Fact]
     public void Build_IsComposeOfTheTwoHalves()

@@ -98,6 +98,9 @@ public sealed class StartupActionTests
     [InlineData("PowerToys", null, StartupProtectionKind.Keyboard)]
     [InlineData("Time Tracker", null, StartupProtectionKind.None)]
     [InlineData("SecurityHealth", null, StartupProtectionKind.Security)]
+    [InlineData("IntelGraphicsExperience", null, StartupProtectionKind.Hardware)]
+    [InlineData("Intel Graphics Command Center", null, StartupProtectionKind.Hardware)]
+    [InlineData("IGCCTray", null, StartupProtectionKind.Hardware)]
     [InlineData("Tray", @"C:\Program Files\McAfee\mcuicnt.exe", StartupProtectionKind.Security)]
     public void Classify(string name, string? command, StartupProtectionKind expected) =>
         Assert.Equal(expected, StartupProtection.Classify(name, command, Array.Empty<string>()));

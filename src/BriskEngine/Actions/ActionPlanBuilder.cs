@@ -17,15 +17,17 @@ public sealed class ActionPlanBuilder
     private readonly StartupManager _startup;
     private readonly ISpaceProbe _space;
     private readonly IOptionalFeatureProbe _features;
+    private readonly Func<string, string?> _describe;
 
     public ActionPlanBuilder(DiagnosticContext ctx, ActionRules rules, StartupManager startup,
-        ISpaceProbe space, IOptionalFeatureProbe features)
+        ISpaceProbe space, IOptionalFeatureProbe features, Func<string, string?>? describe = null)
     {
         _ctx = ctx;
         _rules = rules;
         _startup = startup;
         _space = space;
         _features = features;
+        _describe = describe ?? Live.FileDescription.Of;
     }
 
     public static ActionItem ItemFrom(RowDef row, long? bytes = null, bool? defaultOn = null,
@@ -93,7 +95,7 @@ public sealed class ActionPlanBuilder
             var protectedEntry = kind != StartupProtectionKind.None;
             var (costKey, cost) = ActionCatalog.StartupCost(kind);
             var id = StartupEntryRule.IdFor(e.Hive, e.Name);
-            var title = e.Name.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? e.Name[..^4] : e.Name;
+            var title = StartupTitle.For(e, _describe);
             yield return new ActionItem(id, ActionGroupKind.Speed,
                 null, title,
                 protectedEntry ? costKey : null, protectedEntry ? cost : null,

@@ -136,7 +136,17 @@ public sealed class StartupManager
         return cut < 0 ? path : path[(cut + 1)..];
     }
 
-    private static readonly byte[] DisabledBytes = { 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    /// The full path of the program a Run command starts, variables expanded;
+    /// null when the command names no ".exe".
+    internal static string? ExecutablePath(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command)) return null;
+        var end = command.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+        if (end < 0) return null;
+        return Environment.ExpandEnvironmentVariables(command[..(end + 4)].TrimStart('"', ' '));
+    }
+
+    private static readonly byte[] DisabledBytes ={ 0x03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     private static readonly byte[] EnabledBytes = { 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     private readonly IRegistryProbe _registry;
