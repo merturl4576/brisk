@@ -39,7 +39,7 @@ public sealed class Scanner
             {
                 results[i] = ScanTarget(_targets[i], ct);
                 var done = Interlocked.Increment(ref completed);
-                progress?.Report(new ScanProgress(done, _targets.Count, _targets[i].Id));
+                progress?.Report(new ScanProgress(done, _targets.Count, _targets[i].Id, results[i]));
             });
         return new ScanResult(results);
     }

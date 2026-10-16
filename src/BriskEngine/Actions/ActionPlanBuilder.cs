@@ -35,16 +35,30 @@ public sealed class ActionPlanBuilder
             row.NeedsAdmin, row.Reversible, row.LinkKind, row.LinkIds,
             files ?? Array.Empty<ActionFile>());
 
-    public ActionPlan Build(ScanResult scan, DateTime nowUtc)
-    {
-        var groups = new[]
+    /// The rows that need no cleanup scan; the window shows them first.
+    public IReadOnlyList<ActionGroup> BuildFast() => new[]
         {
-            new ActionGroup(ActionGroupKind.Space, SpaceRows(scan).ToList()),
             new ActionGroup(ActionGroupKind.Speed, SpeedRows().ToList()),
             new ActionGroup(ActionGroupKind.Privacy, PrivacyRows().ToList()),
-        };
-        return new ActionPlan(nowUtc, groups.Where(g => g.Items.Count > 0).ToList(), scan);
+        }.Where(g => g.Items.Count > 0).ToList();
+
+    public ActionGroup? BuildSpace(ScanResult scan)
+    {
+        var rows = SpaceRows(scan).ToList();
+        return rows.Count == 0 ? null : new ActionGroup(ActionGroupKind.Space, rows);
     }
+
+    public static ActionPlan Compose(DateTime nowUtc, ActionGroup? space, IReadOnlyList<ActionGroup> fast,
+        ScanResult scan)
+    {
+        var groups = new List<ActionGroup>();
+        if (space is not null) groups.Add(space);
+        groups.AddRange(fast.Where(g => g.Kind == ActionGroupKind.Speed));
+        groups.AddRange(fast.Where(g => g.Kind == ActionGroupKind.Privacy));
+        return new ActionPlan(nowUtc, groups, scan);
+    }
+
+    public ActionPlan Build(ScanResult scan, DateTime nowUtc) => Compose(nowUtc, BuildSpace(scan), BuildFast(), scan);
 
     private bool Wants(string ruleId)
     {

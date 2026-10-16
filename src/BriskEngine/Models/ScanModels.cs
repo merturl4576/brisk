@@ -29,4 +29,4 @@ public sealed record ScanResult(IReadOnlyList<TargetScanResult> Targets)
     public long ReclaimableBytes => Targets.Sum(t => t.ReclaimableBytes);
 }
 
-public sealed record ScanProgress(int Completed, int Total, string TargetId);
+public sealed record ScanProgress(int Completed, int Total, string TargetId, TargetScanResult? Result = null);

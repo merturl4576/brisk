@@ -39,6 +39,28 @@ public sealed class ActionPlanBuilderTests
     private static ActionItem? Row(ActionPlan plan, string id) => plan.Items.FirstOrDefault(i => i.Id == id);
 
     [Fact]
+    public void Build_IsComposeOfTheTwoHalves()
+    {
+        var kit = Make();
+        kit.Space.Bin = 5_000;
+        var scan = Scan(T("user-temp", 100), T("npm-cache", 300));
+        var whole = kit.Builder.Build(scan, Now);
+        var halves = ActionPlanBuilder.Compose(Now, kit.Builder.BuildSpace(scan), kit.Builder.BuildFast(), scan);
+
+        Assert.Equal(whole.Groups.Select(g => g.Kind), halves.Groups.Select(g => g.Kind));
+        Assert.Equal(whole.Items.Select(i => i.Id), halves.Items.Select(i => i.Id));
+        Assert.Contains(halves.Groups, g => g.Kind == ActionGroupKind.Space);
+    }
+
+    [Fact]
+    public void BuildFast_HasNoSpaceGroup_AndBuildSpaceIsNullForAnEmptyScan()
+    {
+        var kit = Make();
+        Assert.DoesNotContain(kit.Builder.BuildFast(), g => g.Kind == ActionGroupKind.Space);
+        Assert.Null(kit.Builder.BuildSpace(Scan()));
+    }
+
+    [Fact]
     public void Build_MachineWithoutOptionalFeatures_HidesThoseRowsAndDoesNotThrow()
     {
         var kit = Make();
