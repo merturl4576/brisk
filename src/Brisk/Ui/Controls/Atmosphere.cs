@@ -101,17 +101,24 @@ public sealed class Atmosphere : Grid
     private void BuildFloor()
     {
         const double Width = 50, Near = 6, Far = -44;
-        var line = new SolidColorBrush(Color.FromArgb(0x55, 0x5F, 0xD4, 0xE8));
-        var tile = new DrawingGroup();
-        tile.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 1, 1))));
-        tile.Children.Add(new GeometryDrawing(line, null, new RectangleGeometry(new Rect(0, 0, 1, 0.03))));
-        tile.Children.Add(new GeometryDrawing(line, null, new RectangleGeometry(new Rect(0, 0, 0.03, 1))));
-        var brush = new DrawingBrush(tile)
+        // One bitmap of the whole grid, drawn once: a tiny tiled brush is
+        // realized too coarsely in 3D and its lines vanish.
+        const int Pixels = 1024, Cells = 50;
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
         {
-            TileMode = TileMode.Tile,
-            Viewport = new Rect(0, 0, 1 / Width, 1 / (Near - Far)),
-            ViewportUnits = BrushMappingMode.RelativeToBoundingBox,
-        };
+            var line = new SolidColorBrush(Color.FromArgb(0x70, 0x5F, 0xD4, 0xE8));
+            const double Step = (double)Pixels / Cells;
+            for (var i = 0; i <= Cells; i++)
+            {
+                dc.DrawRectangle(line, null, new Rect(i * Step, 0, 1.6, Pixels));
+                dc.DrawRectangle(line, null, new Rect(0, i * Step, Pixels, 1.6));
+            }
+        }
+        var grid = new System.Windows.Media.Imaging.RenderTargetBitmap(Pixels, Pixels, 96, 96, PixelFormats.Pbgra32);
+        grid.Render(visual);
+        grid.Freeze();
+        var brush = new ImageBrush(grid);
         brush.Freeze();
 
         var mesh = new MeshGeometry3D

@@ -61,8 +61,10 @@ public static class Ambient
                 break;
             }
             case AmbientMotion.Flow when element is Shape shape:
+                // Dash lengths are in multiples of the stroke: 32 px a pass.
                 shape.BeginAnimation(Shape.StrokeDashOffsetProperty, (AnimationTimeline)Paced(
-                    new DoubleAnimation(0, -32, TimeSpan.FromSeconds(1.6)) { RepeatBehavior = RepeatBehavior.Forever }));
+                    new DoubleAnimation(0, -32 / Math.Max(1, shape.StrokeThickness), TimeSpan.FromSeconds(1.6))
+                    { RepeatBehavior = RepeatBehavior.Forever }));
                 break;
             case AmbientMotion.Pulse:
                 element.CacheMode ??= new BitmapCache();

@@ -607,4 +607,5 @@
   <data name="gui.button.undo" xml:space="preserve"><value>Geri al</value></data>
   <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
+  <data name="gui.load.measuring" xml:space="preserve"><value>Ölçülüyor…</value></data>
 </root>
