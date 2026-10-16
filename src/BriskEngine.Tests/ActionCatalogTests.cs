@@ -91,4 +91,9 @@ public sealed class ActionCatalogTests
         Assert.Contains(file.Path, selection.Files);
         Assert.Empty(selection.Only(ActionGroupKind.Privacy, plan).RowIds);
     }
+
+    [Theory]
+    [InlineData("privacy.firewall")]
+    [InlineData("privacy.defender-realtime")]
+    public void UndoNeverTurnsProtectionOff(string id) => Assert.False(ActionCatalog.Find(id).Reversible);
 }

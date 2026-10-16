@@ -69,8 +69,11 @@ public sealed class ActionRunner
 
         var rows = new List<RowResult>();
         var undoable = new List<string>();
+        // The row that holds the Windows update cleanup runs last of all:
+        // DISM takes minutes, and everything else should be done by then.
         foreach (var kind in Order)
-        foreach (var item in plan.Group(kind)?.Items ?? Array.Empty<ActionItem>())
+        foreach (var item in (plan.Group(kind)?.Items ?? Array.Empty<ActionItem>())
+                     .OrderBy(i => i.LinkIds.Contains("component-store") ? 1 : 0))
         {
             if (!selection.RowIds.Contains(item.Id)) continue;
             var result = item.LinkKind == ActionLinkKind.Rules

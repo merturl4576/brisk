@@ -207,4 +207,17 @@ public sealed class ActionRunnerTests : IDisposable
     [Fact]
     public void Undo_UnknownRun_ReturnsNothing() =>
         Assert.Empty(Runner().Undo("no-such-run"));
+
+    [Fact]
+    public void Run_TheWindowsUpdateCleanupRunsLast()
+    {
+        var store = CleanupTargetRegistry.All.Single(t => t.Id == "component-store");
+        var scan = new ScanResult(new[] { new TargetScanResult(store, Array.Empty<ResolvedItem>(), null) });
+        var plan = Plan(scan, Row("space.caches"), Row("space.recycle-bin", 10));
+        var order = new List<string>();
+
+        Runner().Run(plan, Select("space.caches", "space.recycle-bin"), r => order.Add(r.RowId));
+
+        Assert.Equal(new[] { "space.recycle-bin", "space.caches" }, order);
+    }
 }

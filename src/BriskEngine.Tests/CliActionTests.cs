@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using BriskEngine.Actions;
 using BriskEngine.Diagnostics;
 using BriskEngine.Models;
@@ -131,6 +132,59 @@ public sealed class CliActionTests
         {
             Assert.False(Directory.Exists(Path.Combine(data, "runs")));
             Assert.False(Directory.Exists(Path.Combine(data, "receipts")));
+        }
+        finally { Directory.Delete(data, true); }
+    }
+
+    private static ActionPlan PlanOf(params ActionGroup[] groups) =>
+        new(DateTime.UtcNow, groups, new ScanResult(Array.Empty<TargetScanResult>()));
+
+    [Fact]
+    public void PrintPlan_ListsEveryFile_NotOnlyTheFirstTen()
+    {
+        var files = Enumerable.Range(1, 12)
+            .Select(i => new ActionFile($@"C:\Users\x\Downloads\setup{i}.exe", 1L << 20, null)).ToArray();
+        var o = new StringWriter();
+        Program.PrintPlan(PlanOf(new ActionGroup(ActionGroupKind.Space,
+            new[] { Item("space.downloads", 12L << 20, files) })), o);
+        for (var i = 1; i <= 12; i++) Assert.Contains($"setup{i}.exe", o.ToString());
+    }
+
+    [Fact]
+    public void PrintPlan_TicksWhatTheSelectionRuns()
+    {
+        var plan = PlanOf(
+            new ActionGroup(ActionGroupKind.Space, new[] { Item("space.caches", 1L << 30) }),
+            new ActionGroup(ActionGroupKind.Privacy, new[] { Item("privacy.ads") }));
+        var o = new StringWriter();
+        Program.PrintPlan(plan, o, ActionSelection.Default(plan).Only(ActionGroupKind.Privacy, plan));
+        Assert.Contains("[ ] Caches and temporary files", o.ToString());
+        Assert.Contains("[x] Showing ads and suggestions for you", o.ToString());
+    }
+
+    [Fact]
+    public void PrintPlan_SaysTheWindowsUpdateCleanupTakesMinutes()
+    {
+        var o = new StringWriter();
+        Program.PrintPlan(PlanOf(new ActionGroup(ActionGroupKind.Space, new[] { Item("space.caches", 1L << 30) })), o);
+        Assert.Contains("several minutes", o.ToString());
+    }
+
+    [Fact]
+    public void Run_YesForAnotherGroup_LeavesTheDeferredQueueAlone_AndShowsThePlanFirst()
+    {
+        var data = Directory.CreateTempSubdirectory("brisk-cli-run-").FullName;
+        try
+        {
+            var engine = ActionEngine.CreateReal(TestContext.Empty(data), new FakeRunner(), () => false);
+            engine.Deferred.Add("no-such-target", DateTime.UtcNow);
+            var scanner = new BriskEngine.Cleaning.Scanner(Array.Empty<CleanupTarget>(), new FakeRunningApps());
+            var o = new StringWriter();
+
+            Program.RunActions(new CliCommand("run", Yes: true, Group: "privacy"), scanner, engine, o);
+
+            Assert.Single(engine.Deferred.Pending());
+            Assert.Contains("One click", o.ToString());
         }
         finally { Directory.Delete(data, true); }
     }

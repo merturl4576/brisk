@@ -582,8 +582,12 @@ public static class Program
     private static string Format(string key, params object[] args) =>
         string.Format(CultureInfo.InvariantCulture, ActionStrings.En(key), args);
 
-    public static void PrintPlan(ActionPlan plan, TextWriter o)
+    /// Ticks what the selection runs (the defaults when there is none), and
+    /// names every file a ticked row deletes: a file the user was never
+    /// shown must not be deleted.
+    public static void PrintPlan(ActionPlan plan, TextWriter o, ActionSelection? selection = null)
     {
+        selection ??= ActionSelection.Default(plan);
         o.WriteLine();
         o.WriteLine("One click (brisk run --yes):");
         foreach (var group in plan.Groups)
@@ -591,14 +595,16 @@ public static class Program
             o.WriteLine($"  {Groupname(group.Kind)}");
             foreach (var item in group.Items)
             {
-                var box = item.DefaultOn ? "[x]" : "[ ]";
+                var box = selection.RowIds.Contains(item.Id) ? "[x]" : "[ ]";
                 var size = item.Bytes is { } b ? $"  {Fmt.Bytes(b)}" : "";
                 var cost = item.Cost is null ? "" : $"  — {item.Cost}";
                 o.WriteLine($"    {box} {item.Title}{size}{cost}");
-                foreach (var f in item.Files.Take(10))
+                foreach (var f in item.Files)
                     o.WriteLine($"          {Path.GetFileName(f.Path)}  {Fmt.Bytes(f.Bytes)}");
             }
         }
+        if (plan.Items.Any(i => selection.RowIds.Contains(i.Id) && i.LinkIds.Contains("component-store")))
+            o.WriteLine("  The Windows update cleanup runs last and can take several minutes. Leave this window open.");
     }
 
     public static string ResultWord(ActionItem? item, RowResult r) => r.Outcome switch
@@ -646,13 +652,16 @@ public static class Program
         if (!cmd.Yes)
         {
             o.WriteLine("PLAN (nothing changed) — add --yes to apply the ticked rows");
-            PrintPlan(plan, o);
+            PrintPlan(plan, o, selection);
             return 0;
         }
 
-        // Behind --yes: processing the queue deletes the caches whose apps
-        // have closed, and a plan-only run changes nothing.
-        engine.ProcessDeferred();
+        // The run shows what it acts on before it acts.
+        PrintPlan(plan, o, selection);
+        o.WriteLine();
+        // Behind --yes, and only when Space is in the run: processing the
+        // queue deletes the caches whose apps have closed.
+        if (cmd.Group is null or "space") engine.ProcessDeferred();
         var items = plan.Items.ToDictionary(i => i.Id);
         var run = engine.Runner.Run(plan, selection, r =>
         {

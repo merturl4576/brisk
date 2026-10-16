@@ -97,10 +97,11 @@ public static class ActionCatalog
             "Location", on: false, links: new[] { "location" }),
         R("privacy.uac", Privacy, "Programs becoming admin without asking", "Programs ask for permission again.",
             "User Account Control", restart: true, admin: true, links: new[] { "uac-prompts" }),
+        // Not reversible: undo must never switch protection back off.
         R("privacy.firewall", Privacy, "The firewall being off", null, "Windows Firewall",
-            admin: true, links: new[] { "firewall-on" }),
+            admin: true, reversible: false, links: new[] { "firewall-on" }),
         R("privacy.defender-realtime", Privacy, "Virus protection being off", null, "Real-time protection",
-            admin: true, links: new[] { "defender-realtime" }),
+            admin: true, reversible: false, links: new[] { "defender-realtime" }),
     };
 
     public static RowDef Find(string id) => Rows.First(r => r.Id == id);
