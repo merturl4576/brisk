@@ -144,7 +144,7 @@ public sealed class NewGuiSnapshotTests
         return page;
     }, "new-page-privacy");
 
-    internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr")
+    internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr", Brisk.Ui.AmbientClock? clock = null)
     {
         var loc = new Loc();
         loc.SetLanguage(language);
@@ -154,7 +154,7 @@ public sealed class NewGuiSnapshotTests
         var settings = new Brisk.Ui.Shell.UiSettingsViewModel(new Brisk.Services.Settings { Language = language },
             Path.Combine(Path.GetTempPath(), "brisk-snap-settings.json"), loc, () => false, _ => true, () => { });
         var shell = new Brisk.Ui.Shell.ShellViewModel(post, a => a(), session, b, new ManualTimers(), loc,
-            new Brisk.Ui.AmbientClock(() => false), settings);
+            clock ?? new Brisk.Ui.AmbientClock(() => false), settings);
         session.LookAsync().GetAwaiter().GetResult();
         shell.SetWindowVisible(true);
         return shell;

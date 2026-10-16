@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,10 +11,12 @@ using System.Windows.Shapes;
 namespace Brisk.Ui.Controls;
 
 /// The window's background: the navy-turquoise gradient, the digital rain,
-/// and the perspective grid floor from the mockup. Everything is built once;
-/// motion is a translate per rain column and one shift of the floor plane,
-/// started and stopped by the ambient clock. Decorated=false (the detail
-/// pages) fades rain and floor out and stops them; the gradient stays.
+/// and the perspective grid floor from the mockup. Everything is built once.
+/// Motion is four translates (the rain falls in four lanes of different
+/// speed, each lane a loop of its columns) and one shift of the floor plane,
+/// started and stopped by the ambient clock — measured, one animation per
+/// column cost a quarter of a CPU core. Decorated=false (the detail pages)
+/// fades rain and floor out and stops them; the gradient stays.
 public sealed class Atmosphere : Grid
 {
     public const int RainColumns = 38;
@@ -21,7 +24,22 @@ public sealed class Atmosphere : Grid
     private const double LineHeight = 14;
     private const string Glyphs = "01アイウエオカキクケコサシスセソ7392";
 
-    private sealed record Column(TextBlock Text, TranslateTransform Fall, double LeftFraction, double Seconds, double Phase);
+    public const int RainLanes = 4;
+    private static readonly double[] LaneSeconds = { 8, 10.5, 13, 15.5 };
+    private const int RainFrameRate = 20, FloorFrameRate = 15;
+
+    /// A column sits in its lane twice, one period apart: when the lane has
+    /// fallen one period and jumps back, the copy is exactly where the column
+    /// was, so the loop has no seam.
+    private sealed record Column(TextBlock Text, TextBlock Copy, double LeftFraction, double Phase);
+
+    private sealed class Lane
+    {
+        public readonly Canvas Panel = new();
+        public readonly TranslateTransform Fall = new();
+        public readonly List<Column> Columns = new();
+        public double Seconds;
+    }
 
     private readonly AmbientClock _clock;
     private readonly Canvas _rain = new() { ClipToBounds = true };
@@ -30,7 +48,7 @@ public sealed class Atmosphere : Grid
     // Viewport3D itself blanks the whole scene.
     private readonly Grid _floorHost = new() { IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Bottom };
     private readonly TranslateTransform3D _floorShift = new();
-    private readonly List<Column> _columns = new();
+    private readonly List<Lane> _lanes = new();
 
     public static readonly DependencyProperty DecoratedProperty = DependencyProperty.Register(nameof(Decorated),
         typeof(bool), typeof(Atmosphere), new PropertyMetadata(true, (d, e) => ((Atmosphere)d).OnDecorated((bool)e.NewValue)));
@@ -38,7 +56,7 @@ public sealed class Atmosphere : Grid
     public bool Decorated { get => (bool)GetValue(DecoratedProperty); set => SetValue(DecoratedProperty, value); }
 
     public bool MotionRunning { get; private set; }
-    public int RainColumnCount => _columns.Count;
+    public int RainColumnCount => _lanes.Sum(l => l.Columns.Count);
 
     public Atmosphere() : this(AmbientClock.Instance) { }
 
@@ -86,6 +104,23 @@ public sealed class Atmosphere : Grid
         var brush = new SolidColorBrush(Color.FromArgb(0x1C, 0x5F, 0xD4, 0xE8));
         brush.Freeze();
         var font = new FontFamily("Consolas");
+        for (var l = 0; l < RainLanes; l++)
+        {
+            var lane = new Lane { Seconds = LaneSeconds[l] };
+            lane.Panel.RenderTransform = lane.Fall;
+            _lanes.Add(lane);
+            _rain.Children.Add(lane.Panel);
+        }
+        TextBlock MakeText(string text) => new()
+        {
+            Text = text,
+            FontFamily = font,
+            FontSize = 12,
+            LineHeight = LineHeight,
+            LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+            Foreground = brush,
+            CacheMode = new BitmapCache(),
+        };
         for (var c = 0; c < RainColumns; c++)
         {
             var glyphs = new char[GlyphsPerColumn * 2 - 1];
@@ -94,21 +129,12 @@ public sealed class Atmosphere : Grid
                 glyphs[i * 2] = Glyphs[random.Next(Glyphs.Length)];
                 if (i < GlyphsPerColumn - 1) glyphs[i * 2 + 1] = '\n';
             }
-            var fall = new TranslateTransform();
-            var text = new TextBlock
-            {
-                Text = new string(glyphs),
-                FontFamily = font,
-                FontSize = 12,
-                LineHeight = LineHeight,
-                LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                Foreground = brush,
-                RenderTransform = fall,
-                CacheMode = new BitmapCache(),
-            };
-            _rain.Children.Add(text);
-            _columns.Add(new Column(text, fall, (c * 2.7 + random.NextDouble()) / 100,
-                7 + random.NextDouble() * 9, random.NextDouble()));
+            var text = new string(glyphs);
+            var lane = _lanes[random.Next(RainLanes)];
+            var column = new Column(MakeText(text), MakeText(text), (c * 2.7 + random.NextDouble()) / 100, random.NextDouble());
+            lane.Panel.Children.Add(column.Text);
+            lane.Panel.Children.Add(column.Copy);
+            lane.Columns.Add(column);
         }
     }
 
@@ -166,44 +192,53 @@ public sealed class Atmosphere : Grid
 
     private double ColumnHeight => GlyphsPerColumn * LineHeight;
 
+    /// One loop of a lane: the window's height plus a column's.
+    private double Period => Math.Max(ActualHeight, 1) + ColumnHeight;
+
     private void Arrange()
     {
         _floorHost.Height = Math.Max(1, ActualHeight * 0.48);
-        foreach (var c in _columns)
+        foreach (var lane in _lanes)
+        foreach (var c in lane.Columns)
         {
             Canvas.SetLeft(c.Text, c.LeftFraction * ActualWidth);
-            // The still frame: each column where its fall would be.
-            if (!MotionRunning) c.Fall.Y = -ColumnHeight + c.Phase * (ActualHeight + ColumnHeight);
+            Canvas.SetLeft(c.Copy, c.LeftFraction * ActualWidth);
+            Canvas.SetTop(c.Text, c.Phase * Period - ColumnHeight);
+            Canvas.SetTop(c.Copy, c.Phase * Period - ColumnHeight - Period);
         }
         if (MotionRunning)
         {
             Stop();
             Start();
         }
+        else Rest();
+    }
+
+    /// The still frame: every lane halfway through its loop.
+    private void Rest()
+    {
+        foreach (var lane in _lanes) lane.Fall.Y = Period / 2;
     }
 
     private void Start()
     {
         MotionRunning = true;
-        var height = Math.Max(ActualHeight, 1);
-        foreach (var c in _columns)
+        foreach (var lane in _lanes)
         {
-            var fall = new DoubleAnimation(-ColumnHeight, height, TimeSpan.FromSeconds(c.Seconds))
-            {
-                RepeatBehavior = RepeatBehavior.Forever,
-                BeginTime = TimeSpan.FromSeconds(-c.Phase * c.Seconds),
-            };
-            c.Fall.BeginAnimation(TranslateTransform.YProperty, (AnimationTimeline)Ambient.Paced(fall));
+            var fall = new DoubleAnimation(0, Period, TimeSpan.FromSeconds(lane.Seconds)) { RepeatBehavior = RepeatBehavior.Forever };
+            Timeline.SetDesiredFrameRate(fall, RainFrameRate);
+            lane.Fall.BeginAnimation(TranslateTransform.YProperty, fall);
         }
-        _floorShift.BeginAnimation(TranslateTransform3D.OffsetZProperty, (AnimationTimeline)Ambient.Paced(
-            new DoubleAnimation(0, 1, TimeSpan.FromSeconds(3.5)) { RepeatBehavior = RepeatBehavior.Forever }));
+        var shift = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(3.5)) { RepeatBehavior = RepeatBehavior.Forever };
+        Timeline.SetDesiredFrameRate(shift, FloorFrameRate);
+        _floorShift.BeginAnimation(TranslateTransform3D.OffsetZProperty, shift);
     }
 
     private void Stop()
     {
         MotionRunning = false;
-        foreach (var c in _columns) c.Fall.BeginAnimation(TranslateTransform.YProperty, null);
+        foreach (var lane in _lanes) lane.Fall.BeginAnimation(TranslateTransform.YProperty, null);
         _floorShift.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
-        foreach (var c in _columns) c.Fall.Y = -ColumnHeight + c.Phase * (Math.Max(ActualHeight, 1) + ColumnHeight);
+        Rest();
     }
 }

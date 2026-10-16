@@ -1,13 +1,13 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
 using System.Windows.Shapes;
 
 namespace Brisk.Ui.Controls;
 
 /// One of the three floor satellites: a value, a caption, and a glowing ring
-/// lying on the grid floor. Done turns it green and stops the pulse.
+/// lying on the grid floor. Done turns it green.
 public sealed class SatelliteRing : StackPanel
 {
     private static readonly SolidColorBrush Neutral = Frozen(Color.FromRgb(0xE6, 0xF4, 0xF8));
@@ -18,7 +18,15 @@ public sealed class SatelliteRing : StackPanel
     private readonly TextBlock _value = new() { FontSize = 18, FontWeight = FontWeights.Medium, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly TextBlock _caption = new() { FontSize = 12, Foreground = Muted, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Ellipse _ring = new() { StrokeThickness = 2, Stroke = Ring };
-    private readonly Ellipse _glow = new() { StrokeThickness = 6, Stroke = Ring, Effect = new BlurEffect { Radius = 10 }, Opacity = 0.35 };
+    // The glow is three soft strokes, not a blur: a BlurEffect under a pulsing
+    // opacity was re-rendered every frame (measured: a fifth of a CPU core
+    // for three rings).
+    private readonly Grid _glow = new() { Opacity = 0.35, IsHitTestVisible = false };
+    private readonly Ellipse[] _halo =
+    {
+        new() { StrokeThickness = 12 }, new() { StrokeThickness = 7 }, new() { StrokeThickness = 4 },
+    };
+    private static readonly byte[] HaloAlpha = { 0x22, 0x40, 0x70 };
 
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(nameof(Value),
         typeof(string), typeof(SatelliteRing), new PropertyMetadata("", (d, e) => ((SatelliteRing)d)._value.Text = (string)e.NewValue));
@@ -47,6 +55,7 @@ public sealed class SatelliteRing : StackPanel
     {
         HorizontalAlignment = HorizontalAlignment.Center;
         var rings = new Grid { Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
+        foreach (var h in _halo) _glow.Children.Add(h);
         rings.Children.Add(_glow);
         rings.Children.Add(_ring);
         Children.Add(_value);
@@ -59,7 +68,9 @@ public sealed class SatelliteRing : StackPanel
 
     private void Size()
     {
-        foreach (var e in new[] { _ring, _glow })
+        _glow.Width = RingWidth;
+        _glow.Height = RingHeight;
+        foreach (var e in _halo.Append(_ring))
         {
             e.Width = RingWidth;
             e.Height = RingHeight;
@@ -70,7 +81,9 @@ public sealed class SatelliteRing : StackPanel
     {
         _value.Foreground = Done ? Green : Neutral;
         _ring.Stroke = Done ? Green : Ring;
-        _glow.Stroke = Done ? Green : Ring;
+        var c = Done ? Green.Color : Color.FromRgb(0x5F, 0xD4, 0xE8);
+        for (var i = 0; i < _halo.Length; i++)
+            _halo[i].Stroke = Frozen(Color.FromArgb(HaloAlpha[i], c.R, c.G, c.B));
     }
 
     private static SolidColorBrush Frozen(Color c)

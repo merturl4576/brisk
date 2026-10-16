@@ -14,7 +14,7 @@ public enum AmbientMotion { None, Spin, SpinReverse, Flow, Pulse }
 /// redrawn.
 public static class Ambient
 {
-    public const int FrameRate = 30;
+    public const int FrameRate = 20;
 
     public static readonly DependencyProperty MotionProperty = DependencyProperty.RegisterAttached(
         "Motion", typeof(AmbientMotion), typeof(Ambient), new PropertyMetadata(AmbientMotion.None, OnMotionChanged));
@@ -67,15 +67,19 @@ public static class Ambient
                     { RepeatBehavior = RepeatBehavior.Forever }));
                 break;
             case AmbientMotion.Pulse:
+            {
                 element.CacheMode ??= new BitmapCache();
-                element.BeginAnimation(UIElement.OpacityProperty, (AnimationTimeline)Paced(
-                    new DoubleAnimation(0.35, 0.6, TimeSpan.FromSeconds(1.3))
-                    {
-                        AutoReverse = true,
-                        RepeatBehavior = RepeatBehavior.Forever,
-                        EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-                    }));
+                // A slow breath: ten frames a second is plenty.
+                var pulse = new DoubleAnimation(0.35, 0.6, TimeSpan.FromSeconds(1.3))
+                {
+                    AutoReverse = true,
+                    RepeatBehavior = RepeatBehavior.Forever,
+                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+                };
+                Timeline.SetDesiredFrameRate(pulse, 10);
+                element.BeginAnimation(UIElement.OpacityProperty, pulse);
                 break;
+            }
         }
     }
 
