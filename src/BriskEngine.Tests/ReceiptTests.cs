@@ -115,10 +115,30 @@ public sealed class ReceiptTests : IDisposable
         Assert.Equal(0, r.StartupEnabledAfter);
         Assert.Equal(700, Assert.Single(r.StartupRam).PrivateBytes);
         Assert.Equal(48_000, r.BootMsBefore);
-        Assert.Equal(2, r.PrivacyOff);
+        Assert.Equal(1, r.PrivacyOff);       // the ignored row is its own number, not "off"
         Assert.Equal(1, r.PrivacyIgnored);
         Assert.Equal(3, r.TelemetryBefore);
         Assert.Equal("r1", store.Latest()!.RunId);
+    }
+
+    [Fact]
+    public void Recorder_PrivacyOff_LeavesOutARowThatTurnedBackOn()
+    {
+        var ctx = TestContext.Empty();
+        var store = new ReceiptStore(Path.Combine(_root, "receipts"));
+        var recorder = new ReceiptRecorder(ctx, new StartupManager((FakeRegistry)ctx.Registry, null),
+            new FakeProcs(), store, () => null, () => Run);
+        var plan = new ActionPlan(Run, Array.Empty<ActionGroup>(),
+            new BriskEngine.Models.ScanResult(Array.Empty<BriskEngine.Models.TargetScanResult>()));
+        recorder.Before("r2", plan, ActionSelection.Default(plan));
+        recorder.After(new RunRecord("r2", Run, Run.AddMinutes(1), new[]
+        {
+            new RowResult("privacy.ads", RowOutcome.Done, null, ReadBackState.Held, 0, 0),
+            new RowResult("privacy.copilot", RowOutcome.Done, null, ReadBackState.Reverted, 0, 0),
+            new RowResult("privacy.uac", RowOutcome.PendingRestart, null, null, 0, 0),
+        }, Array.Empty<string>()));
+
+        Assert.Equal(2, store.Load("r2")!.PrivacyOff);
     }
 
     private static ActionItem ActionPlanBuilderRow(string id, string title) => new(id, ActionGroupKind.Speed,

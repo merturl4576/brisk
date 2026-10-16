@@ -16,7 +16,17 @@ public sealed class WindowsDeleter : IDeleter
     {
         var full = DeleteLockProbe.ExtendedLength(path);
         if (File.Exists(full)) { DeleteFile(full); return; }
-        if (Directory.Exists(full)) DeleteTree(full);
+        if (!Directory.Exists(full)) return;
+        // A root that is itself a junction or symlink goes as a link: what it
+        // points to is never walked.
+        if ((File.GetAttributes(full) & FileAttributes.ReparsePoint) != 0)
+        {
+            try { Directory.Delete(full, recursive: false); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return;
+        }
+        DeleteTree(full);
     }
 
     private static void DeleteFile(string file)

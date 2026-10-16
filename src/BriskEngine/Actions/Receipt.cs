@@ -166,7 +166,10 @@ public sealed class ReceiptRecorder : IReceiptRecorder
             FreeBytesAfter = FreeBytes(),
             DeferredBytes = run.Rows.Sum(r => r.BytesDeferred),
             StartupEnabledAfter = _startup.List().Count(e => e.Enabled),
-            PrivacyOff = privacy.Count(r => r.Outcome is RowOutcome.Done or RowOutcome.PendingRestart),
+            // A row Windows put back on, or ignored, is not "off": the ignored
+            // ones have their own number.
+            PrivacyOff = privacy.Count(r => r.Outcome is RowOutcome.Done or RowOutcome.PendingRestart
+                && r.ReadBack is not (ReadBackState.Reverted or ReadBackState.WrittenButIgnored)),
             PrivacyIgnored = privacy.Count(r => r.ReadBack == ReadBackState.WrittenButIgnored),
         };
         _store.Save(_current);
