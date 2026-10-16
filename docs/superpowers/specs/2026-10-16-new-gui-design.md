@@ -193,11 +193,12 @@ in `settings.json` and are ignored.
 
 Moving parts: rain (columns of dim Consolas glyphs falling at 7–16 s per
 pass), the grid floor (perspective grid scrolling one cell per 3.5 s), the two
-spinning arcs, the flowing satellite line, the satellites' pulse. All of it is
-render-thread animation — storyboards on transforms/opacity of cached layers
-(`BitmapCache`), `DesiredFrameRate` 30 — never per-frame
-`CompositionTarget.Rendering` work or layout. The rain glyphs and grid are
-built once.
+spinning arcs, the flowing satellite line, the satellites' pulse. WPF ticks
+animation clocks on the UI thread, so the rule is that a frame costs a
+property update and nothing else: storyboards on transforms/opacity of cached
+layers (`BitmapCache`), `DesiredFrameRate` 30 — no per-frame
+`CompositionTarget.Rendering` work, no layout, no re-rasterizing. The rain
+glyphs and grid are built once.
 
 - Budget: with Home visible and idle, brisk-app averages **≤ 3 % of total
   CPU** over 10 s on the maintainer's PC; minimized or hidden, the ambient
