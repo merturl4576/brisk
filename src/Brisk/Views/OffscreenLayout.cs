@@ -63,6 +63,18 @@ public static class OffscreenLayout
         // frame cannot quietly strip an opacity that something else set.
         if (root is TextBlock numeral && NumeralTick.GetValue(numeral) is not null)
             NumeralTick.Settle(numeral);
+        // The new window's two data-driven sweeps: the tick arc filling and
+        // the hero number counting. A still frame shows where they land.
+        if (root is Ui.Controls.TickGauge ticks)
+        {
+            ticks.BeginAnimation(Ui.Controls.TickGauge.ShownFractionProperty, null);
+            ticks.ShownFraction = ticks.Fraction;
+        }
+        if (root is Ui.Controls.HeroNumeral hero && hero.Bytes is { } bytes)
+        {
+            hero.BeginAnimation(Ui.Controls.HeroNumeral.ShownBytesProperty, null);
+            hero.ShownBytes = bytes;
+        }
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
             Settle(VisualTreeHelper.GetChild(root, i));
     }
