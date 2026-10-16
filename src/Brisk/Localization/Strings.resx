@@ -442,4 +442,126 @@
   <data name="readback.on.held.today" xml:space="preserve"><value>You switched this on today; it still reads as on.</value></data>
   <data name="readback.on.held.yesterday" xml:space="preserve"><value>You switched this on yesterday; it still reads as on.</value></data>
   <data name="readback.on.reverted" xml:space="preserve"><value>On {0} you switched this on; it reads as off again now.</value></data>
+  <data name="action.space.caches.title" xml:space="preserve"><value>Caches and temporary files</value></data>
+  <data name="action.space.developer.title" xml:space="preserve"><value>Developer caches</value></data>
+  <data name="action.space.developer.cost" xml:space="preserve"><value>Downloads again later.</value></data>
+  <data name="action.space.shaders.title" xml:space="preserve"><value>Game shader caches</value></data>
+  <data name="action.space.shaders.cost" xml:space="preserve"><value>Games may stutter on first launch.</value></data>
+  <data name="action.space.hibernation.title" xml:space="preserve"><value>Hibernation file</value></data>
+  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Fast startup turns off.</value></data>
+  <data name="action.space.hibernation.name" xml:space="preserve"><value>hiberfil.sys</value></data>
+  <data name="action.space.hibernation.cost-laptop" xml:space="preserve"><value>Open work lost if battery dies.</value></data>
+  <data name="action.space.windows-old.title" xml:space="preserve"><value>Old Windows copy</value></data>
+  <data name="action.space.windows-old.cost" xml:space="preserve"><value>No going back to old Windows.</value></data>
+  <data name="action.space.windows-old.name" xml:space="preserve"><value>Windows.old</value></data>
+  <data name="action.space.downloads.title" xml:space="preserve"><value>Installers in Downloads</value></data>
+  <data name="action.space.downloads.cost" xml:space="preserve"><value>Can't be undone.</value></data>
+  <data name="action.space.docker.title" xml:space="preserve"><value>Docker's unused data</value></data>
+  <data name="action.space.docker.cost" xml:space="preserve"><value>Stopped containers are deleted.</value></data>
+  <data name="action.space.docker.name" xml:space="preserve"><value>docker system prune</value></data>
+  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Recycle Bin</value></data>
+  <data name="action.speed.power-mode.title" xml:space="preserve"><value>Full power when plugged in</value></data>
+  <data name="action.speed.power-mode.cost" xml:space="preserve"><value>The fan may spin more.</value></data>
+  <data name="action.speed.power-mode.name" xml:space="preserve"><value>Power mode: Best performance</value></data>
+  <data name="action.speed.game-recording.title" xml:space="preserve"><value>Background video recording in games</value></data>
+  <data name="action.speed.game-recording.name" xml:space="preserve"><value>Game DVR background recording</value></data>
+  <data name="action.speed.gpu-scheduling.title" xml:space="preserve"><value>Lower lag in games</value></data>
+  <data name="action.speed.gpu-scheduling.name" xml:space="preserve"><value>Hardware-accelerated GPU scheduling</value></data>
+  <data name="action.speed.windowed-games.title" xml:space="preserve"><value>Speed up windowed games</value></data>
+  <data name="action.speed.windowed-games.name" xml:space="preserve"><value>Optimizations for windowed games</value></data>
+  <data name="action.speed.animations.title" xml:space="preserve"><value>Window opening animations</value></data>
+  <data name="action.speed.animations.cost" xml:space="preserve"><value>Windows open instantly.</value></data>
+  <data name="action.speed.animations.name" xml:space="preserve"><value>Animate windows when minimizing and maximizing</value></data>
+  <data name="action.speed.memory-integrity.title" xml:space="preserve"><value>Extra kernel protection</value></data>
+  <data name="action.speed.memory-integrity.cost" xml:space="preserve"><value>Security drops one level.</value></data>
+  <data name="action.speed.memory-integrity.name" xml:space="preserve"><value>Memory integrity</value></data>
+  <data name="action.speed.vm-platform.title" xml:space="preserve"><value>Virtual machine support</value></data>
+  <data name="action.speed.vm-platform.cost" xml:space="preserve"><value>WSL and Docker stop working.</value></data>
+  <data name="action.speed.vm-platform.name" xml:space="preserve"><value>Virtual Machine Platform</value></data>
+  <data name="action.speed.startup.name" xml:space="preserve"><value>Startup apps (Task Manager)</value></data>
+  <data name="action.speed.startup.cost.security" xml:space="preserve"><value>Protection won't start at boot.</value></data>
+  <data name="action.speed.startup.cost.hardware" xml:space="preserve"><value>Hardware settings may not work.</value></data>
+  <data name="action.speed.startup.cost.sync" xml:space="preserve"><value>File sync stops.</value></data>
+  <data name="action.speed.startup.cost.passwords" xml:space="preserve"><value>Password manager won't open.</value></data>
+  <data name="action.speed.startup.cost.vpn" xml:space="preserve"><value>VPN won't connect automatically.</value></data>
+  <data name="action.speed.startup.cost.keyboard" xml:space="preserve"><value>Your shortcuts won't work.</value></data>
+  <data name="action.privacy.telemetry-services.title" xml:space="preserve"><value>Sending usage data to Microsoft</value></data>
+  <data name="action.privacy.telemetry-services.name" xml:space="preserve"><value>Connected User Experiences and Telemetry</value></data>
+  <data name="action.privacy.telemetry-tasks.title" xml:space="preserve"><value>Collecting data in the background</value></data>
+  <data name="action.privacy.telemetry-tasks.name" xml:space="preserve"><value>Telemetry scheduled tasks</value></data>
+  <data name="action.privacy.error-reports.title" xml:space="preserve"><value>Sending error and usage reports</value></data>
+  <data name="action.privacy.error-reports.name" xml:space="preserve"><value>Diagnostic data, Windows Error Reporting</value></data>
+  <data name="action.privacy.ads.title" xml:space="preserve"><value>Showing ads and suggestions for you</value></data>
+  <data name="action.privacy.ads.name" xml:space="preserve"><value>Advertising ID, tailored experiences</value></data>
+  <data name="action.privacy.activity.title" xml:space="preserve"><value>Recording the files and sites you open</value></data>
+  <data name="action.privacy.activity.name" xml:space="preserve"><value>Activity history</value></data>
+  <data name="action.privacy.start-ads.title" xml:space="preserve"><value>Ads in the Start menu</value></data>
+  <data name="action.privacy.start-ads.name" xml:space="preserve"><value>Start suggestions</value></data>
+  <data name="action.privacy.start-web.title" xml:space="preserve"><value>Going online when you search Start</value></data>
+  <data name="action.privacy.start-web.cost" xml:space="preserve"><value>No web search in Start.</value></data>
+  <data name="action.privacy.start-web.name" xml:space="preserve"><value>Bing in Start search</value></data>
+  <data name="action.privacy.speech.title" xml:space="preserve"><value>Sending your voice and typing</value></data>
+  <data name="action.privacy.speech.cost" xml:space="preserve"><value>Windows voice typing stops working.</value></data>
+  <data name="action.privacy.speech.name" xml:space="preserve"><value>Online speech recognition, inking and typing</value></data>
+  <data name="action.privacy.feedback.title" xml:space="preserve"><value>"How do you like Windows?" questions</value></data>
+  <data name="action.privacy.feedback.name" xml:space="preserve"><value>Feedback frequency</value></data>
+  <data name="action.privacy.recall.title" xml:space="preserve"><value>Saving pictures of your screen</value></data>
+  <data name="action.privacy.recall.name" xml:space="preserve"><value>Recall</value></data>
+  <data name="action.privacy.copilot.title" xml:space="preserve"><value>Copilot</value></data>
+  <data name="action.privacy.copilot.cost" xml:space="preserve"><value>Copilot turns off.</value></data>
+  <data name="action.privacy.copilot.name" xml:space="preserve"><value>Windows Copilot</value></data>
+  <data name="action.privacy.delivery-peers.title" xml:space="preserve"><value>Sharing updates with strangers</value></data>
+  <data name="action.privacy.delivery-peers.name" xml:space="preserve"><value>Delivery Optimization</value></data>
+  <data name="action.privacy.location.title" xml:space="preserve"><value>Sharing your location with apps</value></data>
+  <data name="action.privacy.location.cost" xml:space="preserve"><value>Find my device stops working.</value></data>
+  <data name="action.privacy.location.name" xml:space="preserve"><value>Location</value></data>
+  <data name="action.privacy.uac.title" xml:space="preserve"><value>Programs becoming admin without asking</value></data>
+  <data name="action.privacy.uac.cost" xml:space="preserve"><value>Programs ask for permission again.</value></data>
+  <data name="action.privacy.uac.name" xml:space="preserve"><value>User Account Control</value></data>
+  <data name="action.privacy.firewall.title" xml:space="preserve"><value>The firewall being off</value></data>
+  <data name="action.privacy.firewall.name" xml:space="preserve"><value>Windows Firewall</value></data>
+  <data name="action.privacy.defender-realtime.title" xml:space="preserve"><value>Virus protection being off</value></data>
+  <data name="action.privacy.defender-realtime.name" xml:space="preserve"><value>Real-time protection</value></data>
+  <data name="action.group.space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="action.group.speed" xml:space="preserve"><value>Speed up</value></data>
+  <data name="action.group.privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="action.group.load" xml:space="preserve"><value>Slowing you down now</value></data>
+  <data name="action.result.done" xml:space="preserve"><value>Done ✓</value></data>
+  <data name="action.result.off" xml:space="preserve"><value>Off ✓</value></data>
+  <data name="action.result.ignored" xml:space="preserve"><value>Windows ignored it</value></data>
+  <data name="action.result.reverted" xml:space="preserve"><value>Turned back on</value></data>
+  <data name="action.result.written" xml:space="preserve"><value>Written</value></data>
+  <data name="action.result.pending" xml:space="preserve"><value>After restart</value></data>
+  <data name="action.result.skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="action.result.failed" xml:space="preserve"><value>Didn't work</value></data>
+  <data name="action.result.needs-admin" xml:space="preserve"><value>Needs administrator</value></data>
+  <data name="action.result.deferred" xml:space="preserve"><value>Cleans when {0} closes</value></data>
+  <data name="action.result.cannot-undo" xml:space="preserve"><value>Can't be undone</value></data>
+  <data name="action.connections.footer" xml:space="preserve"><value>A connection doesn't mean data was sent.</value></data>
+  <data name="action.connections.local" xml:space="preserve"><value>Local network</value></data>
+  <data name="action.connections.unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="action.connections.telemetry" xml:space="preserve"><value>Telemetry</value></data>
+  <data name="action.usage.footer" xml:space="preserve"><value>Amounts only, no contents.</value></data>
+  <data name="action.usage.windows" xml:space="preserve"><value>Windows (system)</value></data>
+  <data name="action.unread" xml:space="preserve"><value>Couldn't read.</value></data>
+  <data name="action.load.close" xml:space="preserve"><value>Close</value></data>
+  <data name="action.load.force" xml:space="preserve"><value>Force close</value></data>
+  <data name="action.load.remove-startup" xml:space="preserve"><value>Remove from startup</value></data>
+  <data name="action.load.note.defender" xml:space="preserve"><value>Defender is scanning</value></data>
+  <data name="action.load.note.update" xml:space="preserve"><value>Windows is installing updates</value></data>
+  <data name="action.load.note.search" xml:space="preserve"><value>Windows is indexing for search</value></data>
+  <data name="action.load.note.memory" xml:space="preserve"><value>Windows is compressing memory</value></data>
+  <data name="action.load.note.compat" xml:space="preserve"><value>Windows is collecting compatibility data</value></data>
+  <data name="action.load.note.dwm" xml:space="preserve"><value>Windows is drawing the screen</value></data>
+  <data name="action.load.note.system" xml:space="preserve"><value>Windows itself</value></data>
+  <data name="action.load.note.services" xml:space="preserve"><value>Windows services</value></data>
+  <data name="action.receipt.freed" xml:space="preserve"><value>{0} freed</value></data>
+  <data name="action.receipt.deferred" xml:space="preserve"><value>{0} more when {1} closes</value></data>
+  <data name="action.receipt.boot" xml:space="preserve"><value>Startup {0} s → {1} s</value></data>
+  <data name="action.receipt.startup" xml:space="preserve"><value>Startup apps {0} → {1}</value></data>
+  <data name="action.receipt.ram" xml:space="preserve"><value>{0} RAM freed</value></data>
+  <data name="action.receipt.privacy" xml:space="preserve"><value>{0} settings off · Windows ignored {1}</value></data>
+  <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetry connections {0} → {1}</value></data>
+  <data name="action.restart" xml:space="preserve"><value>Restart for full effect</value></data>
+  <data name="action.undo" xml:space="preserve"><value>Undo</value></data>
 </root>
