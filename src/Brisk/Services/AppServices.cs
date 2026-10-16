@@ -12,7 +12,6 @@ namespace Brisk.Services;
 public sealed class AppComposition
 {
     public required IEngineHost Host { get; init; }
-    public required ILiveMetrics LiveMetrics { get; init; }
     public required Settings Settings { get; init; }
     public required string SettingsPath { get; init; }
     public required StartupLauncher Launcher { get; init; }
@@ -69,7 +68,6 @@ public static class AppServices
             Engine = BriskEngine.Actions.ActionEngine.CreateReal(ctx, runner, IsElevated),
             Scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(), new DeleteLockProbe()),
             Host = host,
-            LiveMetrics = new LiveMetrics(sensors, processInfo, host.FreeDiskBytes),
             Settings = Settings.Load(settingsPath),
             SettingsPath = settingsPath,
             Launcher = new StartupLauncher(runner, registry, SelfPath),

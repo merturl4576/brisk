@@ -112,7 +112,7 @@ public sealed class ReportCardModel
                 .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
             VersionText = EngineInfo.Version,
             Health = snapshot.Health,
-            ScoreBrushKey = HealthBrush.KeyFor(snapshot.Health),
+            ScoreBrushKey = ScoreKey(snapshot.Health),
             Findings = findings,
             // The overview's key, and the right one here: its Turkish counts
             // FINDINGS out loud, which under this heading is the noun the line
@@ -219,7 +219,7 @@ public sealed class ReportCardModel
     {
         var lines = new List<string> { UnreadLine(snapshot.Sensors, loc) };
         lines.AddRange(snapshot.Findings
-            .Where(PrivacyViewModel.IsUnreadableDisclosure)
+            .Where(IsUnreadableDisclosure)
             .OrderBy(f => f.RuleId, StringComparer.Ordinal)
             .Select(f => loc.Title(f.TitleKey, f.Title)));
         return lines;
@@ -261,4 +261,18 @@ public sealed class ReportCardModel
             false => loc[baseKey + ".integrity-off"],
             null => loc[baseKey],
         };
+
+    /// The score's colour key on the card (was the old cockpit's HealthBrush).
+    private static string ScoreKey(int health) =>
+        health >= 90 ? "Good"
+        : health >= 70 ? "SeverityNotice"
+        : "SeverityCritical";
+
+    /// A privacy finding that reports no reading at all: no headline, and not
+    /// one of the switches (which attempt no reading). Was the old privacy
+    /// page's rule; the card is its last user.
+    private static bool IsUnreadableDisclosure(DiagnosticFinding finding) =>
+        FindingSections.IsPrivacy(finding)
+        && !(finding.CanFix && finding.Category is RuleCategory.Auto or RuleCategory.Confirm)
+        && finding.Headline is null;
 }
