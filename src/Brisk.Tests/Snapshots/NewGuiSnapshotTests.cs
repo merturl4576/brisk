@@ -144,6 +144,53 @@ public sealed class NewGuiSnapshotTests
         return page;
     }, "new-page-privacy");
 
+    internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr")
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+        var gate = new object();
+        Action<Action> post = a => { lock (gate) a(); };
+        var session = new ActionSession(b, post);
+        var settings = new Brisk.Ui.Shell.UiSettingsViewModel(new Brisk.Services.Settings { Language = language },
+            Path.Combine(Path.GetTempPath(), "brisk-snap-settings.json"), loc, () => false, _ => true, () => { });
+        var shell = new Brisk.Ui.Shell.ShellViewModel(post, a => a(), session, b, new ManualTimers(), loc,
+            new Brisk.Ui.AmbientClock(() => false), settings);
+        session.LookAsync().GetAwaiter().GetResult();
+        shell.SetWindowVisible(true);
+        return shell;
+    }
+
+    private static void ShootShell(Func<Brisk.Ui.Shell.ShellViewModel> vm, string name)
+    {
+        var errors = BindingErrors.Capture(() =>
+            SnapshotRenderer.Capture(() => new Brisk.Ui.Shell.ShellWindow(vm()), Canvas, name));
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Shell_HomeWithTheSheet() => ShootShell(() =>
+    {
+        var s = Shell(Catalog());
+        s.Home.Primary.Execute(null);
+        return s;
+    }, "new-shell-sheet");
+
+    [Fact]
+    public void Shell_Settings() => ShootShell(() =>
+    {
+        var s = Shell(Catalog());
+        s.Current = Brisk.Ui.Shell.Place.Settings;
+        return s;
+    }, "new-shell-settings");
+
+    [Fact]
+    public void Shell_SpacePage_English() => ShootShell(() =>
+    {
+        var s = Shell(Catalog(), "en");
+        s.Current = Brisk.Ui.Shell.Place.Space;
+        return s;
+    }, "new-shell-space-en");
+
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GroupPageViewModel, ActionSession> Sessions = new();
     private static ActionSession SessionOf(GroupPageViewModel page) => Sessions.TryGetValue(page, out var s) ? s : throw new InvalidOperationException();
 

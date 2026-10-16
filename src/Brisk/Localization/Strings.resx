@@ -628,4 +628,23 @@
   <data name="gui.usage.title" xml:space="preserve"><value>Sent in 30 days</value></data>
   <data name="gui.usage.sent" xml:space="preserve"><value>sent {0}</value></data>
   <data name="gui.usage.received" xml:space="preserve"><value>received {0}</value></data>
+  <data name="gui.nav.home" xml:space="preserve"><value>Home</value></data>
+  <data name="gui.nav.space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="gui.nav.speed" xml:space="preserve"><value>Speed up</value></data>
+  <data name="gui.nav.privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="gui.nav.settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="gui.sheet.title" xml:space="preserve"><value>These will be deleted for good</value></data>
+  <data name="gui.sheet.downloads" xml:space="preserve"><value>{0} installers in Downloads · {1}</value></data>
+  <data name="gui.sheet.recycle-bin" xml:space="preserve"><value>Recycle Bin · {0}</value></data>
+  <data name="gui.sheet.windows-old" xml:space="preserve"><value>Old Windows copy · {0}</value></data>
+  <data name="gui.sheet.go" xml:space="preserve"><value>Continue</value></data>
+  <data name="gui.sheet.skip" xml:space="preserve"><value>Skip these</value></data>
+  <data name="gui.sheet.list" xml:space="preserve"><value>See the list</value></data>
+  <data name="gui.settings.title" xml:space="preserve"><value>Settings</value></data>
+  <data name="gui.settings.language" xml:space="preserve"><value>Language</value></data>
+  <data name="gui.settings.language.system" xml:space="preserve"><value>System</value></data>
+  <data name="gui.settings.autostart" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="gui.settings.motion" xml:space="preserve"><value>Moving background</value></data>
+  <data name="gui.settings.version" xml:space="preserve"><value>brisk {0}</value></data>
+  <data name="gui.settings.github" xml:space="preserve"><value>GitHub</value></data>
 </root>

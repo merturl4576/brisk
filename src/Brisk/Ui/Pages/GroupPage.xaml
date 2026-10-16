@@ -178,7 +178,7 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid Margin="120,28,28,24">
+    <Grid Margin="120,84,28,24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

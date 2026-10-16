@@ -628,4 +628,23 @@
   <data name="gui.usage.title" xml:space="preserve"><value>30 günde gönderilenler</value></data>
   <data name="gui.usage.sent" xml:space="preserve"><value>gönderilen {0}</value></data>
   <data name="gui.usage.received" xml:space="preserve"><value>alınan {0}</value></data>
+  <data name="gui.nav.home" xml:space="preserve"><value>Genel</value></data>
+  <data name="gui.nav.space" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="gui.nav.speed" xml:space="preserve"><value>Hızlandır</value></data>
+  <data name="gui.nav.privacy" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="gui.nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="gui.sheet.title" xml:space="preserve"><value>Bunlar kalıcı silinecek</value></data>
+  <data name="gui.sheet.downloads" xml:space="preserve"><value>İndirilenler'deki {0} kurulum dosyası · {1}</value></data>
+  <data name="gui.sheet.recycle-bin" xml:space="preserve"><value>Geri Dönüşüm Kutusu · {0}</value></data>
+  <data name="gui.sheet.windows-old" xml:space="preserve"><value>Eski Windows kopyası · {0}</value></data>
+  <data name="gui.sheet.go" xml:space="preserve"><value>Devam</value></data>
+  <data name="gui.sheet.skip" xml:space="preserve"><value>Bunları atla</value></data>
+  <data name="gui.sheet.list" xml:space="preserve"><value>Listeyi gör</value></data>
+  <data name="gui.settings.title" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="gui.settings.language" xml:space="preserve"><value>Dil</value></data>
+  <data name="gui.settings.language.system" xml:space="preserve"><value>Sistem</value></data>
+  <data name="gui.settings.autostart" xml:space="preserve"><value>Windows ile başlat</value></data>
+  <data name="gui.settings.motion" xml:space="preserve"><value>Hareketli arka plan</value></data>
+  <data name="gui.settings.version" xml:space="preserve"><value>brisk {0}</value></data>
+  <data name="gui.settings.github" xml:space="preserve"><value>GitHub</value></data>
 </root>
