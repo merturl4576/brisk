@@ -1,3 +1,4 @@
+using System.IO;
 using BriskEngine.Actions;
 using BriskEngine.Cleaning;
 using BriskEngine.Models;
@@ -167,6 +168,103 @@ public sealed class ActionSessionTests
         release.Set();
         await older;
         Assert.Equal(2, s.Receipt!.FreedBytes);
+    }
+
+    private static RunRecord OldRun() => new("old", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(-1),
+        Array.Empty<RowResult>(), new[] { "privacy.ads" });
+
+    [Fact]
+    public async Task RunAsync_ClearsThePreviousReceipt_WhileRunning()
+    {
+        var b = FakeBackend.Typical();
+        b.Latest = OldRun();
+        b.ReceiptToReturn = TestReceipts.Freed("old", 5, startupAfter: 2, privacyOff: 9);
+        var s = NewSession(b);
+        await s.LookAsync();
+        Assert.NotNull(s.Receipt);
+        b.HoldRun = new ManualResetEventSlim(false);
+        var run = s.RunAsync(null, skipUnrecoverable: true);
+        Assert.True(SpinWait.SpinUntil(() => s.State == SessionState.Running, 2000));
+        Assert.Null(s.Receipt);
+        b.HoldRun.Set();
+        await run;
+    }
+
+    [Fact]
+    public async Task RunAsync_SkippingLeavesNothing_ReturnsToReadyWithoutARun()
+    {
+        var b = FakeBackend.Typical(); var s = NewSession(b);
+        await s.LookAsync();
+        foreach (var i in s.Items.ToList())
+            if (i.Id is not ("space.downloads" or "space.recycle-bin")) s.SetTicked(i.Id, false);
+        await s.RunAsync(null, skipUnrecoverable: true);
+        Assert.Empty(b.Runs);
+        Assert.Equal(SessionState.Ready, s.State);
+        Assert.False(s.Busy);
+    }
+
+    [Fact]
+    public async Task UndoAsync_Throws_KeepsTheErrorThroughTheRescan()
+    {
+        var b = FakeBackend.Typical(); var s = NewSession(b);
+        await s.LookAsync();
+        await s.RunAsync(null, skipUnrecoverable: true);
+        b.FailUndo = new InvalidOperationException("access denied");
+        await s.UndoAsync();
+        Assert.Equal(SessionState.Ready, s.State);
+        Assert.Equal("access denied", s.UndoError);
+        Assert.True(s.CanUndo);
+    }
+
+    [Fact]
+    public async Task Run_ReceiptRefreshThrows_TheRunStillEndsDone()
+    {
+        var b = FakeBackend.Typical(); var s = NewSession(b);
+        await s.LookAsync();
+        b.ReceiptByCall = _ => throw new IOException("locked");
+        await s.RunAsync(null, skipUnrecoverable: true);
+        Assert.Equal(SessionState.Done, s.State);
+        Assert.Null(s.Receipt);
+    }
+
+    [Fact]
+    public async Task Look_PreviousReceiptThrows_ThePlanIsStillReady()
+    {
+        var b = FakeBackend.Typical();
+        b.Latest = OldRun();
+        b.ReceiptByCall = _ => throw new IOException("locked");
+        var s = NewSession(b);
+        await s.LookAsync();
+        Assert.Equal(SessionState.Ready, s.State);
+        Assert.Equal("old", s.LastRun!.RunId);
+    }
+
+    [Fact]
+    public async Task RefreshReceipt_ForAnOlderRun_DoesNotOverwriteTheNewRunsReceipt()
+    {
+        var b = FakeBackend.Typical();
+        b.Latest = OldRun();
+        var release = new ManualResetEventSlim(false);
+        b.ReceiptByCall = n => n switch
+        {
+            1 => TestReceipts.Freed("old", 1),
+            2 => Wait(release, TestReceipts.Freed("old", 1)),
+            _ => TestReceipts.Freed("run-1", 2),
+        };
+        var s = NewSession(b);
+        await s.LookAsync();
+        var older = s.RefreshReceiptAsync();
+        Assert.True(SpinWait.SpinUntil(() => b.ReceiptRefreshes >= 2, 2000));
+        await s.RunAsync(null, skipUnrecoverable: true);
+        release.Set();
+        await older;
+        Assert.Equal("run-1", s.Receipt!.RunId);
+    }
+
+    private static T Wait<T>(ManualResetEventSlim gate, T value)
+    {
+        gate.Wait(TimeSpan.FromSeconds(5));
+        return value;
     }
 
     [Fact]

@@ -18,15 +18,14 @@ public partial class ShellWindow : Window
             Dwm.DarkTitleBar(this, true);
             Dwm.RoundCorners(this);
         };
-        // The first show sizes the client area to the design canvas exactly;
-        // after that the window is the user's to resize and the canvas scales.
-        ContentRendered += (_, _) =>
-        {
-            if (SizeToContent == SizeToContent.Manual) return;
-            SizeToContent = SizeToContent.Manual;
-            Root.Width = double.NaN;
-            Root.Height = double.NaN;
-        };
+        // Opens showing the 1100x680 design canvas at its own size, or
+        // smaller with its shape kept when the work area is smaller.
+        var place = FirstWindowSize.For(new Size(1100, 680), SystemParameters.WindowNonClientFrameThickness,
+            SystemParameters.WorkArea);
+        Left = place.Left;
+        Top = place.Top;
+        Width = place.Width;
+        Height = place.Height;
         // Live readers and the moving background stop when nobody can see them.
         IsVisibleChanged += (_, _) => UpdateVisible();
         StateChanged += (_, _) => UpdateVisible();

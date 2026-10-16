@@ -52,6 +52,8 @@ public sealed class ActionSession
     public bool RanThisSession { get; private set; }
     public Receipt? Receipt { get; private set; }
     public IReadOnlyList<RowResult>? UndoResults { get; private set; }
+    /// Why the last undo did not happen; kept through the rescan after it.
+    public string? UndoError { get; private set; }
 
     public bool Busy { get { lock (_gate) return _busy; } }
 
@@ -173,7 +175,7 @@ public sealed class ActionSession
             var previous = Task.Run(() =>
             {
                 var run = _backend.LatestRun();
-                return (Run: run, Receipt: run is null ? null : _backend.RefreshReceipt(run.RunId));
+                return (Run: run, Receipt: run is null ? null : SafeReceipt(run.RunId));
             });
             await Task.WhenAll(fast, space, previous).ConfigureAwait(false);
             var plan = ActionPlanBuilder.Compose(DateTime.UtcNow, space.Result.Group, fast.Result, space.Result.Scan);
@@ -212,12 +214,23 @@ public sealed class ActionSession
             foreach (var item in NeedsConfirmation(group)) _rowOverrides[item.Id] = false;
         var plan = Plan!;
         var selection = Selection(group);
+        // Skipping the unrecoverable rows can leave nothing: then nothing
+        // runs, and no empty run is recorded over the last real one.
+        if (selection.RowIds.Count == 0)
+        {
+            Finish(() => { });
+            return;
+        }
+        System.Threading.Interlocked.Increment(ref _receiptSeq);
         Apply(() =>
         {
             State = SessionState.Running;
             RunGroup = group;
             _results.Clear();
             UndoResults = null;
+            UndoError = null;
+            // The last run's receipt says nothing about this one.
+            Receipt = null;
         });
         try
         {
@@ -228,7 +241,7 @@ public sealed class ActionSession
                 var record = _backend.Run(plan, selection,
                     start => Apply(() => CurrentRowId = start.Id),
                     row => Apply(() => _results[row.RowId] = row));
-                return (record, _backend.RefreshReceipt(record.RunId));
+                return (record, SafeReceipt(record.RunId));
             }).ConfigureAwait(false);
             Finish(() =>
             {
@@ -254,6 +267,7 @@ public sealed class ActionSession
     {
         if (!CanUndo || !TryBegin()) return;
         var runId = LastRun!.RunId;
+        Apply(() => UndoError = null);
         try
         {
             var results = await Task.Run(() => _backend.Undo(runId)).ConfigureAwait(false);
@@ -267,7 +281,8 @@ public sealed class ActionSession
         }
         catch (Exception ex)
         {
-            Finish(() => Error = ex.Message);
+            // Kept through the rescan that follows; the run stays undoable.
+            Finish(() => UndoError = ex.Message);
         }
         await LookAsync().ConfigureAwait(false);
     }
@@ -281,10 +296,20 @@ public sealed class ActionSession
     {
         if (LastRun is not { } run) return;
         var seq = System.Threading.Interlocked.Increment(ref _receiptSeq);
-        var receipt = await Task.Run(() => _backend.RefreshReceipt(run.RunId)).ConfigureAwait(false);
+        var receipt = await Task.Run(() => SafeReceipt(run.RunId)).ConfigureAwait(false);
         Apply(() =>
         {
-            if (seq == System.Threading.Volatile.Read(ref _receiptSeq)) Receipt = receipt;
+            // Not if a newer refresh started, nor if a newer run has taken over.
+            if (receipt is not null && seq == System.Threading.Volatile.Read(ref _receiptSeq)
+                && LastRun?.RunId == run.RunId)
+                Receipt = receipt;
         });
+    }
+
+    /// A receipt that cannot be read is no receipt: it never fails a run or a plan.
+    private Receipt? SafeReceipt(string runId)
+    {
+        try { return _backend.RefreshReceipt(runId); }
+        catch (Exception) { return null; }
     }
 }

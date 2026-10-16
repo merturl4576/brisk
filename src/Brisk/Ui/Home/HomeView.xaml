@@ -94,28 +94,28 @@
         </Grid>
 
         <!-- ===== Floor: the flowing line and the three satellites ===== -->
-        <Viewbox Canvas.Left="0" Canvas.Top="468" Width="1100" Height="200" Stretch="Fill" IsHitTestVisible="False">
+        <Viewbox Canvas.Left="0" Canvas.Top="436" Width="1100" Height="200" Stretch="Fill" IsHitTestVisible="False">
             <Canvas Width="1000" Height="200">
                 <Path Data="M200 120 C 330 120, 380 160, 500 160 C 620 160, 670 120, 800 120"
                       Stroke="#8C5FD4E8" StrokeThickness="2" StrokeDashArray="3 5"
                       c:Ambient.Motion="Flow" />
             </Canvas>
         </Viewbox>
-        <Grid Canvas.Left="100" Canvas.Bottom="74" Width="240">
+        <Grid x:Name="SpeedSatellite" Canvas.Left="100" Canvas.Bottom="110" Width="240">
             <c:SatelliteRing Value="{Binding Figures.Speed.Value}" Caption="{Binding Figures.Speed.Caption}"
                              Done="{Binding Figures.Speed.Done}" RingWidth="96" RingHeight="28" />
         </Grid>
-        <Grid Canvas.Left="430" Canvas.Bottom="30" Width="240">
+        <Grid Canvas.Left="430" Canvas.Bottom="64" Width="240">
             <c:SatelliteRing Value="{Binding Figures.Space.Value}" Caption="{Binding Figures.Space.Caption}"
                              Done="{Binding Figures.Space.Done}" RingWidth="130" RingHeight="36" />
         </Grid>
-        <Grid Canvas.Left="760" Canvas.Bottom="74" Width="240">
+        <Grid Canvas.Left="760" Canvas.Bottom="110" Width="240">
             <c:SatelliteRing Value="{Binding Figures.Privacy.Value}" Caption="{Binding Figures.Privacy.Caption}"
                              Done="{Binding Figures.Privacy.Done}" RingWidth="96" RingHeight="28" />
         </Grid>
 
         <!-- ===== Stateline (bottom-left) ===== -->
-        <StackPanel Canvas.Left="120" Canvas.Bottom="28" Width="300">
+        <StackPanel x:Name="StatelinePanel" Canvas.Left="120" Canvas.Bottom="28" Width="340">
             <TextBlock Style="{StaticResource Ui.MutedText}" TextWrapping="Wrap" TextTrimming="None" Margin="0,0,0,6"
                        Visibility="{Binding Figures.Previous, Converter={StaticResource Present}}">
                 <Run Text="{Binding Figures.Previous, Mode=OneWay}" />

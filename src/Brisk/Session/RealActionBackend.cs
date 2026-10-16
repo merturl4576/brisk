@@ -15,6 +15,11 @@ public sealed class RealActionBackend : IActionBackend
     private readonly ActionEngine _engine;
     private readonly Scanner _scanner;
 
+    // The 30 s deferred-cleanup timer and a run (or undo) the user starts
+    // write the same files — the deferred queue, run records, the WAL — so
+    // they take turns.
+    private readonly object _writes = new();
+
     public RealActionBackend(ActionEngine engine, Scanner scanner)
     {
         _engine = engine;
@@ -29,12 +34,24 @@ public sealed class RealActionBackend : IActionBackend
     public ActionGroup? BuildSpace(ScanResult scan) => _engine.Builder.BuildSpace(scan);
 
     public RunRecord Run(ActionPlan plan, ActionSelection selection, Action<ActionItem> onRowStart,
-        Action<RowResult> onRow) => _engine.Runner.Run(plan, selection, onRow, onRowStart);
+        Action<RowResult> onRow)
+    {
+        lock (_writes) return _engine.Runner.Run(plan, selection, onRow, onRowStart);
+    }
 
-    public IReadOnlyList<RowResult> Undo(string runId) => _engine.Runner.Undo(runId);
+    public IReadOnlyList<RowResult> Undo(string runId)
+    {
+        lock (_writes) return _engine.Runner.Undo(runId);
+    }
+
     public RunRecord? LatestRun() => _engine.Runs.Latest();
     public Receipt? RefreshReceipt(string runId) => _engine.Receipts.Refresh(runId);
-    public void ProcessDeferred() => _engine.ProcessDeferred();
+
+    public void ProcessDeferred()
+    {
+        lock (_writes) _engine.ProcessDeferred();
+    }
+
     public IReadOnlyList<DeferredCleanQueue.Entry> DeferredPending() => _engine.Deferred.Pending();
 
     public IReadOnlyList<string> DeferredApps() => _engine.Deferred.Pending()

@@ -503,4 +503,6 @@
   <data name="gui.settings.motion" xml:space="preserve"><value>Hareketli arka plan</value></data>
   <data name="gui.settings.version" xml:space="preserve"><value>brisk {0}</value></data>
   <data name="gui.settings.github" xml:space="preserve"><value>GitHub</value></data>
+  <data name="gui.state.undone.failed" xml:space="preserve"><value>{0} geri alınamadı</value></data>
+  <data name="gui.state.undo-error" xml:space="preserve"><value>Geri alınamadı: {0}</value></data>
 </root>

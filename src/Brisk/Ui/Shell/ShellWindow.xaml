@@ -6,8 +6,8 @@
         xmlns:home="clr-namespace:Brisk.Ui.Home"
         xmlns:pages="clr-namespace:Brisk.Ui.Pages"
         xmlns:shell="clr-namespace:Brisk.Ui.Shell"
-        Title="brisk" SizeToContent="WidthAndHeight" MinWidth="960" MinHeight="600"
-        WindowStartupLocation="CenterScreen" Background="#050D14"
+        Title="brisk" MinWidth="720" MinHeight="460"
+        WindowStartupLocation="Manual" Background="#050D14"
         FontFamily="{StaticResource Ui.Font}">
     <!-- The whole window is one 1100x680 design canvas, scaled uniformly, so
          every position from the chosen mockup carries over. The background
@@ -25,7 +25,7 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid x:Name="Root" Width="1100" Height="680">
+    <Grid x:Name="Root">
         <c:Atmosphere Decorated="{Binding Decorated}" />
         <Viewbox Stretch="Uniform">
             <Grid Width="1100" Height="680">

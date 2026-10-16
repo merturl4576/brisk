@@ -52,13 +52,17 @@ public sealed record HomeFigures(
             ticked = rows.Where(s.WillRun).Sum(s.SelectedBytes);
         }
         var freedSoFar = s.Results.Values.Sum(r => r.BytesFreed);
+        // Free space is the run's claim only when the run cleaned something:
+        // after a privacy-only run the disk's own drift is not a gain.
+        var spaceInRun = s.RunGroup is null or ActionGroupKind.Space;
 
         var (label, hero, green) = s.State switch
         {
             SessionState.Looking => (loc["gui.home.label.looking"], (long?)ticked, false),
             SessionState.Ready => (loc["gui.home.label.ready"], ticked, false),
             SessionState.Running => (loc["gui.home.label.freed"], freedSoFar, true),
-            SessionState.Done => (loc["gui.home.label.freed"], s.Receipt?.FreedBytes ?? freedSoFar, true),
+            SessionState.Done => (loc["gui.home.label.freed"],
+                spaceInRun ? s.Receipt?.FreedBytes ?? freedSoFar : freedSoFar, true),
             _ => (loc["gui.home.label.failed"], (long?)null, false),
         };
         var fraction = found > 0 && hero is { } h ? Math.Clamp(h / (double)found, 0, 1) : 0;
@@ -113,10 +117,17 @@ public sealed record HomeFigures(
                         s.SizedSoFar.Count, s.TargetCount);
                 break;
             case SessionState.Ready:
-                if (s.UndoResults is { } undone)
+                if (s.UndoError is { } undoError)
+                {
+                    stateline = loc.F("gui.state.undo-error", undoError);
+                    tone = Tone.Bad;
+                }
+                else if (s.UndoResults is { } undone)
                 {
                     stateline = loc.F("gui.state.undone", undone.Count(r => r.Outcome == RowOutcome.Done));
-                    tone = Tone.Good;
+                    var notBack = undone.Count(r => r.Outcome == RowOutcome.Failed);
+                    if (notBack > 0) stateline += Sep + loc.F("gui.state.undone.failed", notBack);
+                    tone = notBack > 0 ? Tone.Warn : Tone.Good;
                 }
                 else stateline = tickedRows == 0 ? loc["gui.state.nothing"] : loc.F("gui.state.ready", tickedRows);
                 break;
@@ -129,7 +140,8 @@ public sealed record HomeFigures(
                 break;
             case SessionState.Done:
             {
-                var parts = new List<string> { loc.F("gui.state.done.freed", Size(hero ?? 0)) };
+                var parts = new List<string>();
+                if (spaceInRun) parts.Add(loc.F("gui.state.done.freed", Size(hero ?? 0)));
                 if (startupDone > 0) parts.Add(loc.F("gui.state.done.startup", startupDone));
                 if (privacyOff > 0) parts.Add(loc.F("gui.state.done.privacy", privacyOff));
                 if (s.Receipt is { DeferredBytes: > 0 } r && deferredApps is { Count: > 0 })
@@ -138,7 +150,7 @@ public sealed record HomeFigures(
                 if (failed > 0) parts.Add(loc.F("gui.state.done.failed", failed));
                 if (s.Results.Values.Any(x => x.Outcome == RowOutcome.PendingRestart))
                     parts.Add(loc["gui.state.done.restart"]);
-                stateline = string.Join(Sep, parts);
+                stateline = parts.Count == 0 ? loc["action.result.done"] : string.Join(Sep, parts);
                 tone = failed > 0 ? Tone.Warn : Tone.Good;
                 break;
             }
@@ -161,7 +173,9 @@ public sealed record HomeFigures(
 
         // ---- the last run, when this session has not made one
         string? previous = null;
-        if (s.State == SessionState.Ready && !s.RanThisSession && s.UndoResults is null
+        // This session's own run counts too: after "scan again" its undo
+        // must stay reachable.
+        if (s.State == SessionState.Ready && s.UndoResults is null && s.UndoError is null
             && s.LastRun is { UndoneUtc: null } last && nowUtc - last.FinishedUtc < PreviousRunShownFor
             && s.Receipt?.FreedBytes is { } before)
         {
@@ -175,7 +189,7 @@ public sealed record HomeFigures(
         return new HomeFigures(label, hero, fraction, green,
             Size(found), enabledStartup.ToString(c), onlineApps?.ToString(c) ?? "—",
             speed, space, privacy, stateline, tone, button, enabled, action, rescanLink,
-            previous, previous is not null && s.CanUndo);
+            previous, s.State == SessionState.Ready && s.CanUndo);
     }
 
     /// What the stateline names while a target is sized: the row it feeds,

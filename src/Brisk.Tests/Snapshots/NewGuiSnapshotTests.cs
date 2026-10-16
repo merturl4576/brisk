@@ -283,6 +283,34 @@ public sealed class NewGuiSnapshotTests
         finally { b.HoldRun.Set(); }
     }
 
+    /// The GIF moment's longest line (freed, startup, privacy, deferred,
+    /// failed, restart) must not grow into the Speed satellite above it.
+    [Fact]
+    public void Home_Done_TheLongestStateline_StaysClearOfTheSpeedSatellite()
+    {
+        var b = Rich();
+        b.Outcome = i => i.Id switch
+        {
+            "speed.animations" => new RowResult(i.Id, RowOutcome.PendingRestart, null, null, 0, 0),
+            "privacy.location" => new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0),
+            _ => new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0),
+        };
+        b.ReceiptToReturn = TestReceipts.Freed("run-1", 28_346_784_153, startupAfter: 3, privacyOff: 8)
+            with { DeferredBytes = 2_300_000_000 };
+        b.DeferredAppNames.AddRange(new[] { "chrome", "discord", "spotify" });
+        Rect stateline = default, satellite = default;
+        SnapshotRenderer.Capture(() => Frame(AfterRun(b)), Canvas, "new-home-done-long", inspect: root =>
+        {
+            var view = (HomeView)((Grid)root).Children[1];
+            Rect Bounds(string name) => ((FrameworkElement)view.FindName(name)!)
+                .TransformToAncestor(view).TransformBounds(new Rect(((FrameworkElement)view.FindName(name)!).RenderSize));
+            stateline = Bounds("StatelinePanel");
+            satellite = Bounds("SpeedSatellite");
+        });
+        Assert.True(stateline.Height > 40, $"the line did not wrap as long lines do: {stateline}");
+        Assert.False(stateline.IntersectsWith(satellite), $"stateline {stateline} overlaps satellite {satellite}");
+    }
+
     [Fact]
     public void Home_Done()
     {

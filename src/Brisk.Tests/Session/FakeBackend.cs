@@ -65,11 +65,18 @@ public sealed class FakeBackend : IActionBackend
         return Latest;
     }
 
+    public Exception? FailUndo;
+    public Func<string, RowResult>? UndoOutcome;
+
+    /// Like the engine: the run is stamped undone only when every row came back.
     public IReadOnlyList<RowResult> Undo(string runId)
     {
+        if (FailUndo is not null) throw FailUndo;
         Undone.Add(runId);
-        Latest = Latest! with { UndoneUtc = DateTime.UtcNow };
-        return Latest.UndoableRuleIds.Select(id => new RowResult(id, RowOutcome.Done, null, null, 0, 0)).ToList();
+        var results = Latest!.UndoableRuleIds
+            .Select(id => UndoOutcome?.Invoke(id) ?? new RowResult(id, RowOutcome.Done, null, null, 0, 0)).ToList();
+        if (results.All(r => r.Outcome == RowOutcome.Done)) Latest = Latest with { UndoneUtc = DateTime.UtcNow };
+        return results;
     }
 
     public RunRecord? LatestRun() => Latest;

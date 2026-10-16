@@ -123,6 +123,19 @@ public sealed class GroupPageViewModelTests
     }
 
     [Fact]
+    public async Task SkippedRows_ShowNoEngineReason_InAMutedTone()
+    {
+        var k = await Make(b => b.Outcome = i => i.Id == "space.caches"
+            ? new RowResult(i.Id, RowOutcome.Skipped, "nothing to clean", null, 0, 0)
+            : new RowResult(i.Id, RowOutcome.Done, null, null, 0, 0));
+        await k.Session.RunAsync(null, skipUnrecoverable: true);
+        var row = k.Page(ActionGroupKind.Space).Rows.Single(r => r.Id == "space.caches");
+        Assert.Equal("Atlandı", row.Result);
+        Assert.Equal(ResultTone.Muted, row.ResultTone);
+        Assert.Null(row.ResultReason);
+    }
+
+    [Fact]
     public async Task Rows_RetitleOnLanguageChange()
     {
         var k = await Make(b => b.Space = new ActionGroup(ActionGroupKind.Space, new[]

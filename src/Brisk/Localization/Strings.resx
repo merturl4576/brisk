@@ -503,4 +503,6 @@
   <data name="gui.settings.motion" xml:space="preserve"><value>Moving background</value></data>
   <data name="gui.settings.version" xml:space="preserve"><value>brisk {0}</value></data>
   <data name="gui.settings.github" xml:space="preserve"><value>GitHub</value></data>
+  <data name="gui.state.undone.failed" xml:space="preserve"><value>{0} couldn't be undone</value></data>
+  <data name="gui.state.undo-error" xml:space="preserve"><value>Couldn't undo: {0}</value></data>
 </root>

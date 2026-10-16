@@ -180,6 +180,71 @@ public sealed class HomeFiguresTests
     }
 
     [Fact]
+    public async Task Rescan_AfterARun_StillOffersUndo()
+    {
+        var b = FakeBackend.Typical();
+        b.ReceiptToReturn = TestReceipts.Freed("run-1", 9_000_000_000);
+        var s = await Ready(b);
+        await s.RunAsync(null);
+        await s.RescanAsync();
+        var f = HomeFigures.From(s, Tr(), 13, null, Now);
+        Assert.True(f.ShowPreviousUndo);
+        Assert.StartsWith("Son sefer: 8,4 GB açıldı", f.Previous);
+    }
+
+    [Fact]
+    public async Task AfterAPartlyFailedUndo_StatelineWarns_AndUndoIsOfferedAgain()
+    {
+        var b = FakeBackend.Typical();
+        b.UndoOutcome = id => id == "privacy.ads"
+            ? new RowResult(id, RowOutcome.Failed, "denied", null, 0, 0)
+            : new RowResult(id, RowOutcome.Done, null, null, 0, 0);
+        var s = await Ready(b);
+        await s.RunAsync(null);
+        await s.UndoAsync();
+        var f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal("2 ayar geri alındı · silinen dosyalar geri gelmez · 1 geri alınamadı", f.Stateline);
+        Assert.Equal(Tone.Warn, f.StatelineTone);
+        Assert.True(f.ShowPreviousUndo);
+    }
+
+    [Fact]
+    public async Task AnUndoThatThrows_SaysSo_AndOffersUndoAgain()
+    {
+        var b = FakeBackend.Typical();
+        var s = await Ready(b);
+        await s.RunAsync(null);
+        b.FailUndo = new InvalidOperationException("access denied");
+        await s.UndoAsync();
+        var f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal("Geri alınamadı: access denied", f.Stateline);
+        Assert.Equal(Tone.Bad, f.StatelineTone);
+        Assert.True(f.ShowPreviousUndo);
+    }
+
+    [Fact]
+    public async Task Done_AfterAPrivacyOnlyRun_ClaimsNoFreedSpace()
+    {
+        var b = FakeBackend.Typical();
+        b.ReceiptToReturn = TestReceipts.Freed("run-1", 60_000_000, privacyOff: 1);
+        var s = await Ready(b);
+        await s.RunAsync(ActionGroupKind.Privacy);
+        var f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal(0, f.HeroBytes);
+        Assert.Equal("1 ayar kapandı", f.Stateline);
+    }
+
+    [Fact]
+    public async Task Done_WithNothingToSay_StillSaysDone()
+    {
+        var b = FakeBackend.Typical();
+        var s = await Ready(b);
+        foreach (var i in s.Items.ToList()) s.SetTicked(i.Id, i.Id == "speed.animations");
+        await s.RunAsync(ActionGroupKind.Speed);
+        Assert.Equal("Yapıldı ✓", HomeFigures.From(s, Tr(), 14, null, Now).Stateline);
+    }
+
+    [Fact]
     public async Task From_Turkish_And_English_DifferOnlyInWords()
     {
         var s = await Ready(FakeBackend.Typical());

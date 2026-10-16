@@ -82,7 +82,9 @@ public sealed class RowViewModel : ViewModelBase
     }
 
     public ResultTone? ResultTone => ResultRow is { } r ? ActionResultWords.For(Item.Group, r).Tone : null;
-    public string? ResultReason => ResultRow is { } r ? ActionResultWords.For(Item.Group, r).Reason : null;
+    /// Only a failure says why. A skip's reason is the engine's own English
+    /// ("nothing to clean") and the word "Skipped" already says enough.
+    public string? ResultReason => ResultRow is { Outcome: RowOutcome.Failed } r ? ActionResultWords.For(Item.Group, r).Reason : null;
 
     private void SetAllFiles(bool on)
     {
