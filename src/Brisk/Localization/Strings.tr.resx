@@ -608,4 +608,17 @@
   <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
   <data name="gui.load.measuring" xml:space="preserve"><value>Ölçülüyor…</value></data>
+  <data name="gui.page.space.title" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="gui.page.space.header" xml:space="preserve"><value>İşaretliler silinir</value></data>
+  <data name="gui.page.speed.title" xml:space="preserve"><value>Hızlandır</value></data>
+  <data name="gui.page.speed.header" xml:space="preserve"><value>İşaretliler durur</value></data>
+  <data name="gui.page.privacy.title" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="gui.page.privacy.header" xml:space="preserve"><value>İşaretliler durdurulur</value></data>
+  <data name="gui.row.restart" xml:space="preserve"><value>Yeniden başlatınca</value></data>
+  <data name="gui.row.windows-name" xml:space="preserve"><value>Windows'ta: {0}</value></data>
+  <data name="gui.files.all" xml:space="preserve"><value>Hepsini seç</value></data>
+  <data name="gui.files.none" xml:space="preserve"><value>Hiçbiri</value></data>
+  <data name="gui.footer.count" xml:space="preserve"><value>{0} seçili</value></data>
+  <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} seçili · {1}</value></data>
+  <data name="gui.footer.run" xml:space="preserve"><value>Bunları yap</value></data>
 </root>

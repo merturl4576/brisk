@@ -1,0 +1,116 @@
+<UserControl x:Class="Brisk.Ui.Pages.GroupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Brisk.Ui"
+             Width="1100" Height="680">
+    <!-- A detail page: plain rows, no decoration (spec). Drawn right of the
+         shell's nav column on the same 1100x680 canvas. -->
+    <UserControl.Resources>
+        <ui:ToneBrush x:Key="ToneBrush" />
+        <ui:PresentToVisibility x:Key="Present" />
+
+        <DataTemplate x:Key="FileTemplate">
+            <Grid Margin="0,3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="90" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Style="{StaticResource Ui.Check}" IsChecked="{Binding IsTicked}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.TextSoft}"
+                           Text="{Binding Name}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Style="{StaticResource Ui.RowCost}" Text="{Binding Date}"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.TextSoft}"
+                           Text="{Binding Size}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="RowTemplate">
+            <Border BorderBrush="{StaticResource Ui.Line}" BorderThickness="0,0,0,1" Padding="0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Style="{StaticResource Ui.Check}" IsChecked="{Binding IsTicked}"
+                              VerticalAlignment="Top" Margin="0,1,14,0" />
+                    <StackPanel Grid.Column="1" Background="Transparent" Cursor="Hand">
+                        <StackPanel.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding ToggleExpand}" />
+                        </StackPanel.InputBindings>
+                        <TextBlock Style="{StaticResource Ui.RowTitle}" Text="{Binding Title}" />
+                        <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding Cost}" Margin="0,3,0,0"
+                                   Visibility="{Binding Cost, Converter={StaticResource Present}}" />
+                        <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding RestartText}" Margin="0,3,0,0"
+                                   Visibility="{Binding RestartText, Converter={StaticResource Present}}" />
+                        <TextBlock Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.Red}"
+                                   Text="{Binding ResultReason}" Margin="0,3,0,0" TextWrapping="Wrap"
+                                   Visibility="{Binding ResultReason, Converter={StaticResource Present}}" />
+                        <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource Present}}" Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding WindowsName}"
+                                       Visibility="{Binding WindowsName, Converter={StaticResource Present}}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="16,0,0,0" HorizontalAlignment="Right">
+                        <TextBlock Style="{StaticResource Ui.Value}" Foreground="{StaticResource Ui.TextSoft}"
+                                   HorizontalAlignment="Right" Text="{Binding Size}"
+                                   Visibility="{Binding Result, Converter={StaticResource Present}, ConverterParameter=invert}" />
+                        <TextBlock Style="{StaticResource Ui.Value}" HorizontalAlignment="Right" Text="{Binding Result}"
+                                   Foreground="{Binding ResultTone, Converter={StaticResource ToneBrush}}"
+                                   Visibility="{Binding Result, Converter={StaticResource Present}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="120,28,28,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="0,0,0,14">
+            <TextBlock Style="{StaticResource Ui.H1}" Text="{Binding Title}" />
+            <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding Header}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" Style="{StaticResource Ui.Scroll}">
+            <StackPanel MaxWidth="860" HorizontalAlignment="Left" Width="860">
+                <ContentPresenter Content="{Binding Above}" />
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource RowTemplate}" />
+                                <!-- The Downloads row's files, when it is open. -->
+                                <StackPanel Margin="32,0,0,10"
+                                            Visibility="{Binding IsExpanded, Converter={StaticResource Present}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6"
+                                                Visibility="{Binding HasFiles, Converter={StaticResource Present}}">
+                                        <Button Style="{StaticResource Ui.Link}" Command="{Binding SelectAllFiles}"
+                                                Content="{Binding DataContext.L[gui.files.all], RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        <Button Style="{StaticResource Ui.Link}" Command="{Binding SelectNoFiles}" Margin="16,0,0,0"
+                                                Content="{Binding DataContext.L[gui.files.none], RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                    </StackPanel>
+                                    <ItemsControl ItemsSource="{Binding Files}" ItemTemplate="{StaticResource FileTemplate}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ContentPresenter Content="{Binding Below}" Margin="0,24,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <DockPanel Grid.Row="2" Margin="0,14,0,0">
+            <Button DockPanel.Dock="Right" Style="{StaticResource Ui.Primary}" Command="{Binding RunGroup}"
+                    Content="{Binding L[gui.footer.run]}" />
+            <TextBlock Style="{StaticResource Ui.MutedText}" VerticalAlignment="Center" Text="{Binding Footer}" />
+        </DockPanel>
+    </Grid>
+</UserControl>

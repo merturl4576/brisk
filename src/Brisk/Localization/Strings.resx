@@ -608,4 +608,17 @@
   <data name="gui.button.rescan" xml:space="preserve"><value>Scan again</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Try again</value></data>
   <data name="gui.load.measuring" xml:space="preserve"><value>Measuring…</value></data>
+  <data name="gui.page.space.title" xml:space="preserve"><value>Free up space</value></data>
+  <data name="gui.page.space.header" xml:space="preserve"><value>Ticked ones get deleted</value></data>
+  <data name="gui.page.speed.title" xml:space="preserve"><value>Speed up</value></data>
+  <data name="gui.page.speed.header" xml:space="preserve"><value>Ticked ones stop</value></data>
+  <data name="gui.page.privacy.title" xml:space="preserve"><value>Privacy</value></data>
+  <data name="gui.page.privacy.header" xml:space="preserve"><value>Ticked ones are stopped</value></data>
+  <data name="gui.row.restart" xml:space="preserve"><value>After restart</value></data>
+  <data name="gui.row.windows-name" xml:space="preserve"><value>In Windows: {0}</value></data>
+  <data name="gui.files.all" xml:space="preserve"><value>Select all</value></data>
+  <data name="gui.files.none" xml:space="preserve"><value>None</value></data>
+  <data name="gui.footer.count" xml:space="preserve"><value>{0} ticked</value></data>
+  <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} ticked · {1}</value></data>
+  <data name="gui.footer.run" xml:space="preserve"><value>Do these</value></data>
 </root>

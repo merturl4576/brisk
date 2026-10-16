@@ -70,6 +70,7 @@ public static class OffscreenLayout
             ticks.BeginAnimation(Ui.Controls.TickGauge.ShownFractionProperty, null);
             ticks.ShownFraction = ticks.Fraction;
         }
+        if (root is Ui.Controls.Atmosphere atmosphere) atmosphere.Settle();
         if (root is Ui.Controls.HeroNumeral hero && hero.Bytes is { } bytes)
         {
             hero.BeginAnimation(Ui.Controls.HeroNumeral.ShownBytesProperty, null);

@@ -70,6 +70,16 @@ public sealed class Atmosphere : Grid
         if (on) Register(); else _clock.Unregister(this);
     }
 
+    /// A still frame: the fade is where it lands.
+    public void Settle()
+    {
+        foreach (var layer in new UIElement[] { _rain, _floorHost })
+        {
+            layer.BeginAnimation(OpacityProperty, null);
+            layer.Opacity = Decorated ? 1 : 0;
+        }
+    }
+
     private void BuildRain()
     {
         var random = new Random(17);

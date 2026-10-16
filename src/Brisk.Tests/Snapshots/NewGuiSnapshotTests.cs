@@ -9,6 +9,7 @@ using Brisk.Tests.Session;
 using Brisk.Tests.Ui;
 using Brisk.Ui.Controls;
 using Brisk.Ui.Home;
+using Brisk.Ui.Pages;
 using Size = System.Windows.Size;
 
 namespace Brisk.Tests.Snapshots;
@@ -36,6 +37,85 @@ public sealed class NewGuiSnapshotTests
         }, true);
         return b;
     }
+
+    /// The real catalog's rows, so pages photograph with real titles and costs.
+    internal static FakeBackend Catalog()
+    {
+        var b = Rich();
+        ActionItem R(string id, long? bytes = null, IReadOnlyList<ActionFile>? files = null) =>
+            ActionPlanBuilder.ItemFrom(ActionCatalog.Find(id), bytes, files: files);
+        ActionItem Startup(string name, bool on = true, string? cost = null) => new(
+            $"startup:HKCU:{name}", ActionGroupKind.Speed, null, name, cost is null ? null : "x", cost,
+            ActionCatalog.StartupNameKey, ActionCatalog.StartupName, null, on, false, false, true,
+            ActionLinkKind.Rules, new[] { $"startup:HKCU:{name}" }, Array.Empty<ActionFile>());
+        var files = Enumerable.Range(1, 6).Select(i => new ActionFile($@"C:\Users\m\Downloads\setup-{i}.exe",
+            (900L - i * 120) << 20, new DateTime(2026, 6, i, 0, 0, 0, DateTimeKind.Utc))).ToList();
+        b.Space = new ActionGroup(ActionGroupKind.Space, new[]
+        {
+            R("space.caches", 6_013_000_000), R("space.developer", 8_050_000_000),
+            ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.shaders"), 2_470_000_000),
+            R("space.downloads", files.Sum(f => f.Bytes), files), R("space.recycle-bin", 8_800_000_000),
+        });
+        b.Fast = new List<ActionGroup>
+        {
+            new(ActionGroupKind.Speed, new[]
+            {
+                Startup("Microsoft Edge"), Startup("Spotify"), Startup("Discord"),
+                Startup("OneDrive", on: false, cost: "File sync stops."),
+                R("speed.power-mode"), R("speed.animations"), R("speed.gpu-scheduling"),
+            }),
+            new(ActionGroupKind.Privacy, new[]
+            {
+                R("privacy.telemetry-services"), R("privacy.ads"), R("privacy.activity"),
+                R("privacy.start-web"), R("privacy.copilot"), R("privacy.location"),
+            }),
+        };
+        return b;
+    }
+
+    internal static GroupPageViewModel Page(FakeBackend b, ActionGroupKind group, bool run = false, string language = "tr")
+    {
+        var (home, session) = Home(b, language);
+        if (run) session.RunAsync(null, skipUnrecoverable: true).GetAwaiter().GetResult();
+        var loc = home.L;
+        return new GroupPageViewModel(session, group, loc, (_, _) => { }, () => new[] { "chrome" });
+    }
+
+    private static void ShootPage(Func<GroupPageViewModel> vm, string name)
+    {
+        var errors = BindingErrors.Capture(() => SnapshotRenderer.Capture(() => new Grid
+        {
+            Width = Canvas.Width,
+            Height = Canvas.Height,
+            Children =
+            {
+                new Atmosphere(new Brisk.Ui.AmbientClock(() => false)) { Decorated = false },
+                new GroupPage { DataContext = vm() },
+            },
+        }, Canvas, name));
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Page_Space_WithDownloadsOpen() => ShootPage(() =>
+    {
+        var p = Page(Catalog(), ActionGroupKind.Space);
+        p.Expand("space.downloads");
+        return p;
+    }, "new-page-space");
+
+    [Fact]
+    public void Page_Speed() => ShootPage(() => Page(Catalog(), ActionGroupKind.Speed), "new-page-speed");
+
+    [Fact]
+    public void Page_Privacy_AfterARun() => ShootPage(() =>
+    {
+        var b = Catalog();
+        b.Outcome = i => i.Id == "privacy.copilot"
+            ? new RowResult(i.Id, RowOutcome.Done, null, BriskEngine.Diagnostics.ReadBackState.Reverted, 0, 0)
+            : new RowResult(i.Id, RowOutcome.Done, null, null, 0, 0);
+        return Page(b, ActionGroupKind.Privacy, run: true);
+    }, "new-page-privacy-done");
 
     internal static (HomeViewModel Vm, ActionSession Session) Home(FakeBackend b, string language = "tr")
     {
