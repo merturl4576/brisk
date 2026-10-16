@@ -2,12 +2,123 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="clr-namespace:Brisk.Ui"
+             xmlns:live="clr-namespace:Brisk.Ui.Live"
              Width="1100" Height="680">
     <!-- A detail page: plain rows, no decoration (spec). Drawn right of the
          shell's nav column on the same 1100x680 canvas. -->
     <UserControl.Resources>
         <ui:ToneBrush x:Key="ToneBrush" />
         <ui:PresentToVisibility x:Key="Present" />
+
+        <Style x:Key="SmallOutline" TargetType="Button" BasedOn="{StaticResource Ui.Outline}">
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+
+        <!-- ===== Live panels (placed by the shell above / below the rows) ===== -->
+        <DataTemplate DataType="{x:Type live:LoadPanelViewModel}">
+            <StackPanel Margin="0,0,0,26">
+                <TextBlock Style="{StaticResource Ui.Label}" FontWeight="Medium" Text="{Binding L[gui.load.title]}" Margin="0,0,0,4" />
+                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding L[gui.load.measuring]}" Margin="0,6"
+                           Visibility="{Binding Measuring, Converter={StaticResource Present}}" />
+                <TextBlock Style="{StaticResource Ui.Value}" Foreground="{StaticResource Ui.Green}" Margin="0,6"
+                           Text="{Binding L[gui.load.none]}" Visibility="{Binding Empty, Converter={StaticResource Present}}" />
+                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding Error}" Margin="0,6"
+                           Visibility="{Binding Error, Converter={StaticResource Present}}" />
+                <ItemsControl ItemsSource="{Binding Rows}" Tag="{Binding L}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{StaticResource Ui.Line}" BorderThickness="0,0,0,1" Padding="0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Ui.RowTitle}" Text="{Binding Name}" />
+                                        <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding Note}" Margin="0,3,0,0"
+                                                   Visibility="{Binding Note, Converter={StaticResource Present}}" />
+                                        <CheckBox Style="{StaticResource Ui.Check}" IsChecked="{Binding StartupTicked}" Margin="0,8,0,0"
+                                                  Visibility="{Binding HasStartup, Converter={StaticResource Present}}">
+                                            <TextBlock Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.TextSoft}"
+                                                       Text="{Binding Tag[action.load.remove-startup], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                        </CheckBox>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Ui.Value}" Foreground="{StaticResource Ui.TextSoft}"
+                                               Text="{Binding Value}" VerticalAlignment="Top" Margin="16,0" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top"
+                                                Visibility="{Binding CanClose, Converter={StaticResource Present}}">
+                                        <Button Style="{StaticResource SmallOutline}" Command="{Binding Close}"
+                                                Content="{Binding Tag[action.load.close], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                        <Button Style="{StaticResource SmallOutline}" Foreground="{StaticResource Ui.Red}" Margin="8,0,0,0"
+                                                Command="{Binding Force}" Visibility="{Binding ShowForce, Converter={StaticResource Present}}"
+                                                Content="{Binding Tag[action.load.force], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type live:ConnectionsViewModel}">
+            <StackPanel Margin="0,0,0,26">
+                <TextBlock Style="{StaticResource Ui.Label}" FontWeight="Medium" Text="{Binding L[gui.conn.title]}" Margin="0,0,0,4" />
+                <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding L[gui.conn.nodns]}" Margin="0,2,0,6"
+                           Visibility="{Binding DnsRead, Converter={StaticResource Present}, ConverterParameter=invert}" />
+                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding Error}" Margin="0,6"
+                           Visibility="{Binding Error, Converter={StaticResource Present}}" />
+                <ItemsControl ItemsSource="{Binding Rows}" Tag="{Binding L}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{StaticResource Ui.Line}" BorderThickness="0,0,0,1" Padding="0,7">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Right" CornerRadius="4" Padding="6,1" Background="#33E8B45F"
+                                            Visibility="{Binding Telemetry, Converter={StaticResource Present}}">
+                                        <TextBlock Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.Amber}"
+                                                   Text="{Binding Tag[action.connections.telemetry], RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                    </Border>
+                                    <TextBlock Style="{StaticResource Ui.Value}" Foreground="{StaticResource Ui.TextSoft}" Text="{Binding Text}" />
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding L[action.connections.footer]}" Margin="0,8,0,0" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type live:UsageViewModel}">
+            <StackPanel Margin="0,0,0,26">
+                <TextBlock Style="{StaticResource Ui.Label}" FontWeight="Medium" Text="{Binding L[gui.usage.title]}" Margin="0,0,0,4" />
+                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding L[gui.load.measuring]}" Margin="0,6"
+                           Visibility="{Binding Reading, Converter={StaticResource Present}}" />
+                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding Error}" Margin="0,6"
+                           Visibility="{Binding Error, Converter={StaticResource Present}}" />
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{StaticResource Ui.Line}" BorderThickness="0,0,0,1" Padding="0,7">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="170" />
+                                        <ColumnDefinition Width="150" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource Ui.Value}" Foreground="{StaticResource Ui.TextSoft}" Text="{Binding App}" />
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Ui.RowCost}" Text="{Binding Sent}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Ui.RowCost}" Text="{Binding Received}" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding L[action.usage.footer]}" Margin="0,8,0,0" />
+            </StackPanel>
+        </DataTemplate>
 
         <DataTemplate x:Key="FileTemplate">
             <Grid Margin="0,3">
@@ -81,7 +192,7 @@
 
         <ScrollViewer Grid.Row="1" Style="{StaticResource Ui.Scroll}">
             <StackPanel MaxWidth="860" HorizontalAlignment="Left" Width="860">
-                <ContentPresenter Content="{Binding Above}" />
+                <ItemsControl ItemsSource="{Binding Above}" />
                 <ItemsControl ItemsSource="{Binding Rows}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -103,7 +214,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <ContentPresenter Content="{Binding Below}" Margin="0,24,0,0" />
+                <ItemsControl ItemsSource="{Binding Below}" Margin="0,24,0,0" />
             </StackPanel>
         </ScrollViewer>
 

@@ -621,4 +621,11 @@
   <data name="gui.footer.count" xml:space="preserve"><value>{0} seçili</value></data>
   <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} seçili · {1}</value></data>
   <data name="gui.footer.run" xml:space="preserve"><value>Bunları yap</value></data>
+  <data name="gui.load.title" xml:space="preserve"><value>Şu an kasanlar</value></data>
+  <data name="gui.load.none" xml:space="preserve"><value>Şu an seni yavaşlatan yok ✓</value></data>
+  <data name="gui.conn.title" xml:space="preserve"><value>Şu an konuştukları</value></data>
+  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetri burada ayırt edilemiyor</value></data>
+  <data name="gui.usage.title" xml:space="preserve"><value>30 günde gönderilenler</value></data>
+  <data name="gui.usage.sent" xml:space="preserve"><value>gönderilen {0}</value></data>
+  <data name="gui.usage.received" xml:space="preserve"><value>alınan {0}</value></data>
 </root>

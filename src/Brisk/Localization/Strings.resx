@@ -621,4 +621,11 @@
   <data name="gui.footer.count" xml:space="preserve"><value>{0} ticked</value></data>
   <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} ticked · {1}</value></data>
   <data name="gui.footer.run" xml:space="preserve"><value>Do these</value></data>
+  <data name="gui.load.title" xml:space="preserve"><value>Slowing you now</value></data>
+  <data name="gui.load.none" xml:space="preserve"><value>Nothing is slowing you now ✓</value></data>
+  <data name="gui.conn.title" xml:space="preserve"><value>Talking to now</value></data>
+  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetry can't be told apart here</value></data>
+  <data name="gui.usage.title" xml:space="preserve"><value>Sent in 30 days</value></data>
+  <data name="gui.usage.sent" xml:space="preserve"><value>sent {0}</value></data>
+  <data name="gui.usage.received" xml:space="preserve"><value>received {0}</value></data>
 </root>

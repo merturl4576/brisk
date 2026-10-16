@@ -78,7 +78,9 @@ public sealed class NewGuiSnapshotTests
         var (home, session) = Home(b, language);
         if (run) session.RunAsync(null, skipUnrecoverable: true).GetAwaiter().GetResult();
         var loc = home.L;
-        return new GroupPageViewModel(session, group, loc, (_, _) => { }, () => new[] { "chrome" });
+        var page = new GroupPageViewModel(session, group, loc, (_, _) => { }, () => new[] { "chrome" });
+        Sessions.Add(page, session);
+        return page;
     }
 
     private static void ShootPage(Func<GroupPageViewModel> vm, string name)
@@ -105,7 +107,45 @@ public sealed class NewGuiSnapshotTests
     }, "new-page-space");
 
     [Fact]
-    public void Page_Speed() => ShootPage(() => Page(Catalog(), ActionGroupKind.Speed), "new-page-speed");
+    public void Page_Speed_WithWhatIsSlowingYou() => ShootPage(() =>
+    {
+        var b = Catalog();
+        b.Load.Add(new AppLoad("MsMpEng", "MsMpEng", 22, 300L << 20, true, "action.load.note.defender",
+            "Defender is scanning", new[] { 9 }, false));
+        b.Startup.Add(new BriskEngine.Diagnostics.StartupEntry("HKCU", "Discord", true, false, @"C:\D\Discord.exe"));
+        var page = Page(b, ActionGroupKind.Speed);
+        var loc = page.L;
+        var gate = new object();
+        var load = new Brisk.Ui.Live.LoadPanelViewModel(a => { lock (gate) a(); }, a => a(), b,
+            SessionOf(page), new ManualTimers(), loc);
+        load.Activate();
+        page.Above = new object[] { load };
+        return page;
+    }, "new-page-speed");
+
+    [Fact]
+    public void Page_Privacy_WithConnectionsAndUsage() => ShootPage(() =>
+    {
+        var b = Catalog();
+        b.Usage = new[]
+        {
+            new UsageRow("Google Chrome", 3L << 30, 41L << 30), new UsageRow("Windows (system)", 900L << 20, 12L << 30),
+            new UsageRow("Discord", 400L << 20, 6L << 30),
+        };
+        var page = Page(b, ActionGroupKind.Privacy);
+        var loc = page.L;
+        var gate = new object();
+        Action<Action> post = a => { lock (gate) a(); };
+        var conn = new Brisk.Ui.Live.ConnectionsViewModel(post, a => a(), b, new ManualTimers(), loc);
+        var usage = new Brisk.Ui.Live.UsageViewModel(post, a => a(), b, loc);
+        conn.Activate();
+        usage.Activate();
+        page.Below = new object[] { conn, usage };
+        return page;
+    }, "new-page-privacy");
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GroupPageViewModel, ActionSession> Sessions = new();
+    private static ActionSession SessionOf(GroupPageViewModel page) => Sessions.TryGetValue(page, out var s) ? s : throw new InvalidOperationException();
 
     [Fact]
     public void Page_Privacy_AfterARun() => ShootPage(() =>

@@ -43,10 +43,10 @@ public sealed class GroupPageViewModel : ViewModelBase
 
     public ObservableCollection<RowViewModel> Rows { get; } = new();
 
-    /// What the shell places above and below the rows (live panels).
-    private object? _above, _below;
-    public object? Above { get => _above; set => Set(ref _above, value); }
-    public object? Below { get => _below; set => Set(ref _below, value); }
+    /// The live panels the shell places above and below the rows.
+    private IReadOnlyList<object> _above = Array.Empty<object>(), _below = Array.Empty<object>();
+    public IReadOnlyList<object> Above { get => _above; set => Set(ref _above, value); }
+    public IReadOnlyList<object> Below { get => _below; set => Set(ref _below, value); }
 
     public RelayCommand RunGroup { get; }
 
