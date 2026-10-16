@@ -73,7 +73,14 @@ public sealed class FakeBackend : IActionBackend
     }
 
     public RunRecord? LatestRun() => Latest;
-    public Receipt? RefreshReceipt(string runId) { ReceiptRefreshes++; return ReceiptToReturn; }
+    /// When set, decides each refresh by its call number (1-based).
+    public Func<int, Receipt?>? ReceiptByCall;
+
+    public Receipt? RefreshReceipt(string runId)
+    {
+        var n = Interlocked.Increment(ref ReceiptRefreshes);
+        return ReceiptByCall is { } by ? by(n) : ReceiptToReturn;
+    }
     public void ProcessDeferred() => DeferredProcessed++;
     public IReadOnlyList<DeferredCleanQueue.Entry> DeferredPending() => Deferred;
     public IReadOnlyList<string> DeferredApps() => DeferredAppNames;

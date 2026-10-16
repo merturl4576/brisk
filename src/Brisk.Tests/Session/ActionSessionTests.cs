@@ -148,6 +148,28 @@ public sealed class ActionSessionTests
     }
 
     [Fact]
+    public async Task RefreshReceipt_AnOlderRefreshFinishingLate_DoesNotWin()
+    {
+        var b = FakeBackend.Typical(); var s = NewSession(b);
+        await s.LookAsync();
+        await s.RunAsync(null, skipUnrecoverable: true);
+        var release = new ManualResetEventSlim(false);
+        var firstCall = b.ReceiptRefreshes + 1;
+        b.ReceiptByCall = n =>
+        {
+            if (n != firstCall) return TestReceipts.Freed("run-1", 2);
+            release.Wait(TimeSpan.FromSeconds(5));
+            return TestReceipts.Freed("run-1", 1);
+        };
+        var older = s.RefreshReceiptAsync();
+        Assert.True(SpinWait.SpinUntil(() => b.ReceiptRefreshes >= firstCall, 2000));
+        await s.RefreshReceiptAsync();
+        release.Set();
+        await older;
+        Assert.Equal(2, s.Receipt!.FreedBytes);
+    }
+
+    [Fact]
     public async Task Run_EveryRowFails_EndsDoneWithResults()
     {
         var b = FakeBackend.Typical();

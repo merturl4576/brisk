@@ -272,11 +272,19 @@ public sealed class ActionSession
         await LookAsync().ConfigureAwait(false);
     }
 
-    /// Fills in the after-restart numbers once they exist.
+    private int _receiptSeq;
+
+    /// Fills in the after-restart numbers once they exist. Only the latest
+    /// refresh lands: an older one finishing late must not put back a stale
+    /// receipt over a newer one.
     public async Task RefreshReceiptAsync()
     {
         if (LastRun is not { } run) return;
+        var seq = System.Threading.Interlocked.Increment(ref _receiptSeq);
         var receipt = await Task.Run(() => _backend.RefreshReceipt(run.RunId)).ConfigureAwait(false);
-        Apply(() => Receipt = receipt);
+        Apply(() =>
+        {
+            if (seq == System.Threading.Volatile.Read(ref _receiptSeq)) Receipt = receipt;
+        });
     }
 }
