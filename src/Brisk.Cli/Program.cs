@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using BriskEngine;
+using BriskEngine.Actions;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
 using BriskEngine.Diagnostics.RealProbes;
 using BriskEngine.Diagnostics.Rules;
+using BriskEngine.Live;
 using BriskEngine.Logging;
 using BriskEngine.Models;
 using BriskEngine.Safety;
@@ -73,12 +76,17 @@ public static class Program
             .IsInRole(WindowsBuiltInRole.Administrator);
         var cleanRunner = new CleanRunner(new SafetyValidator(), new WindowsRecycler(),
             log, runner, IsElevated, new DeleteLockProbe());
+        ActionEngine Engine() => ActionEngine.CreateReal(ctx, runner, IsElevated);
 
         try
         {
             return cmd.Verb switch
             {
-                "scan" => Scan(cmd, ctx, scanner, IsElevated()),
+                "scan" => Scan(cmd, ctx, scanner, IsElevated(), Engine),
+                "run" => RunActions(cmd, scanner, Engine(), Console.Out),
+                "undo" => UndoLatest(Engine(), Console.Out),
+                "receipt" => PrintReceipt(Engine(), Console.Out),
+                "live" => PrintLive(Engine(), Console.Out),
                 "fix" => Fix(cmd, ctx, fixRunner),
                 "clean" => Clean(cmd, scanner, cleanRunner),
                 "targets" => PrintTargets(),
@@ -212,7 +220,7 @@ public static class Program
     }
 
     private static int Scan(CliCommand cmd, DiagnosticContext ctx, Scanner scanner,
-        bool elevated)
+        bool elevated, Func<ActionEngine> engine)
     {
         var sensorNotice = SensorNotice(ctx.Sensors, elevated, ctx.MemoryIntegrity.IsOn());
         var findings = DiagnosticRuleRegistry.All
@@ -294,6 +302,7 @@ public static class Program
             $"Reclaimable — Safe: {Fmt.Bytes(SafeBytes(CleanupLevel.Safe))}, " +
             $"Developer: {Fmt.Bytes(SafeBytes(CleanupLevel.Developer))}, " +
             $"Deep: {Fmt.Bytes(SafeBytes(CleanupLevel.Deep))} (run 'brisk clean')");
+        PrintPlan(engine().BuildPlan(scan), Console.Out);
         return 0;
     }
 
@@ -567,6 +576,144 @@ public static class Program
         return 2;
     }
 
+    private static string Groupname(ActionGroupKind kind) =>
+        ActionStrings.En($"action.group.{kind.ToString().ToLowerInvariant()}");
+
+    private static string Format(string key, params object[] args) =>
+        string.Format(CultureInfo.InvariantCulture, ActionStrings.En(key), args);
+
+    public static void PrintPlan(ActionPlan plan, TextWriter o)
+    {
+        o.WriteLine();
+        o.WriteLine("One click (brisk run --yes):");
+        foreach (var group in plan.Groups)
+        {
+            o.WriteLine($"  {Groupname(group.Kind)}");
+            foreach (var item in group.Items)
+            {
+                var box = item.DefaultOn ? "[x]" : "[ ]";
+                var size = item.Bytes is { } b ? $"  {Fmt.Bytes(b)}" : "";
+                var cost = item.Cost is null ? "" : $"  — {item.Cost}";
+                o.WriteLine($"    {box} {item.Title}{size}{cost}");
+                foreach (var f in item.Files.Take(10))
+                    o.WriteLine($"          {Path.GetFileName(f.Path)}  {Fmt.Bytes(f.Bytes)}");
+            }
+        }
+    }
+
+    public static string ResultWord(ActionItem? item, RowResult r) => r.Outcome switch
+    {
+        RowOutcome.Skipped when r.Reason == ActionRunner.NeedsAdmin => ActionStrings.En("action.result.needs-admin"),
+        RowOutcome.Skipped => $"{ActionStrings.En("action.result.skipped")}: {r.Reason}",
+        RowOutcome.Failed => $"{ActionStrings.En("action.result.failed")}: {r.Reason}",
+        RowOutcome.PendingRestart => ActionStrings.En("action.result.pending"),
+        _ => r.ReadBack switch
+        {
+            ReadBackState.Reverted => ActionStrings.En("action.result.reverted"),
+            ReadBackState.WrittenButIgnored => ActionStrings.En("action.result.ignored"),
+            ReadBackState.WrittenButUnverified => ActionStrings.En("action.result.written"),
+            _ => ActionStrings.En(item?.Group == ActionGroupKind.Privacy ? "action.result.off" : "action.result.done"),
+        },
+    };
+
+    public static void PrintReceiptLines(Receipt? r, IReadOnlyList<string> deferredApps, TextWriter o)
+    {
+        if (r is null) return;
+        if (r.FreedBytes is { } freed) o.WriteLine("  " + Format("action.receipt.freed", Fmt.Bytes(freed)));
+        if (r.DeferredBytes > 0 && deferredApps.Count > 0)
+            o.WriteLine("  " + Format("action.receipt.deferred", Fmt.Bytes(r.DeferredBytes), string.Join(", ", deferredApps)));
+        if (r.StartupEnabledAfter is { } after)
+            o.WriteLine("  " + Format("action.receipt.startup", r.StartupEnabledBefore, after));
+        if (r.BootMsBefore is { } before && r.BootMsAfter is { } boot)
+            o.WriteLine("  " + Format("action.receipt.boot", before / 1000, boot / 1000));
+        if (r.RamFreedBytes is { } ram) o.WriteLine("  " + Format("action.receipt.ram", Fmt.Bytes(ram)));
+        if (r.PrivacyOff > 0) o.WriteLine("  " + Format("action.receipt.privacy", r.PrivacyOff, r.PrivacyIgnored));
+        if (r.TelemetryBefore is { } tb && r.TelemetryAfter is { } ta)
+            o.WriteLine("  " + Format("action.receipt.telemetry", tb, ta));
+    }
+
+    private static IReadOnlyList<string> DeferredApps(ActionEngine engine) => engine.Deferred.Pending()
+        .Select(e => CleanupTargetRegistry.All.FirstOrDefault(t => t.Id == e.TargetId)?.AppDisplayName)
+        .OfType<string>().Distinct().ToList();
+
+    private static int RunActions(CliCommand cmd, Scanner scanner, ActionEngine engine, TextWriter o)
+    {
+        engine.ProcessDeferred();
+        var plan = engine.BuildPlan(scanner.Scan());
+        var selection = ActionSelection.Default(plan);
+        if (cmd.Group is { } g)
+            selection = selection.Only(Enum.Parse<ActionGroupKind>(g, ignoreCase: true), plan);
+
+        if (!cmd.Yes)
+        {
+            o.WriteLine("PLAN (nothing changed) — add --yes to apply the ticked rows");
+            PrintPlan(plan, o);
+            return 0;
+        }
+
+        var items = plan.Items.ToDictionary(i => i.Id);
+        var run = engine.Runner.Run(plan, selection, r =>
+        {
+            items.TryGetValue(r.RowId, out var item);
+            var freed = r.BytesFreed > 0 ? $" · {Fmt.Bytes(r.BytesFreed)}" : "";
+            var later = r.BytesDeferred > 0 ? $" · +{Fmt.Bytes(r.BytesDeferred)} later" : "";
+            o.WriteLine($"  {item?.Title ?? r.RowId}: {ResultWord(item, r)}{freed}{later}");
+        });
+
+        o.WriteLine();
+        PrintReceiptLines(engine.Receipts.Refresh(run.RunId), DeferredApps(engine), o);
+        if (run.Rows.Any(r => r.Outcome == RowOutcome.PendingRestart))
+            o.WriteLine("  " + ActionStrings.En("action.restart"));
+        o.WriteLine($"  run {run.RunId} — undo with: brisk undo");
+        return run.Rows.Any(r => r.Outcome == RowOutcome.Failed) ? 1 : 0;
+    }
+
+    private static int UndoLatest(ActionEngine engine, TextWriter o)
+    {
+        var latest = engine.Runs.Latest();
+        if (latest is null) { o.WriteLine("nothing to undo"); return 0; }
+        var results = engine.Runner.Undo(latest.RunId);
+        foreach (var r in results) o.WriteLine($"  {r.RowId}: {ResultWord(null, r)}");
+        o.WriteLine($"  {ActionStrings.En("action.result.cannot-undo")}: deleted caches and files.");
+        return results.Any(r => r.Outcome == RowOutcome.Failed) ? 1 : 0;
+    }
+
+    private static int PrintReceipt(ActionEngine engine, TextWriter o)
+    {
+        var latest = engine.Runs.Latest();
+        if (latest is null) { o.WriteLine("no run yet"); return 0; }
+        o.WriteLine($"run {latest.RunId}");
+        PrintReceiptLines(engine.Receipts.Refresh(latest.RunId), DeferredApps(engine), o);
+        return 0;
+    }
+
+    private static int PrintLive(ActionEngine engine, TextWriter o)
+    {
+        o.WriteLine($"{ActionStrings.En("action.group.load")} (measuring for 10 seconds):");
+        foreach (var l in engine.Load.Sample())
+            o.WriteLine($"  {l.DisplayName,-30} {l.CpuPercent,5:0.#}% CPU  {Fmt.Bytes(l.PrivateBytes),9}" +
+                        (l.Note is null ? "" : $"  — {l.Note}"));
+
+        o.WriteLine();
+        o.WriteLine("Talking to now:");
+        var snap = engine.Connections.Read();
+        foreach (var c in snap.Rows.Take(15))
+            o.WriteLine($"  {c.App} → {c.Owner}{(c.Host is null ? "" : $" ({c.Host})")} · {c.Count}" +
+                        (c.IsTelemetry ? $"  [{ActionStrings.En("action.connections.telemetry")}]" : ""));
+        if (!snap.DnsRead) o.WriteLine("  (host names need administrator, so telemetry is not told apart)");
+        o.WriteLine("  " + ActionStrings.En("action.connections.footer"));
+
+        o.WriteLine();
+        o.WriteLine("Sent in the last 30 days:");
+        var usage = engine.Usage.Top();
+        if (usage is null) o.WriteLine("  " + ActionStrings.En("action.unread"));
+        else
+            foreach (var u in usage)
+                o.WriteLine($"  {u.App,-30} sent {Fmt.Bytes(u.BytesSent),9}  received {Fmt.Bytes(u.BytesReceived),9}");
+        o.WriteLine("  " + ActionStrings.En("action.usage.footer"));
+        return 0;
+    }
+
     private static void PrintHelp()
     {
         Console.WriteLine("brisk — Windows performance diagnostics and cleanup");
@@ -586,6 +733,12 @@ public static class Program
         Console.WriteLine("    --level <safe|developer|deep>  which cleanup level to run");
         Console.WriteLine("    --target <id>            clean a single target by id (see 'brisk targets')");
         Console.WriteLine("    --yes                    actually delete (otherwise print plan)");
+        Console.WriteLine("  run                        one click: free space, speed up, privacy");
+        Console.WriteLine("    --group <space|speed|privacy>  only that group");
+        Console.WriteLine("    --yes                    apply (without it: show the plan, change nothing)");
+        Console.WriteLine("  undo                       undo the latest run");
+        Console.WriteLine("  receipt                    before/after numbers of the latest run");
+        Console.WriteLine("  live                       what is slowing you down, who you talk to, who sent what");
         Console.WriteLine("  targets                    list cleanup targets");
         Console.WriteLine("  rules                      list diagnostic rules");
         Console.WriteLine("  report                     save the scan as a shareable PNG (brisk-app.exe only)");
