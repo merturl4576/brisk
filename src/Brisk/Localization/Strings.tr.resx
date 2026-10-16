@@ -564,4 +564,47 @@
   <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetri bağlantıları {0} → {1}</value></data>
   <data name="action.restart" xml:space="preserve"><value>Tam etki için yeniden başlat</value></data>
   <data name="action.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="gui.home.label.looking" xml:space="preserve"><value>Bakılıyor</value></data>
+  <data name="gui.home.label.ready" xml:space="preserve"><value>Açılabilir yer</value></data>
+  <data name="gui.home.label.freed" xml:space="preserve"><value>Açıldı</value></data>
+  <data name="gui.home.label.failed" xml:space="preserve"><value>Bakamadım</value></data>
+  <data name="gui.home.this-pc" xml:space="preserve"><value>Bu bilgisayar</value></data>
+  <data name="gui.home.found" xml:space="preserve"><value>Bulunan yer</value></data>
+  <data name="gui.home.startup" xml:space="preserve"><value>Açılışta başlayan</value></data>
+  <data name="gui.home.online" xml:space="preserve"><value>İnternete bağlı</value></data>
+  <data name="gui.home.load" xml:space="preserve"><value>Şu an kasanlar</value></data>
+  <data name="gui.home.load.none" xml:space="preserve"><value>Yok ✓</value></data>
+  <data name="gui.home.cpu" xml:space="preserve"><value>%{0} CPU</value></data>
+  <data name="gui.sat.speed" xml:space="preserve"><value>Hızlandır · açılışta</value></data>
+  <data name="gui.sat.space" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="gui.sat.privacy" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="gui.sat.speed.value" xml:space="preserve"><value>{0} → {1}</value></data>
+  <data name="gui.sat.speed.done" xml:space="preserve"><value>✓ {0} kaldı</value></data>
+  <data name="gui.sat.space.done" xml:space="preserve"><value>✓ {0}</value></data>
+  <data name="gui.sat.privacy.value" xml:space="preserve"><value>{0} ayar</value></data>
+  <data name="gui.sat.privacy.done" xml:space="preserve"><value>✓ {0} kapandı</value></data>
+  <data name="gui.sat.pending" xml:space="preserve"><value>…</value></data>
+  <data name="gui.state.looking" xml:space="preserve"><value>Bakılıyor: {0} · {1}/{2}</value></data>
+  <data name="gui.state.looking.start" xml:space="preserve"><value>Bakılıyor…</value></data>
+  <data name="gui.state.ready" xml:space="preserve"><value>Hazır · {0} iş seçili</value></data>
+  <data name="gui.state.nothing" xml:space="preserve"><value>Yapacak bir şey yok ✓</value></data>
+  <data name="gui.state.running" xml:space="preserve"><value>Yapılıyor: {0}</value></data>
+  <data name="gui.state.running.slow" xml:space="preserve"><value>{0} · birkaç dakika sürebilir</value></data>
+  <data name="gui.state.done.freed" xml:space="preserve"><value>{0} açıldı</value></data>
+  <data name="gui.state.done.startup" xml:space="preserve"><value>{0} program açılıştan çıktı</value></data>
+  <data name="gui.state.done.privacy" xml:space="preserve"><value>{0} ayar kapandı</value></data>
+  <data name="gui.state.done.deferred" xml:space="preserve"><value>{0} daha, {1} kapanınca</value></data>
+  <data name="gui.state.done.failed" xml:space="preserve"><value>{0} iş olmadı</value></data>
+  <data name="gui.state.done.restart" xml:space="preserve"><value>tam etki için yeniden başlat</value></data>
+  <data name="gui.state.undone" xml:space="preserve"><value>{0} ayar geri alındı · silinen dosyalar geri gelmez</value></data>
+  <data name="gui.state.failed" xml:space="preserve"><value>Bakamadım: {0}</value></data>
+  <data name="gui.state.previous" xml:space="preserve"><value>Son sefer: {0}</value></data>
+  <data name="gui.state.previous.boot" xml:space="preserve"><value>açılış {0} sn → {1} sn</value></data>
+  <data name="gui.state.previous.ram" xml:space="preserve"><value>{0} RAM boşaldı</value></data>
+  <data name="gui.button.run-all" xml:space="preserve"><value>Hepsini yap</value></data>
+  <data name="gui.button.looking" xml:space="preserve"><value>Bakılıyor…</value></data>
+  <data name="gui.button.running" xml:space="preserve"><value>Yapılıyor…</value></data>
+  <data name="gui.button.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
+  <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
 </root>

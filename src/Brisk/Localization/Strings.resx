@@ -564,4 +564,47 @@
   <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetry connections {0} → {1}</value></data>
   <data name="action.restart" xml:space="preserve"><value>Restart for full effect</value></data>
   <data name="action.undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="gui.home.label.looking" xml:space="preserve"><value>Looking</value></data>
+  <data name="gui.home.label.ready" xml:space="preserve"><value>Space to free</value></data>
+  <data name="gui.home.label.freed" xml:space="preserve"><value>Freed</value></data>
+  <data name="gui.home.label.failed" xml:space="preserve"><value>Couldn't look</value></data>
+  <data name="gui.home.this-pc" xml:space="preserve"><value>This PC</value></data>
+  <data name="gui.home.found" xml:space="preserve"><value>Space found</value></data>
+  <data name="gui.home.startup" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="gui.home.online" xml:space="preserve"><value>Online now</value></data>
+  <data name="gui.home.load" xml:space="preserve"><value>Slowing you now</value></data>
+  <data name="gui.home.load.none" xml:space="preserve"><value>None ✓</value></data>
+  <data name="gui.home.cpu" xml:space="preserve"><value>{0}% CPU</value></data>
+  <data name="gui.sat.speed" xml:space="preserve"><value>Speed up · at startup</value></data>
+  <data name="gui.sat.space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="gui.sat.privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="gui.sat.speed.value" xml:space="preserve"><value>{0} → {1}</value></data>
+  <data name="gui.sat.speed.done" xml:space="preserve"><value>✓ {0} left</value></data>
+  <data name="gui.sat.space.done" xml:space="preserve"><value>✓ {0}</value></data>
+  <data name="gui.sat.privacy.value" xml:space="preserve"><value>{0} settings</value></data>
+  <data name="gui.sat.privacy.done" xml:space="preserve"><value>✓ {0} off</value></data>
+  <data name="gui.sat.pending" xml:space="preserve"><value>…</value></data>
+  <data name="gui.state.looking" xml:space="preserve"><value>Looking: {0} · {1}/{2}</value></data>
+  <data name="gui.state.looking.start" xml:space="preserve"><value>Looking…</value></data>
+  <data name="gui.state.ready" xml:space="preserve"><value>Ready · {0} tasks ticked</value></data>
+  <data name="gui.state.nothing" xml:space="preserve"><value>Nothing to do ✓</value></data>
+  <data name="gui.state.running" xml:space="preserve"><value>Working: {0}</value></data>
+  <data name="gui.state.running.slow" xml:space="preserve"><value>{0} · may take minutes</value></data>
+  <data name="gui.state.done.freed" xml:space="preserve"><value>{0} freed</value></data>
+  <data name="gui.state.done.startup" xml:space="preserve"><value>{0} apps off startup</value></data>
+  <data name="gui.state.done.privacy" xml:space="preserve"><value>{0} settings off</value></data>
+  <data name="gui.state.done.deferred" xml:space="preserve"><value>{0} more when {1} closes</value></data>
+  <data name="gui.state.done.failed" xml:space="preserve"><value>{0} didn't work</value></data>
+  <data name="gui.state.done.restart" xml:space="preserve"><value>restart for full effect</value></data>
+  <data name="gui.state.undone" xml:space="preserve"><value>{0} settings undone · deleted files don't come back</value></data>
+  <data name="gui.state.failed" xml:space="preserve"><value>Couldn't look: {0}</value></data>
+  <data name="gui.state.previous" xml:space="preserve"><value>Last time: {0}</value></data>
+  <data name="gui.state.previous.boot" xml:space="preserve"><value>startup {0} s → {1} s</value></data>
+  <data name="gui.state.previous.ram" xml:space="preserve"><value>{0} RAM freed</value></data>
+  <data name="gui.button.run-all" xml:space="preserve"><value>Do it all</value></data>
+  <data name="gui.button.looking" xml:space="preserve"><value>Looking…</value></data>
+  <data name="gui.button.running" xml:space="preserve"><value>Working…</value></data>
+  <data name="gui.button.undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="gui.button.rescan" xml:space="preserve"><value>Scan again</value></data>
+  <data name="gui.button.retry" xml:space="preserve"><value>Try again</value></data>
 </root>
