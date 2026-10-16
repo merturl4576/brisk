@@ -81,7 +81,7 @@ public enum WriteEffect
 /// how a switch on this machine currently reads. brisk reads a registry
 /// value. It cannot observe what any app or service does with the setting and
 /// never speaks for one.
-public abstract class TelemetrySwitchRule : IDiagnosticRule
+public abstract class TelemetrySwitchRule : IReadBackable
 {
     /// One value a switch owns. OffValue is what the fix writes and the only
     /// number the default read treats as off. OnValue is the number that

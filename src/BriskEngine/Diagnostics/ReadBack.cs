@@ -72,7 +72,7 @@ public static class ReadBack
         var rows = new List<ReadBackResult>();
         foreach (var entry in journal)
         {
-            var rule = rules.OfType<TelemetrySwitchRule>().FirstOrDefault(
+            var rule = rules.OfType<IReadBackable>().FirstOrDefault(
                 r => string.Equals(r.Id, entry.RuleId, StringComparison.OrdinalIgnoreCase));
             if (rule is null) continue;
             try
@@ -105,7 +105,7 @@ public static class ReadBack
     /// value brisk can read for it. That question belongs to the rule, which
     /// is the only thing that knows its own second value, so it is asked of
     /// the rule.
-    private static ReadBackState StateOf(DiagnosticContext ctx, TelemetrySwitchRule rule)
+    public static ReadBackState StateOf(DiagnosticContext ctx, IReadBackable rule)
     {
         if (rule.IsOn(ctx)) return ReadBackState.Reverted;
 
