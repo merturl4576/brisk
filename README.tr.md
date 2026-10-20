@@ -7,26 +7,22 @@
 
 # brisk
 
-**Windows için ücretsiz, açık kaynak CCleaner alternatifi. Bilgisayarının *neden* yavaş olduğunu kanıtıyla söyler ve ölçmediği hiçbir şeyi iddia etmez.**
+**Yavaş bir Windows bilgisayar için tek tık. brisk yer açar, programları açılıştan çıkarır, telemetriyi kapatır; sonra her birini Windows'un kendi verdiği sayılarla kanıtlar.**
 
-*Windows bilgisayarın hakkında sana doğruyu söyleyen araç.*
+*Ücretsiz, açık kaynak, satacak hiçbir şeyi olmayan bir CCleaner alternatifi.*
 
 [![CI](https://github.com/merturl4576/brisk/actions/workflows/ci.yml/badge.svg)](https://github.com/merturl4576/brisk/actions/workflows/ci.yml)
 [![Sürüm](https://img.shields.io/github/v/release/merturl4576/brisk?include_prereleases)](https://github.com/merturl4576/brisk/releases)
 [![Lisans: GPL v3](https://img.shields.io/badge/lisans-GPL--3.0-blue)](LICENSE)
 ![Windows 10 / 11 x64](https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-0078d4)
 
-Kurulum yok. Hesap yok. Telemetri yok. Ürünün içinde yapay zekâ yok. Her teşhis, kaynağında okuyabileceğin deterministik bir kural; her bulgu, dayandığı kanıtı yanında taşıyor.
+Kurulum yok. Hesap yok. Telemetri yok; brisk'in kendisi hiçbir ağ bağlantısı açmaz. Ürünün içinde yapay zekâ yok: her satır, kaynağında okuyabileceğin deterministik bir kural.
 
 [English README](README.md)
 
-![brisk 0.9.0: bir tarama, bir tık, skor 53'ten 86'ya; ardından Gizlilik ve Depolama sayfaları](docs/media/demo.gif)
+<!-- TODO-RUN: docs/media/demo.gif, geliştiricinin kayıtlı denemesinden: aç, Hepsini yap, yeniden başlat, tekrar aç. -->
 
-*Geliştiricinin kendi makinesinde, gösterim için bilerek ekilmiş bulgularla kaydedildi (60 Hz'e düşürülmüş ekran, iki sahte başlangıç programı, Başlat menüsünde Bing, dört açık gizlilik anahtarı, 3 GB çöp). Her biri brisk'in gerçekten okuduğu ve düzelttiği bir Windows durumu; kayıtta sahte hiçbir şey yok. Arayüz İngilizce; 24 saniye, gerçek zaman yaklaşık 2 kat hızlandırıldı.*
-
-![Gizlilik sayfası, read-back dahil](docs/media/privacy-readback.tr.png)
-
-*Geliştiricinin kendi makinesi, 3 Eylül 2026. Sayı var, içerik yok: 375 program kaydı, 2 USB aygıtı, Recall'un durumu bu sürümde okunamıyor. Alttaki bant read-back: brisk'in iki gün önce kapattığı dört anahtar hâlâ kapalı okunuyor; beşincisi için brisk, bu Windows sürümünün ilkeyi uygulayıp uygulamadığını söyleyemediğini "tamam" demek yerine açıkça yazıyor.*
+**Geliştiricinin dizüstünde tek tık:** TODO-RUN GB açıldı (Gezgin'in gösterdiği boş alan farkı) · açılışta başlayan program TODO-RUN 14 → n · TODO-RUN telemetri ayarı kapandı · açılış TODO-RUN sn → n sn, Windows'un kendi açılış ölçümüyle.
 
 ---
 
@@ -38,103 +34,85 @@ Tek satır, güveniyorsan. Güvenmek zorunda kalma diye betik [63 okunur satır]
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
 ```
 
-Ya da elle: [Releases](https://github.com/merturl4576/brisk/releases) sayfasından **`brisk-app.exe`** dosyasını indir ve çalıştır. Tek dosya. Hiçbir şey kurulmuyor. Sen "düzelt" demeden makinene hiçbir şey yazılmıyor ve değiştirdiği her şey geri alınabilsin diye kaydediliyor.
+Ya da elle: [Releases](https://github.com/merturl4576/brisk/releases) sayfasından **`brisk-app.exe`** dosyasını indir ve çalıştır. Tek dosya. Hiçbir şey kurulmuyor ve sen **Hepsini yap**'a basana kadar bilgisayarında hiçbir şey değişmiyor.
 
-Terminali seviyorsan **`brisk.exe`** indir. Aynı teşhisler, yönetici sorusu yok, `--json` dahil.
-
-```
-brisk scan
-```
+Terminali seviyorsan **`brisk.exe`** indir. `brisk run` aynı planı yazar ve hiçbir şeyi değiştirmez; `brisk run --yes` uygular.
 
 İki dosya da .NET kurulumu istemiyor ve hiçbiri diğerine muhtaç değil. İndirdiğini aynı sürümdeki `SHA256SUMS.txt` ile doğrulayabilirsin.
 
 > brisk henüz imzalı değil, bu yüzden SmartScreen ilk açılışta uyaracak. O uyarı haklı. Bu cümleye değil, checksum'a güven.
 >
-> Windows 11'inde **Smart App Control** açıksa imzasız bir programı "yine de çalıştır" seçeneği bile vermeden durdurur: kurulum betiği olan bunu söyler ve brisk imzalanana kadar açılmaz. Smart App Control'u kapatmak tek yönlü (Ayarlar › Gizlilik ve güvenlik › Windows Güvenliği › Uygulama ve tarayıcı denetimi), brisk için kapatma. İmzalı sürüm için SignPath başvurusu aşağıdaki SSS'de.
+> Windows 11'inde **Smart App Control** açıksa imzasız bir programı "yine de çalıştır" seçeneği bile vermeden durdurur: kurulum betiği olanın bu olduğunu söyler ve brisk imzalanana kadar açılmaz. Smart App Control'ü kapatmak tek yönlü (Ayarlar › Gizlilik ve güvenlik › Windows Güvenliği › Uygulama ve tarayıcı denetimi), brisk için kapatma.
 
 ---
 
-## Bir tarama gerçekte neye benziyor
+## Tek tık ne yapıyor
 
-Mockup değil, geliştiricinin kendi makinesinden gerçek çıktı:
+Pencere açıldığı anda bakmaya başlar. Birkaç saniye içinde Genel ekranı ne kadar yer bulduğunu, Windows ile kaç programın başladığını, şu an kaç uygulamanın internete bağlı olduğunu ve bilgisayarı şu an neyin kastığını gösterir. **Hepsini yap** işaretli her satırı çalıştırır. **Yer aç**, **Hızlandır** ve **Gizlilik** sayfaları aynı satırları listeler; istemediğinin işaretini önceden kaldırabilirsin.
 
-```
-[! ] Too many programs start with Windows (impact ***)
-    13 programs start with Windows. Heavy ones that can be started manually
-    instead: WhatsAppDesktop, MSTeams.
-[! ] Disk space fragmented across system folders (impact **)
-    AppData\Local: 53.9 GB (over threshold); AppData\Roaming: 28.6 GB (over
-    threshold); Desktop: 57.7 GB (over threshold); Downloads: 8.7 GB
-[i ] temperature: CPU not read — GPU only. Memory integrity is on here, and the
-     driver that reads CPU temperature is on Microsoft's vulnerable-driver
-     blocklist, so Windows will not load it at any privilege level. brisk does
-     not switch that off, and cannot prove it is the only reason here.
-Reclaimable — Safe: 2.3 GB, Developer: 3.6 GB, Deep: 5.1 GB (run 'brisk clean')
-```
+### Yer aç
 
-Üçüncü bulgu projenin özeti. brisk bir GPU sıcaklığı basıp ona "bilgisayarının sıcaklığı" diyebilirdi. Bunun yerine neyi okuyamadığını, muhtemelen neden okuyamadığını ve bu sebebi kanıtlayamadığını söyledi.
+| Satır | İşaretli | Neden |
+|---|---|---|
+| Önbellekler ve geçici dosyalar: tüm tarayıcı profilleri, uygulama önbellekleri, küçük resimler, çökme dökümleri, Windows Update ve Teslim İyileştirme indirmeleri, güncelleme artıkları | evet | kendiliğinden yeniden oluşurlar |
+| Geliştirici önbellekleri: npm, pnpm, pip, NuGet, Yarn, Cargo, Gradle | evet | gerektiğinde yeniden iner |
+| İndirilenler'deki kurulum dosyaları (`.exe` `.msi` `.iso`), her dosya kendi kutusuyla listelenir | evet | önce sorulur, aşağıya bak |
+| Geri Dönüşüm Kutusu | evet | önce sorulur |
+| Eski Windows kopyası | evet | önce sorulur; eski Windows'a dönülemez |
+| Hazırda bekletme dosyası | yalnızca masaüstünde | dizüstü pil biterken hazırda bekletmeye geçer; dosya yoksa açık işler kaybolur |
+| Oyun shader önbellekleri | hayır | oyunlar onları yeniden kurarken takılır |
+| Docker'ın kullanılmayan verisi | hayır | durmuş container'lar silinir |
+
+Önbellekler Geri Dönüşüm Kutusu'na taşınmaz, gerçekten silinir; böylece boş alan gerçekten değişir. Uygulaması açık olan bir önbellek, örneğin Chrome ya da Discord, görev çubuğunda bekler ve o uygulama kapanınca temizlenir. Masaüstü, Belgeler ve büyük dosyalarına hiç dokunulmaz: brisk en büyüklerini adıyla gösterir ve olduğu gibi bırakır.
+
+### Hızlandır
+
+- **Şu an kasanlar.** En çok işlemci ya da bellek kullanan uygulamalar; on saniye boyunca ölçülür ve uygulamaya göre gruplanır, yani Chrome'un otuz işlemi tek satırdır. **Kapat** uygulamadan kapanmasını ister, böylece sana kaydetmeyi sorabilir. **Zorla kapat** ancak beş saniye sonra hâlâ çalışıyorsa çıkar. Windows'un kendi işlemlerinde düğme yerine tek satırlık açıklama vardır ("Windows güncelleme kuruyor").
+- **Açılış programları.** Görev Yöneticisi'nin listelediği her şey, Görev Yöneticisi'nin kullandığı yolla kapatılır; istediğini oradan geri açabilirsin. Özleyeceklerin dışında hepsi işaretli: antivirüs, ses, touchpad ve ekran kartı yardımcıları, OneDrive ve diğer eşitleme programları, şifre yöneticileri, VPN'ler ve klavye araçları. Bunlar işaretsiz kalır, her birinin yanında nedeni yazar.
+- **Ayarlar.** Şarjdayken tam güç, oyunda arka planda video kaydı kapalı, oyunlarda gecikmeyi azaltma, pencere modundaki oyunları hızlandırma, pencere açılış animasyonları kapalı. Ekstra çekirdek koruması ve Sanal makine desteği, Microsoft'un kendi oyun rehberi bunları andığı için listede; ama işaretsiz kalır: ilki güvenliği bir kademe düşürür, ikincisi WSL ve Docker'ı bozar.
+
+### Gizlilik
+
+- **Ayarlar.** Kullanım bilgilerini Microsoft'a göndermesi, arka planda bilgi toplaması, hata raporları, reklam kimliği ve sana göre öneriler, etkinlik geçmişi, Başlat menüsündeki reklamlar, Başlat'ta arama yapınca internete gitmesi, sesini ve yazdıklarını göndermesi, "Windows'u nasıl buldun?" soruları, Recall, Copilot, güncellemeleri internetteki yabancılara dağıtması (kendi ağındaki paylaşım kalır) ve programların sormadan yönetici olması. Konum listede ama işaretsiz, çünkü Cihazımı bul ona muhtaç.
+- **Şu an konuştukları.** Hangi uygulama şu an hangi şirkete bağlı; iki saniyede bir yenilenir, Microsoft'un telemetri sunucuları etiketlenir. Bağlantı, veri gönderildiği anlamına gelmez; sayfa da bunu söyler.
+- **30 günde gönderilenler.** Windows'un uygulama başına tuttuğu gönderilen ve alınan veri kaydı. Sadece miktarlar, asla içerik yok.
+
+### Sorduğu tek soru
+
+Hepsini yap hiçbir şey sormaz; geri gelmeyecek dosyalar silinecekse sorar: İndirilenler'deki kurulum dosyaları, Geri Dönüşüm Kutusu, eski Windows kopyası. O zaman bir pencere bunları boyutlarıyla listeler, her seferinde: **Devam**, **Bunları atla** ya da **Listeyi gör**. Kimse görmediği bir dosyayı kaybetmez.
 
 ---
 
-## Read-back: brisk kendi işini yeniden kontrol eder
+## Kanıt
 
-Bu kategorideki her araç "tamam" der. brisk "tamam"ı bir iddia sayar ve iddialar yeniden kontrol edilir.
+Bu türdeki her araç "tamam" der. brisk uydurmadığı sayıları gösterir:
 
-**Gizlilik.** brisk bir Windows veri toplama ayarını kapattığında, sonraki her tarama o ayarı yeniden okur ve dört durumdan birini söyler: **Held** (tuttu), **Reverted** (geri döndü), **WrittenButIgnored** (yazıldı ama umursanmadı), **WrittenButUnverified** (yazıldı, doğrulanamadı). Üçüncü durum şunun için var: Windows Home bazı ilke yazımlarını sessizce yok sayar. Registry "kapalı" der, Windows toplamaya devam eder. brisk bunu kutlamak yerine söyler.
+- **Yer:** çalıştırmadan önce ve sonra sistem diskindeki boş alan. Gezgin'in gösterdiği sayı, "seçilen öğe" değil.
+- **Açılış programları:** önce ve sonra açılışta başlayan program sayısı.
+- **Açılış süresi:** Windows'un olay günlüğüne kendi yazdığı açılış ölçümü; son açılışlar ile çalıştırmadan sonraki ilk açılış karşılaştırılır. Yeniden başlattıktan sonra brisk'i açınca Genel ekranı bununla başlar: *Son sefer: TODO-RUN GB açıldı · açılış TODO-RUN sn → n sn · TODO-RUN GB RAM boşaldı*, geliştiricinin dizüstünden.
+- **RAM:** açılıştan çıkarılan programların kullandığı bellek. Ancak sonraki açılış hiçbirinin başlamadığını doğruladıktan sonra sayılır; yine de başlayan olursa adı yazılır ve sayıya katılmaz.
+- **Gizlilik:** her ayar çalıştırmadan sonra yeniden okunur ve **Kapandı ✓**, **Windows yok saydı** (bazı sürümler bir ilkeyi yazıp sonra yok sayar) ya da **Geri açıldı** der.
 
-**Hız.** Aynı fikir zamana uygulanmış. brisk ne zaman değişiklik yaptığını kaydeder, sonra Windows'un kendisi için yazdığı açılış ölçümlerini (kendi icat ettiği bir kronometreyi değil) okuyup ikisini Performans sayfasında yan yana koyar:
+Ters yöne giden bir sayı da gösterilir. Sana sadece iyi sayıyı gösteren araç ölçmüyordur.
 
-> brisk'in değişikliklerinden önce açılış: yaklaşık 60 sn (7 açılışın ortası) → son değişiklikten beri: yaklaşık 75 sn (2 açılış). Ölçüm Windows'un kendi zamanlayıcısından.
+### Geri al
 
-Cümlenin hiçbir yerinde nedensellik iddiası yok. İki ölçüm, sayıları ve senin kendi çıkarımın. Bu satır bugün geliştiricinin makinesinden ve sayı kötüye gitmiş: bir test sırasında eklenen gecikmeli başlangıç görevi açılışı yavaşlattı, brisk de bunu bastı. Sadece iyi sayıyı gösteren bir araç ölçüm yapmıyordur. 0.10.0'dan beri aynı satırın kısa hali tepsi penceresinde de duruyor, çünkü insanların baktığı yer orası.
-
-![Performans sayfası: açılış read-back satırı, brisk'in yaptıkları ve yalnızca raporlayabildikleri](docs/media/performance-readback.tr.png)
-
-*Aynı makine. brisk'in yaptığı ve geri alabildiği altı değişiklik, bekleyen iki bulgu, yalnızca raporlayabildiği bir tane. 75 sn, brisk'in değişikliklerinin öbür tarafında ve sayfada duruyor.*
-
-**Windows'un senin hakkında bildikleri.** Gizlilik sayfası makinenin kaydettiklerini okur: bugüne dek takılmış her USB aygıt (model ve tarihler), Windows'un saydığı program çalıştırma kayıtları, Recall'un durumu ve Delivery Optimization'ın bu ay başka makinelere ne yüklediği, yerel ağ ve internet ayrımıyla. Geliştiricinin makinesinde o sayaç 302 MB gösteriyordu, tamamı yerel ağ, internet sıfır. Ayrımı bilmek, korku ile gerçek arasındaki fark.
-
-![brisk kokpiti, Genel Bakış sayfası](docs/media/cockpit.tr.png)
-
-*Aynı makinede Genel Bakış, 0.9.0'da. 64, çünkü bir ekran desteklediği yenileme hızının altında çalışıyor (25 puan) ve on program Windows'la başlıyor (9 puan). 75 sn açılış en büyük ölçülü sayı olduğu için önde; derin raflardaki 24.5 GB adıyla anılmış ve istenmeden dokunulmamış. 0.10.0'dan beri o açılış da 12 puan ediyor, yani aynı makine 52 okur: ilk iki dış testçinin ikisinin de laptopu yavaştı, ikisi de 89 aldı ve ikisi de "sistemin hatalı" dedi. Haklıydılar. Ölçülmüş bir sayı artık brisk düzeltebilse de düzeltemese de puan kesiyor; gösterge makine diye okunuyor, o yüzden makineyi anlatıyor.*
+**Geri al**, o çalıştırmadaki her ayar ve açılış değişikliğini en yeniden başlayarak geri çevirir ve silinen dosyaların geri gelmediğini açıkça söyler. Her ayar değiştirilmeden önce bir deftere yazılır; yarıda kalan bir satır bile geri alınabilir. Geri alma başarısız olursa brisk bunu söyler ve çalıştırma geri alınabilir durumda kalır.
 
 ---
 
 ## brisk'in yapmayı reddettikleri
 
-Bu kategori büyük ölçüde kimsenin kontrol etmediği iddialar üzerine kurulu. brisk'te asıl ürün, reddettiklerinin listesi:
-
-- **Registry temizliği yok.** brisk'in alternatifi olduğu araçların en çok eleştirilen özelliği. Bir Windows makinesini hızlandırdığı hiçbir zaman gösterilemedi, buna karşılık kurulu yazılımları bozabiliyor.
-- **Ölçülmemiş hız vaadi yok.** brisk, bir düzeltmenin bilgisayarını hızlandırdığını ancak bunu söyleyen bir sayı okuyabiliyorsa söyler. Windows kendi açılış ölçümlerini tutuyor. brisk onları okuyor, elinde ölçüm yoksa "yok" diyor.
-- **Şişirilmiş skor yok, pohpohlayan skor da yok.** Sağlık skorunu yalnızca brisk'in ölçebildiği bulgular uzağa oynatır: açılış süresi, ekranın çalıştığı yenileme hızı, diskin dolmasına kalan gün. Ölçülmüş bir sayı brisk düzeltebilse de düzeltemese de puan keser; Windows'un 90 saniyenin üstünde ölçtüğü bir açılış tek başına 25 puan eder ve brisk aynı bulguda onu kısaltmayacağını söyler. Güç planı ya da görsel efektler gibi hissedildiğini kanıtlayan bir sayısı olmayan bir ayar, yıldızı ne olursa olsun 2 puan eder. Formülün tamamı kısa bir dosya: [`HealthScore.cs`](src/BriskEngine/Diagnostics/HealthScore.cs).
-- **"Windows'un veri toplamasını durdurduk" yok.** brisk'in söyleyebileceği en fazla şey şu: "bu ayar şu an kapalı okunuyor, en son şu tarihte baktım."
-- **Telemetri, hesap, bulut yok; ürünün içinde yapay zekâ yok.** Makinenden hiçbir şey çıkmıyor. Gönderilecek bir sunucu yok.
-- **Sessiz işlem yok.** Her düzeltme eylem günlüğüne yazılıyor; geri alınabilir olanlar uygulandıkları ekrandan geri alınabiliyor.
-- **Paylaşılabilir hiçbir şeyde kişisel veri yok.** Rapor kartı, ekran görüntüsü alınmak için tasarlanmış tek yüzey, asla aygıt adı, dosya yolu ya da seni veya donanımını tanıtan başka bir şey taşımaz. Bu kural ilkeyle değil, testlerle korunuyor.
-- **Sahte aciliyet yok.** Kırmızı "1.247 sorun bulundu!" yok, geri sayım yok, Pro sürüm yok. Satılacak bir üst paket yok.
+- **Kayıt defteri temizliği yok.** Windows'u hızlandırdığı hiç gösterilmedi ve kurulu programları bozabiliyor.
+- **Windows'un kendi uygulamalarını kaldırmak yok.** Debloat betikleri geri getirmesi zor şeyleri bozar; brisk uygulamaları yerinde bırakır.
+- **Önce listelemeden dosya silmek yok.** Önbellekler kendiliğinden yeniden oluşur; senin yaptığın ya da indirdiğin dosyalar gitmeden önce adıyla gösterilir.
+- **Kaynağını gösteremediği hız iddiası yok.** Açılış süresi Windows'un kendi kaydı. brisk'in ölçümü olmayan yerde sayı da yoktur.
+- **Telemetri yok, hesap yok, bulut yok, ürünün içinde yapay zekâ yok.** brisk hiçbir ağ bağlantısı açmaz. Bir şey gönderebileceği bir sunucu yok.
+- **Sahte aciliyet yok.** Kırmızı "1.247 sorun bulundu!" yok, geri sayım yok, Pro sürüm yok. Satılacak bir şey yok.
 
 ---
 
-## Ne yapıyor
-
-- **33 deterministik teşhis kuralı.** Güç planı, başlangıç yükü, Windows'un kendi ölçtüğü açılış süresi, Windows'un dönen bir diskten çalışıp çalışmadığı, antivirüs görevini kimin tuttuğu ve hâlâ çalışıp çalışmadığı, desteklediğinin altında çalışan ekran yenileme hızı, kendi hız değerinin altında çalışan bellek, sıcaklıklar, disk baskısı, profilindeki en büyük dosyalar (adıyla), yukarıdaki read-back'li on dört gizlilik ve güvenlik kuralı ve dahası. Her bulgu kanıtını taşıyor.
-- **Güvenlik durumu, önce rapor.** Windows bir program kontrolü almadan önce soruyor mu (geri alınabilir tek düzeltme, sonraki her taramada yeniden okunur), Defender'a neyi atlaması söylenmiş ve açık mı, son 30 günde hangi uygulamalar mikrofonu ve kamerayı kullandı, Windows'un öneri ve sessiz kurulum bayrakları, ve iyi olan satırlar: güvenlik duvarı, Uzak Masaüstü. Burada hiçbir şeye not verilmez ve hiçbir yol ya da uygulama adı paylaşacağın bir şeye ulaşmaz.
-- **Tek tıkla düzeltme ve geri alma.** Kurallar Auto, Confirm ve Advise diye ayrılıyor. brisk bir Confirm kuralını sormadan uygulamıyor, yalnızca gözlemlediği bir şey için düzeltme düğmesi göstermiyor.
-- **Açılış programlarında listeye değil Windows'un sözüne bakar.** Windows'un kendi açılış günlüğünün geç kalmakla suçladığı bir program (5 sn ve üstü, son sekiz açılışın ikisinde) brisk'in kısa listesindeki bir adla aynı muameleyi görür, ağır sayılır ve bulgu hangi açılışların onu suçladığını söyler. OneDrive ve Windows'un kendi bileşenleri bu yolla asla kapatılmaz.
-- **Her şeyin altındaki disk, adıyla.** Windows dönen bir diskten çalışıyorsa brisk bunu söyler, skordan 12 puan keser, işe yarayacak tek yükseltme olarak SSD'yi adlandırır ve Windows'un aynı değeri gösterdiği Görev Yöneticisi'ni işaret eder. brisk'in öbür kurallarının açıklayamadığı yavaş bilgisayarı açıklayan bulgu bu; brisk aynı nefeste temizlediği hiçbir şeyin onun yerini tutmayacağını da söyler.
-- **Beyaz listeyle çalışan temizleyici**, desenle değil. Yalnızca Windows'un ve uygulamaların kendiliğinden yeniden ürettiği önbellek ve geçici dosyalara dokunuyor, başka hiçbir şeye değil. Üç seviye: Safe, Developer, Deep.
-- **Sesini yükselten derin raflar.** Windows.old, uyku modu dosyası, bileşen deposunun yeri doldurulmuş yarısı, bayat geliştirici önbellekleri. Her biri boyutlanmış ve ön sayfada adıyla anılmış ("Derin raflarda 32 GB daha var"), her biri kendi onayının arkasında ve her satır takasını yazıyor: ne geri gelir, ne gelmez, ne çalışmayı bırakır.
-- **Gözle görülen bir düzeltme.** 144 Hz monitörün 60 Hz'de çalışması çok yaygın. brisk hızı yükseltir ve 15 saniye içinde "görüyorum" onayı gelmezse kendiliğinden geri alır.
-- **Uygulanan her düzeltme farkın ne zaman hissedileceğini söylüyor.** Hız değişikliklerinin çoğu bir sonraki yeniden başlatmada görünür; brisk tam olarak bunu söylüyor, sonra sonraki açılışları ölçüp raporluyor.
-- **İngilizce ve Türkçe**, hem uygulamada hem komut satırında.
-
-### Güvenlik modeli
-
-Temizleyici yalnızca kendi beyaz listesine dokunuyor. Arayüzdeki tek tıkla temizlik alanı hemen boşaltıyor: geri dönüşüm kutusuna atıyor, sonra sadece az önce attığı öğeleri kalıcı siliyor, kutundaki başka hiçbir şeye dokunmuyor. Bunun geri alması yok ve bunu çalışmadan önce söylüyor. Seviye bazlı temizlikler ve CLI ise öğeleri geri dönüşüm kutusuna taşıyıp kutuyu boşaltmayı sana bırakıyor. Ayar ve başlangıç düzeltmeleri her zaman geri alınabilir.
-
----
-
-## Komutlar
+## Komut satırı
 
 ```
 brisk — Windows performance diagnostics and cleanup
@@ -146,81 +124,92 @@ Commands:
     --json                   emit JSON instead of text
   fix                        apply diagnostic rule fixes
     --all                    apply every Auto rule with a finding
-    --rule <id>              apply/undo a single rule
+    --rule <id>               apply/undo a single rule
     --undo                   undo the named rule's last fix
+    --keep                   commit the display mode currently on screen
     --yes                    actually mutate (otherwise dry-run)
   clean                      reclaim disk space
     --level <safe|developer|deep>  which cleanup level to run
+    --target <id>            clean a single target by id (see 'brisk targets')
     --yes                    actually delete (otherwise print plan)
+  run                        one click: free space, speed up, privacy
+    --group <space|speed|privacy>  only that group
+    --yes                    apply (without it: show the plan, change nothing)
+  undo                       undo the latest run
+  receipt                    before/after numbers of the latest run
+  live                       what is slowing you down, who you talk to, who sent what
   targets                    list cleanup targets
   rules                      list diagnostic rules
+  report                     save the scan as a shareable PNG (brisk-app.exe only)
   version                    print the engine version
 ```
 
-`--yes` olmadan `fix` ve `clean` sadece ne yapacaklarını yazar, hiçbir şeyi değiştirmez.
+`--yes` olmadan `run`, `fix` ve `clean` ne yapacaklarını yazar ve hiçbir şeyi değiştirmez.
 
 ---
 
-## Bu kategorinin hak ettiği sorular
+## Bu türün hak ettiği sorular
 
-PC "optimizer"ları internette en az güvenilen yazılım kategorilerinden biri, haklı sebeplerle. O sebepler, kimse sormadan cevabı hak ediyor.
+Bilgisayar "hızlandırıcıları" internetin en az güvenilen yazılımları arasında, haklı nedenlerle. O nedenler, kimse sormadan cevabı hak ediyor.
 
-**"Yılan yağı. Bu araçlar hiçbir zaman ölçülebilir fark yaratmaz."**
-Çoğunlukla doğru. brisk tam bu yüzden ölçüyor: değişiklik öncesi ve sonrası Windows'un kendi açılış zamanlamaları, taşıma gerçekten olduktan sonra sayılan disk baytları, olan buysa "0 B boşaldı" diyen bir rapor. Ölçümü olmayan yerde bunu söylüyor. Kaynağını gösteremeyeceği bir hız iddiası basmıyor.
+**"Yılan yağı. Bu araçlar ölçülebilir hiçbir fark yaratmaz."**
+Çoğu zaman doğru. brisk bu yüzden ölçüyor: Windows'un bildirdiği boş alan önce ve sonra, Windows'un kendi açılış ölçümleri önce ve sonra, ve ancak sonraki açılış doğruladığında saydığı bir RAM rakamı. Ölçümü olmayan yerde bunu söylüyor.
 
-**"Registry temizleyiciler makine bozar."**
-Bozar. brisk'te yok ve olmayacak.
+**"Kayıt defteri temizleyicileri makineleri bozar."**
+Bozar. brisk'te yok ve hiç olmayacak.
 
-**"Temizleyici umursadığım dosyaları yer."**
-Temizleyici beyaz listesinin dışına adım atamaz. Her yol, junction'ları çözülmüş haliyle kayıtlı bir şablona karşı doğrulanır; korunan klasörler (Belgeler, Masaüstü, Resimler, OneDrive, sistem kökleri) her şablonu ezer; silmeler, satırın açıkça aksini söyleyip ayrıca onay istediği yerler dışında Geri Dönüşüm Kutusu üzerinden gider.
+**"Temizleyici değer verdiğim dosyaları yer."**
+Bir desenden değil, önbelleklerden oluşan bir izin listesinden çalışır. Her yol, bağlantı noktaları çözülerek kayıtlı bir şablona karşı denetlenir; korunan klasörler (Belgeler, Masaüstü, Resimler, OneDrive, sistem kökleri) her şablonu yener. İndirilenler'deki bir dosya ancak sana gösterilen dosyanın ta kendisiyse silinir: o zamandan beri boyutu ya da tarihi değiştiyse atlanır.
 
-**"Kapalı kaynak binary, kendisi veri gönderiyordur."**
-GPL-3.0, ağ kodu yok, analitik yok; her kuralın kaynağı okuyabileceğin bir dosya. Tarama çıktısı her satırı hangi kuralın ürettiğini söylüyor.
+**"Kapalı kaynak, kendisi de eve telefon eden bir exe."**
+GPL-3.0 ve ağ kodu yok. Bağlantı listesi ve 30 günlük kullanım senin makinende Windows'tan okunur; hiçbir şey dışarı çıkmaz.
 
-**"Arkamdan ayar değiştirir."**
-CLI'da varsayılan dry-run (`--yes` demeden hiçbir şey değişmez), her değişiklik eylem günlüğüne düşer, geri alma aynı ekranda, riskli ekran değişikliği de "görüyorum" onayı gelmezse 15 saniyede kendini geri alır.
+**"Arkamdan ayarlarımı değiştirir."**
+Tek tık ayar değiştirir; amacı da bu. Her satır, işaretli ya da değil, sen bir şeye basmadan önce ekranda; sen basmadan hiçbir şey çalışmaz; her değişiklik deftere yazılır ve aynı düğmeden geri alınabilir.
 
-**"İmzasız exe. Direkt hayır."**
-Haklısın. Sürüm SHA-256 özetleriyle çıkıyor, kurulum betiği özeti tutmayan indirmeyi reddediyor ve SignPath üzerinden kod imzalama başvurusu yapılıyor. O güne kadar SmartScreen'in uyarısı dürüst; bu paragraf da öyle.
+**"İmzasız exe. Asla."**
+Haklısın. Sürüm SHA-256 özetleriyle geliyor, kurulum betiği tutmayan indirmeyi reddediyor ve kod imzası için başvuru yapılıyor. O zamana kadar SmartScreen'in uyarısı dürüst, bu paragraf da.
 
-**"Bu yapay zekâyla yazılmış. Neden güveneyim?"**
-Kısmen öyle, ve bir sonraki bölüm hangi kısmın öyle olduğunu tam olarak söylüyor. Yazarın sözüne değil, testlere, herkese açık spec ve review'lara ve kaynağa güven.
+**"Bu yapay zekâyla yapılmış. Neden güveneyim?"**
+Kısmen öyle; bir sonraki bölüm tam olarak hangi kısmın öyle olduğunu söylüyor. Yazarın sözüne değil, testlere, açık spesifikasyonlara ve kaynağa güven.
 
 ---
 
 ## Nasıl yapıldı
 
-brisk, 2026 yazında tek kişi tarafından, yapay zekâ desteğiyle yazıldı. Bunun açıkça söylenmesi gerekiyor, çünkü yukarıdaki "yapay zekâ yok" ürünün içinde yok demek, yapımında yok demek değil.
+brisk 2026'da tek bir kişi tarafından, yapay zekâ yardımıyla yazıldı. Bunu açıkça söylemek gerekiyor, çünkü yukarıdaki "yapay zekâ yok" ürünün içinde yok demek, yapımında yok demek değil.
 
-Geliştiricinin sahip olduğu kısım: ürün kararları, güvenlik kuralları, mimari (arayüz kodu içermeyen saf bir motor ve üstünde bir WPF kabuğu), bu sayfadaki her ret ve brisk'in neyi iddia edebileceğine dair her yargı. Yapay zekânın (Claude Code) yaptığı: yazılı spec'ler altında, review edilen dallarda, yazma işinin çoğu.
+0.10'a kadar brisk sadece teşhis koyuyordu. Dışarıdan deneyen herkes, aralarında geliştiricinin babası ve arkadaşları da var, kurdu, tıkladı ve hiçbir şey hissetmedi: en fazla bir gigabayt açıldı. 0.11 o cevabın istediği yeniden yazım. Ölçütü şuydu: dikkatli bir teknisyenin bu makinede yapacağını yap, gözle görülür şekilde, sonra kanıtla.
+
+Geliştiricinin sahip oldukları: ürün kararları, güvenlik kuralları, mimari (arayüz kodu içermeyen saf bir motor ve üstünde bir WPF penceresi), bu sayfadaki her ret ve brisk'in neyi iddia etmesine izin verildiğine dair her karar. Yapay zekânın (Claude Code) yaptığı: yazılı spesifikasyonlarla, incelenen dallarda, yazımın çoğu.
 
 Bunu dürüst tutan şeyler:
 
-- Her kural sahte prob'lar üzerinde deterministik bir fonksiyon ve 1687 test her birinin ne söylediğini ve ne söylemeyi reddettiğini sabitliyor.
-- Her dalgayı yöneten spec'ler ve uygulama planları [`docs/superpowers`](docs/superpowers) altında herkese açık.
-- Her değişiklik birleştirilmeden önce review edildi ve commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
-- Her kural ve her düzeltme, yayınlanmadan önce geliştiricinin sahip olduğu gerçek makinelerde çalıştı. O çalıştırmalardan biri skorun yalnızca ayar çevirmeleriyle 43 puan oynadığını gösterdi; brisk'in ölçebildiği hiçbir şey değişmemişti. Skorun bugün böyle çalışmasının sebebi bu.
+- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.604 testte sahte ölçümlere karşı çalışıyor.
+- Her sürümü yönlendiren spesifikasyonlar ve uygulama planları [`docs/superpowers`](docs/superpowers) altında açık.
+- Her değişiklik birleştirilmeden önce incelendi; commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
+- Her sürüm, yayımlanmadan önce geliştiricinin kendi makinelerinde çalıştı.
 
-Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projenin en çok istediği hata kaydı odur.
+Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projenin en çok istediği hata raporu odur.
 
 ---
 
 ## Kaynaktan derleme
 
-.NET 8 SDK gerekiyor. Yalnızca Windows: brisk registry, WMI, Windows olay günlüğü ve donanım sensörlerini okuyor, burada başka bir yerde dürüstçe koşabilecek hiçbir şey yok.
+.NET 8 SDK gerekir. Sadece Windows: brisk kayıt defterini, WMI'ı, Windows olay günlüğünü ve donanım sensörlerini okuyor; başka bir yerde dürüstçe çalışabilecek bir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1687 test
-dotnet run --project src/Brisk.Cli -- scan
-pwsh -File scripts/publish.ps1        # iki tek dosyalık exe -> artifacts/
+dotnet test brisk.sln -c Release      # 1.604 test
+dotnet run --project src/Brisk.Cli -- run
+pwsh -File scripts/publish.ps1        # iki tek dosyalık exe artifacts/ içine
 ```
 
 ---
 
 ## Durum
 
-Ön sürüm ve bunu saklamıyor: brisk şu ana kadar yalnızca geliştiricisinin sahip olduğu makinelerde gerçek donanıma karşı doğrulandı. Bir kural senin makineni yanlış okuyorsa, açılmaya en değer hata kaydı tam olarak odur. Yanında `brisk scan --json` çıktısıyla gel.
+Ön sürüm ve bunu saklamıyor: brisk geliştiricinin kendi makinelerinde doğrulandı. Bir satır makineni yanlış okuyorsa, açılmaya değer hata raporu tam olarak budur. `brisk run` çıktısını getir (`--yes` olmadan hiçbir şeyi değiştirmez).
 
 ## Lisans
 
-[GPL-3.0](LICENSE). brisk açık kalır: isteyen kullanır, inceler, değiştirir; ama değiştirilmiş bir sürümü dağıtan herkes kendi kaynağını da açmak zorundadır.
+[GPL-3.0](LICENSE). brisk açık kalır: herkes kullanabilir, inceleyebilir ve değiştirebilir; değiştirilmiş bir sürümü dağıtan da kaynağını yayımlamak zorundadır.
