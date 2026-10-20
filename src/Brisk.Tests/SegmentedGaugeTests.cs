@@ -88,21 +88,6 @@ public class SegmentedGaugeTests
         Assert.Equal(center.X - start.X, end.X - center.X, 6);
     }
 
-    /// The ring's color comes from the same score → brush-key mapping the
-    /// whole app uses; the hero merely resolves the key to its bright
-    /// dark-surface variants. Pin the boundaries the gauge lives on.
-    [Theory]
-    [InlineData(100, "Good")]
-    [InlineData(90, "Good")]
-    [InlineData(89, "SeverityNotice")]
-    [InlineData(70, "SeverityNotice")]
-    [InlineData(69, "SeverityCritical")]
-    [InlineData(0, "SeverityCritical")]
-    public void GaugeColor_FollowsTheSharedHealthMapping(int health, string expected)
-    {
-        Assert.Equal(expected, HealthBrush.KeyFor(health));
-    }
-
     /// FrameworkElement construction needs an STA thread (InputManager);
     /// xunit runs MTA, so the one instance-level test hops threads.
     private static void RunSta(Action body)

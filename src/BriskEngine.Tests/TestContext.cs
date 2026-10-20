@@ -103,8 +103,15 @@ public sealed class FakeSensors : ISensorProbe
 public sealed class FakeDisk : IDiskInfoProbe
 {
     public long Free = 500L << 30; public long Total = 1000L << 30;
+    /// Unknown by default, so every test that never thought about the disk's
+    /// medium keeps the silence it always had from the rule that reads it.
+    public DiskMedium Medium = DiskMedium.Unknown;
+    /// The root the last MediumOf call asked about, for the test that pins
+    /// which disk the rule judges.
+    public string? AskedRoot;
     public long FreeBytes(string driveRoot) => Free;
     public long TotalBytes(string driveRoot) => Total;
+    public DiskMedium MediumOf(string driveRoot) { AskedRoot = driveRoot; return Medium; }
 }
 
 public sealed class FakeFiles : IFileProbe
@@ -220,7 +227,12 @@ public sealed class FakeDefender : IDefenderProbe
 {
     public DefenderStatus? Status;
     public int Reads;
+    /// Empty by default: every test that never thought about Security
+    /// Center's table keeps the silence it always had from the rule that
+    /// reads it.
+    public List<AntivirusProduct> Products = new();
     public DefenderStatus? Read() { Reads++; return Status; }
+    public IReadOnlyList<AntivirusProduct> Registered() => Products;
 }
 
 public static class TestContext

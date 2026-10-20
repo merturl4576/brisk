@@ -146,8 +146,14 @@ public class LocTests
     [InlineData("rule.power-plan.evidence")]
     [InlineData("rule.browser-gpu.evidence")]
     [InlineData("rule.hw-acceleration.evidence")]
+    [InlineData("rule.hw-acceleration.evidence.unread")]
+    [InlineData("rule.hw-acceleration.evidence.partly")]
+    [InlineData("rule.hw-acceleration.unread.title")]
     [InlineData("rule.startup-bloat.evidence")]
     [InlineData("rule.startup-bloat.evidence.heavy")]
+    [InlineData("rule.startup-bloat.evidence.blamed")]
+    [InlineData("flyout.yourcall")]
+    [InlineData("flyout.boottrend")]
     [InlineData("rule.visual-effects.evidence")]
     [InlineData("rule.storage-sense.evidence")]
     [InlineData("rule.ram-pressure.evidence")]
@@ -157,6 +163,15 @@ public class LocTests
     [InlineData("rule.disk-forecast.evidence")]
     [InlineData("rule.memory-speed.advice")]
     [InlineData("rule.memory-speed.evidence")]
+    [InlineData("rule.system-disk-hdd.title")]
+    [InlineData("rule.system-disk-hdd.advice")]
+    [InlineData("rule.system-disk-hdd.evidence")]
+    [InlineData("rule.third-party-av.title")]
+    [InlineData("rule.third-party-av.advice")]
+    [InlineData("rule.third-party-av.evidence")]
+    [InlineData("rule.third-party-av.evidence.off")]
+    [InlineData("rule.third-party-av.evidence.outdated")]
+    [InlineData("clean.rescanning")]
     [InlineData("clean.skipped.apprunning")]
     [InlineData("clean.target.user-temp")]
     [InlineData("clean.target.windows-temp")]
@@ -580,6 +595,64 @@ public class LocTests
         {
             Assert.DoesNotContain(order, evidence, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(order, advice, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// The spinning-disk finding names the one remedy (an SSD), points at
+    /// where Windows shows the same reading (Task Manager), and sells
+    /// nothing brisk does — no cleanup, no switch — as a substitute for a
+    /// part. Both languages, because the machine it was written for reads
+    /// Turkish.
+    [Theory]
+    [InlineData("en", "SSD", "Task Manager", "spinning")]
+    [InlineData("tr", "SSD", "Görev Yöneticisi", "dönen")]
+    public void SystemDiskHddCopy_NamesTheSsd_PointsAtTaskManager_AndPromisesNothing(
+        string language, string remedy, string whereWindowsShowsIt, string medium)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        var title = loc["rule.system-disk-hdd.title"];
+        var evidence = loc.F("rule.system-disk-hdd.evidence", "C:");
+        var advice = loc["rule.system-disk-hdd.advice"];
+
+        Assert.NotEqual("rule.system-disk-hdd.title", title);     // key resolved
+        Assert.Contains(medium, title, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("C:", evidence);                            // {0} rendered whole
+        Assert.Contains(remedy, evidence);
+        Assert.Contains(remedy, advice);
+        Assert.Contains(whereWindowsShowsIt, evidence);
+        Assert.Contains(medium, evidence, StringComparison.OrdinalIgnoreCase);
+
+        // No cleanup or setting is sold as the fix for a part.
+        foreach (var promise in new[] { "faster", "speed up", "hızlandır", "hızlanır" })
+        {
+            Assert.DoesNotContain(promise, evidence, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(promise, advice, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// The antivirus finding renders the product's name whole, names Defender
+    /// as what stands behind it, and says in every variant that brisk changes
+    /// nothing — a product someone chose is reported, never removed.
+    [Theory]
+    [InlineData("en", "brisk changes nothing")]
+    [InlineData("tr", "brisk hiçbir şeyi değiştirmez")]
+    public void ThirdPartyAvCopy_NamesTheProductAndDefender_AndChangesNothing(
+        string language, string promise)
+    {
+        var loc = new Loc();
+        loc.SetLanguage(language);
+
+        Assert.NotEqual("rule.third-party-av.title", loc["rule.third-party-av.title"]);
+        foreach (var key in new[] { "rule.third-party-av.evidence",
+                                    "rule.third-party-av.evidence.off",
+                                    "rule.third-party-av.evidence.outdated" })
+        {
+            var evidence = loc.F(key, "McAfee LiveSafe");
+            Assert.Contains("McAfee LiveSafe", evidence);
+            Assert.Contains("Defender", evidence);
+            Assert.Contains(promise, evidence);
         }
     }
 

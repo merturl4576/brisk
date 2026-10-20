@@ -15,6 +15,12 @@ public sealed record CleanReport(IReadOnlyList<CleanEntry> Entries)
 {
     public long RecycledBytes =>
         Entries.Where(e => e.Action == "recycled").Sum(e => e.Bytes);
+
+    public long DeletedBytes =>
+        Entries.Where(e => e.Action == "deleted").Sum(e => e.Bytes);
+
+    public long RemovedBytes =>
+        Entries.Where(e => e.Action == "removed").Sum(e => e.Bytes);
 }
 
 public sealed class CleanRunner
@@ -35,10 +41,12 @@ public sealed class CleanRunner
     private readonly Func<bool> _isElevated;
     private readonly ILockProbe? _lockProbe;
     private readonly Func<long> _systemDriveFreeBytes;
+    private readonly IDeleter _deleter;
 
     public CleanRunner(SafetyValidator validator, IRecycler recycler, ActionLog log,
         IProcessRunner processRunner, Func<bool> isElevated,
-        ILockProbe? lockProbe = null, Func<long>? systemDriveFreeBytes = null)
+        ILockProbe? lockProbe = null, Func<long>? systemDriveFreeBytes = null,
+        IDeleter? deleter = null)
     {
         _validator = validator;
         _recycler = recycler;
@@ -48,6 +56,7 @@ public sealed class CleanRunner
         _lockProbe = lockProbe;
         _systemDriveFreeBytes = systemDriveFreeBytes
             ?? (() => new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory)!).AvailableFreeSpace);
+        _deleter = deleter ?? new WindowsDeleter();
     }
 
     /// What a path held by a running app is recorded as when the probe —
@@ -67,7 +76,7 @@ public sealed class CleanRunner
     /// happens, on the calling thread — the GUI's live progress. Semantics
     /// of what gets cleaned are unchanged.
     public CleanReport Clean(TargetScanResult scan, bool dryRun,
-        Action<CleanEntry>? onEntry = null)
+        Action<CleanEntry>? onEntry = null, bool permanent = false)
     {
         // A skipped scan (its app is running) cleans NOTHING — since round
         // 11 the scanner sizes skipped targets so the GUI can promise "+X
@@ -323,6 +332,23 @@ public sealed class CleanRunner
             RecycleSpan(present);
         }
 
+        // The action flow deletes for real: a regenerating cache sent to the
+        // bin frees nothing Explorer can see until the bin is emptied.
+        void DeleteNow(ResolvedItem item)
+        {
+            if (!Exists(item.Path))
+            {
+                Record(item.Path, 0, "error", "no longer exists (nothing to delete)");
+                return;
+            }
+            try { _deleter.Delete(item.Path); }
+            catch (Exception ex) { Record(item.Path, 0, "error", ex.Message); return; }
+            if (!Exists(item.Path)) { Record(item.Path, item.Bytes, "deleted"); return; }
+            var freed = Math.Max(0, item.Bytes - SizeCalculator.SizeOf(item.Path));
+            if (freed > 0) Record(item.Path, freed, "deleted", "partly deleted — files in use were left");
+            else Record(item.Path, 0, "error", "in use by a running app");
+        }
+
         var blockedByElevation = scan.Target.RequiresElevation && !_isElevated();
         var lockBudget = _lockProbe is null ? null : new LockProbeBudget();
         foreach (var item in scan.Items)
@@ -347,6 +373,7 @@ public sealed class CleanRunner
                 continue;
             }
 
+            if (permanent) { DeleteNow(item); continue; }
             batch.Add(item);
             if (batch.Count >= BatchSize) Flush();
         }

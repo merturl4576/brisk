@@ -144,4 +144,30 @@ public class HealthScoreTests
         Assert.Equal(FindingKind.Problem,
             new DiagnosticFinding("a", "rule.a.title", "A", "ev",
                 Severity.Info, RuleCategory.Auto, 1, false, null).Kind);
+
+    /// The boot rule after 2026-09-09: a notice, because brisk will not
+    /// shorten a boot, but Measured, because Windows timed it — and a
+    /// measured number charges whether or not brisk holds the fix. Critical
+    /// five stars is the whole 25. A laptop Windows timed at 106 s read 89
+    /// under the old skip, and both people who saw it called brisk wrong.
+    [Fact]
+    public void AMeasuredNotice_ChargesLikeAMeasuredProblem()
+    {
+        var boot = new DiagnosticFinding("boot-degradation", "rule.boot-degradation.title",
+            "B", "ev", Severity.Critical, RuleCategory.Advise, 5, false, null,
+            Kind: FindingKind.Notice, ImpactClass: ImpactClass.Measured);
+        Assert.Equal(75, HealthScore.Compute(new[] { boot }));
+    }
+
+    /// The other notices are still free: large-files (a machine is not
+    /// worse for holding its owner's work), memory speed, thermals — none
+    /// carries a number the score may move on.
+    [Fact]
+    public void AHygieneNotice_StillCostsNothing()
+    {
+        var files = new DiagnosticFinding("large-files", "rule.large-files.title",
+            "L", "ev", Severity.Info, RuleCategory.Advise, 2, false, null,
+            Kind: FindingKind.Notice);
+        Assert.Equal(100, HealthScore.Compute(new[] { files }));
+    }
 }

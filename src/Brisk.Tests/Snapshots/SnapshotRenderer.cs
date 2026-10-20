@@ -131,6 +131,13 @@ public static class SnapshotRenderer
     /// than photograph it. It shares the gate because it shares the
     /// Application: two WPF tests running at once would be building controls
     /// against one resource dictionary from two threads.
+    /// Runs `work` while no other test can render: what it observes on the
+    /// UI thread (binding errors, say) is then only its own.
+    public static T Exclusively<T>(Func<T> work)
+    {
+        lock (Gate) return work();
+    }
+
     public static void OnUiThread(Action work)
     {
         lock (Gate)
@@ -226,11 +233,11 @@ public static class SnapshotRenderer
         if (Application.Current is null)
             _ = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         if (_themeInstalled) return;
-        foreach (var file in new[] { "Dark.xaml", "Shared.xaml" })
+        foreach (var file in new[] { "Theming/Dark.xaml", "Theming/Shared.xaml", "Ui/Theme/Monster.xaml" })
             Application.Current!.Resources.MergedDictionaries.Add(new ResourceDictionary
             {
                 Source = new Uri(
-                    $"pack://application:,,,/brisk-app;component/Theming/{file}"),
+                    $"pack://application:,,,/brisk-app;component/{file}"),
             });
         _themeInstalled = true;
     }

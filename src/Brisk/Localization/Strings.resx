@@ -8,23 +8,17 @@
   <data name="nav.overview" xml:space="preserve"><value>Overview</value></data>
   <data name="nav.health" xml:space="preserve"><value>Health</value></data>
   <data name="nav.performance" xml:space="preserve"><value>Performance</value></data>
-  <data name="nav.clean" xml:space="preserve"><value>Storage</value></data>
   <data name="nav.privacy" xml:space="preserve"><value>Privacy</value></data>
-  <data name="nav.settings" xml:space="preserve"><value>Settings</value></data>
   <data name="chrome.minimize" xml:space="preserve"><value>Minimize</value></data>
   <data name="chrome.maximize" xml:space="preserve"><value>Maximize</value></data>
   <data name="chrome.restore" xml:space="preserve"><value>Restore</value></data>
   <data name="chrome.close" xml:space="preserve"><value>Close</value></data>
-  <data name="perf.title" xml:space="preserve"><value>Performance</value></data>
-  <data name="overview.status.good" xml:space="preserve"><value>Your PC is in good shape</value></data>
-  <data name="overview.status.attention" xml:space="preserve"><value>Some findings need attention</value></data>
   <data name="overview.status.advise" xml:space="preserve"><value>Your PC is in good shape — {0} recommendations to review</value></data>
   <data name="overview.cleanspace" xml:space="preserve"><value>Free up {0}</value></data>
   <data name="overview.cleanspace.none" xml:space="preserve"><value>Free up disk space</value></data>
   <data name="overview.actions.hint" xml:space="preserve"><value>Both are safe: setting changes can be undone, and only files Windows and your apps rebuild on their own are cleaned.</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>What was done</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Fixed: {0}</value></data>
-  <data name="overview.report.disabled" xml:space="preserve"><value>Startup disabled: {0}</value></data>
   <data name="overview.report.enjoy" xml:space="preserve"><value>Done — your PC should feel snappier.</value></data>
   <data name="overview.report.summary" xml:space="preserve"><value>Result: {0}</value></data>
   <data name="overview.report.part.freed" xml:space="preserve"><value>{0} freed</value></data>
@@ -41,40 +35,17 @@
   <data name="overview.report.card.saved" xml:space="preserve"><value>Saved: {0} (copied to the clipboard)</value></data>
   <data name="overview.report.card.saved.fileonly" xml:space="preserve"><value>Saved: {0}</value></data>
   <data name="overview.report.card.failed" xml:space="preserve"><value>The card could not be saved: {0}</value></data>
-  <data name="flyout.health" xml:space="preserve"><value>health</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} findings · {1} one-click fixable</value></data>
-  <data name="flyout.findings.only" xml:space="preserve"><value>{0} findings</value></data>
-  <data name="flyout.reclaimable" xml:space="preserve"><value>{0} reclaimable</value></data>
-  <data name="flyout.lastscan" xml:space="preserve"><value>Last scan: {0}</value></data>
-  <data name="flyout.scanning" xml:space="preserve"><value>Scanning…</value></data>
-  <data name="flyout.scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="flyout.yourcall" xml:space="preserve"><value>{0} more with your say-so</value></data>
+  <data name="flyout.boottrend" xml:space="preserve"><value>Boot: {0} before brisk's changes → {1} since</value></data>
   <data name="flyout.fixall" xml:space="preserve"><value>Speed up this PC</value></data>
-  <data name="flyout.clean" xml:space="preserve"><value>Clean</value></data>
-  <data name="flyout.details" xml:space="preserve"><value>Open details →</value></data>
-  <data name="health.title" xml:space="preserve"><value>System health</value></data>
   <data name="health.fixall" xml:space="preserve"><value>Speed up this PC</value></data>
   <data name="health.fix" xml:space="preserve"><value>Fix</value></data>
   <data name="health.undo" xml:space="preserve"><value>Undo</value></data>
-  <data name="health.restorepoint" xml:space="preserve"><value>Create a restore point first</value></data>
-  <data name="health.noscan" xml:space="preserve"><value>Run a scan to see findings</value></data>
-  <data name="health.restorepointfailed" xml:space="preserve"><value>restore point was not created — nothing was changed</value></data>
-  <data name="health.advise" xml:space="preserve"><value>advice</value></data>
-  <data name="health.advise.section" xml:space="preserve"><value>Recommendations</value></data>
   <data name="health.notice.section" xml:space="preserve"><value>What brisk can only report</value></data>
   <data name="finding.details" xml:space="preserve"><value>Details</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Open Storage</value></data>
-  <data name="finding.action.windowssetting" xml:space="preserve"><value>Open Windows privacy settings</value></data>
-  <data name="finding.action.windowssecurity" xml:space="preserve"><value>Open Windows Security</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Fixing…</value></data>
-  <data name="finding.undoing" xml:space="preserve"><value>Undoing…</value></data>
-  <data name="health.crosslink" xml:space="preserve"><value>{0} more findings in Performance →</value></data>
-  <data name="performance.crosslink" xml:space="preserve"><value>{0} more findings in Health →</value></data>
-  <data name="health.fixdone" xml:space="preserve"><value>{0} fixes applied</value></data>
-  <data name="health.fixpartial" xml:space="preserve"><value>{0} of {1} fixes applied</value></data>
-  <data name="health.nofixables" xml:space="preserve"><value>Nothing to fix automatically — remaining findings are recommendations</value></data>
-  <data name="startup.title" xml:space="preserve"><value>Startup programs</value></data>
-  <data name="startup.togglefailed" xml:space="preserve"><value>couldn't change this item — it may need administrator rights</value></data>
-  <data name="startup.heavy" xml:space="preserve"><value>slows startup noticeably</value></data>
   <data name="startup.system.hint" xml:space="preserve"><value>System component — turning it off is not recommended</value></data>
   <data name="startup.app.teams" xml:space="preserve"><value>Microsoft Teams — meetings app, slows startup</value></data>
   <data name="startup.app.onedrive" xml:space="preserve"><value>OneDrive — cloud file sync, safe to start later</value></data>
@@ -88,31 +59,6 @@
   <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — messaging app, opens fine on demand</value></data>
   <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emulator, very heavy at startup</value></data>
   <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — animated wallpapers, uses the GPU constantly</value></data>
-  <data name="startup.app.brisk" xml:space="preserve"><value>brisk itself — turn this off to stop it starting with Windows.</value></data>
-  <data name="clean.selected" xml:space="preserve"><value>{0} selected</value></data>
-  <data name="clean.clean" xml:space="preserve"><value>Clean</value></data>
-  <data name="clean.level.safe" xml:space="preserve"><value>Safe</value></data>
-  <data name="clean.level.developer" xml:space="preserve"><value>Developer</value></data>
-  <data name="clean.level.deep" xml:space="preserve"><value>Deep</value></data>
-  <data name="clean.recycled" xml:space="preserve"><value>{0} items moved to Recycle Bin ({1})</value></data>
-  <data name="clean.removed" xml:space="preserve"><value>{0} items removed for good ({1}) — past the Recycle Bin, no undo</value></data>
-  <data name="clean.target.windows-old" xml:space="preserve"><value>Windows.old (previous Windows installation)</value></data>
-  <data name="clean.target.hibernation-file" xml:space="preserve"><value>Hibernation file (hiberfil.sys)</value></data>
-  <data name="clean.target.component-store" xml:space="preserve"><value>Windows component store (superseded updates)</value></data>
-  <data name="clean.note.windows-old" xml:space="preserve"><value>Removes the previous Windows installation — rolling back to it stops being possible. Windows deletes this itself about 10 days after an upgrade.</value></data>
-  <data name="clean.note.hibernation-file" xml:space="preserve"><value>Frees the file by turning hibernation and Fast Startup off — "powercfg /hibernate on" brings both back.</value></data>
-  <data name="clean.note.component-store" xml:space="preserve"><value>Windows removes update files it has already replaced (DISM StartComponentCleanup). Takes minutes; the freed amount is DISM's to decide; installed updates stay uninstallable.</value></data>
-  <data name="clean.note.docker-prune" xml:space="preserve"><value>Runs "docker system prune -af": unused images, containers and build cache — everything a build or pull recreates.</value></data>
-  <data name="clean.note.delivery-optimization" xml:space="preserve"><value>Empties Windows' peer-update download cache with Windows' own command. Nothing goes to the Recycle Bin; the bytes come back only as Windows re-downloads what it needs.</value></data>
-  <data name="overview.deepreveal" xml:space="preserve"><value>{0} more sits on the deep shelves ({1}: {2}) — see the breakdown</value></data>
-  <data name="perf.boottrend" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → since the last change: about {2} ({3} boots). Windows' own timings.</value></data>
-  <data name="perf.boottrend.one" xml:space="preserve"><value>Boot before brisk's changes: about {0} (middle of {1} boots) → the first boot since the last change: {2}. Windows' own timings.</value></data>
-  <data name="report.expectation" xml:space="preserve"><value>Part of this only shows after the next restart — brisk will read Windows' own boot timings then and put the before → after on the Performance page.</value></data>
-  <data name="clean.undo" xml:space="preserve"><value>Undo</value></data>
-  <data name="clean.reclaim" xml:space="preserve"><value>Reclaim space now</value></data>
-  <data name="clean.dismiss" xml:space="preserve"><value>Dismiss</value></data>
-  <data name="clean.elevation" xml:space="preserve"><value>Administrator required</value></data>
-  <data name="clean.skipped" xml:space="preserve"><value>skipped</value></data>
   <data name="clean.simple.title" xml:space="preserve"><value>Space you can reclaim</value></data>
   <data name="clean.simple.hint" xml:space="preserve"><value>Only safe files that Windows and your apps rebuild on their own are cleaned — the space is freed immediately.</value></data>
   <data name="clean.advanced" xml:space="preserve"><value>Advanced</value></data>
@@ -120,41 +66,18 @@
   <data name="clean.group.browser" xml:space="preserve"><value>Browser caches</value></data>
   <data name="clean.group.app" xml:space="preserve"><value>App caches</value></data>
   <data name="clean.group.other" xml:space="preserve"><value>Other</value></data>
-  <data name="clean.lifetime" xml:space="preserve"><value>{0} reclaimed so far</value></data>
-  <data name="clean.cleaning" xml:space="preserve"><value>Cleaning…</value></data>
   <data name="clean.preparing" xml:space="preserve"><value>Getting ready…</value></data>
   <data name="clean.purging" xml:space="preserve"><value>Freeing the space…</value></data>
-  <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="clean.rescanning" xml:space="preserve"><value>Measuring what changed…</value></data>
   <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} items cleaned — {1} of disk space freed</value></data>
-  <data name="clean.report.none" xml:space="preserve"><value>Nothing needed cleaning — this area is already tidy.</value></data>
-  <data name="clean.report.disk" xml:space="preserve"><value>Free disk space: {0} → {1}</value></data>
-  <data name="clean.report.disk.gained" xml:space="preserve"><value>Free disk space: {0} → {1} — {2} regained</value></data>
-  <data name="perf.hero.done" xml:space="preserve"><value>improvements made</value></data>
-  <data name="perf.hero.findings" xml:space="preserve"><value>findings waiting</value></data>
-  <data name="perf.hero.startup" xml:space="preserve"><value>startup programs</value></data>
-  <data name="clean.hero.reclaimable" xml:space="preserve"><value>reclaimable right now</value></data>
-  <data name="clean.hero.lifetime" xml:space="preserve"><value>reclaimed so far</value></data>
   <data name="clean.simple.locked.app" xml:space="preserve"><value>+{1} more if you close {0}</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} more in files that running apps are holding — frees up when they close</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} is open, so its cache ({1}) was skipped — close {0} and clean again</value></data>
   <data name="clean.report.binleft" xml:space="preserve"><value>{0} stayed in the Recycle Bin</value></data>
-  <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} files are in use by a running app and were left untouched</value></data>
-  <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} items need administrator approval and were skipped</value></data>
-  <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} items could not be moved and were skipped</value></data>
-  <data name="settings.language" xml:space="preserve"><value>Language</value></data>
-  <data name="settings.theme" xml:space="preserve"><value>Theme</value></data>
-  <data name="settings.dryrun" xml:space="preserve"><value>Dry run (report only, never change anything)</value></data>
-  <data name="settings.startwithwindows" xml:space="preserve"><value>Start with Windows</value></data>
-  <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Off by default — brisk practices what it preaches about startup bloat.</value></data>
-  <data name="settings.startwithwindows.failed" xml:space="preserve"><value>Windows refused the change — the logon task could not be created or removed. A policy or a security product usually blocks this.</value></data>
-  <data name="settings.value.system" xml:space="preserve"><value>System</value></data>
-  <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
-  <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
-  <data name="settings.value.light" xml:space="preserve"><value>Light</value></data>
-  <data name="settings.value.dark" xml:space="preserve"><value>Dark</value></data>
   <data name="rule.power-plan.title" xml:space="preserve"><value>A performance power plan is available and not in use</value></data>
   <data name="rule.browser-gpu.title" xml:space="preserve"><value>Browsers are not using the fast GPU</value></data>
   <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Browser hardware acceleration is off</value></data>
+  <data name="rule.hw-acceleration.unread.title" xml:space="preserve"><value>A browser's settings file could not be read</value></data>
   <data name="rule.startup-bloat.title" xml:space="preserve"><value>Too many programs start with Windows</value></data>
   <data name="rule.ram-pressure.title" xml:space="preserve"><value>Memory pressure is high</value></data>
   <data name="rule.thermals.title" xml:space="preserve"><value>Running hot at idle</value></data>
@@ -169,6 +92,8 @@
   <data name="rule.search-web-results.title" xml:space="preserve"><value>Start menu search waits on the internet</value></data>
   <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows takes a long time to start</value></data>
   <data name="rule.memory-speed.title" xml:space="preserve"><value>Memory is running below its rated speed</value></data>
+  <data name="rule.system-disk-hdd.title" xml:space="preserve"><value>Windows runs from a spinning disk</value></data>
+  <data name="rule.third-party-av.title" xml:space="preserve"><value>A third-party antivirus holds the job</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>High temperatures at idle usually mean dust or old thermal paste — cleaning the fans helps</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Memory is nearly full — closing unused apps or trimming startup programs frees it up</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>See which folders take the most space and clean safely</value></data>
@@ -183,9 +108,13 @@
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Old developer caches rebuild themselves when needed — cleaning them is safe</value></data>
   <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows times its own boot and names the programs that started slower than it expected — the ones that turn up under Startup programs on the Performance page can be switched off there</value></data>
   <data name="rule.memory-speed.advice" xml:space="preserve"><value>The modules report a higher rated speed than they are set to — that can be a speed profile (XMP/EXPO) that was never switched on, or a board that does not support the rating, and brisk cannot tell which from Windows</value></data>
+  <data name="rule.system-disk-hdd.advice" xml:space="preserve"><value>Replace the drive Windows runs from with an SSD, or have a shop do it — it is the one change that makes a PC like this feel new, and no cleanup substitutes for it</value></data>
+  <data name="rule.third-party-av.advice" xml:space="preserve"><value>Nothing to switch here: if the product was your choice, keep it up to date; if it came with the machine and you never chose it, removing it hands the job back to Defender, which is already here</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Power plan switched to high performance</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Browsers now use the fast GPU</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Browser hardware acceleration enabled</value></data>
+  <data name="rule.hw-acceleration.evidence.unread" xml:space="preserve"><value>brisk could not read the settings file (Local State) of: {0}, so it cannot tell whether hardware acceleration is on there. Nothing is changed over a file brisk cannot read.</value></data>
+  <data name="rule.hw-acceleration.evidence.partly" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube. brisk could not read the settings file of: {1}, so it cannot say for that one, and the fix leaves it alone.</value></data>
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Heavy startup programs disabled</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Visual effects tuned for performance</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Storage Sense enabled</value></data>
@@ -196,6 +125,7 @@
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Hardware acceleration is disabled in: {0}. Video decoding falls back to the CPU, which stutters on YouTube.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>{0} programs start with Windows. None of them is on brisk's heavy list, so which ones you actually need is your call — review them under Startup programs on the Performance page.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>{0} programs start with Windows. Heavy ones that can be started manually instead: {1}.</value></data>
+  <data name="rule.startup-bloat.evidence.blamed" xml:space="preserve"><value>{0} programs start with Windows. Heavy ones that can be started manually instead: {1}. Windows itself blamed these for starting late on recent boots: {2}.</value></data>
   <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>programs start with Windows</value></data>
   <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows is configured for "Best appearance", which enables animations and transparency effects that cost CPU/GPU cycles on every window redraw.</value></data>
@@ -217,56 +147,21 @@
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — each module's configured speed out of the speed it is rated for. Two things look like this and Windows reports neither: a memory speed profile (XMP/EXPO) that was never switched on, or a board or memory controller that does not support the rated speed. brisk cannot tell those apart from here, so it is not telling you to change anything in the BIOS — only that the gap is there.</value></data>
   <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
   <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>rated for {0} MT/s</value></data>
-  <data name="display-confirm.title" xml:space="preserve"><value>Is the picture back?</value></data>
-  <data name="display-confirm.body" xml:space="preserve"><value>The display was raised to a higher refresh rate. If you can read this, confirm within 15 seconds — otherwise the previous setting is restored automatically.</value></data>
-  <data name="display-confirm.keep" xml:space="preserve"><value>Keep this setting</value></data>
-  <data name="banner.dismiss" xml:space="preserve"><value>Dismiss</value></data>
-  <data name="identity.otheraccount.short" xml:space="preserve"><value>Acting on {0}’s profile, not {1}’s.</value></data>
-  <data name="identity.otheraccount" xml:space="preserve"><value>brisk is running as {0}, but {1} is signed in. Windows asked for an administrator and gave brisk that account’s profile — so the settings, startup entries, temp files and browser caches brisk reports and cleans belong to {0}, not to {1}.</value></data>
-  <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk raised the display to its highest refresh rate and put the previous setting back after 15 seconds with no answer. That usually means the cable or the adapter cannot carry the higher rate.</value></data>
-  <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk could not restore the previous display setting: {0}. The change was never saved, so restarting Windows brings the previous setting back.</value></data>
-  <data name="display-confirm.notkept" xml:space="preserve"><value>The display is running at the higher refresh rate, but brisk could not save it — a restart will bring the previous setting back.</value></data>
+  <data name="rule.system-disk-hdd.evidence" xml:space="preserve"><value>The disk Windows runs from ({0}) is a spinning drive: it reports a seek penalty, the same reading Task Manager uses to label a disk HDD on its Performance page. Everything on this machine waits on that disk — starting up, opening programs, updates — and nothing brisk cleans or switches changes that. An SSD in its place is the one upgrade that would make this PC feel new. This finding charges the score because the slowness is measured, not because brisk can fix it.</value></data>
+  <data name="rule.third-party-av.evidence" xml:space="preserve"><value>{0} is the antivirus Windows Security lists as active, and Defender stands behind it, switched off while another product holds the job. Two things follow. Every file you open goes through that product's real-time scanner, which on an older machine is felt. And a program without a signature, brisk included, can be blocked by it without a word. If it came with the machine and you never chose it, removing it hands the job back to Defender, which is already here and updates with Windows. brisk changes nothing here; it reports.</value></data>
+  <data name="rule.third-party-av.evidence.off" xml:space="preserve"><value>{0} is listed as this machine's antivirus and reports itself as off — an expired trial looks exactly like this. Windows Security may have handed real-time scanning back to Defender, or nothing may be scanning at all; the Windows Security app says which. Removing a product that has stopped working gives Defender the job for certain. brisk changes nothing here; it reports.</value></data>
+  <data name="rule.third-party-av.evidence.outdated" xml:space="preserve"><value>{0} is the active antivirus and Windows reports its definitions as out of date, so it is scanning against an old list. Either update it or, if it came with the machine and you never chose it, remove it and let Defender, which updates with Windows, take the job. brisk changes nothing here; it reports.</value></data>
   <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Every keystroke in Start is sent to Bing, and local results for your apps and files wait for that round-trip. Turning web results off makes Start answer immediately. Takes effect after you sign in again.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} is running — close it to include this</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} free · {1}</value></data>
   <data name="clean.target.user-temp" xml:space="preserve"><value>User temp files</value></data>
-  <data name="clean.target.chrome-cache" xml:space="preserve"><value>Chrome cache</value></data>
-  <data name="clean.target.edge-cache" xml:space="preserve"><value>Edge cache</value></data>
-  <data name="clean.target.firefox-cache" xml:space="preserve"><value>Firefox cache</value></data>
-  <data name="clean.target.brave-cache" xml:space="preserve"><value>Brave cache</value></data>
-  <data name="clean.target.opera-cache" xml:space="preserve"><value>Opera cache</value></data>
-  <data name="clean.target.thumbnail-cache" xml:space="preserve"><value>Explorer thumbnail cache</value></data>
-  <data name="clean.target.discord-cache" xml:space="preserve"><value>Discord cache</value></data>
-  <data name="clean.target.spotify-storage" xml:space="preserve"><value>Spotify cache</value></data>
-  <data name="clean.target.teams-cache" xml:space="preserve"><value>Microsoft Teams cache</value></data>
-  <data name="clean.target.slack-cache" xml:space="preserve"><value>Slack cache</value></data>
-  <data name="clean.target.vscode-cache" xml:space="preserve"><value>VS Code cache</value></data>
-  <data name="clean.target.whatsapp-cache" xml:space="preserve"><value>WhatsApp cache</value></data>
-  <data name="clean.target.telegram-media-cache" xml:space="preserve"><value>Telegram media cache</value></data>
-  <data name="clean.target.crash-dumps" xml:space="preserve"><value>Crash dumps</value></data>
-  <data name="clean.target.wer-reports" xml:space="preserve"><value>Windows Error Reporting queues</value></data>
-  <data name="clean.target.npm-cache" xml:space="preserve"><value>npm cache</value></data>
-  <data name="clean.target.pip-cache" xml:space="preserve"><value>pip cache</value></data>
-  <data name="clean.target.yarn-cache" xml:space="preserve"><value>Yarn cache</value></data>
-  <data name="clean.target.pnpm-store" xml:space="preserve"><value>pnpm store</value></data>
-  <data name="clean.target.nuget-http-cache" xml:space="preserve"><value>NuGet HTTP cache</value></data>
-  <data name="clean.target.cargo-registry-cache" xml:space="preserve"><value>Cargo registry cache</value></data>
-  <data name="clean.target.gradle-caches" xml:space="preserve"><value>Gradle caches</value></data>
-  <data name="clean.target.docker-prune" xml:space="preserve"><value>Docker unused data (docker system prune)</value></data>
   <data name="clean.target.windows-temp" xml:space="preserve"><value>Windows temp</value></data>
-  <data name="clean.target.windows-update-cache" xml:space="preserve"><value>Windows Update download cache</value></data>
-  <data name="clean.target.delivery-optimization" xml:space="preserve"><value>Delivery Optimization cache</value></data>
-  <data name="clean.target.old-installers" xml:space="preserve"><value>Old installers in Downloads</value></data>
-  <data name="clean.target.empty-recycle-bin" xml:space="preserve"><value>Empty Recycle Bin</value></data>
   <data name="app.startupfailed" xml:space="preserve"><value>brisk could not start: {0}</value></data>
   <data name="app.unexpected" xml:space="preserve"><value>unexpected error: {0}</value></data>
-  <data name="dryrun.blocked" xml:space="preserve"><value>dry run is on — nothing was changed</value></data>
   <data name="tray.open" xml:space="preserve"><value>Open brisk</value></data>
-  <data name="tray.scan" xml:space="preserve"><value>Scan now</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Exit</value></data>
   <data name="overview.revelation.more" xml:space="preserve"><value>and {0} more</value></data>
   <data name="overview.revelation.none" xml:space="preserve"><value>All {0} rules looked — nothing on this machine leads with a number.</value></data>
-  <data name="overview.revelation.see" xml:space="preserve"><value>See the evidence</value></data>
   <data name="report.section.findings" xml:space="preserve"><value>Findings</value></data>
   <data name="report.section.unread" xml:space="preserve"><value>What brisk could not read</value></data>
   <data name="report.section.fixes" xml:space="preserve"><value>Applied fixes</value></data>
@@ -371,29 +266,9 @@
   <data name="rule.defender-blind-spots.headline.caption.mode" xml:space="preserve"><value>Defender mode</value></data>
   <data name="rule.defender-blind-spots.headline.caption.scan-age" xml:space="preserve"><value>days since the last scan</value></data>
   <data name="rule.defender-blind-spots.headline.caption.no-scan" xml:space="preserve"><value>completed scans on record</value></data>
-  <data name="privacy.capability.title" xml:space="preserve"><value>Which apps, and when</value></data>
-  <data name="privacy.capability.use" xml:space="preserve"><value>{0} — {1} · last used {2}</value></data>
-  <data name="privacy.capability.microphone" xml:space="preserve"><value>microphone</value></data>
-  <data name="privacy.capability.camera" xml:space="preserve"><value>camera</value></data>
-  <data name="privacy.defender.title" xml:space="preserve"><value>What Defender skips</value></data>
   <data name="privacy.title" xml:space="preserve"><value>Privacy and security on this machine</value></data>
   <data name="privacy.security.section" xml:space="preserve"><value>Security</value></data>
   <data name="privacy.security.note" xml:space="preserve"><value>brisk reads these values and grades none of them. Fine means the value reads as Windows' safer setting; it says nothing about what else is on this machine.</value></data>
-  <data name="privacy.posture.firewall.fine" xml:space="preserve"><value>Firewall on for all three network profiles</value></data>
-  <data name="privacy.posture.firewall.attention" xml:space="preserve"><value>Firewall off for at least one network profile</value></data>
-  <data name="privacy.posture.firewall.unread" xml:space="preserve"><value>Firewall: brisk could not read this</value></data>
-  <data name="privacy.posture.rdp.fine" xml:space="preserve"><value>Remote Desktop off</value></data>
-  <data name="privacy.posture.rdp.attention" xml:space="preserve"><value>Remote Desktop on: this machine accepts remote sign-ins</value></data>
-  <data name="privacy.posture.rdp.unread" xml:space="preserve"><value>Remote Desktop: brisk could not read this</value></data>
-  <data name="privacy.posture.uac.fine" xml:space="preserve"><value>Windows asks before a program takes control</value></data>
-  <data name="privacy.posture.uac.attention" xml:space="preserve"><value>Windows does not ask before a program takes control (see below)</value></data>
-  <data name="privacy.posture.uac.unread" xml:space="preserve"><value>UAC prompts: brisk could not read this</value></data>
-  <data name="privacy.posture.defender-rtp.fine" xml:space="preserve"><value>Defender real-time protection on</value></data>
-  <data name="privacy.posture.defender-rtp.attention" xml:space="preserve"><value>Defender real-time protection off (see below)</value></data>
-  <data name="privacy.posture.defender-rtp.unread" xml:space="preserve"><value>Defender real-time protection: brisk could not read this</value></data>
-  <data name="privacy.posture.defender-tamper.fine" xml:space="preserve"><value>Defender tamper protection on</value></data>
-  <data name="privacy.posture.defender-tamper.attention" xml:space="preserve"><value>Defender tamper protection off (see below)</value></data>
-  <data name="privacy.posture.defender-tamper.unread" xml:space="preserve"><value>Defender tamper protection: brisk could not read this</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk reads these settings and these records here, and grades none of them: the health score is about speed and hygiene, and nothing on this page moves it.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>What Windows has written down</value></data>
   <data name="privacy.usb.devices.title" xml:space="preserve"><value>What the USB record holds</value></data>
@@ -416,15 +291,218 @@
   <data name="rule.activity-history.done" xml:space="preserve"><value>Activity history policy set to off</value></data>
   <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC values restored to Windows' defaults</value></data>
   <data name="readback.held" xml:space="preserve"><value>You switched this off {0} days ago; it still reads as off.</value></data>
-  <data name="readback.held.today" xml:space="preserve"><value>You switched this off today; it still reads as off.</value></data>
-  <data name="readback.held.yesterday" xml:space="preserve"><value>You switched this off yesterday; it still reads as off.</value></data>
   <data name="readback.reverted" xml:space="preserve"><value>You switched this off on {0}; it reads as on again now.</value></data>
   <data name="readback.ignored" xml:space="preserve"><value>The setting reads as off, but this edition of Windows is not acting on it. brisk read a second value this machine keeps for the same setting, and that one reads as on.</value></data>
   <data name="readback.unverified" xml:space="preserve"><value>You switched this off {0} days ago and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
-  <data name="readback.unverified.today" xml:space="preserve"><value>You switched this off today and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
-  <data name="readback.unverified.yesterday" xml:space="preserve"><value>You switched this off yesterday and the switch still reads as off; whether this edition of Windows acts on that policy is not something that read can tell you.</value></data>
   <data name="readback.on.held" xml:space="preserve"><value>You switched this on {0} days ago; it still reads as on.</value></data>
   <data name="readback.on.held.today" xml:space="preserve"><value>You switched this on today; it still reads as on.</value></data>
   <data name="readback.on.held.yesterday" xml:space="preserve"><value>You switched this on yesterday; it still reads as on.</value></data>
   <data name="readback.on.reverted" xml:space="preserve"><value>On {0} you switched this on; it reads as off again now.</value></data>
+  <data name="action.space.caches.title" xml:space="preserve"><value>Caches and temporary files</value></data>
+  <data name="action.space.developer.title" xml:space="preserve"><value>Developer caches</value></data>
+  <data name="action.space.developer.cost" xml:space="preserve"><value>Downloads again later.</value></data>
+  <data name="action.space.shaders.title" xml:space="preserve"><value>Game shader caches</value></data>
+  <data name="action.space.shaders.cost" xml:space="preserve"><value>Games may stutter on first launch.</value></data>
+  <data name="action.space.hibernation.title" xml:space="preserve"><value>Hibernation file</value></data>
+  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Fast startup turns off.</value></data>
+  <data name="action.space.hibernation.name" xml:space="preserve"><value>hiberfil.sys</value></data>
+  <data name="action.space.hibernation.cost-laptop" xml:space="preserve"><value>Open work lost if battery dies.</value></data>
+  <data name="action.space.windows-old.title" xml:space="preserve"><value>Old Windows copy</value></data>
+  <data name="action.space.windows-old.cost" xml:space="preserve"><value>No going back to old Windows.</value></data>
+  <data name="action.space.windows-old.name" xml:space="preserve"><value>Windows.old</value></data>
+  <data name="action.space.downloads.title" xml:space="preserve"><value>Installers in Downloads</value></data>
+  <data name="action.space.downloads.cost" xml:space="preserve"><value>Can't be undone.</value></data>
+  <data name="action.space.docker.title" xml:space="preserve"><value>Docker's unused data</value></data>
+  <data name="action.space.docker.cost" xml:space="preserve"><value>Stopped containers are deleted.</value></data>
+  <data name="action.space.docker.name" xml:space="preserve"><value>docker system prune</value></data>
+  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Recycle Bin</value></data>
+  <data name="action.speed.power-mode.title" xml:space="preserve"><value>Full power when plugged in</value></data>
+  <data name="action.speed.power-mode.cost" xml:space="preserve"><value>The fan may spin more.</value></data>
+  <data name="action.speed.power-mode.name" xml:space="preserve"><value>Power mode: Best performance</value></data>
+  <data name="action.speed.game-recording.title" xml:space="preserve"><value>Background video recording in games</value></data>
+  <data name="action.speed.game-recording.name" xml:space="preserve"><value>Game DVR background recording</value></data>
+  <data name="action.speed.gpu-scheduling.title" xml:space="preserve"><value>Lower lag in games</value></data>
+  <data name="action.speed.gpu-scheduling.name" xml:space="preserve"><value>Hardware-accelerated GPU scheduling</value></data>
+  <data name="action.speed.windowed-games.title" xml:space="preserve"><value>Speed up windowed games</value></data>
+  <data name="action.speed.windowed-games.name" xml:space="preserve"><value>Optimizations for windowed games</value></data>
+  <data name="action.speed.animations.title" xml:space="preserve"><value>Window opening animations</value></data>
+  <data name="action.speed.animations.cost" xml:space="preserve"><value>Windows open instantly.</value></data>
+  <data name="action.speed.animations.name" xml:space="preserve"><value>Animate windows when minimizing and maximizing</value></data>
+  <data name="action.speed.memory-integrity.title" xml:space="preserve"><value>Extra kernel protection</value></data>
+  <data name="action.speed.memory-integrity.cost" xml:space="preserve"><value>Security drops one level.</value></data>
+  <data name="action.speed.memory-integrity.name" xml:space="preserve"><value>Memory integrity</value></data>
+  <data name="action.speed.vm-platform.title" xml:space="preserve"><value>Virtual machine support</value></data>
+  <data name="action.speed.vm-platform.cost" xml:space="preserve"><value>WSL and Docker stop working.</value></data>
+  <data name="action.speed.vm-platform.name" xml:space="preserve"><value>Virtual Machine Platform</value></data>
+  <data name="action.speed.startup.name" xml:space="preserve"><value>Startup apps (Task Manager)</value></data>
+  <data name="action.speed.startup.cost.security" xml:space="preserve"><value>Protection won't start at boot.</value></data>
+  <data name="action.speed.startup.cost.hardware" xml:space="preserve"><value>Hardware settings may not work.</value></data>
+  <data name="action.speed.startup.cost.sync" xml:space="preserve"><value>File sync stops.</value></data>
+  <data name="action.speed.startup.cost.passwords" xml:space="preserve"><value>Password manager won't open.</value></data>
+  <data name="action.speed.startup.cost.vpn" xml:space="preserve"><value>VPN won't connect automatically.</value></data>
+  <data name="action.speed.startup.cost.keyboard" xml:space="preserve"><value>Your shortcuts won't work.</value></data>
+  <data name="action.privacy.telemetry-services.title" xml:space="preserve"><value>Sending usage data to Microsoft</value></data>
+  <data name="action.privacy.telemetry-services.name" xml:space="preserve"><value>Connected User Experiences and Telemetry</value></data>
+  <data name="action.privacy.telemetry-tasks.title" xml:space="preserve"><value>Collecting data in the background</value></data>
+  <data name="action.privacy.telemetry-tasks.name" xml:space="preserve"><value>Telemetry scheduled tasks</value></data>
+  <data name="action.privacy.error-reports.title" xml:space="preserve"><value>Sending error and usage reports</value></data>
+  <data name="action.privacy.error-reports.name" xml:space="preserve"><value>Diagnostic data, Windows Error Reporting</value></data>
+  <data name="action.privacy.ads.title" xml:space="preserve"><value>Showing ads and suggestions for you</value></data>
+  <data name="action.privacy.ads.name" xml:space="preserve"><value>Advertising ID, tailored experiences</value></data>
+  <data name="action.privacy.activity.title" xml:space="preserve"><value>Recording the files and sites you open</value></data>
+  <data name="action.privacy.activity.name" xml:space="preserve"><value>Activity history</value></data>
+  <data name="action.privacy.start-ads.title" xml:space="preserve"><value>Ads in the Start menu</value></data>
+  <data name="action.privacy.start-ads.name" xml:space="preserve"><value>Start suggestions</value></data>
+  <data name="action.privacy.start-web.title" xml:space="preserve"><value>Going online when you search Start</value></data>
+  <data name="action.privacy.start-web.cost" xml:space="preserve"><value>No web search in Start.</value></data>
+  <data name="action.privacy.start-web.name" xml:space="preserve"><value>Bing in Start search</value></data>
+  <data name="action.privacy.speech.title" xml:space="preserve"><value>Sending your voice and typing</value></data>
+  <data name="action.privacy.speech.cost" xml:space="preserve"><value>Windows voice typing stops working.</value></data>
+  <data name="action.privacy.speech.name" xml:space="preserve"><value>Online speech recognition, inking and typing</value></data>
+  <data name="action.privacy.feedback.title" xml:space="preserve"><value>"How do you like Windows?" questions</value></data>
+  <data name="action.privacy.feedback.name" xml:space="preserve"><value>Feedback frequency</value></data>
+  <data name="action.privacy.recall.title" xml:space="preserve"><value>Saving pictures of your screen</value></data>
+  <data name="action.privacy.recall.name" xml:space="preserve"><value>Recall</value></data>
+  <data name="action.privacy.copilot.title" xml:space="preserve"><value>Copilot</value></data>
+  <data name="action.privacy.copilot.cost" xml:space="preserve"><value>Copilot turns off.</value></data>
+  <data name="action.privacy.copilot.name" xml:space="preserve"><value>Windows Copilot</value></data>
+  <data name="action.privacy.delivery-peers.title" xml:space="preserve"><value>Sharing updates with strangers</value></data>
+  <data name="action.privacy.delivery-peers.name" xml:space="preserve"><value>Delivery Optimization</value></data>
+  <data name="action.privacy.location.title" xml:space="preserve"><value>Sharing your location with apps</value></data>
+  <data name="action.privacy.location.cost" xml:space="preserve"><value>Find my device stops working.</value></data>
+  <data name="action.privacy.location.name" xml:space="preserve"><value>Location</value></data>
+  <data name="action.privacy.uac.title" xml:space="preserve"><value>Programs becoming admin without asking</value></data>
+  <data name="action.privacy.uac.cost" xml:space="preserve"><value>Programs ask for permission again.</value></data>
+  <data name="action.privacy.uac.name" xml:space="preserve"><value>User Account Control</value></data>
+  <data name="action.privacy.firewall.title" xml:space="preserve"><value>The firewall being off</value></data>
+  <data name="action.privacy.firewall.name" xml:space="preserve"><value>Windows Firewall</value></data>
+  <data name="action.privacy.defender-realtime.title" xml:space="preserve"><value>Virus protection being off</value></data>
+  <data name="action.privacy.defender-realtime.name" xml:space="preserve"><value>Real-time protection</value></data>
+  <data name="action.group.space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="action.group.speed" xml:space="preserve"><value>Speed up</value></data>
+  <data name="action.group.privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="action.group.load" xml:space="preserve"><value>Slowing you down now</value></data>
+  <data name="action.result.done" xml:space="preserve"><value>Done ✓</value></data>
+  <data name="action.result.off" xml:space="preserve"><value>Off ✓</value></data>
+  <data name="action.result.ignored" xml:space="preserve"><value>Windows ignored it</value></data>
+  <data name="action.result.reverted" xml:space="preserve"><value>Turned back on</value></data>
+  <data name="action.result.written" xml:space="preserve"><value>Written</value></data>
+  <data name="action.result.pending" xml:space="preserve"><value>After restart</value></data>
+  <data name="action.result.skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="action.result.failed" xml:space="preserve"><value>Didn't work</value></data>
+  <data name="action.result.needs-admin" xml:space="preserve"><value>Needs administrator</value></data>
+  <data name="action.result.deferred" xml:space="preserve"><value>Cleans when {0} closes</value></data>
+  <data name="action.result.cannot-undo" xml:space="preserve"><value>Can't be undone</value></data>
+  <data name="action.connections.footer" xml:space="preserve"><value>A connection doesn't mean data was sent.</value></data>
+  <data name="action.connections.local" xml:space="preserve"><value>Local network</value></data>
+  <data name="action.connections.unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="action.connections.telemetry" xml:space="preserve"><value>Telemetry</value></data>
+  <data name="action.usage.footer" xml:space="preserve"><value>Amounts only, no contents.</value></data>
+  <data name="action.usage.windows" xml:space="preserve"><value>Windows (system)</value></data>
+  <data name="action.unread" xml:space="preserve"><value>Couldn't read.</value></data>
+  <data name="action.load.close" xml:space="preserve"><value>Close</value></data>
+  <data name="action.load.force" xml:space="preserve"><value>Force close</value></data>
+  <data name="action.load.remove-startup" xml:space="preserve"><value>Remove from startup</value></data>
+  <data name="action.load.note.defender" xml:space="preserve"><value>Defender is scanning</value></data>
+  <data name="action.load.note.update" xml:space="preserve"><value>Windows is installing updates</value></data>
+  <data name="action.load.note.search" xml:space="preserve"><value>Windows is indexing for search</value></data>
+  <data name="action.load.note.memory" xml:space="preserve"><value>Windows is compressing memory</value></data>
+  <data name="action.load.note.compat" xml:space="preserve"><value>Windows is collecting compatibility data</value></data>
+  <data name="action.load.note.dwm" xml:space="preserve"><value>Windows is drawing the screen</value></data>
+  <data name="action.load.note.system" xml:space="preserve"><value>Windows itself</value></data>
+  <data name="action.load.note.services" xml:space="preserve"><value>Windows services</value></data>
+  <data name="action.receipt.freed" xml:space="preserve"><value>{0} freed</value></data>
+  <data name="action.receipt.deferred" xml:space="preserve"><value>{0} more when {1} closes</value></data>
+  <data name="action.receipt.boot" xml:space="preserve"><value>Startup {0} s → {1} s</value></data>
+  <data name="action.receipt.startup" xml:space="preserve"><value>Startup apps {0} → {1}</value></data>
+  <data name="action.receipt.ram" xml:space="preserve"><value>{0} RAM freed</value></data>
+  <data name="action.receipt.privacy" xml:space="preserve"><value>{0} settings off · Windows ignored {1}</value></data>
+  <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetry connections {0} → {1}</value></data>
+  <data name="action.restart" xml:space="preserve"><value>Restart for full effect</value></data>
+  <data name="action.undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="gui.home.label.looking" xml:space="preserve"><value>Looking</value></data>
+  <data name="gui.home.label.ready" xml:space="preserve"><value>Space to free</value></data>
+  <data name="gui.home.label.freed" xml:space="preserve"><value>Freed</value></data>
+  <data name="gui.home.label.failed" xml:space="preserve"><value>Couldn't look</value></data>
+  <data name="gui.home.this-pc" xml:space="preserve"><value>This PC</value></data>
+  <data name="gui.home.found" xml:space="preserve"><value>Space found</value></data>
+  <data name="gui.home.startup" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="gui.home.online" xml:space="preserve"><value>Online now</value></data>
+  <data name="gui.home.load" xml:space="preserve"><value>Slowing you now</value></data>
+  <data name="gui.home.load.none" xml:space="preserve"><value>None ✓</value></data>
+  <data name="gui.home.cpu" xml:space="preserve"><value>{0}% CPU</value></data>
+  <data name="gui.sat.speed" xml:space="preserve"><value>Speed up · at startup</value></data>
+  <data name="gui.sat.space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="gui.sat.privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="gui.sat.speed.value" xml:space="preserve"><value>{0} → {1}</value></data>
+  <data name="gui.sat.speed.done" xml:space="preserve"><value>✓ {0} left</value></data>
+  <data name="gui.sat.space.done" xml:space="preserve"><value>✓ {0}</value></data>
+  <data name="gui.sat.privacy.value" xml:space="preserve"><value>{0} settings</value></data>
+  <data name="gui.sat.privacy.done" xml:space="preserve"><value>✓ {0} off</value></data>
+  <data name="gui.sat.pending" xml:space="preserve"><value>…</value></data>
+  <data name="gui.state.looking" xml:space="preserve"><value>Looking: {0} · {1}/{2}</value></data>
+  <data name="gui.state.looking.start" xml:space="preserve"><value>Looking…</value></data>
+  <data name="gui.state.ready" xml:space="preserve"><value>Ready · {0} tasks ticked</value></data>
+  <data name="gui.state.nothing" xml:space="preserve"><value>Nothing to do ✓</value></data>
+  <data name="gui.state.running" xml:space="preserve"><value>Working: {0}</value></data>
+  <data name="gui.state.running.slow" xml:space="preserve"><value>{0} · may take minutes</value></data>
+  <data name="gui.state.done.freed" xml:space="preserve"><value>{0} freed</value></data>
+  <data name="gui.state.done.startup" xml:space="preserve"><value>{0} apps off startup</value></data>
+  <data name="gui.state.done.privacy" xml:space="preserve"><value>{0} settings off</value></data>
+  <data name="gui.state.done.deferred" xml:space="preserve"><value>{0} more when {1} closes</value></data>
+  <data name="gui.state.done.failed" xml:space="preserve"><value>{0} didn't work</value></data>
+  <data name="gui.state.done.restart" xml:space="preserve"><value>restart for full effect</value></data>
+  <data name="gui.state.undone" xml:space="preserve"><value>{0} settings undone · deleted files don't come back</value></data>
+  <data name="gui.state.failed" xml:space="preserve"><value>Couldn't look: {0}</value></data>
+  <data name="gui.state.previous" xml:space="preserve"><value>Last time: {0}</value></data>
+  <data name="gui.state.previous.boot" xml:space="preserve"><value>startup {0} s → {1} s</value></data>
+  <data name="gui.state.previous.ram" xml:space="preserve"><value>{0} RAM freed</value></data>
+  <data name="gui.button.run-all" xml:space="preserve"><value>Do it all</value></data>
+  <data name="gui.button.looking" xml:space="preserve"><value>Looking…</value></data>
+  <data name="gui.button.running" xml:space="preserve"><value>Working…</value></data>
+  <data name="gui.button.undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="gui.button.rescan" xml:space="preserve"><value>Scan again</value></data>
+  <data name="gui.button.retry" xml:space="preserve"><value>Try again</value></data>
+  <data name="gui.load.measuring" xml:space="preserve"><value>Measuring…</value></data>
+  <data name="gui.page.space.title" xml:space="preserve"><value>Free up space</value></data>
+  <data name="gui.page.space.header" xml:space="preserve"><value>Ticked ones get deleted</value></data>
+  <data name="gui.page.speed.title" xml:space="preserve"><value>Speed up</value></data>
+  <data name="gui.page.speed.header" xml:space="preserve"><value>Ticked ones stop</value></data>
+  <data name="gui.page.privacy.title" xml:space="preserve"><value>Privacy</value></data>
+  <data name="gui.page.privacy.header" xml:space="preserve"><value>Ticked ones are stopped</value></data>
+  <data name="gui.row.restart" xml:space="preserve"><value>After restart</value></data>
+  <data name="gui.row.windows-name" xml:space="preserve"><value>In Windows: {0}</value></data>
+  <data name="gui.files.all" xml:space="preserve"><value>Select all</value></data>
+  <data name="gui.files.none" xml:space="preserve"><value>None</value></data>
+  <data name="gui.footer.count" xml:space="preserve"><value>{0} ticked</value></data>
+  <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} ticked · {1}</value></data>
+  <data name="gui.footer.run" xml:space="preserve"><value>Do these</value></data>
+  <data name="gui.load.title" xml:space="preserve"><value>Slowing you now</value></data>
+  <data name="gui.load.none" xml:space="preserve"><value>Nothing is slowing you now ✓</value></data>
+  <data name="gui.conn.title" xml:space="preserve"><value>Talking to now</value></data>
+  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetry can't be told apart here</value></data>
+  <data name="gui.usage.title" xml:space="preserve"><value>Sent in 30 days</value></data>
+  <data name="gui.usage.sent" xml:space="preserve"><value>sent {0}</value></data>
+  <data name="gui.usage.received" xml:space="preserve"><value>received {0}</value></data>
+  <data name="gui.nav.home" xml:space="preserve"><value>Home</value></data>
+  <data name="gui.nav.space" xml:space="preserve"><value>Free up space</value></data>
+  <data name="gui.nav.speed" xml:space="preserve"><value>Speed up</value></data>
+  <data name="gui.nav.privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="gui.nav.settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="gui.sheet.title" xml:space="preserve"><value>These will be deleted for good</value></data>
+  <data name="gui.sheet.downloads" xml:space="preserve"><value>{0} installers in Downloads · {1}</value></data>
+  <data name="gui.sheet.recycle-bin" xml:space="preserve"><value>Recycle Bin · {0}</value></data>
+  <data name="gui.sheet.windows-old" xml:space="preserve"><value>Old Windows copy · {0}</value></data>
+  <data name="gui.sheet.go" xml:space="preserve"><value>Continue</value></data>
+  <data name="gui.sheet.skip" xml:space="preserve"><value>Skip these</value></data>
+  <data name="gui.sheet.list" xml:space="preserve"><value>See the list</value></data>
+  <data name="gui.settings.title" xml:space="preserve"><value>Settings</value></data>
+  <data name="gui.settings.language" xml:space="preserve"><value>Language</value></data>
+  <data name="gui.settings.language.system" xml:space="preserve"><value>System</value></data>
+  <data name="gui.settings.autostart" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="gui.settings.motion" xml:space="preserve"><value>Moving background</value></data>
+  <data name="gui.settings.version" xml:space="preserve"><value>brisk {0}</value></data>
+  <data name="gui.settings.github" xml:space="preserve"><value>GitHub</value></data>
+  <data name="gui.state.undone.failed" xml:space="preserve"><value>{0} couldn't be undone</value></data>
+  <data name="gui.state.undo-error" xml:space="preserve"><value>Couldn't undo: {0}</value></data>
 </root>

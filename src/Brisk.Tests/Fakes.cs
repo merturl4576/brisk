@@ -168,6 +168,7 @@ public sealed class NoOtherProbes
 
     public long FreeBytes(string driveRoot) => No<long>();
     public long TotalBytes(string driveRoot) => No<long>();
+    public DiskMedium MediumOf(string driveRoot) => No<DiskMedium>();
 
     public bool FileExists(string path) => No<bool>();
     public string? ReadAllText(string path) => No<string?>();
@@ -191,6 +192,7 @@ public sealed class NoOtherProbes
     /// so a throw would arrive at this answer through a longer path while
     /// costing the loud failure nothing. Null says it directly.
     public DefenderStatus? Read() => null;
+    public IReadOnlyList<AntivirusProduct> Registered() => Array.Empty<AntivirusProduct>();
 }
 
 public static class TestData

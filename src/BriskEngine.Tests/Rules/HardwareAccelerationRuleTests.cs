@@ -32,6 +32,55 @@ public class HardwareAccelerationRuleTests
         Assert.Null(new HardwareAccelerationRule().Detect(ctx));
     }
 
+    /// A Local State that exists and cannot be parsed used to be swallowed
+    /// (catch {}) and reported as nothing — the same silence as a browser
+    /// with acceleration on. An unreadable file is a disclosure: brisk says
+    /// it could not read it, as a free notice, and offers no fix over it.
+    [Fact]
+    public void UnreadableLocalState_IsANoticeThatSaysSo()
+    {
+        var (ctx, _, _) = Ctx("{ not json at all");
+        var finding = new HardwareAccelerationRule().Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.Equal(BriskEngine.Models.FindingKind.Notice, finding!.Kind);
+        Assert.Equal(BriskEngine.Models.ImpactClass.Hygiene, finding.ImpactClass);
+        Assert.Equal(BriskEngine.Models.Severity.Info, finding.Severity);
+        Assert.False(finding.CanFix);
+        Assert.Equal("rule.hw-acceleration.unread.title", finding.TitleKey);
+        Assert.Equal("rule.hw-acceleration.evidence.unread", finding.EvidenceKey);
+        Assert.Equal(new[] { "chrome" }, finding.EvidenceArgs);
+        Assert.Contains("could not read", finding.Evidence);
+        Assert.Equal(100, BriskEngine.Diagnostics.HealthScore.Compute(new[] { finding }));
+    }
+
+    /// One browser readable and off, the other unreadable: the finding is
+    /// still the fixable problem, its evidence names both facts, and the fix
+    /// writes only the file it could read.
+    [Fact]
+    public void Offender_BesideAnUnreadableOne_NamesBoth_AndFixesOnlyWhatItRead()
+    {
+        var edgeLocalState = PathExpander.Expand(@"%LOCALAPPDATA%\Microsoft\Edge\User Data\Local State")!;
+        var (ctx, files, _) = Ctx("""{"hardware_acceleration_mode":{"enabled":false}}""");
+        files.Texts[edgeLocalState] = "{ not json at all";
+        var rule = new HardwareAccelerationRule();
+
+        var finding = rule.Detect(ctx);
+
+        Assert.NotNull(finding);
+        Assert.True(finding!.CanFix);
+        Assert.Equal(BriskEngine.Models.FindingKind.Problem, finding.Kind);
+        Assert.Equal("rule.hw-acceleration.evidence.partly", finding.EvidenceKey);
+        Assert.Equal(new[] { "chrome", "msedge" }, finding.EvidenceArgs);
+        Assert.Contains("chrome", finding.Evidence);
+        Assert.Contains("could not read", finding.Evidence);
+
+        rule.Fix(ctx);
+
+        Assert.Contains("\"enabled\":true", files.Texts[ChromeLocalState].Replace(" ", ""));
+        Assert.Equal("{ not json at all", files.Texts[edgeLocalState]);
+    }
+
     [Fact]
     public void Fix_WhileBrowserRunning_Throws()
     {

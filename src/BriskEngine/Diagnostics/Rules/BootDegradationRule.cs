@@ -31,6 +31,12 @@ public sealed class BootDegradationRule : AdviseRuleBase
     /// is not a finding. Strictly exceeded, so 40 s exactly stays quiet.
     internal const int SlowBootMs = 40_000;
 
+    /// Above this the boot is the machine's defining fact, not one finding
+    /// among sixteen. A laptop measured at 106 s scored 89 while its owner
+    /// called it broken; the gauge, not the owner, was wrong. Critical and
+    /// five stars from here — 25 points, the most one measurement can cost.
+    internal const int CrawlBootMs = 90_000;
+
     internal const int TopOffenders = 3;
 
     /// Enough boots for one outlier not to decide the median, few enough that
@@ -71,7 +77,7 @@ public sealed class BootDegradationRule : AdviseRuleBase
         // are Microsoft's own.
 
         if (blamed.Count == 0)
-            return Finding(median, medianDigits, sampled, names: null,
+            return Finding(medianMs, median, medianDigits, sampled, names: null,
                 $"Boot takes about {median}, the middle of the {sampled} most recent " +
                 "boots brisk could read from Windows' own timings. No program stood out " +
                 "on those boots — everything Windows watched started about as fast as it " +
@@ -80,7 +86,7 @@ public sealed class BootDegradationRule : AdviseRuleBase
 
         var names = string.Join(", ", blamed.Select(b =>
             $"{Label(b.Offender)} {Seconds(b.Offender.DegradationMs)} ({b.Boots}/{bootsCounted})"));
-        return Finding(median, medianDigits, sampled, names,
+        return Finding(medianMs, median, medianDigits, sampled, names,
             $"Boot takes about {median}, the middle of the {sampled} most recent boots " +
             $"brisk could read from Windows' own timings. Windows blamed these for " +
             $"starting slower than it expected: {names} — that is how late each one was, " +
@@ -91,11 +97,12 @@ public sealed class BootDegradationRule : AdviseRuleBase
             "those off; look for the rest under Startup programs on the Performance page.");
     }
 
-    private DiagnosticFinding Finding(string median, string medianDigits,
+    private DiagnosticFinding Finding(int medianMs, string median, string medianDigits,
         string sampled, string? names, string evidence) =>
         new(Id, $"rule.{Id}.title",
             "Windows takes a long time to start", evidence,
-            Severity.Warning, Category, ImpactStars: 4, CanFix: false, FixDescription: null,
+            medianMs > CrawlBootMs ? Severity.Critical : Severity.Warning, Category,
+            ImpactStars: medianMs > CrawlBootMs ? 5 : 4, CanFix: false, FixDescription: null,
             EvidenceKey: names is null ? $"rule.{Id}.evidence.nobody" : $"rule.{Id}.evidence",
             EvidenceArgs: names is null
                 ? new[] { median, sampled }
@@ -104,10 +111,13 @@ public sealed class BootDegradationRule : AdviseRuleBase
                 median, $"boot time — the middle of the last {sampled} boots",
                 $"rule.{Id}.headline.value", new[] { medianDigits },
                 $"rule.{Id}.headline.caption", new[] { sampled }),
-            // A notice: the evidence above says in as many words that brisk
-            // will not switch these programs off. A rule cannot spend a
-            // sentence refusing to act and 12 points insisting it should.
-            Kind: FindingKind.Notice);
+            // A notice, because the evidence above says in as many words
+            // that brisk will not switch these programs off — so no fix, no
+            // button. But a MEASURED one, so it charges the score: Windows
+            // timed this boot, and a gauge that ignored the number was
+            // describing brisk's reach where its reader saw the machine.
+            Kind: FindingKind.Notice,
+            ImpactClass: ImpactClass.Measured);
 
     /// The middle reading, and on an even sample the lower of the two middles
     /// — a boot this machine actually had, where the average of two would be a

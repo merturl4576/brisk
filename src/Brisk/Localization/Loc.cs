@@ -14,6 +14,8 @@ public sealed class Loc : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    public CultureInfo Culture => _culture;
+
     public string this[string key] => _resources.GetString(key, _culture) ?? key;
 
     public string F(string key, params object[] args) =>

@@ -14,6 +14,9 @@ public sealed class Settings
     public string Theme { get; set; } = "dark";
     public bool DryRun { get; set; }
     public bool StartWithWindows { get; set; }       // default OFF, on principle
+    // The moving background (rain, grid floor, spinning arcs). On by
+    // default: it is the look the maintainer picked.
+    public bool Motion { get; set; } = true;
 
     public static Settings Load(string path)
     {

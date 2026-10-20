@@ -72,20 +72,4 @@ public class HeadlineLocalizationTests
         Assert.Equal("of some kind", caption);
     }
 
-    [Fact]
-    public void FindingRow_ExposesTheHeadline_OrSaysItHasNone()
-    {
-        var loc = Loc("en");
-        var with = new FindingRow(TestData.Finding("boot-degradation",
-            cat: RuleCategory.Advise, canFix: false, headline: Boot()),
-            loc, canUndo: false, _ => { }, _ => { });
-        Assert.True(with.HasHeadline);
-        Assert.Equal("57 s", with.HeadlineValue);
-
-        var without = new FindingRow(TestData.Finding("thermals",
-            cat: RuleCategory.Advise, canFix: false),
-            loc, canUndo: false, _ => { }, _ => { });
-        Assert.False(without.HasHeadline);
-        Assert.Equal("", without.HeadlineValue);
-    }
 }

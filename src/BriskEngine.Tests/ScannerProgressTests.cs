@@ -33,6 +33,19 @@ public sealed class ScannerProgressTests : IDisposable
     }
 
     [Fact]
+    public void Progress_CarriesEachTargetsResult()
+    {
+        var target = Target("t1");
+        File.WriteAllBytes(Path.Combine(_root, "t1", "a.tmp"), new byte[1234]);
+        var progress = new CollectingProgress();
+        new Scanner(new[] { target }, new NoProcesses()).Scan(default, progress);
+
+        var p = Assert.Single(progress.Reports);
+        Assert.Equal("t1", p.Result!.Target.Id);
+        Assert.Equal(1234, p.Result.TotalBytes);
+    }
+
+    [Fact]
     public void ReportsOncePerTarget_WithStableTotal()
     {
         var targets = new[] { Target("t1"), Target("t2"), Target("t3") };

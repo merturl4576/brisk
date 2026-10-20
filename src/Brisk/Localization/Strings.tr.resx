@@ -8,23 +8,17 @@
   <data name="nav.overview" xml:space="preserve"><value>Genel Bakış</value></data>
   <data name="nav.health" xml:space="preserve"><value>Sağlık</value></data>
   <data name="nav.performance" xml:space="preserve"><value>Performans</value></data>
-  <data name="nav.clean" xml:space="preserve"><value>Depolama</value></data>
   <data name="nav.privacy" xml:space="preserve"><value>Gizlilik</value></data>
-  <data name="nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
   <data name="chrome.minimize" xml:space="preserve"><value>Küçült</value></data>
   <data name="chrome.maximize" xml:space="preserve"><value>Ekranı kapla</value></data>
   <data name="chrome.restore" xml:space="preserve"><value>Önceki boyuta getir</value></data>
   <data name="chrome.close" xml:space="preserve"><value>Kapat</value></data>
-  <data name="perf.title" xml:space="preserve"><value>Performans</value></data>
-  <data name="overview.status.good" xml:space="preserve"><value>Bilgisayarın iyi durumda</value></data>
-  <data name="overview.status.attention" xml:space="preserve"><value>İlgilenilmesi gereken bulgular var</value></data>
   <data name="overview.status.advise" xml:space="preserve"><value>Bilgisayarın iyi durumda — incelemen için {0} öneri var</value></data>
   <data name="overview.cleanspace" xml:space="preserve"><value>{0} yer aç</value></data>
   <data name="overview.cleanspace.none" xml:space="preserve"><value>Diskte yer aç</value></data>
   <data name="overview.actions.hint" xml:space="preserve"><value>İkisi de güvenlidir: ayar değişiklikleri geri alınabilir, yalnızca Windows'un ve uygulamaların kendi kendine yeniden oluşturduğu dosyalar temizlenir.</value></data>
   <data name="overview.report.title" xml:space="preserve"><value>Yapılanlar</value></data>
   <data name="overview.report.fixed" xml:space="preserve"><value>Düzeltildi: {0}</value></data>
-  <data name="overview.report.disabled" xml:space="preserve"><value>Açılışta kapatıldı: {0}</value></data>
   <data name="overview.report.enjoy" xml:space="preserve"><value>Bitti — bilgisayarın artık daha akıcı olmalı.</value></data>
   <data name="overview.report.summary" xml:space="preserve"><value>Sonuç: {0}</value></data>
   <data name="overview.report.part.freed" xml:space="preserve"><value>{0} yer açıldı</value></data>
@@ -41,40 +35,17 @@
   <data name="overview.report.card.saved" xml:space="preserve"><value>Kaydedildi: {0} (panoya kopyalandı)</value></data>
   <data name="overview.report.card.saved.fileonly" xml:space="preserve"><value>Kaydedildi: {0}</value></data>
   <data name="overview.report.card.failed" xml:space="preserve"><value>Kart kaydedilemedi: {0}</value></data>
-  <data name="flyout.health" xml:space="preserve"><value>sağlık</value></data>
   <data name="flyout.findings" xml:space="preserve"><value>{0} bulgu · {1} tanesi tek tıkla düzelir</value></data>
-  <data name="flyout.findings.only" xml:space="preserve"><value>{0} bulgu</value></data>
-  <data name="flyout.reclaimable" xml:space="preserve"><value>{0} geri kazanılabilir</value></data>
-  <data name="flyout.lastscan" xml:space="preserve"><value>Son tarama: {0}</value></data>
-  <data name="flyout.scanning" xml:space="preserve"><value>Taranıyor…</value></data>
-  <data name="flyout.scan" xml:space="preserve"><value>Tara</value></data>
+  <data name="flyout.yourcall" xml:space="preserve"><value>{0} daha, senin kararınla</value></data>
+  <data name="flyout.boottrend" xml:space="preserve"><value>Açılış: brisk'in değişikliklerinden önce {0} → sonra {1}</value></data>
   <data name="flyout.fixall" xml:space="preserve"><value>Bilgisayarı hızlandır</value></data>
-  <data name="flyout.clean" xml:space="preserve"><value>Temizle</value></data>
-  <data name="flyout.details" xml:space="preserve"><value>Ayrıntıları aç →</value></data>
-  <data name="health.title" xml:space="preserve"><value>Sistem sağlığı</value></data>
   <data name="health.fixall" xml:space="preserve"><value>Bilgisayarı hızlandır</value></data>
   <data name="health.fix" xml:space="preserve"><value>Düzelt</value></data>
   <data name="health.undo" xml:space="preserve"><value>Geri al</value></data>
-  <data name="health.restorepoint" xml:space="preserve"><value>Önce geri yükleme noktası oluştur</value></data>
-  <data name="health.noscan" xml:space="preserve"><value>Bulguları görmek için tarama çalıştır</value></data>
-  <data name="health.restorepointfailed" xml:space="preserve"><value>geri yükleme noktası oluşturulamadı — hiçbir şey değiştirilmedi</value></data>
-  <data name="health.advise" xml:space="preserve"><value>öneri</value></data>
-  <data name="health.advise.section" xml:space="preserve"><value>Öneriler</value></data>
   <data name="health.notice.section" xml:space="preserve"><value>brisk'in yalnızca bildirebildikleri</value></data>
   <data name="finding.details" xml:space="preserve"><value>Ayrıntılar</value></data>
   <data name="finding.action.storage" xml:space="preserve"><value>Depolama'yı aç</value></data>
-  <data name="finding.action.windowssetting" xml:space="preserve"><value>Windows gizlilik ayarlarını aç</value></data>
-  <data name="finding.action.windowssecurity" xml:space="preserve"><value>Windows Güvenliği'ni aç</value></data>
   <data name="finding.fixing" xml:space="preserve"><value>Düzeltiliyor…</value></data>
-  <data name="finding.undoing" xml:space="preserve"><value>Geri alınıyor…</value></data>
-  <data name="health.crosslink" xml:space="preserve"><value>Performans'ta {0} bulgu daha var →</value></data>
-  <data name="performance.crosslink" xml:space="preserve"><value>Sağlık'ta {0} bulgu daha var →</value></data>
-  <data name="health.fixdone" xml:space="preserve"><value>{0} düzeltme uygulandı</value></data>
-  <data name="health.fixpartial" xml:space="preserve"><value>{1} düzeltmeden {0} tanesi uygulandı</value></data>
-  <data name="health.nofixables" xml:space="preserve"><value>Otomatik düzeltilebilir sorun yok — kalan bulgular öneri niteliğinde</value></data>
-  <data name="startup.title" xml:space="preserve"><value>Açılış programları</value></data>
-  <data name="startup.togglefailed" xml:space="preserve"><value>bu öğe değiştirilemedi — yönetici izni gerekebilir</value></data>
-  <data name="startup.heavy" xml:space="preserve"><value>açılışı belirgin yavaşlatır</value></data>
   <data name="startup.system.hint" xml:space="preserve"><value>Sistem bileşeni — kapatılması önerilmez</value></data>
   <data name="startup.app.teams" xml:space="preserve"><value>Microsoft Teams — toplantı uygulaması, açılışı yavaşlatır</value></data>
   <data name="startup.app.onedrive" xml:space="preserve"><value>OneDrive — bulut dosya eşitleme, sonradan başlatmak da güvenli</value></data>
@@ -88,31 +59,6 @@
   <data name="startup.app.whatsapp" xml:space="preserve"><value>WhatsApp — mesajlaşma uygulaması, gerektiğinde açmak yeterli</value></data>
   <data name="startup.app.bluestacks" xml:space="preserve"><value>BlueStacks — Android emülatörü, açılışta çok ağırdır</value></data>
   <data name="startup.app.wallpaperengine" xml:space="preserve"><value>Wallpaper Engine — hareketli duvar kağıdı, GPU'yu sürekli kullanır</value></data>
-  <data name="startup.app.brisk" xml:space="preserve"><value>brisk'in kendisi — Windows ile başlamasını istemiyorsan kapat.</value></data>
-  <data name="clean.selected" xml:space="preserve"><value>{0} seçili</value></data>
-  <data name="clean.clean" xml:space="preserve"><value>Temizle</value></data>
-  <data name="clean.level.safe" xml:space="preserve"><value>Güvenli</value></data>
-  <data name="clean.level.developer" xml:space="preserve"><value>Geliştirici</value></data>
-  <data name="clean.level.deep" xml:space="preserve"><value>Derin</value></data>
-  <data name="clean.recycled" xml:space="preserve"><value>{0} öğe Geri Dönüşüm Kutusu'na taşındı ({1})</value></data>
-  <data name="clean.removed" xml:space="preserve"><value>{0} öğe kalıcı olarak kaldırıldı ({1}) — Geri Dönüşüm Kutusu'na uğramadı, geri alınamaz</value></data>
-  <data name="clean.target.windows-old" xml:space="preserve"><value>Windows.old (önceki Windows kurulumu)</value></data>
-  <data name="clean.target.hibernation-file" xml:space="preserve"><value>Uyku modu dosyası (hiberfil.sys)</value></data>
-  <data name="clean.target.component-store" xml:space="preserve"><value>Windows bileşen deposu (yeri doldurulan güncellemeler)</value></data>
-  <data name="clean.note.windows-old" xml:space="preserve"><value>Önceki Windows kurulumunu kaldırır — ona geri dönmek artık mümkün olmaz. Windows bunu yükseltmeden yaklaşık 10 gün sonra kendisi de siler.</value></data>
-  <data name="clean.note.hibernation-file" xml:space="preserve"><value>Dosyayı, uyku modunu ve Hızlı Başlangıç'ı kapatarak boşaltır — "powercfg /hibernate on" ikisini de geri getirir.</value></data>
-  <data name="clean.note.component-store" xml:space="preserve"><value>Windows, yerini yenisine bırakmış güncelleme dosyalarını kaldırır (DISM StartComponentCleanup). Dakikalar sürer; boşalacak miktara DISM karar verir; kurulu güncellemeler kaldırılabilir kalır.</value></data>
-  <data name="clean.note.docker-prune" xml:space="preserve"><value>"docker system prune -af" çalıştırır: kullanılmayan imajlar, konteynerler ve derleme önbelleği — bir build ya da pull'un yeniden oluşturduğu her şey.</value></data>
-  <data name="clean.note.delivery-optimization" xml:space="preserve"><value>Windows'un eş güncelleme indirme önbelleğini Windows'un kendi komutuyla boşaltır. Geri Dönüşüm Kutusu'na uğramaz; baytlar yalnızca Windows ihtiyaç duyduklarını yeniden indirdikçe geri gelir.</value></data>
-  <data name="overview.deepreveal" xml:space="preserve"><value>Derin raflarda {0} daha var ({1}: {2}) — dökümü gör</value></data>
-  <data name="perf.boottrend" xml:space="preserve"><value>brisk'in değişikliklerinden önce açılış: yaklaşık {0} ({1} açılışın ortası) → son değişiklikten beri: yaklaşık {2} ({3} açılış). Ölçüm Windows'un kendi zamanlayıcısından.</value></data>
-  <data name="perf.boottrend.one" xml:space="preserve"><value>brisk'in değişikliklerinden önce açılış: yaklaşık {0} ({1} açılışın ortası) → son değişiklikten sonraki ilk açılış: {2}. Ölçüm Windows'un kendi zamanlayıcısından.</value></data>
-  <data name="report.expectation" xml:space="preserve"><value>Bunların bir kısmı ancak bir sonraki yeniden başlatmadan sonra hissedilir — brisk o zaman Windows'un kendi açılış ölçümlerini okuyup önce → sonra karşılaştırmasını Performans sayfasına koyar.</value></data>
-  <data name="clean.undo" xml:space="preserve"><value>Geri al</value></data>
-  <data name="clean.reclaim" xml:space="preserve"><value>Alanı şimdi boşalt</value></data>
-  <data name="clean.dismiss" xml:space="preserve"><value>Kapat</value></data>
-  <data name="clean.elevation" xml:space="preserve"><value>Yönetici gerekiyor</value></data>
-  <data name="clean.skipped" xml:space="preserve"><value>atlandı</value></data>
   <data name="clean.simple.title" xml:space="preserve"><value>Temizlenebilir alan</value></data>
   <data name="clean.simple.hint" xml:space="preserve"><value>Yalnızca Windows'un ve uygulamaların kendi kendine yeniden oluşturduğu güvenli dosyalar temizlenir — alan anında boşalır.</value></data>
   <data name="clean.advanced" xml:space="preserve"><value>Gelişmiş</value></data>
@@ -120,41 +66,18 @@
   <data name="clean.group.browser" xml:space="preserve"><value>Tarayıcı önbellekleri</value></data>
   <data name="clean.group.app" xml:space="preserve"><value>Uygulama önbellekleri</value></data>
   <data name="clean.group.other" xml:space="preserve"><value>Diğer</value></data>
-  <data name="clean.lifetime" xml:space="preserve"><value>şimdiye dek {0} geri kazanıldı</value></data>
-  <data name="clean.cleaning" xml:space="preserve"><value>Temizleniyor…</value></data>
   <data name="clean.preparing" xml:space="preserve"><value>Hazırlanıyor…</value></data>
   <data name="clean.purging" xml:space="preserve"><value>Boşaltılıyor…</value></data>
-  <data name="clean.progress" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="clean.rescanning" xml:space="preserve"><value>Değişeni yeniden ölçüyor…</value></data>
   <data name="clean.report.summary.freed" xml:space="preserve"><value>{0} öğe temizlendi — {1} yer açıldı</value></data>
-  <data name="clean.report.none" xml:space="preserve"><value>Temizlenecek bir şey yoktu — burası zaten temiz.</value></data>
-  <data name="clean.report.disk" xml:space="preserve"><value>Boş disk alanı: {0} → {1}</value></data>
-  <data name="clean.report.disk.gained" xml:space="preserve"><value>Boş disk alanı: {0} → {1} — {2} geri kazanıldı</value></data>
-  <data name="perf.hero.done" xml:space="preserve"><value>yapılan iyileştirme</value></data>
-  <data name="perf.hero.findings" xml:space="preserve"><value>bekleyen bulgu</value></data>
-  <data name="perf.hero.startup" xml:space="preserve"><value>açılış programı</value></data>
-  <data name="clean.hero.reclaimable" xml:space="preserve"><value>şu an temizlenebilir</value></data>
-  <data name="clean.hero.lifetime" xml:space="preserve"><value>bugüne dek temizlendi</value></data>
   <data name="clean.simple.locked.app" xml:space="preserve"><value>{0} kapatılırsa +{1} daha</value></data>
   <data name="clean.simple.locked.inuse" xml:space="preserve"><value>+{0} da şu an açık uygulamaların tuttuğu dosyalarda — kapanınca boşalır</value></data>
   <data name="clean.report.skipped.appheld" xml:space="preserve"><value>{0} açık olduğu için önbelleği ({1}) atlandı — kapatıp yeniden temizleyebilirsin</value></data>
   <data name="clean.report.binleft" xml:space="preserve"><value>{0} Geri Dönüşüm Kutusu'nda kaldı</value></data>
-  <data name="clean.report.skipped.inuse" xml:space="preserve"><value>{0} dosya çalışan bir uygulama tarafından kullanıldığı için olduğu gibi bırakıldı</value></data>
-  <data name="clean.report.skipped.admin" xml:space="preserve"><value>{0} öğe yönetici onayı gerektirdiği için atlandı</value></data>
-  <data name="clean.report.skipped.other" xml:space="preserve"><value>{0} öğe taşınamadığı için atlandı</value></data>
-  <data name="settings.language" xml:space="preserve"><value>Dil</value></data>
-  <data name="settings.theme" xml:space="preserve"><value>Tema</value></data>
-  <data name="settings.dryrun" xml:space="preserve"><value>Kuru çalıştırma (yalnızca raporla, hiçbir şeyi değiştirme)</value></data>
-  <data name="settings.startwithwindows" xml:space="preserve"><value>Windows ile başlat</value></data>
-  <data name="settings.startwithwindows.hint" xml:space="preserve"><value>Varsayılan olarak kapalı — brisk, açılış şişkinliği öğüdünü kendine de uygular.</value></data>
-  <data name="settings.startwithwindows.failed" xml:space="preserve"><value>Windows değişikliği reddetti — oturum açma görevi oluşturulamadı ya da silinemedi. Bunu genellikle bir ilke ya da bir güvenlik yazılımı engeller.</value></data>
-  <data name="settings.value.system" xml:space="preserve"><value>Sistem</value></data>
-  <data name="settings.value.en" xml:space="preserve"><value>English</value></data>
-  <data name="settings.value.tr" xml:space="preserve"><value>Türkçe</value></data>
-  <data name="settings.value.light" xml:space="preserve"><value>Açık</value></data>
-  <data name="settings.value.dark" xml:space="preserve"><value>Koyu</value></data>
   <data name="rule.power-plan.title" xml:space="preserve"><value>Performans güç planı var ama kullanılmıyor</value></data>
   <data name="rule.browser-gpu.title" xml:space="preserve"><value>Tarayıcılar hızlı GPU'yu kullanmıyor</value></data>
   <data name="rule.hw-acceleration.title" xml:space="preserve"><value>Tarayıcı donanım hızlandırması kapalı</value></data>
+  <data name="rule.hw-acceleration.unread.title" xml:space="preserve"><value>Bir tarayıcının ayar dosyası okunamadı</value></data>
   <data name="rule.startup-bloat.title" xml:space="preserve"><value>Windows ile çok fazla program başlıyor</value></data>
   <data name="rule.ram-pressure.title" xml:space="preserve"><value>Bellek baskısı yüksek</value></data>
   <data name="rule.thermals.title" xml:space="preserve"><value>Boştayken yüksek sıcaklık</value></data>
@@ -169,6 +92,8 @@
   <data name="rule.search-web-results.title" xml:space="preserve"><value>Başlat menüsü araması interneti bekliyor</value></data>
   <data name="rule.boot-degradation.title" xml:space="preserve"><value>Windows açılışı uzun sürüyor</value></data>
   <data name="rule.memory-speed.title" xml:space="preserve"><value>Bellek, anma hızının altında çalışıyor</value></data>
+  <data name="rule.system-disk-hdd.title" xml:space="preserve"><value>Windows dönen bir diskten çalışıyor</value></data>
+  <data name="rule.third-party-av.title" xml:space="preserve"><value>Üçüncü taraf bir antivirüs görevde</value></data>
   <data name="rule.thermals.advice" xml:space="preserve"><value>Boştayken yüksek sıcaklık genelde toz ya da yaşlanmış termal macun demektir — fan temizliği iyi gelir</value></data>
   <data name="rule.ram-pressure.advice" xml:space="preserve"><value>Bellek dolmak üzere — kullanmadığın uygulamaları kapatmak ya da açılış programlarını azaltmak belleği rahatlatır</value></data>
   <data name="rule.disk-breakdown.advice" xml:space="preserve"><value>Hangi klasörlerin yer kapladığını gör ve güvenle temizle</value></data>
@@ -183,9 +108,13 @@
   <data name="rule.stale-dev-caches.advice" xml:space="preserve"><value>Eski geliştirici önbellekleri gerektiğinde kendini yeniden oluşturur — temizlemek güvenlidir</value></data>
   <data name="rule.boot-degradation.advice" xml:space="preserve"><value>Windows kendi açılışını ölçüyor ve beklediğinden yavaş başlayan programları adıyla yazıyor — bunlardan Performans sayfasındaki Açılış programları listesinde yer alanları oradan kapatabilirsin</value></data>
   <data name="rule.memory-speed.advice" xml:space="preserve"><value>Modüller, ayarlı olduklarından daha yüksek bir anma hızı bildiriyor — bu ya hiç açılmamış bir hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart olabilir; brisk Windows üzerinden hangisi olduğunu ayırt edemiyor</value></data>
+  <data name="rule.system-disk-hdd.advice" xml:space="preserve"><value>Windows'un çalıştığı diski bir SSD ile değiştir ya da değiştirt — böyle bir bilgisayarı yeni gibi hissettiren tek değişiklik bu ve hiçbir temizlik onun yerini tutmaz</value></data>
+  <data name="rule.third-party-av.advice" xml:space="preserve"><value>Burada çevrilecek bir şey yok: ürün senin tercihinse güncel tut; makineyle geldiyse ve sen seçmediysen kaldırmak işi zaten burada olan Defender'a geri verir</value></data>
   <data name="rule.power-plan.done" xml:space="preserve"><value>Güç planı yüksek performansa alındı</value></data>
   <data name="rule.browser-gpu.done" xml:space="preserve"><value>Tarayıcılar artık hızlı GPU'yu kullanıyor</value></data>
   <data name="rule.hw-acceleration.done" xml:space="preserve"><value>Tarayıcı donanım hızlandırması açıldı</value></data>
+  <data name="rule.hw-acceleration.evidence.unread" xml:space="preserve"><value>brisk şu tarayıcıların ayar dosyasını (Local State) okuyamadı: {0}; bu yüzden orada donanım hızlandırmanın açık olup olmadığını söyleyemiyor. Okuyamadığı bir dosya üzerinde hiçbir şey değiştirmez.</value></data>
+  <data name="rule.hw-acceleration.evidence.partly" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açıyor. brisk şu tarayıcının ayar dosyasını okuyamadı: {1}; onun için bir şey söyleyemiyor ve düzeltme ona dokunmuyor.</value></data>
   <data name="rule.startup-bloat.done" xml:space="preserve"><value>Ağır açılış programları kapatıldı</value></data>
   <data name="rule.visual-effects.done" xml:space="preserve"><value>Görsel efektler performansa göre ayarlandı</value></data>
   <data name="rule.storage-sense.done" xml:space="preserve"><value>Depolama Alanı Algılayıcısı açıldı</value></data>
@@ -196,6 +125,7 @@
   <data name="rule.hw-acceleration.evidence" xml:space="preserve"><value>Şu tarayıcılarda donanım hızlandırma kapalı: {0}. Video çözme işlemciye düşüyor, bu da YouTube'da takılmalara yol açar.</value></data>
   <data name="rule.startup-bloat.evidence" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Hiçbiri brisk'in ağır listesinde değil; hangilerinin sana gerçekten gerekli olduğu senin kararın — Performans sayfasındaki Açılış programları listesinden gözden geçir.</value></data>
   <data name="rule.startup-bloat.evidence.heavy" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}.</value></data>
+  <data name="rule.startup-bloat.evidence.blamed" xml:space="preserve"><value>Windows ile birlikte {0} program başlıyor. Gerektiğinde elle açılabilecek ağır olanlar: {1}. Son açılışlarda geç kalmalarını Windows'un kendisi şu programlara yükledi: {2}.</value></data>
   <data name="rule.startup-bloat.headline.value" xml:space="preserve"><value>{0}</value></data>
   <data name="rule.startup-bloat.headline.caption" xml:space="preserve"><value>program Windows ile başlıyor</value></data>
   <data name="rule.visual-effects.evidence" xml:space="preserve"><value>Windows "En iyi görünüm" ayarında; animasyonlar ve saydamlık efektleri her pencere çiziminde CPU/GPU gücü harcıyor.</value></data>
@@ -217,56 +147,21 @@
   <data name="rule.memory-speed.evidence" xml:space="preserve"><value>{0} — her modülün ayarlı hızı, anma hızı üzerinden: soldaki şu an çalıştığı hız, sağdaki ise modülün anma hızı. Buna iki şey yol açabilir ve Windows hangisi olduğunu bildirmiyor: hiç açılmamış bir bellek hız profili (XMP/EXPO) ya da anma hızını desteklemeyen bir anakart veya bellek denetleyicisi. brisk buradan ikisini birbirinden ayırt edemiyor; bu yüzden sana BIOS'ta bir şey değiştirmeni söylemiyor — yalnızca bu farkın var olduğunu söylüyor.</value></data>
   <data name="rule.memory-speed.headline.value" xml:space="preserve"><value>{0} MT/s</value></data>
   <data name="rule.memory-speed.headline.caption" xml:space="preserve"><value>anma hızı {0} MT/s</value></data>
-  <data name="display-confirm.title" xml:space="preserve"><value>Görüntü geldi mi?</value></data>
-  <data name="display-confirm.body" xml:space="preserve"><value>Ekran daha yüksek bir yenileme hızına alındı. Bunu okuyabiliyorsan 15 saniye içinde onayla — onaylamazsan önceki ayar kendiliğinden geri yüklenir.</value></data>
-  <data name="display-confirm.keep" xml:space="preserve"><value>Böyle kalsın</value></data>
-  <data name="banner.dismiss" xml:space="preserve"><value>Kapat</value></data>
-  <data name="identity.otheraccount.short" xml:space="preserve"><value>{1} değil, {0} profili üzerinde çalışıyor.</value></data>
-  <data name="identity.otheraccount" xml:space="preserve"><value>brisk {0} olarak çalışıyor ama oturumu {1} açmış. Windows yönetici sordu ve brisk’e o hesabın profilini verdi — yani brisk’in raporladığı ve temizlediği ayarlar, açılış öğeleri, geçici dosyalar ve tarayıcı önbellekleri {1} kullanıcısına değil {0} kullanıcısına ait.</value></data>
-  <data name="display-confirm.rolledback" xml:space="preserve"><value>brisk ekranı en yüksek yenileme hızına aldı ve 15 saniye boyunca yanıt gelmediği için önceki ayarı geri yükledi. Bu genellikle kablonun ya da adaptörün bu hızı taşıyamadığı anlamına gelir.</value></data>
-  <data name="display-confirm.rollbackfailed" xml:space="preserve"><value>brisk önceki ekran ayarını geri yükleyemedi: {0}. Değişiklik kaydedilmediği için Windows’u yeniden başlatmak önceki ayarı geri getirir.</value></data>
-  <data name="display-confirm.notkept" xml:space="preserve"><value>Ekran daha yüksek yenileme hızında çalışıyor ama brisk bunu kaydedemedi — yeniden başlatıldığında önceki ayar geri gelecek.</value></data>
+  <data name="rule.system-disk-hdd.evidence" xml:space="preserve"><value>Windows'un çalıştığı disk ({0}) dönen bir disk: okuma kafasının hareket etmesi gerektiğini (seek penalty) bildiriyor; Görev Yöneticisi'nin Performans sayfasında bir diske HDD derken okuduğu değer de bu. Bu makinede her şey o diski bekliyor — açılış, program açmak, güncellemeler — ve brisk'in temizlediği ya da çevirdiği hiçbir şey bunu değiştirmez. Yerine bir SSD, bu bilgisayarı yeni gibi hissettirecek tek değişiklik. Bu bulgu puan kesiyor, çünkü yavaşlık ölçülmüş; brisk düzeltebildiği için değil.</value></data>
+  <data name="rule.third-party-av.evidence" xml:space="preserve"><value>{0}, Windows Güvenliği'nin etkin antivirüs olarak listelediği ürün; Defender onun arkasında, başka bir ürün görevdeyken kapalı duruyor. Bundan iki şey çıkar. Açtığın her dosya o ürünün gerçek zamanlı tarayıcısından geçer, eski bir makinede bu hissedilir. Ve imzasız bir program, brisk dahil, onun tarafından tek kelime etmeden engellenebilir. Makineyle geldiyse ve sen seçmediysen kaldırmak işi zaten burada olan ve Windows'la güncellenen Defender'a geri verir. brisk hiçbir şeyi değiştirmez; bildirir.</value></data>
+  <data name="rule.third-party-av.evidence.off" xml:space="preserve"><value>{0} bu makinenin antivirüsü olarak listeleniyor ve kendini kapalı bildiriyor — süresi dolmuş bir deneme sürümü tam böyle görünür. Windows Güvenliği gerçek zamanlı taramayı Defender'a geri vermiş olabilir ya da hiçbir şey taramıyor olabilir; hangisi olduğunu Windows Güvenliği uygulaması söyler. Çalışmayı bırakmış bir ürünü kaldırmak işi kesin olarak Defender'a verir. brisk hiçbir şeyi değiştirmez; bildirir.</value></data>
+  <data name="rule.third-party-av.evidence.outdated" xml:space="preserve"><value>{0} etkin antivirüs ve Windows tanımlarının güncel olmadığını bildiriyor; yani eski bir listeye karşı tarıyor. Ya güncelle ya da makineyle geldiyse ve sen seçmediysen kaldır, işi Windows'la güncellenen Defender alsın. brisk hiçbir şeyi değiştirmez; bildirir.</value></data>
   <data name="rule.search-web-results.evidence" xml:space="preserve"><value>Başlat'a yazdığın her harf Bing'e gönderiliyor; uygulamalarına ve dosyalarına ait yerel sonuçlar bu gidiş dönüşü bekliyor. Web sonuçlarını kapatmak Başlat'ın anında cevap vermesini sağlar. Yeniden oturum açtığında etkili olur.</value></data>
   <data name="clean.skipped.apprunning" xml:space="preserve"><value>{0} açık — dahil etmek için önce kapat</value></data>
   <data name="tray.tooltip" xml:space="preserve"><value>brisk — {0} boş · {1}</value></data>
   <data name="clean.target.user-temp" xml:space="preserve"><value>Kullanıcı geçici dosyaları</value></data>
-  <data name="clean.target.chrome-cache" xml:space="preserve"><value>Chrome önbelleği</value></data>
-  <data name="clean.target.edge-cache" xml:space="preserve"><value>Edge önbelleği</value></data>
-  <data name="clean.target.firefox-cache" xml:space="preserve"><value>Firefox önbelleği</value></data>
-  <data name="clean.target.brave-cache" xml:space="preserve"><value>Brave önbelleği</value></data>
-  <data name="clean.target.opera-cache" xml:space="preserve"><value>Opera önbelleği</value></data>
-  <data name="clean.target.thumbnail-cache" xml:space="preserve"><value>Dosya Gezgini küçük resim önbelleği</value></data>
-  <data name="clean.target.discord-cache" xml:space="preserve"><value>Discord önbelleği</value></data>
-  <data name="clean.target.spotify-storage" xml:space="preserve"><value>Spotify önbelleği</value></data>
-  <data name="clean.target.teams-cache" xml:space="preserve"><value>Microsoft Teams önbelleği</value></data>
-  <data name="clean.target.slack-cache" xml:space="preserve"><value>Slack önbelleği</value></data>
-  <data name="clean.target.vscode-cache" xml:space="preserve"><value>VS Code önbelleği</value></data>
-  <data name="clean.target.whatsapp-cache" xml:space="preserve"><value>WhatsApp önbelleği</value></data>
-  <data name="clean.target.telegram-media-cache" xml:space="preserve"><value>Telegram medya önbelleği</value></data>
-  <data name="clean.target.crash-dumps" xml:space="preserve"><value>Çökme dökümleri</value></data>
-  <data name="clean.target.wer-reports" xml:space="preserve"><value>Windows Hata Raporlama kuyrukları</value></data>
-  <data name="clean.target.npm-cache" xml:space="preserve"><value>npm önbelleği</value></data>
-  <data name="clean.target.pip-cache" xml:space="preserve"><value>pip önbelleği</value></data>
-  <data name="clean.target.yarn-cache" xml:space="preserve"><value>Yarn önbelleği</value></data>
-  <data name="clean.target.pnpm-store" xml:space="preserve"><value>pnpm deposu</value></data>
-  <data name="clean.target.nuget-http-cache" xml:space="preserve"><value>NuGet HTTP önbelleği</value></data>
-  <data name="clean.target.cargo-registry-cache" xml:space="preserve"><value>Cargo kayıt önbelleği</value></data>
-  <data name="clean.target.gradle-caches" xml:space="preserve"><value>Gradle önbellekleri</value></data>
-  <data name="clean.target.docker-prune" xml:space="preserve"><value>Docker kullanılmayan veriler (docker system prune)</value></data>
   <data name="clean.target.windows-temp" xml:space="preserve"><value>Windows geçici dosyaları</value></data>
-  <data name="clean.target.windows-update-cache" xml:space="preserve"><value>Windows Update indirme önbelleği</value></data>
-  <data name="clean.target.delivery-optimization" xml:space="preserve"><value>Teslim İyileştirme önbelleği</value></data>
-  <data name="clean.target.old-installers" xml:space="preserve"><value>İndirilenler'deki eski kurulum dosyaları</value></data>
-  <data name="clean.target.empty-recycle-bin" xml:space="preserve"><value>Geri Dönüşüm Kutusu'nu boşalt</value></data>
   <data name="app.startupfailed" xml:space="preserve"><value>brisk başlatılamadı: {0}</value></data>
   <data name="app.unexpected" xml:space="preserve"><value>beklenmeyen hata: {0}</value></data>
-  <data name="dryrun.blocked" xml:space="preserve"><value>kuru çalışma açık — hiçbir şey değiştirilmedi</value></data>
   <data name="tray.open" xml:space="preserve"><value>brisk'i aç</value></data>
-  <data name="tray.scan" xml:space="preserve"><value>Şimdi tara</value></data>
   <data name="tray.exit" xml:space="preserve"><value>Çıkış</value></data>
   <data name="overview.revelation.more" xml:space="preserve"><value>ve {0} bulgu daha</value></data>
   <data name="overview.revelation.none" xml:space="preserve"><value>{0} kuralın hepsi baktı — bu makinede manşete çıkacak bir sayı yok.</value></data>
-  <data name="overview.revelation.see" xml:space="preserve"><value>Kanıtı gör</value></data>
   <data name="report.section.findings" xml:space="preserve"><value>Bulgular</value></data>
   <data name="report.section.unread" xml:space="preserve"><value>brisk'in okuyamadıkları</value></data>
   <data name="report.section.fixes" xml:space="preserve"><value>Uygulanan düzeltmeler</value></data>
@@ -371,29 +266,9 @@
   <data name="rule.defender-blind-spots.headline.caption.mode" xml:space="preserve"><value>Defender'ın çalışma modu</value></data>
   <data name="rule.defender-blind-spots.headline.caption.scan-age" xml:space="preserve"><value>gün önce son tarama tamamlandı</value></data>
   <data name="rule.defender-blind-spots.headline.caption.no-scan" xml:space="preserve"><value>kayıtlı tamamlanmış tarama</value></data>
-  <data name="privacy.capability.title" xml:space="preserve"><value>Hangi uygulamalar, ne zaman</value></data>
-  <data name="privacy.capability.use" xml:space="preserve"><value>{0} — {1} · son kullanım {2}</value></data>
-  <data name="privacy.capability.microphone" xml:space="preserve"><value>mikrofon</value></data>
-  <data name="privacy.capability.camera" xml:space="preserve"><value>kamera</value></data>
-  <data name="privacy.defender.title" xml:space="preserve"><value>Defender'ın atladıkları</value></data>
   <data name="privacy.title" xml:space="preserve"><value>Bu makinede gizlilik ve güvenlik</value></data>
   <data name="privacy.security.section" xml:space="preserve"><value>Güvenlik</value></data>
   <data name="privacy.security.note" xml:space="preserve"><value>brisk bu değerleri okur ve hiçbirine not vermez. "İyi", değerin Windows'un daha güvenli ayarı olarak okunduğu anlamına gelir; bu makinede başka ne olduğu hakkında bir şey söylemez.</value></data>
-  <data name="privacy.posture.firewall.fine" xml:space="preserve"><value>Güvenlik duvarı üç ağ profilinde de açık</value></data>
-  <data name="privacy.posture.firewall.attention" xml:space="preserve"><value>Güvenlik duvarı en az bir ağ profilinde kapalı</value></data>
-  <data name="privacy.posture.firewall.unread" xml:space="preserve"><value>Güvenlik duvarı: brisk bunu okuyamadı</value></data>
-  <data name="privacy.posture.rdp.fine" xml:space="preserve"><value>Uzak Masaüstü kapalı</value></data>
-  <data name="privacy.posture.rdp.attention" xml:space="preserve"><value>Uzak Masaüstü açık: bu makine uzaktan oturum açmayı kabul ediyor</value></data>
-  <data name="privacy.posture.rdp.unread" xml:space="preserve"><value>Uzak Masaüstü: brisk bunu okuyamadı</value></data>
-  <data name="privacy.posture.uac.fine" xml:space="preserve"><value>Windows bir program kontrolü almadan önce soruyor</value></data>
-  <data name="privacy.posture.uac.attention" xml:space="preserve"><value>Windows bir program kontrolü almadan önce sormuyor (aşağıda)</value></data>
-  <data name="privacy.posture.uac.unread" xml:space="preserve"><value>UAC soruları: brisk bunu okuyamadı</value></data>
-  <data name="privacy.posture.defender-rtp.fine" xml:space="preserve"><value>Defender gerçek zamanlı koruma açık</value></data>
-  <data name="privacy.posture.defender-rtp.attention" xml:space="preserve"><value>Defender gerçek zamanlı koruma kapalı (aşağıda)</value></data>
-  <data name="privacy.posture.defender-rtp.unread" xml:space="preserve"><value>Defender gerçek zamanlı koruma: brisk bunu okuyamadı</value></data>
-  <data name="privacy.posture.defender-tamper.fine" xml:space="preserve"><value>Defender kurcalama koruması açık</value></data>
-  <data name="privacy.posture.defender-tamper.attention" xml:space="preserve"><value>Defender kurcalama koruması kapalı (aşağıda)</value></data>
-  <data name="privacy.posture.defender-tamper.unread" xml:space="preserve"><value>Defender kurcalama koruması: brisk bunu okuyamadı</value></data>
   <data name="privacy.hero.note" xml:space="preserve"><value>brisk bu ayarları ve bu kayıtları burada okur, hiçbirine not vermez: sağlık puanı hız ve düzenle ilgilidir, bu sayfadaki hiçbir şey onu oynatmaz.</value></data>
   <data name="privacy.disclosure.section" xml:space="preserve"><value>Windows'un yazdıkları</value></data>
   <data name="privacy.usb.devices.title" xml:space="preserve"><value>USB kaydının tuttukları</value></data>
@@ -416,15 +291,218 @@
   <data name="rule.activity-history.done" xml:space="preserve"><value>Etkinlik geçmişi ilkesi kapalı olarak ayarlandı</value></data>
   <data name="rule.uac-prompts.done" xml:space="preserve"><value>UAC değerleri Windows'un varsayılanlarına geri getirildi</value></data>
   <data name="readback.held" xml:space="preserve"><value>{0} gün önce kapattın, hâlâ kapalı</value></data>
-  <data name="readback.held.today" xml:space="preserve"><value>Bugün kapattın, hâlâ kapalı</value></data>
-  <data name="readback.held.yesterday" xml:space="preserve"><value>Dün kapattın, hâlâ kapalı</value></data>
   <data name="readback.reverted" xml:space="preserve"><value>Bunu {0} tarihinde kapatmıştın; şu an yeniden açık.</value></data>
   <data name="readback.ignored" xml:space="preserve"><value>Ayar kapalı yazıyor ama bu Windows sürümü onu dikkate almıyor. brisk aynı ayar için bu makinenin tuttuğu ikinci bir değeri okudu; o değer açık diyor.</value></data>
   <data name="readback.unverified" xml:space="preserve"><value>Bunu {0} gün önce kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
-  <data name="readback.unverified.today" xml:space="preserve"><value>Bunu bugün kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
-  <data name="readback.unverified.yesterday" xml:space="preserve"><value>Bunu dün kapattın ve ayar hâlâ kapalı okunuyor; bu Windows sürümünün o ilkeye uyup uymadığını bu okuma söyleyemez.</value></data>
   <data name="readback.on.held" xml:space="preserve"><value>{0} gün önce açtın, hâlâ açık</value></data>
   <data name="readback.on.held.today" xml:space="preserve"><value>Bugün açtın, hâlâ açık</value></data>
   <data name="readback.on.held.yesterday" xml:space="preserve"><value>Dün açtın, hâlâ açık</value></data>
   <data name="readback.on.reverted" xml:space="preserve"><value>Bunu {0} tarihinde açmıştın; şu an yeniden kapalı.</value></data>
+  <data name="action.space.caches.title" xml:space="preserve"><value>Önbellekler ve geçici dosyalar</value></data>
+  <data name="action.space.developer.title" xml:space="preserve"><value>Geliştirici önbellekleri</value></data>
+  <data name="action.space.developer.cost" xml:space="preserve"><value>Sonra yeniden iner.</value></data>
+  <data name="action.space.shaders.title" xml:space="preserve"><value>Oyun shader önbellekleri</value></data>
+  <data name="action.space.shaders.cost" xml:space="preserve"><value>Oyunlar ilk açılışta takılabilir.</value></data>
+  <data name="action.space.hibernation.title" xml:space="preserve"><value>Hazırda bekletme dosyası</value></data>
+  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Hızlı açılış kapanır.</value></data>
+  <data name="action.space.hibernation.name" xml:space="preserve"><value>hiberfil.sys</value></data>
+  <data name="action.space.hibernation.cost-laptop" xml:space="preserve"><value>Pil biterse açık işler kaybolur.</value></data>
+  <data name="action.space.windows-old.title" xml:space="preserve"><value>Eski Windows kopyası</value></data>
+  <data name="action.space.windows-old.cost" xml:space="preserve"><value>Eski Windows'a dönülemez.</value></data>
+  <data name="action.space.windows-old.name" xml:space="preserve"><value>Windows.old</value></data>
+  <data name="action.space.downloads.title" xml:space="preserve"><value>İndirilenler'deki kurulum dosyaları</value></data>
+  <data name="action.space.downloads.cost" xml:space="preserve"><value>Geri alınamaz.</value></data>
+  <data name="action.space.docker.title" xml:space="preserve"><value>Docker'ın kullanılmayan verisi</value></data>
+  <data name="action.space.docker.cost" xml:space="preserve"><value>Durmuş container'lar silinir.</value></data>
+  <data name="action.space.docker.name" xml:space="preserve"><value>docker system prune</value></data>
+  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Geri Dönüşüm Kutusu</value></data>
+  <data name="action.speed.power-mode.title" xml:space="preserve"><value>Şarjdayken tam güç</value></data>
+  <data name="action.speed.power-mode.cost" xml:space="preserve"><value>Fan daha çok dönebilir.</value></data>
+  <data name="action.speed.power-mode.name" xml:space="preserve"><value>Güç modu: En iyi performans</value></data>
+  <data name="action.speed.game-recording.title" xml:space="preserve"><value>Oyunda arka planda video kaydı</value></data>
+  <data name="action.speed.game-recording.name" xml:space="preserve"><value>Arka planda kaydet (Game DVR)</value></data>
+  <data name="action.speed.gpu-scheduling.title" xml:space="preserve"><value>Oyunlarda gecikmeyi azalt</value></data>
+  <data name="action.speed.gpu-scheduling.name" xml:space="preserve"><value>Donanım hızlandırmalı GPU zamanlaması</value></data>
+  <data name="action.speed.windowed-games.title" xml:space="preserve"><value>Pencere modundaki oyunları hızlandır</value></data>
+  <data name="action.speed.windowed-games.name" xml:space="preserve"><value>Pencereli oyunlar için iyileştirmeler</value></data>
+  <data name="action.speed.animations.title" xml:space="preserve"><value>Pencere açılış animasyonları</value></data>
+  <data name="action.speed.animations.cost" xml:space="preserve"><value>Pencereler anında açılır.</value></data>
+  <data name="action.speed.animations.name" xml:space="preserve"><value>Simge durumuna küçültürken ve büyütürken pencereleri canlandır</value></data>
+  <data name="action.speed.memory-integrity.title" xml:space="preserve"><value>Ekstra çekirdek koruması</value></data>
+  <data name="action.speed.memory-integrity.cost" xml:space="preserve"><value>Güvenlik bir kademe düşer.</value></data>
+  <data name="action.speed.memory-integrity.name" xml:space="preserve"><value>Bellek bütünlüğü</value></data>
+  <data name="action.speed.vm-platform.title" xml:space="preserve"><value>Sanal makine desteği</value></data>
+  <data name="action.speed.vm-platform.cost" xml:space="preserve"><value>WSL ve Docker çalışmaz.</value></data>
+  <data name="action.speed.vm-platform.name" xml:space="preserve"><value>Sanal Makine Platformu</value></data>
+  <data name="action.speed.startup.name" xml:space="preserve"><value>Başlangıç uygulamaları (Görev Yöneticisi)</value></data>
+  <data name="action.speed.startup.cost.security" xml:space="preserve"><value>Koruma açılışta başlamaz.</value></data>
+  <data name="action.speed.startup.cost.hardware" xml:space="preserve"><value>Donanım ayarı çalışmayabilir.</value></data>
+  <data name="action.speed.startup.cost.sync" xml:space="preserve"><value>Dosya eşitleme durur.</value></data>
+  <data name="action.speed.startup.cost.passwords" xml:space="preserve"><value>Şifre yöneticisi açılmaz.</value></data>
+  <data name="action.speed.startup.cost.vpn" xml:space="preserve"><value>VPN otomatik bağlanmaz.</value></data>
+  <data name="action.speed.startup.cost.keyboard" xml:space="preserve"><value>Kısayolların çalışmaz.</value></data>
+  <data name="action.privacy.telemetry-services.title" xml:space="preserve"><value>Kullanım bilgilerini Microsoft'a göndermesi</value></data>
+  <data name="action.privacy.telemetry-services.name" xml:space="preserve"><value>Bağlı Kullanıcı Deneyimleri ve Telemetri</value></data>
+  <data name="action.privacy.telemetry-tasks.title" xml:space="preserve"><value>Arka planda bilgi toplaması</value></data>
+  <data name="action.privacy.telemetry-tasks.name" xml:space="preserve"><value>Telemetri zamanlanmış görevleri</value></data>
+  <data name="action.privacy.error-reports.title" xml:space="preserve"><value>Hata ve kullanım raporu göndermesi</value></data>
+  <data name="action.privacy.error-reports.name" xml:space="preserve"><value>Tanılama verileri, Windows Hata Bildirimi</value></data>
+  <data name="action.privacy.ads.title" xml:space="preserve"><value>Sana göre reklam ve öneri göstermesi</value></data>
+  <data name="action.privacy.ads.name" xml:space="preserve"><value>Reklam kimliği, size özel deneyimler</value></data>
+  <data name="action.privacy.activity.title" xml:space="preserve"><value>Açtığın dosya ve sitelerin kaydını tutması</value></data>
+  <data name="action.privacy.activity.name" xml:space="preserve"><value>Etkinlik geçmişi</value></data>
+  <data name="action.privacy.start-ads.title" xml:space="preserve"><value>Başlat menüsündeki reklamlar</value></data>
+  <data name="action.privacy.start-ads.name" xml:space="preserve"><value>Başlat önerileri</value></data>
+  <data name="action.privacy.start-web.title" xml:space="preserve"><value>Başlat'ta arama yapınca internete gitmesi</value></data>
+  <data name="action.privacy.start-web.cost" xml:space="preserve"><value>Başlat'ta web araması olmaz.</value></data>
+  <data name="action.privacy.start-web.name" xml:space="preserve"><value>Başlat aramasında Bing</value></data>
+  <data name="action.privacy.speech.title" xml:space="preserve"><value>Sesini ve yazdıklarını göndermesi</value></data>
+  <data name="action.privacy.speech.cost" xml:space="preserve"><value>Windows sesle yazma çalışmaz.</value></data>
+  <data name="action.privacy.speech.name" xml:space="preserve"><value>Çevrimiçi konuşma tanıma, mürekkep ve yazma</value></data>
+  <data name="action.privacy.feedback.title" xml:space="preserve"><value>"Windows'u nasıl buldun?" soruları</value></data>
+  <data name="action.privacy.feedback.name" xml:space="preserve"><value>Geri bildirim sıklığı</value></data>
+  <data name="action.privacy.recall.title" xml:space="preserve"><value>Ekranının sürekli görüntüsünü kaydetmesi</value></data>
+  <data name="action.privacy.recall.name" xml:space="preserve"><value>Recall</value></data>
+  <data name="action.privacy.copilot.title" xml:space="preserve"><value>Copilot</value></data>
+  <data name="action.privacy.copilot.cost" xml:space="preserve"><value>Copilot kapanır.</value></data>
+  <data name="action.privacy.copilot.name" xml:space="preserve"><value>Windows Copilot</value></data>
+  <data name="action.privacy.delivery-peers.title" xml:space="preserve"><value>Güncellemeleri başkalarına dağıtması</value></data>
+  <data name="action.privacy.delivery-peers.name" xml:space="preserve"><value>Teslim İyileştirme</value></data>
+  <data name="action.privacy.location.title" xml:space="preserve"><value>Konumunu uygulamalarla paylaşması</value></data>
+  <data name="action.privacy.location.cost" xml:space="preserve"><value>Cihazımı bul çalışmaz.</value></data>
+  <data name="action.privacy.location.name" xml:space="preserve"><value>Konum</value></data>
+  <data name="action.privacy.uac.title" xml:space="preserve"><value>Programların sormadan yönetici olması</value></data>
+  <data name="action.privacy.uac.cost" xml:space="preserve"><value>Programlar yeniden izin ister.</value></data>
+  <data name="action.privacy.uac.name" xml:space="preserve"><value>Kullanıcı Hesabı Denetimi</value></data>
+  <data name="action.privacy.firewall.title" xml:space="preserve"><value>Güvenlik duvarının kapalı olması</value></data>
+  <data name="action.privacy.firewall.name" xml:space="preserve"><value>Windows Güvenlik Duvarı</value></data>
+  <data name="action.privacy.defender-realtime.title" xml:space="preserve"><value>Virüs korumasının kapalı olması</value></data>
+  <data name="action.privacy.defender-realtime.name" xml:space="preserve"><value>Gerçek zamanlı koruma</value></data>
+  <data name="action.group.space" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="action.group.speed" xml:space="preserve"><value>Hızlandır</value></data>
+  <data name="action.group.privacy" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="action.group.load" xml:space="preserve"><value>Şu an kasanlar</value></data>
+  <data name="action.result.done" xml:space="preserve"><value>Yapıldı ✓</value></data>
+  <data name="action.result.off" xml:space="preserve"><value>Kapandı ✓</value></data>
+  <data name="action.result.ignored" xml:space="preserve"><value>Windows yok saydı</value></data>
+  <data name="action.result.reverted" xml:space="preserve"><value>Geri açıldı</value></data>
+  <data name="action.result.written" xml:space="preserve"><value>Yazıldı</value></data>
+  <data name="action.result.pending" xml:space="preserve"><value>Yeniden başlatınca</value></data>
+  <data name="action.result.skipped" xml:space="preserve"><value>Atlandı</value></data>
+  <data name="action.result.failed" xml:space="preserve"><value>Olmadı</value></data>
+  <data name="action.result.needs-admin" xml:space="preserve"><value>Yönetici gerekiyor</value></data>
+  <data name="action.result.deferred" xml:space="preserve"><value>{0} kapanınca temizlenecek</value></data>
+  <data name="action.result.cannot-undo" xml:space="preserve"><value>Geri alınamaz</value></data>
+  <data name="action.connections.footer" xml:space="preserve"><value>Bağlantı, veri gönderdiği anlamına gelmez.</value></data>
+  <data name="action.connections.local" xml:space="preserve"><value>Yerel ağ</value></data>
+  <data name="action.connections.unknown" xml:space="preserve"><value>Bilinmiyor</value></data>
+  <data name="action.connections.telemetry" xml:space="preserve"><value>Telemetri</value></data>
+  <data name="action.usage.footer" xml:space="preserve"><value>Miktar var, içerik yok.</value></data>
+  <data name="action.usage.windows" xml:space="preserve"><value>Windows (sistem)</value></data>
+  <data name="action.unread" xml:space="preserve"><value>Okunamadı.</value></data>
+  <data name="action.load.close" xml:space="preserve"><value>Kapat</value></data>
+  <data name="action.load.force" xml:space="preserve"><value>Zorla kapat</value></data>
+  <data name="action.load.remove-startup" xml:space="preserve"><value>Başlangıçtan çıkar</value></data>
+  <data name="action.load.note.defender" xml:space="preserve"><value>Defender tarama yapıyor</value></data>
+  <data name="action.load.note.update" xml:space="preserve"><value>Windows güncelleme kuruyor</value></data>
+  <data name="action.load.note.search" xml:space="preserve"><value>Windows arama dizini kuruyor</value></data>
+  <data name="action.load.note.memory" xml:space="preserve"><value>Windows belleği sıkıştırıyor</value></data>
+  <data name="action.load.note.compat" xml:space="preserve"><value>Windows uyumluluk verisi topluyor</value></data>
+  <data name="action.load.note.dwm" xml:space="preserve"><value>Windows ekranı çiziyor</value></data>
+  <data name="action.load.note.system" xml:space="preserve"><value>Windows'un kendisi</value></data>
+  <data name="action.load.note.services" xml:space="preserve"><value>Windows hizmetleri</value></data>
+  <data name="action.receipt.freed" xml:space="preserve"><value>{0} açıldı</value></data>
+  <data name="action.receipt.deferred" xml:space="preserve"><value>{0} daha {1} kapanınca açılacak</value></data>
+  <data name="action.receipt.boot" xml:space="preserve"><value>Açılış {0} sn → {1} sn</value></data>
+  <data name="action.receipt.startup" xml:space="preserve"><value>Başlangıç programları {0} → {1}</value></data>
+  <data name="action.receipt.ram" xml:space="preserve"><value>{0} RAM boşaldı</value></data>
+  <data name="action.receipt.privacy" xml:space="preserve"><value>{0} ayar kapandı · Windows {1} tanesini yok saydı</value></data>
+  <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetri bağlantıları {0} → {1}</value></data>
+  <data name="action.restart" xml:space="preserve"><value>Tam etki için yeniden başlat</value></data>
+  <data name="action.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="gui.home.label.looking" xml:space="preserve"><value>Bakılıyor</value></data>
+  <data name="gui.home.label.ready" xml:space="preserve"><value>Açılabilir yer</value></data>
+  <data name="gui.home.label.freed" xml:space="preserve"><value>Açıldı</value></data>
+  <data name="gui.home.label.failed" xml:space="preserve"><value>Bakamadım</value></data>
+  <data name="gui.home.this-pc" xml:space="preserve"><value>Bu bilgisayar</value></data>
+  <data name="gui.home.found" xml:space="preserve"><value>Bulunan yer</value></data>
+  <data name="gui.home.startup" xml:space="preserve"><value>Açılışta başlayan</value></data>
+  <data name="gui.home.online" xml:space="preserve"><value>İnternete bağlı</value></data>
+  <data name="gui.home.load" xml:space="preserve"><value>Şu an kasanlar</value></data>
+  <data name="gui.home.load.none" xml:space="preserve"><value>Yok ✓</value></data>
+  <data name="gui.home.cpu" xml:space="preserve"><value>%{0} CPU</value></data>
+  <data name="gui.sat.speed" xml:space="preserve"><value>Hızlandır · açılışta</value></data>
+  <data name="gui.sat.space" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="gui.sat.privacy" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="gui.sat.speed.value" xml:space="preserve"><value>{0} → {1}</value></data>
+  <data name="gui.sat.speed.done" xml:space="preserve"><value>✓ {0} kaldı</value></data>
+  <data name="gui.sat.space.done" xml:space="preserve"><value>✓ {0}</value></data>
+  <data name="gui.sat.privacy.value" xml:space="preserve"><value>{0} ayar</value></data>
+  <data name="gui.sat.privacy.done" xml:space="preserve"><value>✓ {0} kapandı</value></data>
+  <data name="gui.sat.pending" xml:space="preserve"><value>…</value></data>
+  <data name="gui.state.looking" xml:space="preserve"><value>Bakılıyor: {0} · {1}/{2}</value></data>
+  <data name="gui.state.looking.start" xml:space="preserve"><value>Bakılıyor…</value></data>
+  <data name="gui.state.ready" xml:space="preserve"><value>Hazır · {0} iş seçili</value></data>
+  <data name="gui.state.nothing" xml:space="preserve"><value>Yapacak bir şey yok ✓</value></data>
+  <data name="gui.state.running" xml:space="preserve"><value>Yapılıyor: {0}</value></data>
+  <data name="gui.state.running.slow" xml:space="preserve"><value>{0} · birkaç dakika sürebilir</value></data>
+  <data name="gui.state.done.freed" xml:space="preserve"><value>{0} açıldı</value></data>
+  <data name="gui.state.done.startup" xml:space="preserve"><value>{0} program açılıştan çıktı</value></data>
+  <data name="gui.state.done.privacy" xml:space="preserve"><value>{0} ayar kapandı</value></data>
+  <data name="gui.state.done.deferred" xml:space="preserve"><value>{0} daha, {1} kapanınca</value></data>
+  <data name="gui.state.done.failed" xml:space="preserve"><value>{0} iş olmadı</value></data>
+  <data name="gui.state.done.restart" xml:space="preserve"><value>tam etki için yeniden başlat</value></data>
+  <data name="gui.state.undone" xml:space="preserve"><value>{0} ayar geri alındı · silinen dosyalar geri gelmez</value></data>
+  <data name="gui.state.failed" xml:space="preserve"><value>Bakamadım: {0}</value></data>
+  <data name="gui.state.previous" xml:space="preserve"><value>Son sefer: {0}</value></data>
+  <data name="gui.state.previous.boot" xml:space="preserve"><value>açılış {0} sn → {1} sn</value></data>
+  <data name="gui.state.previous.ram" xml:space="preserve"><value>{0} RAM boşaldı</value></data>
+  <data name="gui.button.run-all" xml:space="preserve"><value>Hepsini yap</value></data>
+  <data name="gui.button.looking" xml:space="preserve"><value>Bakılıyor…</value></data>
+  <data name="gui.button.running" xml:space="preserve"><value>Yapılıyor…</value></data>
+  <data name="gui.button.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
+  <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
+  <data name="gui.load.measuring" xml:space="preserve"><value>Ölçülüyor…</value></data>
+  <data name="gui.page.space.title" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="gui.page.space.header" xml:space="preserve"><value>İşaretliler silinir</value></data>
+  <data name="gui.page.speed.title" xml:space="preserve"><value>Hızlandır</value></data>
+  <data name="gui.page.speed.header" xml:space="preserve"><value>İşaretliler durur</value></data>
+  <data name="gui.page.privacy.title" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="gui.page.privacy.header" xml:space="preserve"><value>İşaretliler durdurulur</value></data>
+  <data name="gui.row.restart" xml:space="preserve"><value>Yeniden başlatınca</value></data>
+  <data name="gui.row.windows-name" xml:space="preserve"><value>Windows'ta: {0}</value></data>
+  <data name="gui.files.all" xml:space="preserve"><value>Hepsini seç</value></data>
+  <data name="gui.files.none" xml:space="preserve"><value>Hiçbiri</value></data>
+  <data name="gui.footer.count" xml:space="preserve"><value>{0} seçili</value></data>
+  <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} seçili · {1}</value></data>
+  <data name="gui.footer.run" xml:space="preserve"><value>Bunları yap</value></data>
+  <data name="gui.load.title" xml:space="preserve"><value>Şu an kasanlar</value></data>
+  <data name="gui.load.none" xml:space="preserve"><value>Şu an seni yavaşlatan yok ✓</value></data>
+  <data name="gui.conn.title" xml:space="preserve"><value>Şu an konuştukları</value></data>
+  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetri burada ayırt edilemiyor</value></data>
+  <data name="gui.usage.title" xml:space="preserve"><value>30 günde gönderilenler</value></data>
+  <data name="gui.usage.sent" xml:space="preserve"><value>gönderilen {0}</value></data>
+  <data name="gui.usage.received" xml:space="preserve"><value>alınan {0}</value></data>
+  <data name="gui.nav.home" xml:space="preserve"><value>Genel</value></data>
+  <data name="gui.nav.space" xml:space="preserve"><value>Yer aç</value></data>
+  <data name="gui.nav.speed" xml:space="preserve"><value>Hızlandır</value></data>
+  <data name="gui.nav.privacy" xml:space="preserve"><value>Gizlilik</value></data>
+  <data name="gui.nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="gui.sheet.title" xml:space="preserve"><value>Bunlar kalıcı silinecek</value></data>
+  <data name="gui.sheet.downloads" xml:space="preserve"><value>İndirilenler'deki {0} kurulum dosyası · {1}</value></data>
+  <data name="gui.sheet.recycle-bin" xml:space="preserve"><value>Geri Dönüşüm Kutusu · {0}</value></data>
+  <data name="gui.sheet.windows-old" xml:space="preserve"><value>Eski Windows kopyası · {0}</value></data>
+  <data name="gui.sheet.go" xml:space="preserve"><value>Devam</value></data>
+  <data name="gui.sheet.skip" xml:space="preserve"><value>Bunları atla</value></data>
+  <data name="gui.sheet.list" xml:space="preserve"><value>Listeyi gör</value></data>
+  <data name="gui.settings.title" xml:space="preserve"><value>Ayarlar</value></data>
+  <data name="gui.settings.language" xml:space="preserve"><value>Dil</value></data>
+  <data name="gui.settings.language.system" xml:space="preserve"><value>Sistem</value></data>
+  <data name="gui.settings.autostart" xml:space="preserve"><value>Windows ile başlat</value></data>
+  <data name="gui.settings.motion" xml:space="preserve"><value>Hareketli arka plan</value></data>
+  <data name="gui.settings.version" xml:space="preserve"><value>brisk {0}</value></data>
+  <data name="gui.settings.github" xml:space="preserve"><value>GitHub</value></data>
+  <data name="gui.state.undone.failed" xml:space="preserve"><value>{0} geri alınamadı</value></data>
+  <data name="gui.state.undo-error" xml:space="preserve"><value>Geri alınamadı: {0}</value></data>
 </root>

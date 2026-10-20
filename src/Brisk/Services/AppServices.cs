@@ -12,10 +12,12 @@ namespace Brisk.Services;
 public sealed class AppComposition
 {
     public required IEngineHost Host { get; init; }
-    public required ILiveMetrics LiveMetrics { get; init; }
     public required Settings Settings { get; init; }
     public required string SettingsPath { get; init; }
     public required StartupLauncher Launcher { get; init; }
+    /// The window's engine: the one-click plan, run, undo and live readers.
+    public required BriskEngine.Actions.ActionEngine Engine { get; init; }
+    public required Scanner Scanner { get; init; }
 }
 
 public static class AppServices
@@ -32,10 +34,13 @@ public static class AppServices
         var processInfo = new RealProcessInfoProbe();
         // RealSensorProbe is IDisposable but lives for the whole app lifetime.
         var sensors = new RealSensorProbe();
+        // Shared with StartupManager below: the Performance page's heavy
+        // badge reads the same boot log the startup rule does.
+        var eventLog = new RealEventLogProbe();
         var ctx = new DiagnosticContext(
             new RealPowercfgProbe(runner), registry,
             processInfo, sensors, new RealDisplayProbe(),
-            new RealEventLogProbe(), new RealHardwareProbe(),
+            eventLog, new RealHardwareProbe(),
             new RealDiskInfoProbe(), new RealFileProbe(),
             new RealProcessLister(), new RealMemoryIntegrityProbe(),
             new RealDeliveryOptimizationProbe(), new RealDefenderProbe(), dataDir);
@@ -51,14 +56,18 @@ public static class AppServices
                     System.Security.Principal.WindowsIdentity.GetCurrent())
                     .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator),
                 new DeleteLockProbe()),
-            journal, new StartupManager(registry, log), logPath,
+            journal, new StartupManager(registry, log, eventLog), logPath,
             SelfPath, new RealSessionProbe());
 
         var settingsPath = Path.Combine(dataDir, "settings.json");
+        static bool IsElevated() => new System.Security.Principal.WindowsPrincipal(
+                System.Security.Principal.WindowsIdentity.GetCurrent())
+            .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
         return new AppComposition
         {
+            Engine = BriskEngine.Actions.ActionEngine.CreateReal(ctx, runner, IsElevated),
+            Scanner = new Scanner(CleanupTargetRegistry.All, new RealProcessLister(), new DeleteLockProbe()),
             Host = host,
-            LiveMetrics = new LiveMetrics(sensors, processInfo, host.FreeDiskBytes),
             Settings = Settings.Load(settingsPath),
             SettingsPath = settingsPath,
             Launcher = new StartupLauncher(runner, registry, SelfPath),

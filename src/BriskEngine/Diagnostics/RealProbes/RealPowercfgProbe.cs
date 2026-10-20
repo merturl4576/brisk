@@ -52,8 +52,16 @@ public sealed class RealPowercfgProbe : IPowercfgProbe
     public bool HasBattery()
     {
         if (!GetSystemPowerStatus(out var status)) return true;
-        const byte NoSystemBattery = 128;
-        return (status.BatteryFlag & NoSystemBattery) == 0;
+        return IsLaptop(status.BatteryFlag);
+    }
+
+    /// 128 = no system battery. 255 = status unknown, which the spec counts
+    /// as a laptop: the cautious answer keeps hibernation unticked.
+    public static bool IsLaptop(byte batteryFlag)
+    {
+        const byte NoSystemBattery = 128, Unknown = 255;
+        if (batteryFlag == Unknown) return true;
+        return (batteryFlag & NoSystemBattery) == 0;
     }
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]

@@ -312,4 +312,26 @@ public sealed class StartupManagerTests : IDisposable
     }
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
+
+    /// The Performance page's heavy badge and the Speed up button read the
+    /// same flag, so the page has to mark a Windows-blamed entry heavy the
+    /// way the rule treats it — and a manager given no event log falls
+    /// back to the name list alone.
+    [Fact]
+    public void List_MarksAProgramWindowsBlamed_Heavy()
+    {
+        _reg.SetString(HkcuRun, "Updater", "\"C:\\Program Files\\Foo\\foo.exe\" /bg");
+        var log = new FakeEventLog();
+        var when = new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc);
+        log.Boots.Add(new BootRecord(when, 70_000, 25_000,
+            new[] { new BootOffender("foo.exe", "Foo", "C:\\Program Files\\Foo\\foo.exe", 9_000) }));
+        log.Boots.Add(new BootRecord(when.AddDays(-1), 70_000, 25_000,
+            new[] { new BootOffender("FOO.EXE", "Foo", "C:\\Program Files\\Foo\\foo.exe", 6_000) }));
+
+        var blamed = new StartupManager(_reg, null, log).List().Single(e => e.Name == "Updater");
+        var unaware = new StartupManager(_reg, null).List().Single(e => e.Name == "Updater");
+
+        Assert.True(blamed.KnownHeavy);
+        Assert.False(unaware.KnownHeavy);
+    }
 }

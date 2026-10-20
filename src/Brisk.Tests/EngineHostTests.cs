@@ -202,6 +202,7 @@ file sealed class NullDeliveryOptimization : IDeliveryOptimizationProbe
 file sealed class NullDefender : IDefenderProbe
 {
     public DefenderStatus? Read() => null;
+    public IReadOnlyList<AntivirusProduct> Registered() => Array.Empty<AntivirusProduct>();
 }
 
 /// A machine that changed between two scans: real-time protection goes off
@@ -210,6 +211,8 @@ file sealed class NullDefender : IDefenderProbe
 file sealed class FlippingDefender : IDefenderProbe
 {
     public int Reads { get; private set; }
+
+    public IReadOnlyList<AntivirusProduct> Registered() => Array.Empty<AntivirusProduct>();
 
     public DefenderStatus? Read()
     {
@@ -228,6 +231,7 @@ file sealed class NullDisk : IDiskInfoProbe
 {
     public long FreeBytes(string driveRoot) => 100L << 30;
     public long TotalBytes(string driveRoot) => 500L << 30;
+    public DiskMedium MediumOf(string driveRoot) => DiskMedium.Unknown;
 }
 
 file sealed class NullFiles : IFileProbe

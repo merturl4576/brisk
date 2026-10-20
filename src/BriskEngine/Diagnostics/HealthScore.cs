@@ -6,10 +6,11 @@ namespace BriskEngine.Diagnostics;
 
 public static class HealthScore
 {
-    /// 0-100. A Measured problem subtracts ImpactStars x severity weight
-    /// (Critical 5, Warning 3, Info 1). A Hygiene problem subtracts a flat 2
-    /// (1 for Info), whatever its stars. Notices subtract nothing. Floor 5 so
-    /// the gauge never reads "dead".
+    /// 0-100. A Measured finding subtracts ImpactStars x severity weight
+    /// (Critical 5, Warning 3, Info 1), whether brisk can fix it or not. A
+    /// Hygiene problem subtracts a flat 2 (1 for Info), whatever its stars.
+    /// A Hygiene notice subtracts nothing. Floor 5 so the gauge never reads
+    /// "dead".
     ///
     /// The flat charge exists because settings flips alone once moved the
     /// score from 47 to 90 (a power plan, a start-menu switch, visual effects)
@@ -20,11 +21,19 @@ public static class HealthScore
         var penalty = 0;
         foreach (var f in findings)
         {
-            // Notices are facts, not faults — the spec excludes them so 100
-            // stays reachable on hardware the user cannot change. Charging for
-            // a 57 s boot brisk says in the same sentence it will not shorten
-            // would be the score telling the reader to fix what brisk cannot.
-            if (f.Kind == FindingKind.Notice) continue;
+            // A Hygiene notice is a fact, not a fault — 47 USB devices,
+            // memory below its rating on a board that will not change — and
+            // costs nothing, so 100 stays reachable on hardware the user
+            // cannot change.
+            //
+            // A MEASURED notice is charged. Windows timed a 106 s boot on a
+            // laptop and this gauge read 89 over it, because the boot rule
+            // will not shorten a boot and a notice was free. Two owners read
+            // the 89 as a verdict on the machine and called brisk wrong
+            // (2026-09-09), and they were right: the gauge is read as the
+            // machine, so it has to mean the machine. What brisk can fix is
+            // the sentence under the gauge, not the gauge.
+            if (f.Kind == FindingKind.Notice && f.ImpactClass != ImpactClass.Measured) continue;
             penalty += f.ImpactClass == ImpactClass.Measured
                 ? f.ImpactStars * SeverityWeight(f.Severity)
                 : HygieneCharge(f.Severity);

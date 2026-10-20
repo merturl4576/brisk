@@ -5,12 +5,14 @@ namespace Brisk.Cli;
 
 public sealed record CliCommand(string Verb, string? RuleId = null, string? Level = null,
     bool Json = false, bool Yes = false, bool All = false, bool Undo = false,
-    bool Keep = false, string? Target = null, string? Error = null);
+    bool Keep = false, string? Target = null, string? Error = null, string? Group = null);
 
 public static class CliParser
 {
     private static readonly HashSet<string> Verbs =
-        new() { "scan", "fix", "clean", "targets", "rules", "version", "report" };
+        new() { "scan", "fix", "clean", "targets", "rules", "version", "report",
+                "run", "undo", "receipt", "live" };
+    private static readonly HashSet<string> Groups = new() { "space", "speed", "privacy" };
     private static readonly HashSet<string> Levels = new() { "safe", "developer", "deep" };
 
     public static CliCommand Parse(string[] args)
@@ -36,6 +38,8 @@ public static class CliParser
                     cmd = cmd with { Level = args[++i] }; break;
                 case "--target" when i + 1 < args.Length:
                     cmd = cmd with { Target = args[++i] }; break;
+                case "--group" when i + 1 < args.Length && Groups.Contains(args[i + 1]):
+                    cmd = cmd with { Group = args[++i] }; break;
                 default:
                     return new CliCommand("error", Error: $"bad argument '{args[i]}'");
             }

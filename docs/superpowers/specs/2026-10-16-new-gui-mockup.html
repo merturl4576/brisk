@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>brisk — Monster tarzı</title>
+<style>
+  :root { --accent:#5fd4e8; --accent-dim:#1a3a48; --green:#3ecf8e; --text:#dfeef4; --muted:#7f9aa8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#04070b; color:var(--text); font-family:'Segoe UI Variable','Segoe UI',system-ui,sans-serif; }
+  .page { max-width:1060px; margin:0 auto; padding:26px 18px 70px; }
+  h1 { font-size:22px; font-weight:600; margin:0 0 6px; }
+  .lead { color:var(--muted); font-size:14px; margin:0 0 24px; line-height:1.55; max-width:820px; }
+  .variant { margin-bottom:38px; }
+  .vhead { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
+  .vhead h2 { font-size:17px; margin:0; }
+  .vhead p { margin:4px 0 0; color:var(--muted); font-size:13px; max-width:700px; line-height:1.5; }
+  .pick { cursor:pointer; border:1px solid #2a4a5a; border-radius:999px; padding:8px 18px; font-size:13px; color:#cfe8f2; background:transparent; white-space:nowrap; user-select:none; }
+  .pick.selected { background:var(--accent); color:#03222b; border-color:var(--accent); font-weight:600; }
+
+  .panel { position:relative; height:560px; border-radius:14px; overflow:hidden; border:1px solid #12303d; isolation:isolate; }
+  .faithful { background:radial-gradient(ellipse at 50% 32%, #0f3549 0%, #08222f 42%, #050d14 100%); }
+  .clean { background:#0a131a; border-color:#16252e; }
+
+  /* digital rain + grid floor (faithful only) */
+  .rain { position:absolute; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
+  .rain span { position:absolute; top:-60%; font:12px/14px Consolas,monospace; color:rgba(95,212,232,.11); white-space:pre; animation:fall linear infinite; }
+  @keyframes fall { to { transform:translateY(170%); } }
+  .floor { position:absolute; left:-20%; right:-20%; bottom:-6%; height:48%; z-index:0; pointer-events:none;
+    background-image:linear-gradient(rgba(95,212,232,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(95,212,232,.13) 1px, transparent 1px);
+    background-size:46px 46px; transform:perspective(320px) rotateX(62deg); transform-origin:bottom;
+    mask-image:linear-gradient(to top, #000 30%, transparent 95%); -webkit-mask-image:linear-gradient(to top, #000 30%, transparent 95%);
+    animation:floor 3.5s linear infinite; }
+  @keyframes floor { to { background-position:0 46px; } }
+
+  .title { position:absolute; left:28px; top:20px; display:flex; align-items:center; gap:12px; z-index:2; }
+  .logo { width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg, var(--accent), #2a8ea3); box-shadow:0 0 18px rgba(95,212,232,.45); }
+  .clean .logo { box-shadow:none; }
+  .title b { font-size:26px; font-weight:500; letter-spacing:.01em; }
+
+  .nav { position:absolute; left:26px; top:88px; display:grid; gap:22px; z-index:2; }
+  .tile { width:64px; height:64px; border:1.5px solid rgba(95,212,232,.45); border-radius:6px; display:grid; place-items:center; color:#bfe9f3; font-size:10px; text-align:center; position:relative; }
+  .tile svg { width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.6; }
+  .tile.active { background:rgba(95,212,232,.14); border-color:var(--accent); box-shadow:0 0 16px rgba(95,212,232,.35); }
+  .clean .tile { border-color:#24414e; } .clean .tile.active { box-shadow:none; background:#12303b; }
+  .tile small { position:absolute; bottom:-15px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:10px; color:var(--muted); }
+
+  .side { position:absolute; top:150px; width:190px; z-index:2; font-size:14px; }
+  .side.left { left:110px; } .side.right { right:26px; }
+  .side h4 { margin:0 0 6px; font-size:14px; font-weight:500; color:#cfe8f2; }
+  .row { display:flex; justify-content:space-between; padding:7px 0; border-top:1px solid rgba(127,154,168,.25); }
+  .row span:last-child { font-variant-numeric:tabular-nums; }
+  .clean .row { border-color:#1c2c35; }
+
+  .gauge { position:absolute; left:50%; top:52px; width:400px; height:400px; transform:translateX(-50%); z-index:1; }
+  .gauge svg { width:100%; height:100%; overflow:visible; }
+  .spin { transform-origin:200px 200px; animation:spin 11s linear infinite; }
+  .spin.rev { animation-duration:17s; animation-direction:reverse; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .hero { position:absolute; left:50%; top:50%; transform:translate(-50%,-52%); text-align:center; z-index:2; }
+  .hero .label { font-size:15px; color:#cfe8f2; }
+  .hero .num { font-size:86px; font-weight:300; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .hero .unit { font-size:26px; font-weight:400; margin-left:4px; }
+  .segs { display:flex; gap:3px; justify-content:center; margin-top:10px; }
+  .segs i { width:12px; height:8px; transform:skewX(-20deg); background:var(--accent-dim); transition:background .3s; }
+  .segs i.on { background:var(--accent); }
+  .done .segs i.on { background:var(--green); }
+
+  .sats { position:absolute; left:0; right:0; bottom:0; height:200px; z-index:1; pointer-events:none; }
+  .sats svg { width:100%; height:100%; }
+  .flow { stroke-dasharray:6 10; animation:flow 1.6s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset:-32; } }
+  .sat { position:absolute; text-align:center; z-index:2; transform:translateX(-50%); }
+  .sat .v { font-size:18px; font-weight:500; font-variant-numeric:tabular-nums; }
+  .sat .k { font-size:12px; color:var(--muted); }
+  .sat .ring { margin:6px auto 0; border:2px solid rgba(95,212,232,.7); border-radius:50%; box-shadow:0 0 14px rgba(95,212,232,.35), inset 0 0 10px rgba(95,212,232,.25); animation:pulse 2.6s ease-in-out infinite; }
+  .clean .sat .ring { box-shadow:none; border-color:#2b5767; animation:none; }
+  .sat.ok .v { color:var(--green); }
+  .sat.ok .ring { border-color:var(--green); box-shadow:0 0 14px rgba(62,207,142,.4); }
+  @keyframes pulse { 50% { box-shadow:0 0 26px rgba(95,212,232,.55), inset 0 0 14px rgba(95,212,232,.35); } }
+
+  .go { position:absolute; right:28px; bottom:26px; z-index:3; cursor:pointer; border:none; border-radius:10px; padding:13px 28px; font:600 15px 'Segoe UI Variable','Segoe UI',sans-serif;
+    color:#03222b; background:var(--accent); box-shadow:0 0 24px rgba(95,212,232,.5); }
+  .clean .go { box-shadow:none; }
+  .done .go { background:transparent; color:#cfe8f2; border:1px solid #2a4a5a; box-shadow:none; }
+  .stateline { position:absolute; left:28px; bottom:34px; z-index:3; font-size:13px; color:var(--muted); }
+  .done .stateline { color:var(--green); }
+  @media (prefers-reduced-motion: reduce) { .spin, .flow, .floor, .rain span, .sat .ring { animation:none !important; } }
+  @media (max-width: 900px) { .side { display:none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Monster tarzı, hareketli</h1>
+  <p class="lead">Ortada büyük gösterge, yerde üç uydu halka, kenarlarda kısa rakam sütunları — senin Monster panelinin iskeleti, brisk'in kendi rakamlarıyla. <b>Sağ alttaki “Hepsini yap”a bas</b>: gösterge sıfırdan dolar, uydular tek tek yeşile döner. Bu, tek tıkın GIF'te nasıl görüneceği. Beğendiğinin üstündeki “Bunu seçiyorum”a tıkla.</p>
+
+  <div class="options" data-multiselect>
+
+    <section class="variant">
+      <div class="vhead">
+        <div>
+          <h2>1 · Monster'a sadık</h2>
+          <p>Dijital yağmur, hareket eden ızgara zemin, parlayan halkalar ve kenar çizgileri. Panelinin birebir havası.</p>
+        </div>
+        <div class="option pick" data-choice="monster-sadik" onclick="toggleSelect(this)">Bunu seçiyorum</div>
+      </div>
+      <div class="panel faithful" data-rain="1"></div>
+    </section>
+
+    <section class="variant">
+      <div class="vhead">
+        <div>
+          <h2>2 · Aynı iskelet, sade yüzey</h2>
+          <p>Gösterge, uydular ve animasyonlar aynı; yağmur, ızgara ve parlamalar yok. Daha az “oyun paneli”, daha çok “güvenilir araç”.</p>
+        </div>
+        <div class="option pick" data-choice="monster-sade" onclick="toggleSelect(this)">Bunu seçiyorum</div>
+      </div>
+      <div class="panel clean"></div>
+    </section>
+
+  </div>
+</div>
+
+<template id="panel-tpl">
+  <div class="rain"></div>
+  <div class="floor"></div>
+  <div class="title"><div class="logo"></div><b>brisk</b></div>
+  <div class="nav">
+    <div class="tile active"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></svg><small>Genel</small></div>
+    <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 15h8"/></svg><small>Yer aç</small></div>
+    <div class="tile"><svg viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg><small>Hızlandır</small></div>
+    <div class="tile"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg><small>Gizlilik</small></div>
+  </div>
+  <div class="side left">
+    <h4>Bu bilgisayar</h4>
+    <div class="row"><span>Bulunan yer</span><span>34 GB</span></div>
+    <div class="row"><span>Açılışta başlayan</span><span>14</span></div>
+    <div class="row"><span>İnternete bağlı</span><span>22</span></div>
+  </div>
+  <div class="side right">
+    <h4>Şu an kasanlar</h4>
+    <div class="row"><span>Chrome</span><span>2.1 GB</span></div>
+    <div class="row"><span>Claude</span><span>1.4 GB</span></div>
+    <div class="row"><span>Discord</span><span>0.9 GB</span></div>
+  </div>
+  <div class="gauge">
+    <svg viewBox="0 0 400 400">
+      <circle class="spin" cx="200" cy="200" r="192" fill="none" stroke="#5fd4e8" stroke-width="2" stroke-dasharray="150 1056" stroke-linecap="round" opacity=".75"/>
+      <circle class="spin rev" cx="200" cy="200" r="184" fill="none" stroke="#5fd4e8" stroke-width="1" stroke-dasharray="40 1116" opacity=".5"/>
+      <g class="ticks"></g>
+      <circle cx="200" cy="200" r="122" fill="none" stroke="rgba(95,212,232,.28)" stroke-width="1"/>
+      <g class="minor"></g>
+    </svg>
+    <div class="hero">
+      <div class="label">Açılabilir yer</div>
+      <div><span class="num">0</span><span class="unit">GB</span></div>
+      <div class="segs"></div>
+    </div>
+  </div>
+  <div class="sats">
+    <svg viewBox="0 0 1000 200" preserveAspectRatio="none">
+      <path class="flow" d="M200 120 C 330 120, 380 160, 500 160 C 620 160, 670 120, 800 120" fill="none" stroke="rgba(95,212,232,.55)" stroke-width="2"/>
+    </svg>
+  </div>
+  <div class="sat s-speed" style="left:20%; bottom:58px"><div class="v">14 → 3</div><div class="k">Hızlandır · program</div><div class="ring" style="width:96px;height:28px"></div></div>
+  <div class="sat s-space" style="left:50%; bottom:18px"><div class="v">20 GB</div><div class="k">Yer aç</div><div class="ring" style="width:130px;height:36px"></div></div>
+  <div class="sat s-priv" style="left:80%; bottom:58px"><div class="v">11 ayar</div><div class="k">Gizlilik · veri gönderiyor</div><div class="ring" style="width:96px;height:28px"></div></div>
+  <div class="stateline">Tarama bitti · 3 iş bulundu</div>
+  <button class="go" type="button">Hepsini yap</button>
+</template>
+
+<script>
+(function () {
+  const FOUND = 34, ONE_CLICK = 20, N = 64;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ns = 'http://www.w3.org/2000/svg';
+  const tpl = document.getElementById('panel-tpl');
+
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+  function animate(ms, step, done) {
+    if (reduce) { step(1); done && done(); return; }
+    const t0 = performance.now();
+    (function frame(now) {
+      const t = Math.min(1, (now - t0) / ms);
+      step(ease(t));
+      if (t < 1) requestAnimationFrame(frame); else done && done();
+    })(t0);
+  }
+
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.appendChild(tpl.content.cloneNode(true));
+    const faithful = panel.classList.contains('faithful');
+    if (!faithful) { panel.querySelector('.rain').remove(); panel.querySelector('.floor').remove(); }
+    else {
+      const rain = panel.querySelector('.rain');
+      const chars = '01アイウエオカキクケコサシスセソ7392';
+      for (let c = 0; c < 38; c++) {
+        const s = document.createElement('span');
+        let col = '';
+        for (let i = 0; i < 26; i++) col += chars[Math.floor(Math.random() * chars.length)] + '\n';
+        s.textContent = col;
+        s.style.left = (c * 2.7 + Math.random()) + '%';
+        s.style.animationDuration = (7 + Math.random() * 9) + 's';
+        s.style.animationDelay = (-Math.random() * 12) + 's';
+        rain.appendChild(s);
+      }
+    }
+
+    // ticks: a 270-degree arc open at the bottom, like the Monster gauge
+    const ticks = panel.querySelector('.ticks'), minor = panel.querySelector('.minor');
+    const lines = [];
+    for (let i = 0; i < N; i++) {
+      const a = (135 + i * (270 / (N - 1))) * Math.PI / 180;
+      const l = document.createElementNS(ns, 'line');
+      l.setAttribute('x1', 200 + 150 * Math.cos(a)); l.setAttribute('y1', 200 + 150 * Math.sin(a));
+      l.setAttribute('x2', 200 + 172 * Math.cos(a)); l.setAttribute('y2', 200 + 172 * Math.sin(a));
+      l.setAttribute('stroke-width', '6'); l.setAttribute('stroke', '#1a3a48');
+      ticks.appendChild(l); lines.push(l);
+      if (i % 4 === 0) {
+        const m = document.createElementNS(ns, 'line');
+        m.setAttribute('x1', 200 + 128 * Math.cos(a)); m.setAttribute('y1', 200 + 128 * Math.sin(a));
+        m.setAttribute('x2', 200 + 136 * Math.cos(a)); m.setAttribute('y2', 200 + 136 * Math.sin(a));
+        m.setAttribute('stroke', 'rgba(223,238,244,.55)'); m.setAttribute('stroke-width', '1.5');
+        minor.appendChild(m);
+      }
+    }
+    const segs = panel.querySelector('.segs');
+    for (let i = 0; i < 12; i++) segs.appendChild(document.createElement('i'));
+    const segEls = [...segs.children];
+
+    const num = panel.querySelector('.num'), label = panel.querySelector('.label');
+    const status = panel.querySelector(".stateline"), go = panel.querySelector('.go');
+    const sats = { speed: panel.querySelector('.s-speed'), space: panel.querySelector('.s-space'), priv: panel.querySelector('.s-priv') };
+
+    function paint(fraction, color) {
+      const lit = Math.round(fraction * N);
+      lines.forEach((l, i) => l.setAttribute('stroke', i < lit ? color : '#1a3a48'));
+      const on = Math.round(fraction * segEls.length);
+      segEls.forEach((s, i) => s.classList.toggle('on', i < on));
+    }
+
+    function intro() {
+      panel.classList.remove('done');
+      label.textContent = 'Açılabilir yer';
+      status.textContent = 'Tarama bitti · 3 iş bulundu';
+      go.textContent = 'Hepsini yap';
+      sats.speed.classList.remove('ok'); sats.space.classList.remove('ok'); sats.priv.classList.remove('ok');
+      sats.speed.querySelector('.v').textContent = '14 → 3';
+      sats.space.querySelector('.v').textContent = '20 GB';
+      sats.priv.querySelector('.v').textContent = '11 ayar';
+      animate(1300, t => { num.textContent = Math.round(t * ONE_CLICK); paint(t * ONE_CLICK / FOUND, '#e8f6fb'); });
+    }
+
+    function run() {
+      label.textContent = 'Açıldı';
+      status.textContent = 'Yapılıyor…';
+      paint(0, '#3ecf8e');
+      animate(2400, t => {
+        num.textContent = (t * ONE_CLICK).toFixed(1);
+        paint(t * ONE_CLICK / FOUND, '#3ecf8e');
+        if (t > .25 && !sats.priv.classList.contains('ok')) { sats.priv.classList.add('ok'); sats.priv.querySelector('.v').textContent = '✓ kapandı'; }
+        if (t > .55 && !sats.speed.classList.contains('ok')) { sats.speed.classList.add('ok'); sats.speed.querySelector('.v').textContent = '✓ 3 kaldı'; }
+      }, () => {
+        sats.space.classList.add('ok'); sats.space.querySelector('.v').textContent = '✓ 20 GB';
+        panel.classList.add('done');
+        status.textContent = '20 GB açıldı · 11 program başlangıçtan çıktı · 11 ayar kapandı';
+        go.textContent = 'Geri al';
+      });
+    }
+
+    go.addEventListener('click', e => { e.stopPropagation(); panel.classList.contains('done') ? intro() : run(); });
+    intro();
+  });
+})();
+</script>
+</body>
+</html>
