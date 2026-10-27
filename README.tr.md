@@ -22,7 +22,7 @@ Kurulum yok. Hesap yok. Telemetri yok; brisk'in kendisi hiçbir ağ bağlantıs�
 
 <!-- TODO-RUN: docs/media/demo.gif, geliştiricinin kayıtlı denemesinden: aç, Hepsini yap, yeniden başlat, tekrar aç. -->
 
-**Geliştiricinin dizüstünde tek tık:** TODO-RUN GB açıldı (Gezgin'in gösterdiği boş alan farkı) · açılışta başlayan program TODO-RUN 14 → n · TODO-RUN telemetri ayarı kapandı · açılış TODO-RUN sn → n sn, Windows'un kendi açılış ölçümüyle.
+<!-- TODO-RUN: **Geliştiricinin dizüstünde tek tık:** n GB açıldı (Gezgin'in gösterdiği boş alan farkı) · açılışta başlayan program 14 → n · n telemetri ayarı kapandı · açılış n sn → n sn, Windows'un kendi açılış ölçümüyle. -->
 
 ---
 
@@ -89,7 +89,7 @@ Bu türdeki her araç "tamam" der. brisk uydurmadığı sayıları gösterir:
 
 - **Yer:** çalıştırmadan önce ve sonra sistem diskindeki boş alan. Gezgin'in gösterdiği sayı, "seçilen öğe" değil.
 - **Açılış programları:** önce ve sonra açılışta başlayan program sayısı.
-- **Açılış süresi:** Windows'un olay günlüğüne kendi yazdığı açılış ölçümü; son açılışlar ile çalıştırmadan sonraki ilk açılış karşılaştırılır. Yeniden başlattıktan sonra brisk'i açınca Genel ekranı bununla başlar: *Son sefer: TODO-RUN GB açıldı · açılış TODO-RUN sn → n sn · TODO-RUN GB RAM boşaldı*, geliştiricinin dizüstünden.
+- **Açılış süresi:** Windows'un olay günlüğüne kendi yazdığı açılış ölçümü; son açılışlar ile çalıştırmadan sonraki ilk açılış karşılaştırılır. Yeniden başlattıktan sonra brisk'i açınca Genel ekranı bununla başlar.<!-- TODO-RUN: *Son sefer: n GB açıldı · açılış n sn → n sn · n GB RAM boşaldı*, geliştiricinin dizüstünden. -->
 - **RAM:** açılıştan çıkarılan programların kullandığı bellek. Ancak sonraki açılış hiçbirinin başlamadığını doğruladıktan sonra sayılır; yine de başlayan olursa adı yazılır ve sayıya katılmaz.
 - **Gizlilik:** her ayar çalıştırmadan sonra yeniden okunur ve **Kapandı ✓**, **Windows yok saydı** (bazı sürümler bir ilkeyi yazıp sonra yok sayar) ya da **Geri açıldı** der.
 

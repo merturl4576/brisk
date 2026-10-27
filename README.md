@@ -22,7 +22,7 @@ No installer. No account. No telemetry, and brisk itself makes no network connec
 
 <!-- TODO-RUN: docs/media/demo.gif from the maintainer's recorded run: open, Do it all, restart, open again. -->
 
-**On the maintainer's laptop, one click:** TODO-RUN GB freed (the change in free space Explorer shows) · startup programs TODO-RUN 14 → n · TODO-RUN telemetry settings off · boot TODO-RUN s → n s, by Windows' own boot timer.
+<!-- TODO-RUN: **On the maintainer's laptop, one click:** n GB freed (the change in free space Explorer shows) · startup programs 14 → n · n telemetry settings off · boot n s → n s, by Windows' own boot timer. -->
 
 ---
 
@@ -89,7 +89,7 @@ Every tool in this category says "done". brisk shows numbers it did not make up:
 
 - **Space:** free bytes on the system drive before and after the run. The number Explorer shows, not "items selected".
 - **Startup:** enabled startup programs before and after.
-- **Boot time:** Windows' own boot timing, the one it writes to its event log, for recent boots against the first boot after the run. Open brisk after the restart and Home leads with it: *Last time: TODO-RUN GB freed · startup TODO-RUN s → n s · TODO-RUN GB RAM freed*, from the maintainer's laptop.
+- **Boot time:** Windows' own boot timing, the one it writes to its event log, for recent boots against the first boot after the run. Open brisk after the restart and Home leads with it.<!-- TODO-RUN: *Last time: n GB freed · startup n s → n s · n GB RAM freed*, from the maintainer's laptop. -->
 - **RAM:** the memory the switched-off startup programs were using. It is counted only after the next boot confirms none of them started; one that started anyway is named and left out of the number.
 - **Privacy:** every switch is read back after the run and reports **Off ✓**, **Windows ignored it** (some editions write a policy down and then ignore it) or **Turned back on**.
 
