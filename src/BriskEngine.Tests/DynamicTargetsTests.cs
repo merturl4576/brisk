@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using BriskEngine.Cleaning;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace BriskEngine.Tests;
@@ -153,7 +151,7 @@ public sealed class DynamicTargetsTests : IDisposable
         Assert.Equal(new[] { fourth }, Find(Deps));
     }
 
-    [Fact]
+    [SparseFact]
     public void Finds_archive_only_with_bigger_sibling_folder()
     {
         var kali = Sparse(At("Kali.7z"), GiB + 10);
@@ -186,22 +184,9 @@ public sealed class DynamicTargetsTests : IDisposable
         }
     }
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr inBuffer,
-        uint inSize, IntPtr outBuffer, uint outSize, out uint returned, IntPtr overlapped);
-
-    private const uint FsctlSetSparse = 0x000900C4;
-
-    /// A file of `bytes` logical size that takes (almost) no disk: marked
-    /// sparse before it is stretched, so gigabyte fixtures cost nothing.
-    internal static string Sparse(string path, long bytes)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        using var stream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite);
-        _ = DeviceIoControl(stream.SafeFileHandle, FsctlSetSparse, IntPtr.Zero, 0, IntPtr.Zero, 0, out _, IntPtr.Zero);
-        stream.SetLength(bytes);
-        return path;
-    }
+    /// A file of `bytes` logical size that takes (almost) no disk. SparseFile
+    /// checks the sparse mark and refuses to write real gigabytes without it.
+    internal static string Sparse(string path, long bytes) => SparseFile.Create(path, bytes);
 
     /// Junctions need no admin rights; mklink is a cmd builtin.
     internal static bool Junction(string link, string target)
