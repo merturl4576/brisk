@@ -170,10 +170,9 @@ public sealed class FakeBackend : IActionBackend
             new[] { id }, files ?? Array.Empty<ActionFile>(),
             g == ActionGroupKind.Space ? level ?? (on ? SpaceLevel.Min : SpaceLevel.Mid) : null, lost);
 
-    /// Six rows Hepsini yap takes: caches, downloads (two files), recycle
-    /// bin (all three MIN here, unlike the catalog, so the old figures
-    /// hold), Spotify, animations, ads. Not taken: shaders (MID), OneDrive,
-    /// location.
+    /// Levels as in the catalog: caches MIN; shaders, downloads (two files)
+    /// and the recycle bin MID. Hepsini yap takes four rows: caches,
+    /// Spotify, animations, ads. Not taken: the MID rows, OneDrive, location.
     public static FakeBackend Typical()
     {
         var b = new FakeBackend();
@@ -192,11 +191,11 @@ public sealed class FakeBackend : IActionBackend
         {
             Row("space.caches", ActionGroupKind.Space, 6_000_000_000, reversible: false),
             Row("space.shaders", ActionGroupKind.Space, 2_000_000_000, on: false, reversible: false),
-            Row("space.downloads", ActionGroupKind.Space, 300, reversible: false, files: new[]
+            Row("space.downloads", ActionGroupKind.Space, 300, on: false, reversible: false, lost: true, files: new[]
             {
                 new ActionFile(@"C:\D\a.exe", 200, null), new ActionFile(@"C:\D\b.msi", 100, null),
             }),
-            Row("space.recycle-bin", ActionGroupKind.Space, 8_000_000_000, reversible: false),
+            Row("space.recycle-bin", ActionGroupKind.Space, 8_000_000_000, on: false, reversible: false, lost: true),
         });
         return b;
     }

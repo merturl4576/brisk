@@ -65,6 +65,7 @@ public sealed class GroupPageViewModelTests
     public async Task DownloadsRow_ListsEveryFile_LargestFirst_AndFooterCountsTickedBytes()
     {
         var k = await Make();
+        k.Session.SetLevel(SpaceLevel.Mid);                     // the Downloads row is MID
         var page = k.Page(ActionGroupKind.Space);
         var downloads = page.Rows.Single(r => r.Id == "space.downloads");
         Assert.Equal(new[] { "a.exe", "b.msi" }, downloads.Files.Select(f => f.Name));
@@ -77,20 +78,21 @@ public sealed class GroupPageViewModelTests
         downloads.SelectAllFiles.Execute(null);
         Assert.All(downloads.Files, f => Assert.True(f.IsTicked));
 
-        Assert.Equal("3 seçili · 13 GB", page.Footer);   // caches, downloads, bin
+        Assert.Equal("4 seçili · 15 GB", page.Footer);   // caches, shaders, downloads, bin
     }
 
     /// No confirmation: the Space page runs its level at once, the Recycle
-    /// Bin included.
+    /// Bin (MID, cannot come back) included.
     [Fact]
     public async Task RunGroup_Space_RunsWithoutAsking()
     {
         var k = await Make();
+        k.Session.SetLevel(SpaceLevel.Mid);
         var page = k.Page(ActionGroupKind.Space);
         Assert.True(page.RunGroup.CanExecute(null));
         page.RunGroup.Execute(null);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
-        Assert.Equal(new[] { "space.caches", "space.downloads", "space.recycle-bin" },
+        Assert.Equal(new[] { "space.caches", "space.downloads", "space.recycle-bin", "space.shaders" },
             k.Backend.Runs.Single().RowIds.OrderBy(i => i, StringComparer.Ordinal));
     }
 

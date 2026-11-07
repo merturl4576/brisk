@@ -43,27 +43,42 @@
                                Margin="12,-2,0,0" VerticalAlignment="Center" />
                 </StackPanel>
 
-                <!-- Nav tiles -->
-                <StackPanel Margin="26,88,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
-                    <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsHome}"
-                                 Tag="{Binding L[gui.nav.home]}" Margin="0,0,0,22">
-                        <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Home}" />
-                    </RadioButton>
-                    <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSpace}"
-                                 Tag="{Binding L[gui.nav.space]}" Margin="0,0,0,22">
-                        <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Space}" />
-                    </RadioButton>
-                    <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSpeed}"
-                                 Tag="{Binding L[gui.nav.speed]}" Margin="0,0,0,22">
-                        <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Speed}" />
-                    </RadioButton>
-                    <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsPrivacy}"
-                                 Tag="{Binding L[gui.nav.privacy]}">
-                        <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Privacy}" />
-                    </RadioButton>
+                <!-- Nav tiles (mockup .nav): a tile every 88 px, each with its
+                     badge in the top-right corner — Yer aç's GB, Hızlandır's
+                     and Gizlilik's counts, a spinner until the look lands,
+                     a tick once that place's run went through. -->
+                <StackPanel Margin="24,84,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Grid Margin="0,0,0,9">
+                        <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsHome}"
+                                     Tag="{Binding L[gui.nav.home]}">
+                            <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Home}" />
+                        </RadioButton>
+                        <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding HomeBadge}" />
+                    </Grid>
+                    <Grid Margin="0,0,0,9">
+                        <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSpace}"
+                                     Tag="{Binding L[gui.nav.space]}">
+                            <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Space}" />
+                        </RadioButton>
+                        <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding SpaceBadge}" />
+                    </Grid>
+                    <Grid Margin="0,0,0,9">
+                        <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSpeed}"
+                                     Tag="{Binding L[gui.nav.speed]}">
+                            <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Speed}" />
+                        </RadioButton>
+                        <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding SpeedBadge}" />
+                    </Grid>
+                    <Grid>
+                        <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsPrivacy}"
+                                     Tag="{Binding L[gui.nav.privacy]}">
+                            <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Privacy}" />
+                        </RadioButton>
+                        <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding PrivacyBadge}" />
+                    </Grid>
                 </StackPanel>
                 <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSettings}"
-                             Tag="{Binding L[gui.nav.settings]}" Margin="26,0,0,40"
+                             Tag="{Binding L[gui.nav.settings]}" Margin="24,0,0,40"
                              HorizontalAlignment="Left" VerticalAlignment="Bottom">
                     <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Settings}" />
                 </RadioButton>

@@ -44,8 +44,9 @@ public sealed class HomeViewModelTests
         Assert.Equal("14 → 13", k.Vm.Figures.Speed.Value);
     }
 
-    /// No confirmation: Hepsini yap runs at once, the rows that cannot come
-    /// back included.
+    /// No confirmation: Hepsini yap runs at once — Yer aç at MIN and the
+    /// default Speed and Privacy rows; the MID rows that cannot come back
+    /// (Downloads, Recycle Bin) are the Yer aç page's.
     [Fact]
     public async Task Primary_RunsAll_WithoutAsking()
     {
@@ -53,8 +54,10 @@ public sealed class HomeViewModelTests
         k.Vm.Primary.Execute(null);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
         var ran = Assert.Single(k.Backend.Runs);
-        Assert.Contains("space.downloads", ran.RowIds);
-        Assert.Contains("space.recycle-bin", ran.RowIds);
+        Assert.Contains("space.caches", ran.RowIds);
+        Assert.Contains("privacy.ads", ran.RowIds);
+        Assert.DoesNotContain("space.downloads", ran.RowIds);
+        Assert.DoesNotContain("space.recycle-bin", ran.RowIds);
         Assert.Null(k.Session.RunGroup);
     }
 

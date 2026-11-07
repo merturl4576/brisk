@@ -67,11 +67,14 @@ public sealed class ActionSessionTests
     {
         var b = FakeBackend.Typical(); var s = NewSession(b);
         await s.LookAsync();
+        s.SetLevel(SpaceLevel.Mid);                     // the Downloads row is MID
         s.SetFileTicked(@"C:\D\a.exe", false);
         s.SetFileTicked(@"C:\D\b.msi", false);
-        Assert.Equal(14_000_000_000, s.LevelBytes(SpaceLevel.Min));
-        await s.RunAllAsync();
-        Assert.DoesNotContain("space.downloads", b.Runs.Single().RowIds);
+        Assert.Equal(16_000_000_000, s.LevelBytes(SpaceLevel.Mid));
+        await s.RunAsync(ActionGroupKind.Space);
+        var ran = b.Runs.Single().RowIds;
+        Assert.Contains("space.recycle-bin", ran);
+        Assert.DoesNotContain("space.downloads", ran);
     }
 
     /// No confirmation before deleting: a row that cannot come back runs as

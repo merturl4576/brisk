@@ -26,16 +26,16 @@ public sealed class HomeFiguresTests
         var s = await Ready(FakeBackend.Typical());
         var f = HomeFigures.From(s, Tr(), 14, 22, Now);
         Assert.Equal("Açılabilir yer", f.HeroLabel);
-        Assert.Equal(14_000_000_300, f.HeroBytes);
-        Assert.Equal(14_000_000_300 / 16_000_000_300.0, f.GaugeFraction, 6);
+        Assert.Equal(6_000_000_000, f.HeroBytes);               // Yer aç at MIN: the caches
+        Assert.Equal(6_000_000_000 / 16_000_000_300.0, f.GaugeFraction, 6);
         Assert.False(f.GaugeGreen);
         Assert.Equal("14 → 13", f.Speed.Value);
         Assert.Equal("1 ayar", f.Privacy.Value);
-        Assert.Equal("13 GB", f.Space.Value);
+        Assert.Equal("5,6 GB", f.Space.Value);
         Assert.Equal("15 GB", f.Found);
         Assert.Equal("14", f.Startup);
         Assert.Equal("22", f.Online);
-        Assert.Equal("Hazır · 6 iş seçili", f.Stateline);
+        Assert.Equal("Hazır · 4 iş seçili", f.Stateline);
         Assert.Equal(HomeButton.RunAll, f.ButtonAction);
         Assert.Equal("Hepsini yap", f.Button);
         Assert.True(f.ButtonEnabled);
@@ -62,13 +62,18 @@ public sealed class HomeFiguresTests
         s.SetLevel(SpaceLevel.Max);
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Equal(s.LevelBytes(SpaceLevel.Min), f.HeroBytes);
-        Assert.Equal(14_000_000_300, f.HeroBytes);              // shaders (MID) is not in it
-        Assert.Equal("Hazır · 6 iş seçili", f.Stateline);
+        Assert.Equal(6_000_000_000, f.HeroBytes);               // the MID rows are not in it
+        Assert.Equal("Hazır · 4 iş seçili", f.Stateline);
 
-        s.ToggleSkip("space.recycle-bin");
+        s.ToggleSkip("space.recycle-bin");                      // MID: never in Hepsini yap
         f = HomeFigures.From(s, Tr(), 14, null, Now);
-        Assert.Equal(6_000_000_300, f.HeroBytes);
-        Assert.Equal("Hazır · 5 iş seçili", f.Stateline);
+        Assert.Equal(6_000_000_000, f.HeroBytes);
+        Assert.Equal("Hazır · 4 iş seçili", f.Stateline);
+
+        s.ToggleSkip("space.caches");
+        f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal(0, f.HeroBytes);
+        Assert.Equal("Hazır · 3 iş seçili", f.Stateline);
         Assert.Equal("15 GB", f.Found);                         // what was found stays
     }
 
@@ -81,7 +86,7 @@ public sealed class HomeFiguresTests
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Equal("14 → 13", f.Speed.Value);
         Assert.Equal("1 ayar", f.Privacy.Value);
-        Assert.Equal("Hazır · 6 iş seçili", f.Stateline);
+        Assert.Equal("Hazır · 4 iş seçili", f.Stateline);
     }
 
     [Fact]
@@ -298,7 +303,7 @@ public sealed class HomeFiguresTests
         var en = HomeFigures.From(s, En(), 14, 22, Now);
         Assert.Equal("Space to free", en.HeroLabel);
         Assert.Equal("Do it all", en.Button);
-        Assert.Equal("Ready · 6 tasks ticked", en.Stateline);
+        Assert.Equal("Ready · 4 tasks ticked", en.Stateline);
         Assert.Equal(tr.HeroBytes, en.HeroBytes);
         Assert.Equal(tr.GaugeFraction, en.GaugeFraction);
     }
