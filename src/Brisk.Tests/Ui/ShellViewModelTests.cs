@@ -191,11 +191,12 @@ public sealed class ShellViewModelTests : IDisposable
         var k = await Make();
         k.Shell.SetWindowVisible(true);
         Assert.Equal(Place.Home, k.Shell.Current);
-        var homeSamples = k.Backend.LoadSamples;
+        var homeSamples = k.Backend.MonitorSamples;                 // Home's live monitor
         Assert.True(homeSamples >= 1);
+        Assert.Equal(0, k.Backend.LoadSamples);
 
         k.Shell.Current = Place.Speed;
-        Assert.Equal(homeSamples + 1, k.Backend.LoadSamples);      // the speed panel samples at once
+        Assert.Equal(1, k.Backend.LoadSamples);                     // the speed panel samples at once
         Assert.False(k.Shell.Home.IsActive);
         Assert.False(k.Shell.Decorated);
 
@@ -204,6 +205,7 @@ public sealed class ShellViewModelTests : IDisposable
         var reads = k.Backend.ConnectionReads;
         k.Timers.Advance(TimeSpan.FromSeconds(4));
         Assert.True(k.Backend.ConnectionReads > reads);
+        Assert.Equal(homeSamples, k.Backend.MonitorSamples);       // Home's sampler stopped with it
 
         k.Shell.Current = Place.Home;
         Assert.True(k.Shell.Decorated);

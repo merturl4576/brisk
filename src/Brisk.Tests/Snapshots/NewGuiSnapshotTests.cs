@@ -35,6 +35,18 @@ public sealed class NewGuiSnapshotTests
             new ConnectionRow("Discord", "Cloudflare", null, 2, false, false),
             new ConnectionRow("Windows", "Microsoft", "v10.events.data.microsoft.com", 1, true, false),
         }, true);
+        // The maintainer's laptop as Home reads it (specs verified live
+        // 2026-11-07; the load numbers are the mockup's): the tallest columns
+        // Home draws — a battery with health and cycles, two GPUs, a CPU
+        // name that wraps.
+        b.SpecsToReturn = new SpecsInfo("Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz", 2592, 6, 12,
+            new[] { "Intel(R) UHD Graphics", "NVIDIA GeForce GTX 1650 Ti" }, 32L << 30, 34_118_000_000,
+            "KINGSTON SKC3000S1024G", 1_024_209_543_168);
+        b.MonitorToReturn = new MonitorSample(20, 12, 58, 19_756_000_000, 66, 52, 10_375, 14_000,
+            new BatteryInfo(100, true, 29, 312),
+            new[] { new ProcLoad("Claude Code", 9), new ProcLoad("Google Chrome", 6), new ProcLoad("Visual Studio Code", 4) },
+            new[] { new ProcLoad("Google Chrome", 8), new ProcLoad("LivelyWallpaper", 6), new ProcLoad("Desktop Window Manager", 4) },
+            new[] { new ProcLoad("Visual Studio Code", 6_013_000_000), new ProcLoad("Claude Code", 3_113_000_000), new ProcLoad("Wispr Flow", 634L << 20) });
         return b;
     }
 
@@ -260,6 +272,16 @@ public sealed class NewGuiSnapshotTests
     [Fact]
     public void Home_Ready_English() => Shoot(() => Home(Rich(), "en").Vm, "new-home-ready-en");
 
+    /// A satellite brought to the front: the floor and the rings have turned,
+    /// and the gauge, the lit spec block and the top three are the card's.
+    [Fact]
+    public void Home_GraphicsInFront() => Shoot(() =>
+    {
+        var (vm, _) = Home(Rich());
+        vm.SelectPart(Part.Gpu);
+        return vm;
+    }, "new-home-gpu");
+
     [Fact]
     public void Home_Running()
     {
@@ -278,32 +300,106 @@ public sealed class NewGuiSnapshotTests
         finally { b.HoldRun.Set(); }
     }
 
-    /// The GIF moment's longest line (freed, startup, privacy, deferred,
-    /// failed, restart) must not grow into the Speed satellite above it.
-    [Fact]
-    public void Home_Done_TheLongestStateline_StaysClearOfTheSpeedSatellite()
+    private static readonly string[] Satellites = { "CpuSatellite", "GpuSatellite", "RamSatellite" };
+
+    private static Rect BoundsIn(FrameworkElement view, System.Windows.Media.Visual ancestor, string name)
     {
-        var b = Rich();
+        var element = (FrameworkElement)view.FindName(name)!;
+        return element.TransformToAncestor(ancestor).TransformBounds(new Rect(element.RenderSize));
+    }
+
+    /// The GIF moment's longest strip (freed, apps, settings, failed) stays
+    /// on one line and clear of the floor satellites.
+    [Fact]
+    public void Home_Done_TheLongestStrip_StaysClearOfTheSatellites()
+    {
+        var b = Catalog();
         b.Outcome = i => i.Id switch
         {
             "speed.animations" => new RowResult(i.Id, RowOutcome.PendingRestart, null, null, 0, 0),
-            "privacy.location" => new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0),
+            "privacy.location" or "privacy.ads" => new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0),
             _ => new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0),
         };
-        b.ReceiptToReturn = TestReceipts.Freed("run-1", 28_346_784_153, startupAfter: 3, privacyOff: 8)
-            with { DeferredBytes = 2_300_000_000 };
-        b.DeferredAppNames.AddRange(new[] { "chrome", "discord", "spotify" });
-        Rect stateline = default, satellite = default;
+        b.ReceiptToReturn = TestReceipts.Freed("run-1", 28_346_784_153, startupAfter: 3, privacyOff: 8);
+        var overlaps = new List<string>();
+        Rect strip = default;
         SnapshotRenderer.Capture(() => Frame(AfterRun(b)), Canvas, "new-home-done-long", inspect: root =>
         {
             var view = (HomeView)((Grid)root).Children[1];
-            Rect Bounds(string name) => ((FrameworkElement)view.FindName(name)!)
-                .TransformToAncestor(view).TransformBounds(new Rect(((FrameworkElement)view.FindName(name)!).RenderSize));
-            stateline = Bounds("StatelinePanel");
-            satellite = Bounds("SpeedSatellite");
+            strip = BoundsIn(view, view, "StripPanel");
+            foreach (var s in Satellites)
+                if (BoundsIn(view, view, s) is var r && r.IntersectsWith(strip)) overlaps.Add($"{s} {r}");
         });
-        Assert.True(stateline.Height > 40, $"the line did not wrap as long lines do: {stateline}");
-        Assert.False(stateline.IntersectsWith(satellite), $"stateline {stateline} overlaps satellite {satellite}");
+        Assert.True(strip.Height < 60, $"the strip wrapped: {strip}");
+        Assert.True(strip.Left >= 110, $"the strip runs under the nav: {strip}");
+        Assert.Empty(overlaps);
+    }
+
+    /// Spec: the satellites never overlap the side columns at any supported
+    /// window size (the mockup's right list hit the "Ekran kartı" label at
+    /// 1400×900). The window at 1400×900, at the size it opens with on a
+    /// 1080p laptop at 150 % (FirstWindowSize), and at its minimum; each part
+    /// brought to the front, and the floor caught every 10° of a turn.
+    [Theory]
+    [InlineData(1400, 900, "1400x900")]
+    [InlineData(0, 0, "first-size-1080p-150")]
+    [InlineData(720, 460, "minimum")]
+    public void Home_Satellites_StayClearOfTheSideColumns(double width, double height, string label)
+    {
+        if (width == 0)
+        {
+            var first = Brisk.Ui.Shell.FirstWindowSize.For(Canvas, new Thickness(8, 31, 8, 8), new Rect(0, 0, 1280, 672));
+            (width, height) = (first.Width, first.Height);
+        }
+        var overlaps = new List<string>();
+        var checks = 0;
+        var errors = BindingErrors.Capture(() => SnapshotRenderer.Capture(() =>
+        {
+            var shell = Shell(Catalog());
+            return new Brisk.Ui.Shell.ShellWindow(shell) { Width = width, Height = height };
+        }, new Size(width, height), "new-home-layout-" + label, inspect: root =>
+        {
+            var window = (Brisk.Ui.Shell.ShellWindow)root;
+            var stage = (FrameworkElement)window.FindName("Root")!;
+            var view = Find<HomeView>(window)!;
+            var floor = (FloorCarousel)view.FindName("Floor")!;
+            void Check(string when)
+            {
+                stage.UpdateLayout();
+                var columns = new[] { "LeftColumn", "RightColumn" }.Select(c => (c, BoundsIn(view, stage, c))).ToList();
+                foreach (var s in Satellites)
+                {
+                    var r = BoundsIn(view, stage, s);
+                    foreach (var (c, cr) in columns)
+                        if (r.IntersectsWith(cr)) overlaps.Add($"{when}: {s} {r} overlaps {c} {cr}");
+                }
+                checks++;
+            }
+            foreach (var part in new[] { Part.Gpu, Part.Ram, Part.Cpu })
+            {
+                window.ViewModel.Home.SelectPart(part);
+                Brisk.Views.OffscreenLayout.Settle(window);
+                Check(part.ToString());
+            }
+            for (var angle = 0; angle < 360; angle += 10)
+            {
+                floor.BeginAnimation(FloorCarousel.ShownAngleProperty, null);
+                floor.ShownAngle = angle;
+                Check($"{angle}°");
+            }
+            Assert.True(stage.ActualWidth > 0 && stage.ActualHeight > 0, $"the stage did not lay out at {label}");
+        }));
+        Assert.Empty(errors);
+        Assert.Equal(39, checks);
+        Assert.Empty(overlaps);
+    }
+
+    private static T? Find<T>(DependencyObject root) where T : DependencyObject
+    {
+        if (root is T hit) return hit;
+        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            if (Find<T>(System.Windows.Media.VisualTreeHelper.GetChild(root, i)) is { } found) return found;
+        return null;
     }
 
     [Fact]

@@ -154,11 +154,21 @@ public sealed class FakeBackend : IActionBackend
 
     public SpecsInfo SpecsToReturn = new("Test CPU", 2600, 6, 12, new[] { "Test GPU" }, 32L << 30, 31L << 30,
         "Test disk", 1_000_000_000_000);
-    public SpecsInfo Specs() => SpecsToReturn;
+    public int SpecsReads;
+    public SpecsInfo Specs()
+    {
+        Interlocked.Increment(ref SpecsReads);
+        return SpecsToReturn;
+    }
 
     public MonitorSample MonitorToReturn = new(10, 5, 50, 16L << 30, 50, 45, 1_000, 20_000, null,
         Array.Empty<ProcLoad>(), Array.Empty<ProcLoad>(), Array.Empty<ProcLoad>());
-    public MonitorSample SampleMonitor() => MonitorToReturn;
+    public int MonitorSamples;
+    public MonitorSample SampleMonitor()
+    {
+        Interlocked.Increment(ref MonitorSamples);
+        return MonitorToReturn;
+    }
 
     /// A Space row's level defaults from its tick, as in the catalog: on =
     /// MIN, off = MID.

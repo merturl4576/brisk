@@ -30,31 +30,43 @@ public sealed class TickGauge : FrameworkElement
     public static readonly DependencyProperty GreenProperty = DependencyProperty.Register(nameof(Green),
         typeof(bool), typeof(TickGauge), new FrameworkPropertyMetadata(false, OnGreenChanged));
 
+    /// false: a new Fraction lands at once (a live reading every second);
+    /// true: it sweeps there.
+    public static readonly DependencyProperty GlideProperty = DependencyProperty.Register(nameof(Glide),
+        typeof(bool), typeof(TickGauge), new PropertyMetadata(true));
+
+    public bool Glide { get => (bool)GetValue(GlideProperty); set => SetValue(GlideProperty, value); }
+
     public double Fraction { get => (double)GetValue(FractionProperty); set => SetValue(FractionProperty, value); }
     public double ShownFraction { get => (double)GetValue(ShownFractionProperty); set => SetValue(ShownFractionProperty, value); }
     public bool Green { get => (bool)GetValue(GreenProperty); set => SetValue(GreenProperty, value); }
 
     public static int LitFor(double fraction) => (int)Math.Round(Math.Clamp(fraction, 0, 1) * TickCount);
 
-    private static void OnFractionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-    {
-        var g = (TickGauge)d;
-        g.BeginAnimation(ShownFractionProperty, new DoubleAnimation(g.ShownFraction, (double)e.NewValue, Sweep)
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        });
-    }
+    private static void OnFractionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+        ((TickGauge)d).SweepTo(null, (double)e.NewValue);
 
     /// Turning green starts the fill again from empty: the run refills the arc.
     private static void OnGreenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var g = (TickGauge)d;
-        g.BeginAnimation(ShownFractionProperty, null);
-        g.ShownFraction = 0;
-        g.BeginAnimation(ShownFractionProperty, new DoubleAnimation(0, g.Fraction, Sweep)
+        g.SweepTo(0, g.Fraction);
+    }
+
+    /// At 20 frames a second; with reduced motion, or Glide off, the arc
+    /// lands at once.
+    private void SweepTo(double? from, double to)
+    {
+        // Where the arc is now, mid-sweep included, before the old sweep goes.
+        var start = from ?? ShownFraction;
+        var moving = Ambient.Moving && Glide;
+        BeginAnimation(ShownFractionProperty, null);
+        ShownFraction = moving ? start : to;
+        if (!moving) return;
+        BeginAnimation(ShownFractionProperty, (AnimationTimeline)Ambient.Paced(new DoubleAnimation(start, to, Sweep)
         {
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        });
+        }));
     }
 
     protected override void OnRender(DrawingContext dc)

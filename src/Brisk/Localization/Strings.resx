@@ -434,13 +434,35 @@
   <data name="gui.home.label.ready" xml:space="preserve"><value>Space to free</value></data>
   <data name="gui.home.label.freed" xml:space="preserve"><value>Freed</value></data>
   <data name="gui.home.label.failed" xml:space="preserve"><value>Couldn't look</value></data>
-  <data name="gui.home.this-pc" xml:space="preserve"><value>This PC</value></data>
-  <data name="gui.home.found" xml:space="preserve"><value>Space found</value></data>
-  <data name="gui.home.startup" xml:space="preserve"><value>Start with Windows</value></data>
-  <data name="gui.home.online" xml:space="preserve"><value>Online now</value></data>
-  <data name="gui.home.load" xml:space="preserve"><value>Slowing you now</value></data>
-  <data name="gui.home.load.none" xml:space="preserve"><value>None ✓</value></data>
   <data name="gui.home.cpu" xml:space="preserve"><value>{0}% CPU</value></data>
+  <data name="gui.home.part.cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="gui.home.part.gpu" xml:space="preserve"><value>Graphics</value></data>
+  <data name="gui.home.part.ram" xml:space="preserve"><value>Memory</value></data>
+  <data name="gui.home.part.disk" xml:space="preserve"><value>Disk</value></data>
+  <data name="gui.home.percent" xml:space="preserve"><value>{0}%</value></data>
+  <data name="gui.home.net" xml:space="preserve"><value>Network</value></data>
+  <data name="gui.home.net.up" xml:space="preserve"><value>Upload</value></data>
+  <data name="gui.home.net.down" xml:space="preserve"><value>Download</value></data>
+  <data name="gui.home.battery" xml:space="preserve"><value>Battery</value></data>
+  <data name="gui.home.battery.charge" xml:space="preserve"><value>Charge</value></data>
+  <data name="gui.home.battery.state" xml:space="preserve"><value>Power</value></data>
+  <data name="gui.home.battery.plugged" xml:space="preserve"><value>Plugged in</value></data>
+  <data name="gui.home.battery.unplugged" xml:space="preserve"><value>On battery</value></data>
+  <data name="gui.home.battery.health" xml:space="preserve"><value>Battery health</value></data>
+  <data name="gui.home.battery.cycles" xml:space="preserve"><value>Charge cycles</value></data>
+  <data name="gui.home.heat" xml:space="preserve"><value>Temperature</value></data>
+  <data name="gui.home.spec.cores-threads" xml:space="preserve"><value>{0} cores, {1} threads</value></data>
+  <data name="gui.home.spec.cores" xml:space="preserve"><value>{0} cores</value></data>
+  <data name="gui.home.spec.threads" xml:space="preserve"><value>{0} threads</value></data>
+  <data name="gui.home.spec.ram" xml:space="preserve"><value>{0} ({1} usable)</value></data>
+  <data name="gui.home.spec.ram.usable" xml:space="preserve"><value>{0} usable</value></data>
+  <data name="gui.home.ram.used-of" xml:space="preserve"><value>{0} of {1} in use</value></data>
+  <data name="gui.home.ram.used" xml:space="preserve"><value>{0} in use</value></data>
+  <data name="gui.home.top" xml:space="preserve"><value>Using the most right now</value></data>
+  <data name="gui.home.strip.ready" xml:space="preserve"><value>brisk is ready:</value></data>
+  <data name="gui.home.strip.last" xml:space="preserve"><value>Last run:</value></data>
+  <data name="gui.home.strip.apps" xml:space="preserve"><value>{0} apps</value></data>
+  <data name="gui.home.strip.settings" xml:space="preserve"><value>{0} settings</value></data>
   <data name="gui.sat.speed" xml:space="preserve"><value>Speed up · at startup</value></data>
   <data name="gui.sat.space" xml:space="preserve"><value>Free up space</value></data>
   <data name="gui.sat.privacy" xml:space="preserve"><value>Privacy</value></data>

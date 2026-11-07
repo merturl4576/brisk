@@ -434,13 +434,35 @@
   <data name="gui.home.label.ready" xml:space="preserve"><value>Açılabilir yer</value></data>
   <data name="gui.home.label.freed" xml:space="preserve"><value>Açıldı</value></data>
   <data name="gui.home.label.failed" xml:space="preserve"><value>Bakamadım</value></data>
-  <data name="gui.home.this-pc" xml:space="preserve"><value>Bu bilgisayar</value></data>
-  <data name="gui.home.found" xml:space="preserve"><value>Bulunan yer</value></data>
-  <data name="gui.home.startup" xml:space="preserve"><value>Açılışta başlayan</value></data>
-  <data name="gui.home.online" xml:space="preserve"><value>İnternete bağlı</value></data>
-  <data name="gui.home.load" xml:space="preserve"><value>Şu an kasanlar</value></data>
-  <data name="gui.home.load.none" xml:space="preserve"><value>Yok ✓</value></data>
   <data name="gui.home.cpu" xml:space="preserve"><value>%{0} CPU</value></data>
+  <data name="gui.home.part.cpu" xml:space="preserve"><value>İşlemci</value></data>
+  <data name="gui.home.part.gpu" xml:space="preserve"><value>Ekran kartı</value></data>
+  <data name="gui.home.part.ram" xml:space="preserve"><value>Bellek</value></data>
+  <data name="gui.home.part.disk" xml:space="preserve"><value>Disk</value></data>
+  <data name="gui.home.percent" xml:space="preserve"><value>{0} %</value></data>
+  <data name="gui.home.net" xml:space="preserve"><value>Ağ hızı</value></data>
+  <data name="gui.home.net.up" xml:space="preserve"><value>Yükleme</value></data>
+  <data name="gui.home.net.down" xml:space="preserve"><value>İndirme</value></data>
+  <data name="gui.home.battery" xml:space="preserve"><value>Pil</value></data>
+  <data name="gui.home.battery.charge" xml:space="preserve"><value>Kalan şarj</value></data>
+  <data name="gui.home.battery.state" xml:space="preserve"><value>Durum</value></data>
+  <data name="gui.home.battery.plugged" xml:space="preserve"><value>Prizde</value></data>
+  <data name="gui.home.battery.unplugged" xml:space="preserve"><value>Pilde</value></data>
+  <data name="gui.home.battery.health" xml:space="preserve"><value>Pil sağlığı</value></data>
+  <data name="gui.home.battery.cycles" xml:space="preserve"><value>Şarj döngüsü</value></data>
+  <data name="gui.home.heat" xml:space="preserve"><value>Isı</value></data>
+  <data name="gui.home.spec.cores-threads" xml:space="preserve"><value>{0} çekirdek, {1} iş parçacığı</value></data>
+  <data name="gui.home.spec.cores" xml:space="preserve"><value>{0} çekirdek</value></data>
+  <data name="gui.home.spec.threads" xml:space="preserve"><value>{0} iş parçacığı</value></data>
+  <data name="gui.home.spec.ram" xml:space="preserve"><value>{0} ({1} kullanılabilir)</value></data>
+  <data name="gui.home.spec.ram.usable" xml:space="preserve"><value>{0} kullanılabilir</value></data>
+  <data name="gui.home.ram.used-of" xml:space="preserve"><value>{0} / {1} kullanılıyor</value></data>
+  <data name="gui.home.ram.used" xml:space="preserve"><value>{0} kullanılıyor</value></data>
+  <data name="gui.home.top" xml:space="preserve"><value>Şu an en çok kullanan</value></data>
+  <data name="gui.home.strip.ready" xml:space="preserve"><value>brisk hazır:</value></data>
+  <data name="gui.home.strip.last" xml:space="preserve"><value>Son işlem:</value></data>
+  <data name="gui.home.strip.apps" xml:space="preserve"><value>{0} uygulama</value></data>
+  <data name="gui.home.strip.settings" xml:space="preserve"><value>{0} ayar</value></data>
   <data name="gui.sat.speed" xml:space="preserve"><value>Hızlandır · açılışta</value></data>
   <data name="gui.sat.space" xml:space="preserve"><value>Yer aç</value></data>
   <data name="gui.sat.privacy" xml:space="preserve"><value>Gizlilik</value></data>

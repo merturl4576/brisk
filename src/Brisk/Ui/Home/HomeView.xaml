@@ -4,143 +4,426 @@
              xmlns:c="clr-namespace:Brisk.Ui.Controls"
              xmlns:ui="clr-namespace:Brisk.Ui"
              Width="1100" Height="680">
-    <!-- Drawn on the shell's 1100x680 design canvas; the nav column (x < 110)
-         belongs to the shell. Positions come from the chosen mockup. -->
+    <!-- Genel, the live system monitor (mockup home.html), drawn on the
+         shell's 1100x680 design canvas; the nav column (x < 110) belongs to
+         the shell. The side columns stop at y 438 and are clipped there: the
+         floor's satellites, wherever a turn has them, stay below that line
+         where they pass under a column (NewGuiSnapshotTests checks it at
+         every window size). -->
     <UserControl.Resources>
-        <ui:ToneBrush x:Key="ToneBrush" />
         <ui:PresentToVisibility x:Key="Present" />
         <ui:EqualsToVisibility x:Key="Equals" />
-        <Style x:Key="ColumnRow" TargetType="Border">
-            <Setter Property="BorderBrush" Value="#407F9AA8" />
+
+        <Style x:Key="Head" TargetType="TextBlock" BasedOn="{StaticResource Ui.TextBase}">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource Ui.TextSoft}" />
+            <Setter Property="Margin" Value="0,0,0,3" />
+        </Style>
+        <Style x:Key="Row" TargetType="Border">
+            <Setter Property="BorderBrush" Value="#387F9AA8" />
             <Setter Property="BorderThickness" Value="0,1,0,0" />
-            <Setter Property="Padding" Value="0,7" />
+            <Setter Property="Padding" Value="0,4" />
+        </Style>
+        <Style x:Key="RowText" TargetType="TextBlock" BasedOn="{StaticResource Ui.TextBase}">
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="RowValue" TargetType="TextBlock" BasedOn="{StaticResource RowText}">
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+            <Setter Property="Margin" Value="10,0,0,0" />
+            <Setter Property="DockPanel.Dock" Value="Right" />
+        </Style>
+
+        <!-- A spec block: a line on top, the accent bar and wash while lit. -->
+        <Style x:Key="Spec" TargetType="Border">
+            <Setter Property="BorderBrush" Value="#387F9AA8" />
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+        </Style>
+        <Style x:Key="SpecLit" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{StaticResource Ui.Accent}" />
+            <Setter Property="BorderThickness" Value="2,0,0,0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#1A5FD4E8" Offset="0" />
+                        <GradientStop Color="#005FD4E8" Offset="1" />
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SpecTitle" TargetType="TextBlock" BasedOn="{StaticResource Ui.TextBase}">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource Ui.TextSoft}" />
+        </Style>
+        <!-- At most two lines; each trimmed, never wrapped into the floor. -->
+        <Style x:Key="SpecText" TargetType="TextBlock" BasedOn="{StaticResource Ui.TextBase}">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#B8CFE8F2" />
+            <Setter Property="LineHeight" Value="16" />
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="MaxHeight" Value="32" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+
+        <!-- The right column's icons: they light a spec block, nothing more. -->
+        <Style x:Key="SpecIcon" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <Border x:Name="Box" CornerRadius="3" BorderThickness="1" BorderBrush="#595FD4E8" />
+                            <ContentPresenter />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource Ui.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Laid over a lit icon's box: the accent outline and wash. -->
+        <Style x:Key="IconLit" TargetType="Border">
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{StaticResource Ui.Accent}" />
+            <Setter Property="Background" Value="#335FD4E8" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+        <Style x:Key="IconPath" TargetType="Path" BasedOn="{StaticResource Ui.Icon}">
+            <Setter Property="Stroke" Value="#9FD8E6" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+        </Style>
+        <Geometry x:Key="Icon.Disk">M4.5,7 L19.5,7 A1.5,1.5 0 0 1 21,8.5 L21,15.5 A1.5,1.5 0 0 1 19.5,17 L4.5,17 A1.5,1.5 0 0 1 3,15.5 L3,8.5 A1.5,1.5 0 0 1 4.5,7 Z M15.8,12 A1.2,1.2 0 1 1 18.2,12 A1.2,1.2 0 1 1 15.8,12 Z M6,12 L12,12</Geometry>
+        <Geometry x:Key="Icon.Cpu">M7,6 L17,6 A1,1 0 0 1 18,7 L18,17 A1,1 0 0 1 17,18 L7,18 A1,1 0 0 1 6,17 L6,7 A1,1 0 0 1 7,6 Z M9.5,9.5 L14.5,9.5 L14.5,14.5 L9.5,14.5 Z M9,3 L9,6 M12,3 L12,6 M15,3 L15,6 M9,18 L9,21 M12,18 L12,21 M15,18 L15,21 M3,9 L6,9 M3,12 L6,12 M3,15 L6,15 M18,9 L21,9 M18,12 L21,12 M18,15 L21,15</Geometry>
+        <Geometry x:Key="Icon.Gpu">M3.5,6 L20.5,6 A1,1 0 0 1 21.5,7 L21.5,16 A1,1 0 0 1 20.5,17 L3.5,17 A1,1 0 0 1 2.5,16 L2.5,7 A1,1 0 0 1 3.5,6 Z M12.5,11.5 A3,3 0 1 1 18.5,11.5 A3,3 0 1 1 12.5,11.5 Z M6,9.5 L10,9.5 M6,13.5 L10,13.5 M5,17 L5,19 M9,17 L9,19</Geometry>
+        <Geometry x:Key="Icon.Ram">M3.5,7 L20.5,7 A1,1 0 0 1 21.5,8 L21.5,15 A1,1 0 0 1 20.5,16 L3.5,16 A1,1 0 0 1 2.5,15 L2.5,8 A1,1 0 0 1 3.5,7 Z M6,10 L6,13 M9.5,10 L9.5,13 M13,10 L13,13 M16.5,10 L16.5,13 M5,16 L5,18 M19,16 L19,18</Geometry>
+
+        <!-- A floor satellite: the whole ring and its tag take the click. -->
+        <Style x:Key="Satellite" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StripButton" TargetType="Button" BasedOn="{StaticResource Ui.Primary}">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="14,6" />
         </Style>
     </UserControl.Resources>
 
     <Canvas>
-        <!-- ===== Left column: this PC ===== -->
-        <StackPanel Canvas.Left="120" Canvas.Top="150" Width="190">
-            <TextBlock Style="{StaticResource Ui.Label}" FontWeight="Medium" Margin="0,0,0,6"
-                       Text="{Binding L[gui.home.this-pc]}" />
-            <Border Style="{StaticResource ColumnRow}">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Ui.Value}" Text="{Binding Figures.Found}" />
-                    <TextBlock Style="{StaticResource Ui.Value}" Text="{Binding L[gui.home.found]}" />
-                </DockPanel>
-            </Border>
-            <Border Style="{StaticResource ColumnRow}">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Ui.Value}" Text="{Binding Figures.Startup}" />
-                    <TextBlock Style="{StaticResource Ui.Value}" Text="{Binding L[gui.home.startup]}" />
-                </DockPanel>
-            </Border>
-            <Border Style="{StaticResource ColumnRow}">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Ui.Value}" Text="{Binding Figures.Online}" />
-                    <TextBlock Style="{StaticResource Ui.Value}" Text="{Binding L[gui.home.online]}" />
-                </DockPanel>
-            </Border>
-        </StackPanel>
+        <!-- ===== Left column: network, battery, heat ===== -->
+        <Grid x:Name="LeftColumn" Canvas.Left="116" Canvas.Top="88" Width="190" Height="350" ClipToBounds="True">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Head}" Text="{Binding L[gui.home.net]}" />
+                <Border Style="{StaticResource Row}">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource RowValue}">
+                            <Run Text="{Binding Live.Upload, Mode=OneWay}" /><Run Text=" ▲" FontSize="10" Foreground="{StaticResource Ui.Accent}" />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.net.up]}" />
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource Row}">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource RowValue}">
+                            <Run Text="{Binding Live.Download, Mode=OneWay}" /><Run Text=" ▼" FontSize="10" Foreground="{StaticResource Ui.Accent}" />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.net.down]}" />
+                    </DockPanel>
+                </Border>
 
-        <!-- ===== Right column: slowing you now ===== -->
-        <StackPanel Canvas.Left="884" Canvas.Top="150" Width="190">
-            <TextBlock Style="{StaticResource Ui.Label}" FontWeight="Medium" Margin="0,0,0,6"
-                       Text="{Binding L[gui.home.load]}" />
-            <ItemsControl ItemsSource="{Binding Load}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource ColumnRow}">
-                            <DockPanel>
-                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Ui.Value}" Text="{Binding Value}" Margin="8,0,0,0" />
-                                <TextBlock Style="{StaticResource Ui.Value}" Text="{Binding Name}" />
-                            </DockPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Border Style="{StaticResource ColumnRow}"
-                    Visibility="{Binding LoadMeasuring, Converter={StaticResource Present}}">
-                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding L[gui.load.measuring]}" />
-            </Border>
-            <Border Style="{StaticResource ColumnRow}"
-                    Visibility="{Binding LoadEmpty, Converter={StaticResource Present}}">
-                <TextBlock Style="{StaticResource Ui.Value}" Foreground="{StaticResource Ui.Green}"
-                           Text="{Binding L[gui.home.load.none]}" />
-            </Border>
-            <Border Style="{StaticResource ColumnRow}"
-                    Visibility="{Binding LoadError, Converter={StaticResource Present}}">
-                <TextBlock Style="{StaticResource Ui.MutedText}" Text="{Binding LoadError}" />
-            </Border>
-        </StackPanel>
+                <!-- Pil: hidden on a desktop; health and cycles only when the battery says. -->
+                <StackPanel Margin="0,14,0,0" Visibility="{Binding Live.Battery, Converter={StaticResource Present}}">
+                    <TextBlock Style="{StaticResource Head}" Text="{Binding L[gui.home.battery]}" />
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource RowValue}" Text="{Binding Live.Battery.Charge}" />
+                            <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.battery.charge]}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Row}">
+                        <DockPanel>
+                            <TextBlock Text="{Binding Live.Battery.State}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource RowValue}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Live.Battery.PluggedIn}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource Ui.Green}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.battery.state]}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Row}" Visibility="{Binding Live.Battery.Health, Converter={StaticResource Present}}">
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource RowValue}" Text="{Binding Live.Battery.Health}" />
+                            <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.battery.health]}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource Row}" Visibility="{Binding Live.Battery.Cycles, Converter={StaticResource Present}}">
+                        <DockPanel>
+                            <TextBlock Style="{StaticResource RowValue}" Text="{Binding Live.Battery.Cycles}" />
+                            <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.battery.cycles]}" />
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
 
-        <!-- ===== The hero gauge ===== -->
-        <Grid Canvas.Left="350" Canvas.Top="52" Width="400" Height="400">
-            <Ellipse Width="384" Height="384" Stroke="{StaticResource Ui.Accent}" StrokeThickness="2"
-                     StrokeDashArray="75 528" StrokeDashCap="Round" Opacity="0.75"
-                     c:Ambient.Motion="Spin" />
-            <Ellipse Width="368" Height="368" Stroke="{StaticResource Ui.Accent}" StrokeThickness="1"
-                     StrokeDashArray="40 1116" Opacity="0.5"
-                     c:Ambient.Motion="SpinReverse" />
-            <c:TickGauge Fraction="{Binding Figures.GaugeFraction}" Green="{Binding Figures.GaugeGreen}" />
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,16">
-                <TextBlock Style="{StaticResource Ui.Label}" FontSize="15" HorizontalAlignment="Center"
-                           Text="{Binding Figures.HeroLabel}" />
-                <c:HeroNumeral Bytes="{Binding Figures.HeroBytes}" Culture="{Binding Culture}"
-                               FontFamily="{StaticResource Ui.DisplayFont}" Foreground="{StaticResource Ui.Text}"
-                               HorizontalAlignment="Center" />
-                <c:SegmentBar Fraction="{Binding Figures.GaugeFraction}" Green="{Binding Figures.GaugeGreen}"
-                              HorizontalAlignment="Center" Margin="0,10,0,0" />
+                <TextBlock Style="{StaticResource Head}" Margin="0,14,0,3" Text="{Binding L[gui.home.heat]}" />
+                <Border Style="{StaticResource Row}">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource RowValue}" Text="{Binding Live.CpuTemp}" />
+                        <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.part.cpu]}" />
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource Row}">
+                    <DockPanel>
+                        <TextBlock Style="{StaticResource RowValue}" Text="{Binding Live.GpuTemp}" />
+                        <TextBlock Style="{StaticResource RowText}" Text="{Binding L[gui.home.part.gpu]}" />
+                    </DockPanel>
+                </Border>
             </StackPanel>
         </Grid>
 
-        <!-- ===== Floor: the flowing line and the three satellites ===== -->
-        <Viewbox Canvas.Left="0" Canvas.Top="436" Width="1100" Height="200" Stretch="Fill" IsHitTestVisible="False">
-            <Canvas Width="1000" Height="200">
-                <Path Data="M200 120 C 330 120, 380 160, 500 160 C 620 160, 670 120, 800 120"
-                      Stroke="#8C5FD4E8" StrokeThickness="2" StrokeDashArray="3 5"
-                      c:Ambient.Motion="Flow" />
-            </Canvas>
-        </Viewbox>
-        <Grid x:Name="SpeedSatellite" Canvas.Left="100" Canvas.Bottom="110" Width="240">
-            <c:SatelliteRing Value="{Binding Figures.Speed.Value}" Caption="{Binding Figures.Speed.Caption}"
-                             Done="{Binding Figures.Speed.Done}" RingWidth="96" RingHeight="28" />
-        </Grid>
-        <Grid Canvas.Left="430" Canvas.Bottom="64" Width="240">
-            <c:SatelliteRing Value="{Binding Figures.Space.Value}" Caption="{Binding Figures.Space.Caption}"
-                             Done="{Binding Figures.Space.Done}" RingWidth="130" RingHeight="36" />
-        </Grid>
-        <Grid Canvas.Left="760" Canvas.Bottom="110" Width="240">
-            <c:SatelliteRing Value="{Binding Figures.Privacy.Value}" Caption="{Binding Figures.Privacy.Caption}"
-                             Done="{Binding Figures.Privacy.Done}" RingWidth="96" RingHeight="28" />
+        <!-- ===== Right column: icons, specs, the top three ===== -->
+        <Grid x:Name="RightColumn" Canvas.Left="866" Canvas.Top="88" Width="210" Height="350" ClipToBounds="True">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowDiskSpec}" ToolTip="{Binding L[gui.home.part.disk]}">
+                        <Grid>
+                            <Border Style="{StaticResource IconLit}"
+                                    Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Disk}" />
+                            <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Disk}" /></Viewbox>
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowCpuSpec}" ToolTip="{Binding L[gui.home.part.cpu]}">
+                        <Grid>
+                            <Border Style="{StaticResource IconLit}"
+                                    Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Cpu}" />
+                            <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Cpu}" /></Viewbox>
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowGpuSpec}" ToolTip="{Binding L[gui.home.part.gpu]}">
+                        <Grid>
+                            <Border Style="{StaticResource IconLit}"
+                                    Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Gpu}" />
+                            <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Gpu}" /></Viewbox>
+                        </Grid>
+                    </Button>
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowRamSpec}" ToolTip="{Binding L[gui.home.part.ram]}">
+                        <Grid>
+                            <Border Style="{StaticResource IconLit}"
+                                    Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Ram}" />
+                            <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Ram}" /></Viewbox>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+
+                <Border Style="{StaticResource Spec}">
+                    <Grid>
+                        <Border Style="{StaticResource SpecLit}"
+                                Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Cpu}" />
+                        <StackPanel Margin="10,4,0,5">
+                            <TextBlock Style="{StaticResource SpecTitle}" Text="{Binding L[gui.home.part.cpu]}" />
+                            <TextBlock Style="{StaticResource SpecText}" Text="{Binding Specs.Cpu}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource Spec}">
+                    <Grid>
+                        <Border Style="{StaticResource SpecLit}"
+                                Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Gpu}" />
+                        <StackPanel Margin="10,4,0,5">
+                            <TextBlock Style="{StaticResource SpecTitle}" Text="{Binding L[gui.home.part.gpu]}" />
+                            <TextBlock Style="{StaticResource SpecText}" Text="{Binding Specs.Gpu}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource Spec}">
+                    <Grid>
+                        <Border Style="{StaticResource SpecLit}"
+                                Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Ram}" />
+                        <StackPanel Margin="10,4,0,5">
+                            <TextBlock Style="{StaticResource SpecTitle}" Text="{Binding L[gui.home.part.ram]}" />
+                            <TextBlock Style="{StaticResource SpecText}" Text="{Binding Specs.Ram}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource Spec}">
+                    <Grid>
+                        <Border Style="{StaticResource SpecLit}"
+                                Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Disk}" />
+                        <StackPanel Margin="10,4,0,5">
+                            <TextBlock Style="{StaticResource SpecTitle}" Text="{Binding L[gui.home.part.disk]}" />
+                            <TextBlock Style="{StaticResource SpecText}" Text="{Binding Specs.Disk}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <TextBlock Style="{StaticResource Head}" Margin="0,10,0,3" Text="{Binding L[gui.home.top]}" />
+                <ItemsControl ItemsSource="{Binding Top}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Row}">
+                                <DockPanel>
+                                    <TextBlock Style="{StaticResource RowValue}" Text="{Binding Value}" />
+                                    <TextBlock Style="{StaticResource RowText}" Text="{Binding Name}" />
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Grid>
 
-        <!-- ===== Stateline (bottom-left) ===== -->
-        <StackPanel x:Name="StatelinePanel" Canvas.Left="120" Canvas.Bottom="28" Width="340">
-            <TextBlock Style="{StaticResource Ui.MutedText}" TextWrapping="Wrap" TextTrimming="None" Margin="0,0,0,6"
-                       Visibility="{Binding Figures.Previous, Converter={StaticResource Present}}">
-                <Run Text="{Binding Figures.Previous, Mode=OneWay}" />
-            </TextBlock>
-            <Button Style="{StaticResource Ui.Link}" HorizontalAlignment="Left" Margin="0,0,0,6"
-                    Content="{Binding L[gui.button.undo]}" Command="{Binding UndoPrevious}"
-                    Visibility="{Binding Figures.ShowPreviousUndo, Converter={StaticResource Present}}" />
-            <TextBlock FontSize="13" TextWrapping="Wrap" TextTrimming="None" FontFamily="{StaticResource Ui.Font}"
-                       Text="{Binding Figures.Stateline}"
-                       Foreground="{Binding Figures.StatelineTone, Converter={StaticResource ToneBrush}}">
-                <TextBlock.InputBindings>
-                    <MouseBinding Gesture="LeftClick" Command="{Binding OpenFailed}" />
-                </TextBlock.InputBindings>
-            </TextBlock>
-        </StackPanel>
+        <!-- ===== The hero gauge: the selected part's load ===== -->
+        <Grid Canvas.Left="350" Canvas.Top="36" Width="400" Height="400">
+            <!-- The rings turn 120° when a satellite comes to the front. -->
+            <c:Turntable Angle="{Binding RingAngle}">
+                <Ellipse Width="384" Height="384" Stroke="{StaticResource Ui.Accent}" StrokeThickness="2"
+                         StrokeDashArray="75 528" StrokeDashCap="Round" Opacity="0.75"
+                         c:Ambient.Motion="Spin" />
+                <Ellipse Width="368" Height="368" Stroke="{StaticResource Ui.Accent}" StrokeThickness="1"
+                         StrokeDashArray="40 1116" Opacity="0.5"
+                         c:Ambient.Motion="SpinReverse" />
+                <Path Data="M79.3,45.6 A196,196 0 0 1 227.3,5.9" Stroke="#E8FBFF" StrokeThickness="3"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                <Ellipse Width="240" Height="240" Stroke="#9FD8E6" StrokeThickness="0.8" StrokeDashArray="2 6" Opacity="0.25" />
+                <Ellipse Width="224" Height="224" Stroke="#9FD8E6" StrokeThickness="1" Opacity="0.35" />
+                <Path Data="M129.3,129.3 L112.3,112.3 M270.7,129.3 L287.7,112.3 M129.3,270.7 L112.3,287.7 M270.7,270.7 L287.7,287.7"
+                      Stroke="#9FD8E6" StrokeThickness="1" Opacity="0.45" />
+            </c:Turntable>
+            <Ellipse Width="210" Height="210" Fill="#8C05141C" />
+            <c:TickGauge Fraction="{Binding Gauge.Fraction}" Glide="{Binding Gliding}" />
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,12">
+                <TextBlock Style="{StaticResource Ui.Label}" FontSize="15" HorizontalAlignment="Center"
+                           Text="{Binding Gauge.Label}" />
+                <c:HeroNumeral Kind="Percent" Glide="{Binding Gliding}" Percent="{Binding Gauge.Percent}" Culture="{Binding Culture}"
+                               FontSize="80" UnitFontSize="28"
+                               FontFamily="{StaticResource Ui.DisplayFont}" Foreground="{StaticResource Ui.Text}"
+                               HorizontalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,2"
+                            Visibility="{Binding Gauge.Temperature, Converter={StaticResource Present}}">
+                    <Rectangle Width="96" Height="9" RadiusX="2" RadiusY="2" Margin="0,0,10,0" VerticalAlignment="Center"
+                               Visibility="{Binding Gauge.Temperature, Converter={StaticResource Equals}, ConverterParameter=!—}">
+                        <Rectangle.Style>
+                            <Style TargetType="Rectangle">
+                                <Setter Property="Fill">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#2F8FB0" Offset="0" />
+                                            <GradientStop Color="#3FB6C9" Offset="0.5" />
+                                            <GradientStop Color="#5FD4E8" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Gauge.Hot}" Value="True">
+                                        <Setter Property="Fill">
+                                            <Setter.Value>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#3D6FB3" Offset="0" />
+                                                    <GradientStop Color="#7B5FB8" Offset="0.35" />
+                                                    <GradientStop Color="#C2577F" Offset="0.7" />
+                                                    <GradientStop Color="#D64C5A" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Rectangle.Style>
+                    </Rectangle>
+                    <TextBlock Style="{StaticResource Ui.Value}" FontSize="15" FontWeight="SemiBold"
+                               Text="{Binding Gauge.Temperature}" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource Ui.MutedText}" FontSize="12" HorizontalAlignment="Center"
+                           TextAlignment="Center" TextWrapping="Wrap" MaxWidth="230" MaxHeight="34" Margin="0,4,0,0"
+                           Text="{Binding Gauge.Caption}"
+                           Visibility="{Binding Gauge.Caption, Converter={StaticResource Present}}" />
+                <c:SegmentBar Fraction="{Binding Gauge.Fraction}" HorizontalAlignment="Center" Margin="0,10,0,0" />
+            </StackPanel>
+        </Grid>
 
-        <!-- ===== The one button (bottom-right) ===== -->
-        <StackPanel Canvas.Right="28" Canvas.Bottom="26" Orientation="Horizontal">
-            <Button Style="{StaticResource Ui.Link}" VerticalAlignment="Center" Margin="0,0,18,0"
-                    Content="{Binding L[gui.button.rescan]}" Command="{Binding Rescan}"
-                    Visibility="{Binding Figures.ShowRescanLink, Converter={StaticResource Present}}" />
-            <Button Style="{StaticResource Ui.Primary}" Content="{Binding Figures.Button}" Command="{Binding Primary}"
-                    Visibility="{Binding Figures.ButtonAction, Converter={StaticResource Equals}, ConverterParameter=!Undo}" />
-            <Button Style="{StaticResource Ui.Outline}" Content="{Binding Figures.Button}" Command="{Binding Primary}"
-                    Visibility="{Binding Figures.ButtonAction, Converter={StaticResource Equals}, ConverterParameter=Undo}" />
-        </StackPanel>
+        <!-- ===== Floor: three satellites; a click brings one to the front ===== -->
+        <c:FloorCarousel x:Name="Floor" Canvas.Left="0" Canvas.Top="444" Width="1100" Height="236"
+                         Angle="{Binding FloorAngle}" AnchorInset="11">
+            <Button x:Name="CpuSatellite" Style="{StaticResource Satellite}" c:FloorCarousel.BaseAngle="0"
+                    Command="{Binding SelectCpu}">
+                <c:SatelliteRing Value="{Binding Live.CpuLoad}" Caption="{Binding L[gui.home.part.cpu]}"
+                                 RingWidth="84" RingHeight="22" />
+            </Button>
+            <Button x:Name="GpuSatellite" Style="{StaticResource Satellite}" c:FloorCarousel.BaseAngle="120"
+                    Command="{Binding SelectGpu}">
+                <c:SatelliteRing Value="{Binding Live.GpuLoad}" Caption="{Binding L[gui.home.part.gpu]}"
+                                 RingWidth="84" RingHeight="22" />
+            </Button>
+            <Button x:Name="RamSatellite" Style="{StaticResource Satellite}" c:FloorCarousel.BaseAngle="240"
+                    Command="{Binding SelectRam}">
+                <c:SatelliteRing Value="{Binding Live.RamLoad}" Caption="{Binding L[gui.home.part.ram]}"
+                                 RingWidth="84" RingHeight="22" />
+            </Button>
+        </c:FloorCarousel>
+
+        <!-- ===== The strip (bottom-right): Hepsini yap, then Geri al ===== -->
+        <Border x:Name="StripPanel" Canvas.Right="22" Canvas.Bottom="22" CornerRadius="18" Padding="16,5,5,5"
+                Background="#B8041016" BorderBrush="#405FD4E8" BorderThickness="1">
+            <StackPanel Orientation="Horizontal" MinHeight="31">
+                <TextBlock Style="{StaticResource Ui.MutedText}" VerticalAlignment="Center" Margin="0,0,5,0"
+                           Text="{Binding Strip.Lead}"
+                           Visibility="{Binding Strip.Lead, Converter={StaticResource Present}}" />
+                <TextBlock FontFamily="{StaticResource Ui.Font}" FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center" MaxWidth="560" TextTrimming="CharacterEllipsis"
+                           Text="{Binding Strip.Body}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource Ui.Text}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Strip.Tone}" Value="Good">
+                                    <Setter Property="Foreground" Value="{StaticResource Ui.Green}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Strip.Tone}" Value="Warn">
+                                    <Setter Property="Foreground" Value="{StaticResource Ui.Amber}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Strip.Tone}" Value="Bad">
+                                    <Setter Property="Foreground" Value="{StaticResource Ui.Red}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                    <TextBlock.InputBindings>
+                        <MouseBinding Gesture="LeftClick" Command="{Binding OpenFailed}" />
+                    </TextBlock.InputBindings>
+                </TextBlock>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,11,0"
+                            Visibility="{Binding Strip.ShowUndo, Converter={StaticResource Present}}">
+                    <TextBlock Style="{StaticResource Ui.MutedText}" Text=" · " />
+                    <Button Style="{StaticResource Ui.Link}" FontWeight="SemiBold" Content="{Binding L[gui.button.undo]}"
+                            Command="{Binding Undo}" />
+                </StackPanel>
+                <Button Style="{StaticResource StripButton}" Margin="12,0,0,0" Content="{Binding Strip.Button}"
+                        Command="{Binding Primary}"
+                        Visibility="{Binding Strip.Button, Converter={StaticResource Present}}" />
+                <Border Width="11" Visibility="{Binding Strip.Button, Converter={StaticResource Present}, ConverterParameter=invert}" />
+            </StackPanel>
+        </Border>
     </Canvas>
 </UserControl>

@@ -42,6 +42,13 @@ public static class Ambient
         return t;
     }
 
+    /// Whether a data-driven change may animate (a number counting, a gauge
+    /// turning): the ambient clock runs (window visible, the moving
+    /// background setting on, a GPU-composed window) and Windows' own "show
+    /// animations" is on. Otherwise the change lands at once — reduced
+    /// motion is static frames and instant numbers.
+    public static bool Moving => AmbientClock.Instance.IsActive && SystemParameters.ClientAreaAnimation;
+
     private static void Start(FrameworkElement element)
     {
         switch (GetMotion(element))
