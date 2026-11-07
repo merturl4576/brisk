@@ -67,12 +67,16 @@ public static class ActionCatalog
             links: new[] { "old-installers" }),
         S("space.recycle-bin", Mid, "Recycle Bin", null, null, lost: true,
             links: new[] { "empty-recycle-bin" }),
+        S("space.project-deps", Mid, "Dependency folders of old projects", "npm install brings them back.", null,
+            links: new[] { "stale-project-deps" }),
         S("space.windows-old", Max, "Old Windows copy", "No going back to old Windows.", "Windows.old",
             lost: true, admin: true, links: new[] { "windows-old" }),
         S("space.docker", Max, "Docker's unused data", "Stopped containers are deleted.", "docker system prune",
             lost: true, links: new[] { "docker-prune" }),
         S("space.profile-git", Max, "Git repository in your home folder", "Can't be undone.", null,
             lost: true, links: new[] { "profile-git" }),
+        S("space.archives", Max, "Archives already extracted beside them", null, null,
+            lost: true, links: new[] { "archive-beside-extracted" }),
 
         // ---- Speed: fixed switches (startup entries are added per machine).
         R("speed.power-mode", Speed, "Full power when plugged in", "The fan may spin more.",

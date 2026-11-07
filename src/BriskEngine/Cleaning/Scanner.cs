@@ -20,19 +20,24 @@ public sealed class Scanner
     private readonly IProcessLister _processes;
     private readonly ILockProbe? _lockProbe;
     private readonly Func<bool> _upgradeInProgress;
+    private readonly IReadOnlyList<string>? _dynamicRoots;
 
     /// lockProbe (additive, round 11): when present, every emitted item is
     /// probed for delete-locks so ReclaimableBytes can promise honestly.
     /// Without one (unit tests, fakes) nothing is marked locked.
     /// upgradeInProgress: whether a Windows feature upgrade is under way;
     /// by default, whether %SystemDrive%\$WINDOWS.~BT exists.
+    /// dynamicRoots: the folders a dynamic target walks; by default the
+    /// user's project folders that exist when the scan runs.
     public Scanner(IReadOnlyList<CleanupTarget> targets, IProcessLister processes,
-        ILockProbe? lockProbe = null, Func<bool>? upgradeInProgress = null)
+        ILockProbe? lockProbe = null, Func<bool>? upgradeInProgress = null,
+        IReadOnlyList<string>? dynamicRoots = null)
     {
         _targets = targets;
         _processes = processes;
         _lockProbe = lockProbe;
         _upgradeInProgress = upgradeInProgress ?? UpgradeFolderExists;
+        _dynamicRoots = dynamicRoots;
     }
 
     private static bool UpgradeFolderExists() =>
@@ -74,8 +79,7 @@ public sealed class Scanner
         var budget = _lockProbe is null ? null : new LockProbeBudget();
 
         var items = new List<ResolvedItem>();
-        foreach (var template in target.PathTemplates)
-        foreach (var path in TemplateResolver.Resolve(template))
+        foreach (var path in Candidates(target, ct))
         {
             try
             {
@@ -110,6 +114,13 @@ public sealed class Scanner
             ? $"{target.AppDisplayName} is running — close it to include this target"
             : null);
     }
+
+    /// Where a target's paths come from: a dynamic target's rule walks the
+    /// user's project folders; every other target expands its templates.
+    private IEnumerable<string> Candidates(CleanupTarget target, CancellationToken ct) =>
+        target.Dynamic
+            ? DynamicTargets.Find(target.Id, _dynamicRoots ?? DynamicTargets.DefaultRoots(), DateTime.UtcNow, ct)
+            : target.PathTemplates.SelectMany(TemplateResolver.Resolve);
 
     /// ROUND 15 review (I1): the allowance is finite, so WHAT it is spent on
     /// decides the promise's error bound. Spent in walk order it leaves an

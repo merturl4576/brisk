@@ -8,8 +8,8 @@ public static class CleanupTargetRegistry
     private static CleanupTarget T(string id, string name, CleanupLevel level,
         string category, string[] paths, bool contents = false, bool regen = false,
         string? app = null, bool pick = false, bool optIn = false,
-        bool noBin = false, bool admin = false, int? minAge = null) =>
-        new(id, name, level, paths, category, contents, regen, app, pick, optIn, noBin, admin, minAge);
+        bool noBin = false, bool admin = false, int? minAge = null, bool dynamic = false) =>
+        new(id, name, level, paths, category, contents, regen, app, pick, optIn, noBin, admin, minAge, dynamic);
 
     /// Every Chromium profile, not only "Default": a second profile's cache
     /// was invisible to brisk before.
@@ -187,5 +187,13 @@ public static class CleanupTargetRegistry
         // rides a plain `clean --level deep`.
         T("profile-git", "Git repository in the home folder", CleanupLevel.Deep, "Developer",
             new[] { @"~\.git" }, optIn: true),
+        // Found by walking Desktop, Documents, Downloads and the usual project
+        // folders (DynamicTargets), not by templates. Opt-in, like
+        // profile-git: a plain `clean --level deep` never walks the user's
+        // own folders and deletes from them.
+        T("stale-project-deps", "Dependency folders of old projects", CleanupLevel.Deep, "Developer",
+            System.Array.Empty<string>(), regen: true, optIn: true, dynamic: true),
+        T("archive-beside-extracted", "Archives already extracted beside them", CleanupLevel.Deep, "Files",
+            System.Array.Empty<string>(), optIn: true, dynamic: true),
     };
 }

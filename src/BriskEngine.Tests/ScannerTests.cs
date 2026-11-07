@@ -270,6 +270,26 @@ public sealed class ScannerTests : IDisposable
         Assert.Empty(new Scanner(new[] { ProfileGitAt(linked) }, _processes).Scan().Targets.Single().Items);
     }
 
+    /// A dynamic target has no templates: its items come from its rule's
+    /// walk over the roots the scanner was given (the real ones are the
+    /// user's Desktop, Documents and project folders).
+    [Fact]
+    public void Dynamic_target_items_come_from_the_walk()
+    {
+        var projects = Path.Combine(_root, "projects");
+        var modules = Directory.CreateDirectory(Path.Combine(projects, "app", "node_modules")).FullName;
+        File.WriteAllBytes(Path.Combine(modules, "index.js"), new byte[30]);
+        var manifest = Path.Combine(projects, "app", "package.json");
+        File.WriteAllText(manifest, "{}");
+        File.SetLastWriteTimeUtc(manifest, DateTime.UtcNow.AddDays(-200));
+
+        var item = new Scanner(new[] { Registered("stale-project-deps") }, _processes,
+            dynamicRoots: new[] { projects }).Scan().Targets.Single().Items.Single();
+
+        Assert.Equal(modules, item.Path);
+        Assert.Equal(30, item.Bytes);
+    }
+
     private static CleanupTarget Registered(string id) => CleanupTargetRegistry.All.Single(t => t.Id == id);
 
     /// The registered rule with "~" moved to a temp home: the real ~\.git is

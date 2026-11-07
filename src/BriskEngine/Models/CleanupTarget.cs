@@ -12,6 +12,10 @@ namespace BriskEngine.Models;
 /// MinAgeDays: an item written fewer than this many days ago (or whose age
 /// cannot be read) is not offered — old installers 30; kernel dumps, setup
 /// logs and driver installers 7.
+///
+/// Dynamic: the target has no path templates; its items are found by
+/// walking the user's project folders (Cleaning.DynamicTargets), and the
+/// validator re-checks that rule on the real path at delete time.
 public sealed record CleanupTarget(
     string Id,
     string DisplayName,
@@ -25,7 +29,8 @@ public sealed record CleanupTarget(
     bool RequiresExplicitOptIn = false,
     bool BypassesRecycleBin = false,
     bool RequiresElevation = false,
-    int? MinAgeDays = null)
+    int? MinAgeDays = null,
+    bool Dynamic = false)
 {
     /// Every process name that counts as "this app is running". Trimmed
     /// and empties dropped (review round 1): a bare Split would let a

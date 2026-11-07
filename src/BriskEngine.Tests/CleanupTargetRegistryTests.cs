@@ -26,7 +26,7 @@ public class CleanupTargetRegistryTests
     {
         foreach (var t in CleanupTargetRegistry.All)
         {
-            if (PathlessIds.Contains(t.Id)) { Assert.Empty(t.PathTemplates); continue; }
+            if (PathlessIds.Contains(t.Id) || t.Dynamic) { Assert.Empty(t.PathTemplates); continue; }
             Assert.NotEmpty(t.PathTemplates);
         }
     }
@@ -258,6 +258,30 @@ public class CleanupTargetRegistryTests
 
         Assert.Equal(30, Scanner.OldInstallerMinAgeDays);
         Assert.Equal(Scanner.OldInstallerMinAgeDays, Get("old-installers").MinAgeDays);
+    }
+
+    /// Monitor GUI wave: two targets with no templates, found by walking the
+    /// user's project folders (DynamicTargets). Opt-in, like profile-git: a
+    /// plain `clean --level deep` never walks Desktop and Documents.
+    [Fact]
+    public void Dynamic_targets_are_registered()
+    {
+        var deps = Get("stale-project-deps");
+        var archives = Get("archive-beside-extracted");
+        Assert.Equal(new[] { deps.Id, archives.Id },
+            CleanupTargetRegistry.All.Where(t => t.Dynamic).Select(t => t.Id));
+        foreach (var t in new[] { deps, archives })
+        {
+            Assert.Empty(t.PathTemplates);
+            Assert.Equal(CleanupLevel.Deep, t.Level);
+            Assert.True(t.RequiresExplicitOptIn, $"{t.Id} is opt-in");
+            Assert.False(t.RequiresElevation, $"{t.Id} lives in the user's own folders");
+            Assert.False(t.DeletesContentsNotDirectory, $"{t.Id} deletes whole paths");
+            Assert.False(t.BypassesRecycleBin, $"{t.Id}: Space runs already delete for good");
+            Assert.Null(t.MinAgeDays);
+        }
+        Assert.True(deps.Regenerates);
+        Assert.False(archives.Regenerates);
     }
 
     /// Ruling R1: a byte is counted once. No new target's path sits inside,

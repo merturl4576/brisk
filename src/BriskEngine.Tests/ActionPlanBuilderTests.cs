@@ -229,6 +229,8 @@ public sealed class ActionPlanBuilderTests
     [InlineData("space.setup-logs", SpaceLevel.Min, false)]
     [InlineData("space.driver-leftovers", SpaceLevel.Min, false)]
     [InlineData("space.profile-git", SpaceLevel.Max, true)]
+    [InlineData("space.project-deps", SpaceLevel.Mid, false)]
+    [InlineData("space.archives", SpaceLevel.Max, true)]
     public void Space_rows_carry_the_spec_level_and_only_min_is_on(string id, SpaceLevel level, bool lost)
     {
         var row = ActionCatalog.Find(id);
@@ -270,6 +272,22 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal(6_540, git.Bytes);
         Assert.False(git.DefaultOn);
         Assert.Equal("Can't be undone.", git.Cost);
+    }
+
+    [Fact]
+    public void Build_DynamicSpaceRowsCountTheirTargets()
+    {
+        var plan = Make().Builder.Build(Scan(T("stale-project-deps", 10_700),
+            T("archive-beside-extracted", 3_740)), Now);
+
+        var deps = Row(plan, "space.project-deps")!;
+        Assert.Equal(10_700, deps.Bytes);
+        Assert.False(deps.DefaultOn);
+        Assert.Equal("npm install brings them back.", deps.Cost);
+        var archives = Row(plan, "space.archives")!;
+        Assert.Equal(3_740, archives.Bytes);
+        Assert.False(archives.DefaultOn);
+        Assert.True(archives.Lost);
     }
 
     private static ActionPlan PlanOf(params ActionItem[] items) => new(Now,

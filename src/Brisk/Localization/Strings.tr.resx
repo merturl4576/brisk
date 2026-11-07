@@ -321,6 +321,9 @@
   <data name="action.space.driver-leftovers.title" xml:space="preserve"><value>Eski sürücü kurulumu</value></data>
   <data name="action.space.profile-git.title" xml:space="preserve"><value>Ev klasöründeki git deposu</value></data>
   <data name="action.space.profile-git.cost" xml:space="preserve"><value>Geri alınamaz.</value></data>
+  <data name="action.space.project-deps.title" xml:space="preserve"><value>Eski projelerin indirme klasörleri</value></data>
+  <data name="action.space.project-deps.cost" xml:space="preserve"><value>Gerekince npm install ile gelir.</value></data>
+  <data name="action.space.archives.title" xml:space="preserve"><value>Arşiv (açılmış hali yanında)</value></data>
   <data name="action.speed.power-mode.title" xml:space="preserve"><value>Şarjdayken tam güç</value></data>
   <data name="action.speed.power-mode.cost" xml:space="preserve"><value>Fan daha çok dönebilir.</value></data>
   <data name="action.speed.power-mode.name" xml:space="preserve"><value>Güç modu: En iyi performans</value></data>

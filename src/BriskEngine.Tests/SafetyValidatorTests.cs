@@ -128,6 +128,108 @@ public sealed class SafetyValidatorTests : IDisposable
         Assert.False(_validator.Authorize(nested, target).Allowed);
     }
 
+    private static CleanupTarget Registered(string id) =>
+        BriskEngine.Cleaning.CleanupTargetRegistry.All.Single(t => t.Id == id);
+
+    /// A Node project in `projects` whose package.json was last written 200 days ago.
+    private static string StaleNodeProject(string projects)
+    {
+        var modules = Directory.CreateDirectory(Path.Combine(projects, "app", "node_modules")).FullName;
+        File.WriteAllText(Path.Combine(modules, "index.js"), "x");
+        var manifest = Path.Combine(projects, "app", "package.json");
+        File.WriteAllText(manifest, "{}");
+        File.SetLastWriteTimeUtc(manifest, DateTime.UtcNow.AddDays(-200));
+        return modules;
+    }
+
+    /// Review focus 1: the scan's verdict is not trusted. The rule is asked
+    /// again on the real path at delete time — a project touched since the
+    /// scan keeps its node_modules.
+    [Fact]
+    public void Validator_rechecks_rule_at_delete_time()
+    {
+        var projects = Path.Combine(_root, "projects");
+        var modules = StaleNodeProject(projects);
+        var validator = new SafetyValidator(() => new[] { projects }, () => DateTime.UtcNow);
+        var target = Registered("stale-project-deps");
+        Assert.True(validator.Authorize(modules, target).Allowed);
+
+        File.WriteAllText(Path.Combine(projects, "app", "package.json"), "{ \"touched\": true }");
+
+        var result = validator.Authorize(modules, target);
+        Assert.False(result.Allowed);
+        Assert.Contains("rule", result.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Validator_denies_dynamic_path_outside_roots()
+    {
+        var projects = Directory.CreateDirectory(Path.Combine(_root, "projects")).FullName;
+        var modules = StaleNodeProject(Path.Combine(_root, "elsewhere"));
+        var validator = new SafetyValidator(() => new[] { projects }, () => DateTime.UtcNow);
+        var target = Registered("stale-project-deps");
+
+        var result = validator.Authorize(modules, target);
+        Assert.False(result.Allowed);
+        Assert.Contains("outside", result.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.False(validator.Authorize(projects, target).Allowed);   // a root is never an item
+
+        // The real roots are the user's own folders: a temp path is outside them.
+        Assert.False(new SafetyValidator().Authorize(modules, target).Allowed);
+    }
+
+    [Fact]
+    public void Validator_denies_dynamic_path_in_a_system_folder()
+    {
+        var system32 = Environment.SystemDirectory;
+        var validator = new SafetyValidator(() => new[] { system32 }, () => DateTime.UtcNow);
+
+        var result = validator.Authorize(Path.Combine(system32, "drivers"), Registered("stale-project-deps"));
+
+        Assert.False(result.Allowed);
+        Assert.Contains("protected", result.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// An archive is deleted only while its extracted copy still sits beside
+    /// it: a copy removed after the scan keeps the archive.
+    [Fact]
+    public void Validator_keeps_an_archive_whose_extracted_copy_is_gone()
+    {
+        var downloads = Path.Combine(_root, "downloads");
+        var archive = DynamicTargetsTests.Sparse(Path.Combine(downloads, "kali.7z"), 2L << 30);
+        DynamicTargetsTests.Sparse(Path.Combine(downloads, "kali", "kali.vdi"), 3L << 30);
+        var validator = new SafetyValidator(() => new[] { downloads }, () => DateTime.UtcNow);
+        var target = Registered("archive-beside-extracted");
+        Assert.True(validator.Authorize(archive, target).Allowed);
+
+        Directory.Delete(Path.Combine(downloads, "kali"), recursive: true);
+
+        Assert.False(validator.Authorize(archive, target).Allowed);
+    }
+
+    /// Desktop and Documents stay shut to every path template; a dynamic
+    /// target may reach into them, and into nothing else that is protected.
+    /// Strings only: nothing on the real Desktop is created or touched.
+    [Fact]
+    public void Dynamic_rule_opens_only_Desktop_and_Documents()
+    {
+        var oneDrive = Environment.GetEnvironmentVariable("OneDrive");
+        bool InOneDrive(string p) => !string.IsNullOrEmpty(oneDrive)
+            && p.StartsWith(RealPath.Resolve(oneDrive) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
+        foreach (var folder in new[] { Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.MyDocuments })
+        {
+            var inside = Path.Combine(RealPath.Resolve(Environment.GetFolderPath(folder)), "proj", "node_modules");
+            Assert.True(ProtectedPaths.IsProtected(inside));
+            Assert.Equal(InOneDrive(inside), ProtectedPaths.IsProtected(inside, exceptUserFolders: true));
+        }
+        var pictures = RealPath.Resolve(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+        Assert.True(ProtectedPaths.IsProtected(Path.Combine(pictures, "x"), exceptUserFolders: true));
+        Assert.True(ProtectedPaths.IsProtected(RealPath.Resolve(Environment.SystemDirectory), exceptUserFolders: true));
+        Assert.True(ProtectedPaths.IsProtected(
+            RealPath.Resolve(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)), exceptUserFolders: true));
+    }
+
     [Fact]
     public void VeryLongPath_IsStillAuthorized()
     {

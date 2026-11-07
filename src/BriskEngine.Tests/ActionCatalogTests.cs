@@ -47,6 +47,8 @@ public sealed class ActionCatalogTests
     [InlineData("space.setup-logs", "panther-logs", true)]
     [InlineData("space.driver-leftovers", "driver-installer-leftovers", true)]
     [InlineData("space.profile-git", "profile-git", false)]
+    [InlineData("space.project-deps", "stale-project-deps", false)]
+    [InlineData("space.archives", "archive-beside-extracted", false)]
     public void NewSpaceRowsLinkTheirTarget(string rowId, string targetId, bool admin)
     {
         var row = ActionCatalog.Find(rowId);
