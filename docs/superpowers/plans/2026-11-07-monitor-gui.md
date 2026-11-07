@@ -69,7 +69,7 @@ Row ids and levels (TR title from the spec table; cost = the spec's grey reason;
   - `Default_selection_ticks_only_min_space_rows` — plan with one Min, one Mid, one Max row → `ActionSelection.Default` contains only the Min id.
   - `ForLevel_is_cumulative_and_honours_skips` — Mid selects Min+Mid, not Max; a skipped Min id is absent.
   - `Old_installers_never_takes_an_iso` — no template of `old-installers` ends in `.iso`.
-  - `Run_level_parses_min_mid_max` — `CliParser.Parse(["run","--level","mid"]).SpaceLevel == "mid"`; `["run","--level","deep"]` stays an error for `run` only if you route it that way — `clean --level safe|developer|deep` must still parse exactly as today.
+  - `Run_level_parses_min_mid_max` — for `run`, `--level` accepts only `min|mid|max` into `CliCommand.SpaceLevel` (`CliParser.Parse(["run","--level","mid"]).SpaceLevel == "mid"`; `run --level deep` → error); for `clean`, `--level` accepts only `safe|developer|deep`, exactly as today.
   - `Run_group_prints_only_that_group` — `PrintPlan` with a Space+Speed plan and `--group speed` writes no Space title (fixes the spec's open item).
 - [ ] **Step 2:** `dotnet test src/BriskEngine.Tests --filter "FullyQualifiedName~ActionPlanBuilderTests|FullyQualifiedName~CliActionTests|FullyQualifiedName~CliParserTests|FullyQualifiedName~CleanupTargetRegistryTests"` → the new tests FAIL.
 - [ ] **Step 3: Implement.** `PrintPlan` gets the group filter (`plan.Groups.Where(g => group is null || g.Kind == group)`); `RunActions` builds its selection with `ForLevel(plan, level ?? Min, empty)` then `Only(group)` when `--group` is set. Add resx keys for every new row (title, cost) in both languages.
