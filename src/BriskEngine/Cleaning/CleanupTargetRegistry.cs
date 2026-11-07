@@ -195,10 +195,11 @@ public static class CleanupTargetRegistry
             System.Array.Empty<string>(), regen: true, optIn: true, dynamic: true),
         T("archive-beside-extracted", "Archives already extracted beside them", CleanupLevel.Deep, "Files",
             System.Array.Empty<string>(), optIn: true, dynamic: true),
-        // Every restore point of the system drive but the newest. No paths:
-        // vssadmin removes them oldest first, and CleanRunner counts them
-        // again right before it starts. Past the bin (nothing here goes near
-        // the shell). Opt-in: a plain `clean --level deep` never deletes them.
+        // Every System Restore point but the newest. No paths: System Restore
+        // removes them by sequence number (IRestorePoints), and CleanRunner
+        // reads the list again right before it starts. Past the bin (nothing
+        // here goes near the shell). Opt-in: a plain `clean --level deep`
+        // never deletes them.
         T("restore-points", "Old restore points (all but the newest)", CleanupLevel.Deep, "System",
             System.Array.Empty<string>(), optIn: true, noBin: true, admin: true),
     };

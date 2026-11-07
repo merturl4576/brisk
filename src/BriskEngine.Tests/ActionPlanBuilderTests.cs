@@ -318,8 +318,9 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal(new[] { "restore-points" }, row.LinkIds);
     }
 
-    /// vssadmin denied (not an administrator) or missing reads as null in the
-    /// real probe; a probe that throws is the same. Neither is "0 points".
+    /// System Restore unreadable (not an administrator, service off) reads as
+    /// null in the real probe; a probe that throws is the same. Neither is
+    /// "0 points".
     [Fact]
     public void Probe_failure_means_no_row()
     {
@@ -328,7 +329,7 @@ public sealed class ActionPlanBuilderTests
         Assert.Null(Row(unknown.Builder.Build(Scan(), Now), "space.restore-points"));
 
         var throwing = Make();
-        throwing.Space.RestorePoints = () => throw new InvalidOperationException("vssadmin");
+        throwing.Space.RestorePoints = () => throw new InvalidOperationException("WMI");
         var plan = throwing.Builder.Build(Scan(T("user-temp", 100)), Now);
         Assert.Null(Row(plan, "space.restore-points"));
         Assert.NotNull(Row(plan, "space.caches"));   // the other rows still come

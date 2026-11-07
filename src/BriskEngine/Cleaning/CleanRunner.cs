@@ -42,11 +42,12 @@ public sealed class CleanRunner
     private readonly ILockProbe? _lockProbe;
     private readonly Func<long> _systemDriveFreeBytes;
     private readonly IDeleter _deleter;
+    private readonly IRestorePoints _restorePoints;
 
     public CleanRunner(SafetyValidator validator, IRecycler recycler, ActionLog log,
         IProcessRunner processRunner, Func<bool> isElevated,
         ILockProbe? lockProbe = null, Func<long>? systemDriveFreeBytes = null,
-        IDeleter? deleter = null)
+        IDeleter? deleter = null, IRestorePoints? restorePoints = null)
     {
         _validator = validator;
         _recycler = recycler;
@@ -57,7 +58,12 @@ public sealed class CleanRunner
         _systemDriveFreeBytes = systemDriveFreeBytes
             ?? (() => new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory)!).AvailableFreeSpace);
         _deleter = deleter ?? new WindowsDeleter();
+        _restorePoints = restorePoints ?? new RealRestorePoints();
     }
+
+    /// The reason on a dry-run line whose size cannot be known before the
+    /// removal (restore points): the CLI prints "—" for it, never "0 B".
+    public const string SizeUnknownReason = "size unknown until removed";
 
     /// What a path held by a running app is recorded as when the probe —
     /// not the shell — is the one that found out. The GUI matches this
@@ -203,7 +209,7 @@ public sealed class CleanRunner
                 if (scan.Target.RequiresElevation && !_isElevated())
                     Record(RestorePointsPath, 0, "refused", "requires administrator");
                 else if (dryRun)
-                    Record(RestorePointsPath, 0, "dry-run");   // no size is known before deleting
+                    Record(RestorePointsPath, 0, "dry-run", SizeUnknownReason);
                 else
                     RemoveOldRestorePoints(Record);
                 return new CleanReport(entries);
@@ -391,33 +397,35 @@ public sealed class CleanRunner
 
     private const string RestorePointsPath = "(restore points)";
 
-    /// Every restore point but the newest: vssadmin's /oldest, run one time
-    /// fewer than there are points. The count is read again here, not taken
-    /// from the scan — a point removed in between would otherwise make the
-    /// last /oldest take the newest. Unknown count = nothing deleted.
+    /// Every restore point but the newest, through System Restore, each by
+    /// its own sequence number. The list is read again here, not taken from
+    /// the scan, and the highest number is never sent: even if Windows purges
+    /// a point mid-run, the newest cannot be the one removed. A list that
+    /// cannot be read removes nothing; the first failure stops the run.
     private void RemoveOldRestorePoints(Action<string, long, string, string?> record)
     {
-        var count = ShadowCopies.Count(_processRunner);
-        if (count is null)
+        var points = _restorePoints.SequenceNumbers()?.Distinct().ToList();
+        if (points is null)
         {
-            record(RestorePointsPath, 0, "error", "vssadmin could not count the restore points");
+            record(RestorePointsPath, 0, "error", "System Restore could not be read");
             return;
         }
-        if (count < 2)
+        if (points.Count < 2)
         {
             record(RestorePointsPath, 0, "refused", "only the newest restore point is left");
             return;
         }
 
+        var newest = points.Max();
         var before = _systemDriveFreeBytes();
         var removed = 0;
         string? failure = null;
-        for (var i = 0; i < count - 1; i++)
+        foreach (var number in points.Where(n => n != newest).OrderBy(n => n))
         {
             try
             {
-                var (exit, _) = _processRunner.Run("vssadmin", ShadowCopies.DeleteOldestArgs);
-                if (exit != 0) { failure = $"vssadmin exited {exit}"; break; }
+                var status = _restorePoints.Remove(number);
+                if (status != 0) { failure = $"System Restore did not remove point {number} (error {status})"; break; }
             }
             catch (Exception ex) { failure = ex.Message; break; }
             removed++;
@@ -428,10 +436,10 @@ public sealed class CleanRunner
             // As with the component store, the drive is the only witness:
             // a rise is reported as a reading, no rise as nothing.
             var gained = Math.Max(0, _systemDriveFreeBytes() - before);
-            var what = $"{removed} of {count} restore points removed, the newest kept";
+            var what = $"{removed} of {points.Count} restore points removed, the newest kept";
             if (gained > 0)
                 record(RestorePointsPath, gained, "removed",
-                    $"{what}; free space rose by this much while vssadmin ran — observed on the drive, not a count of files");
+                    $"{what}; free space rose by this much while they were removed — observed on the drive, not a count of files");
             else
                 record(RestorePointsPath, 0, "external", $"{what}; free space did not rise");
         }

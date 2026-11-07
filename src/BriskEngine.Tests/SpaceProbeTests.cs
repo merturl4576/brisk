@@ -44,95 +44,37 @@ public sealed class SpaceProbeTests
         Assert.Null(probe.DockerReclaimableBytes());
     }
 
-    // ---- Restore points. Written by hand from vssadmin's documented
-    // format (English Windows 11): `vssadmin list shadows` needs an elevated
-    // prompt, and the session that wrote this test was not one.
-    internal const string ThreeShadows = """
-        vssadmin 1.1 - Volume Shadow Copy Service administrative command-line tool
-        (C) Copyright 2001-2013 Microsoft Corp.
+    // ---- Restore points: System Restore's own list, never vssadmin.
 
-        Contents of shadow copy set ID: {3f1c9d4e-8a2b-4c6d-9e1f-0a2b3c4d5e6f}
-           Contained 1 shadow copies at creation time: 9/14/2026 3:02:11 AM
-              Shadow Copy ID: {7b2e1a90-5c4d-4f3e-8a1b-2c3d4e5f6a7b}
-                 Original Volume: (C:)\\?\Volume{d1c2b3a4-0000-0000-0000-100000000000}\
-                 Shadow Copy Volume: \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1
-                 Originating Machine: DESKTOP-BRISK
-                 Service Machine: DESKTOP-BRISK
-                 Provider: 'Microsoft Software Shadow Copy provider 1.0'
-                 Type: ClientAccessibleWriters
-                 Attributes: Persistent, Client-accessible, No auto release, Differential, Auto recovered
-
-        Contents of shadow copy set ID: {a0b1c2d3-e4f5-4a6b-8c7d-9e0f1a2b3c4d}
-           Contained 1 shadow copies at creation time: 10/3/2026 2:13:45 PM
-              Shadow Copy ID: {c4d5e6f7-a8b9-4c0d-9e1f-2a3b4c5d6e7f}
-                 Original Volume: (C:)\\?\Volume{d1c2b3a4-0000-0000-0000-100000000000}\
-                 Shadow Copy Volume: \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy4
-                 Originating Machine: DESKTOP-BRISK
-                 Service Machine: DESKTOP-BRISK
-                 Provider: 'Microsoft Software Shadow Copy provider 1.0'
-                 Type: ClientAccessibleWriters
-                 Attributes: Persistent, Client-accessible, No auto release, Differential, Auto recovered
-
-        Contents of shadow copy set ID: {5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9}
-           Contained 1 shadow copies at creation time: 11/5/2026 9:41:07 PM
-              Shadow Copy ID: {0f1e2d3c-4b5a-4968-8776-655443322110}
-                 Original Volume: (C:)\\?\Volume{d1c2b3a4-0000-0000-0000-100000000000}\
-                 Shadow Copy Volume: \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy7
-                 Originating Machine: DESKTOP-BRISK
-                 Service Machine: DESKTOP-BRISK
-                 Provider: 'Microsoft Software Shadow Copy provider 1.0'
-                 Type: ClientAccessibleWriters
-                 Attributes: Persistent, Client-accessible, No auto release, Differential, Auto recovered
-
-        """;
-
-    internal const string NoShadows = """
-        vssadmin 1.1 - Volume Shadow Copy Service administrative command-line tool
-        (C) Copyright 2001-2013 Microsoft Corp.
-
-        No items found that satisfy the query.
-
-        """;
-
+    /// WMI hands SequenceNumber back as a boxed UInt32. This reading is all
+    /// there is to parse; a value it cannot read makes the whole list unknown.
     [Fact]
-    public void Parse_counts_shadow_ids()
+    public void Parse_reads_restore_point_sequence_numbers()
     {
-        Assert.Equal(3, ShadowCopies.Parse(ThreeShadows));
-        Assert.Equal(0, ShadowCopies.Parse(NoShadows));
-        Assert.Equal(0, ShadowCopies.Parse(""));
-    }
-
-    /// vssadmin's labels are translated on a Turkish Windows; the shadow
-    /// copy's device name never is, so the count does not depend on them.
-    [Fact]
-    public void Parse_does_not_read_the_labels()
-    {
-        var translated = ThreeShadows
-            .Replace("Shadow Copy Volume", "Gölge Kopya Birimi")
-            .Replace("Shadow Copy ID", "Gölge Kopya Kimliği")
-            .Replace("Contents of shadow copy set ID", "Gölge kopya kümesi içeriği");
-        Assert.Equal(3, ShadowCopies.Parse(translated));
+        Assert.Equal(new uint[] { 12, 15, 13 },
+            RealRestorePoints.Read(new object?[] { 12u, 15u, 13u }));
+        Assert.Empty(RealRestorePoints.Read(Array.Empty<object?>())!);
+        Assert.Null(RealRestorePoints.Read(new object?[] { 12u, null, 13u }));
+        Assert.Null(RealRestorePoints.Read(new object?[] { 12u, "not a number" }));
+        Assert.Null(RealRestorePoints.Read(new object?[] { -1 }));
     }
 
     [Fact]
-    public void RestorePointCount_asks_vssadmin_about_the_system_drive()
+    public void RestorePointCount_counts_system_restore_points_and_runs_nothing()
     {
-        var runner = new ScriptedRunner((_, _) => (0, ThreeShadows));
-        Assert.Equal(3, new RealSpaceProbe(runner).RestorePointCount());
-        Assert.Equal($"vssadmin list shadows /for={ShadowCopies.SystemDrive}", Assert.Single(runner.Commands));
-        Assert.Matches("^[A-Z]:$", ShadowCopies.SystemDrive);
+        var runner = new ScriptedRunner((_, _) => (0, ""));
+        var probe = new RealSpaceProbe(runner, new FakeRestorePoints(7, 9, 12));
+        Assert.Equal(3, probe.RestorePointCount());
+        Assert.Empty(runner.Commands);   // no vssadmin, no process at all
     }
 
-    /// Not an administrator ("You don't have the correct permissions", exit
-    /// 2) and no vssadmin at all both read as "unknown", never as 0.
+    /// Not an administrator, service off, WMI broken: System Restore cannot
+    /// be read, and that is "unknown", never 0.
     [Fact]
-    public void RestorePointCount_is_null_when_vssadmin_is_denied_or_missing()
+    public void RestorePointCount_is_null_when_system_restore_cannot_be_read()
     {
-        var denied = new ScriptedRunner((_, _) => (2,
-            "Error: You don't have the correct permissions to run this command."));
-        Assert.Null(new RealSpaceProbe(denied).RestorePointCount());
-
-        var missing = new ScriptedRunner((_, _) => throw new System.ComponentModel.Win32Exception(2));
-        Assert.Null(new RealSpaceProbe(missing).RestorePointCount());
+        var probe = new RealSpaceProbe(new ScriptedRunner((_, _) => (0, "")),
+            new FakeRestorePoints(7, 9) { Unreadable = true });
+        Assert.Null(probe.RestorePointCount());
     }
 }

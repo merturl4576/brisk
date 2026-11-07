@@ -486,7 +486,7 @@ public static class Program
                 {
                     if (entry.Action == "dry-run")
                     {
-                        Console.WriteLine($"  {entry.Path}  ({Fmt.Bytes(entry.Bytes)})");
+                        Console.WriteLine(PlanLine(entry));
                         planBytes += entry.Bytes;
                     }
                     else if (entry.Action == "refused")
@@ -635,6 +635,11 @@ public static class Program
     private static IReadOnlyList<string> DeferredApps(ActionEngine engine) => engine.Deferred.Pending()
         .Select(e => CleanupTargetRegistry.All.FirstOrDefault(t => t.Id == e.TargetId)?.AppDisplayName)
         .OfType<string>().Distinct().ToList();
+
+    /// One line of the `clean` plan. A size brisk cannot know before the
+    /// removal prints "—", never "0 B".
+    public static string PlanLine(CleanEntry entry) =>
+        $"  {entry.Path}  ({(entry.Reason == CleanRunner.SizeUnknownReason ? "—" : Fmt.Bytes(entry.Bytes))})";
 
     public static int RunActions(CliCommand cmd, Scanner scanner, ActionEngine engine, TextWriter o)
     {

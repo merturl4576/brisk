@@ -37,12 +37,15 @@ public sealed class ActionRunnerTests : IDisposable
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch (IOException) { } }
 
-    private ActionRunner Runner(IProcessRunner? cleanerProcesses = null)
+    /// The cleaner always gets a fake System Restore: no test may reach the
+    /// real one (ruling R6).
+    private ActionRunner Runner(FakeRestorePoints? restorePoints = null)
     {
         var rules = new ActionRules(new ActionProbes(new FakeRunner(), _ui, new FakeOverlay(), new FakeFeatures(),
             new FakeTasks(), new StartupManager(_reg, null), () => false));
         var cleaner = new CleanRunner(new SafetyValidator(), _recycler, new ActionLog(Path.Combine(_root, "log.jsonl")),
-            cleanerProcesses ?? new FakeRunner(), () => _elevated, null, () => 0, new WindowsDeleter());
+            new FakeRunner(), () => _elevated, null, () => 0, new WindowsDeleter(),
+            restorePoints ?? new FakeRestorePoints());
         return new ActionRunner(_ctx, rules, _journal, cleaner, _deferred, _runs, () => _elevated, s => _stat(s));
     }
 
@@ -272,13 +275,12 @@ public sealed class ActionRunnerTests : IDisposable
     {
         var target = CleanupTargetRegistry.All.Single(t => t.Id == "restore-points");
         var scan = new ScanResult(new[] { new TargetScanResult(target, Array.Empty<ResolvedItem>(), null) });
-        var vss = new ScriptedRunner((_, args) =>
-            args.StartsWith("list shadows", StringComparison.Ordinal) ? (0, SpaceProbeTests.ThreeShadows) : (0, ""));
+        var sr = new FakeRestorePoints(4, 5, 6);
 
-        var row = Assert.Single(Runner(vss).Run(Plan(scan, Row("space.restore-points")),
+        var row = Assert.Single(Runner(sr).Run(Plan(scan, Row("space.restore-points")),
             Select("space.restore-points")).Rows);
 
         Assert.Equal(RowOutcome.Done, row.Outcome);
-        Assert.Equal(2, vss.Commands.Count(c => c.Contains("delete shadows") && c.Contains("/oldest")));
+        Assert.Equal(new uint[] { 4, 5 }, sr.Removed);
     }
 }

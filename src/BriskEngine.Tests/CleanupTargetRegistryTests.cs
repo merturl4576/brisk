@@ -285,7 +285,7 @@ public class CleanupTargetRegistryTests
         Assert.False(archives.Regenerates);
     }
 
-    /// Restore points (monitor GUI wave): vssadmin removes them, so there are
+    /// Restore points (monitor GUI wave): System Restore removes them, so there are
     /// no templates; nothing goes near the shell (past the bin); and opt-in,
     /// so a plain `clean --level deep` never deletes them.
     [Fact]

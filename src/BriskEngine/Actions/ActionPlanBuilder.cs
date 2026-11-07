@@ -160,8 +160,8 @@ public sealed class ActionPlanBuilder
                     // Something to remove only when there is more than the
                     // newest. Windows cannot say what removing them frees
                     // until it has, so the row has no size ("—"), and no
-                    // total counts it. Unknown count (vssadmin denied or
-                    // missing) = no row.
+                    // total counts it. Unknown count (System Restore
+                    // unreadable) = no row.
                     var count = Safe(() => _space.RestorePointCount());
                     if (count is null or < 2) break;
                     yield return ItemFrom(row, bytes: null);
