@@ -15,7 +15,10 @@ public enum HomeButton { None, RunAll, Undo, Rescan, Retry }
 public sealed record Satellite(string Value, string Caption, bool Done);
 
 /// Every number and word on the home screen, worked out from the session in
-/// one place so the view only places them.
+/// one place so the view only places them. Home's button is Hepsini yap, so
+/// what it counts before a run is what Hepsini yap takes: Yer aç at MIN and
+/// the default Speed and Privacy rows, minus skips (ActionSession.InRunAll),
+/// whatever level the Yer aç page shows.
 public sealed record HomeFigures(
     string HeroLabel, long? HeroBytes, double GaugeFraction, bool GaugeGreen,
     string Found, string Startup, string Online,
@@ -48,8 +51,9 @@ public sealed record HomeFigures(
         else
         {
             var rows = s.SpaceGroup?.Items ?? Array.Empty<ActionItem>();
+            // Known sizes only; a row without one adds nothing.
             found = rows.Sum(i => i.Bytes ?? 0);
-            ticked = rows.Where(s.WillRun).Sum(s.SelectedBytes);
+            ticked = s.LevelBytes(SpaceLevel.Min);
         }
         var freedSoFar = s.Results.Values.Sum(r => r.BytesFreed);
         // Free space is the run's claim only when the run cleaned something:
@@ -71,7 +75,7 @@ public sealed record HomeFigures(
         var fastIn = s.FastGroups.Count > 0 || s.Plan is not null;
         bool IsStartup(ActionItem i) => StartupEntryRule.TryParseId(i.Id, out _, out _);
         var startupRows = items.Where(i => i.Group == ActionGroupKind.Speed && IsStartup(i)).ToList();
-        var tickedStartup = startupRows.Count(s.WillRun);
+        var tickedStartup = startupRows.Count(s.InRunAll);
         var startupDone = startupRows.Count(i => s.Results.TryGetValue(i.Id, out var r) && r.Outcome == RowOutcome.Done);
         var privacyResults = s.Results.Values
             .Where(r => byId.TryGetValue(r.RowId, out var i) && i.Group == ActionGroupKind.Privacy).ToList();
@@ -97,7 +101,7 @@ public sealed record HomeFigures(
         var privacy = Finished(ActionGroupKind.Privacy)
             ? new Satellite(loc.F("gui.sat.privacy.done", privacyOff), loc["gui.sat.privacy"], true)
             : new Satellite(fastIn
-                    ? loc.F("gui.sat.privacy.value", items.Count(i => i.Group == ActionGroupKind.Privacy && s.WillRun(i)))
+                    ? loc.F("gui.sat.privacy.value", items.Count(i => i.Group == ActionGroupKind.Privacy && s.InRunAll(i)))
                     : pending,
                 loc["gui.sat.privacy"], false);
         var space = Finished(ActionGroupKind.Space) && hero is { } freed
@@ -105,7 +109,7 @@ public sealed record HomeFigures(
             : new Satellite(Size(ticked), loc["gui.sat.space"], false);
 
         // ---- stateline and button
-        var tickedRows = items.Count(s.WillRun);
+        var tickedRows = items.Count(s.InRunAll);
         var tone = Tone.Normal;
         string stateline;
         switch (s.State)

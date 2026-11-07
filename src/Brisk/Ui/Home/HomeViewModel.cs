@@ -29,7 +29,6 @@ public sealed class HomeViewModel : ViewModelBase
     private readonly IActionBackend _backend;
     private readonly IUiTimers _timers;
     private readonly Loc _loc;
-    private readonly Action<IReadOnlyList<ActionItem>, ActionGroupKind?> _confirm;
     private readonly Action<ActionGroupKind> _open;
     private readonly List<IDisposable> _running = new();
     private IReadOnlyList<AppLoad>? _lastLoad;
@@ -38,8 +37,7 @@ public sealed class HomeViewModel : ViewModelBase
     private SessionState _lastState;
 
     public HomeViewModel(Action<Action> post, Action<Action> background, ActionSession session,
-        IActionBackend backend, IUiTimers timers, Loc loc,
-        Action<IReadOnlyList<ActionItem>, ActionGroupKind?> confirm, Action<ActionGroupKind> open)
+        IActionBackend backend, IUiTimers timers, Loc loc, Action<ActionGroupKind> open)
     {
         _post = post;
         _background = background;
@@ -47,7 +45,6 @@ public sealed class HomeViewModel : ViewModelBase
         _backend = backend;
         _timers = timers;
         _loc = loc;
-        _confirm = confirm;
         _open = open;
         Primary = new RelayCommand(OnPrimary, () => Figures.ButtonEnabled);
         Rescan = new RelayCommand(() => _ = _session.RescanAsync());
@@ -148,9 +145,8 @@ public sealed class HomeViewModel : ViewModelBase
         switch (Figures.ButtonAction)
         {
             case HomeButton.RunAll:
-                var unrecoverable = _session.NeedsConfirmation(null);
-                if (unrecoverable.Count > 0) _confirm(unrecoverable, null);
-                else _ = _session.RunAsync(null);
+                // No confirmation before deleting: Hepsini yap runs at once.
+                _ = _session.RunAllAsync();
                 break;
             case HomeButton.Undo:
                 _ = _session.UndoAsync();

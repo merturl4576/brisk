@@ -53,13 +53,59 @@ public sealed class HomeFiguresTests
         Assert.Equal("—", f.Online);
     }
 
+    /// Ruling R4: Home's number is what Hepsini yap deletes, Yer aç at MIN,
+    /// whichever level the Yer aç page shows.
+    [Fact]
+    public async Task Ready_HeroIsWhatRunAllFrees_AtMin_WhateverTheLevel()
+    {
+        var s = await Ready(FakeBackend.Typical());
+        s.SetLevel(SpaceLevel.Max);
+        var f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal(s.LevelBytes(SpaceLevel.Min), f.HeroBytes);
+        Assert.Equal(14_000_000_300, f.HeroBytes);              // shaders (MID) is not in it
+        Assert.Equal("Hazır · 6 iş seçili", f.Stateline);
+
+        s.ToggleSkip("space.recycle-bin");
+        f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal(6_000_000_300, f.HeroBytes);
+        Assert.Equal("Hazır · 5 iş seçili", f.Stateline);
+        Assert.Equal("15 GB", f.Found);                         // what was found stays
+    }
+
+    [Fact]
+    public async Task Ready_SatellitesCountWhatRunAllTakes_NotRowsAddedOnAPage()
+    {
+        var s = await Ready(FakeBackend.Typical());
+        s.ToggleSkip("privacy.location");                       // added on Gizlilik
+        s.ToggleSkip("startup:HKCU:OneDrive");                  // added on Hızlandır
+        var f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal("14 → 13", f.Speed.Value);
+        Assert.Equal("1 ayar", f.Privacy.Value);
+        Assert.Equal("Hazır · 6 iş seçili", f.Stateline);
+    }
+
+    [Fact]
+    public async Task Done_AfterASpaceOnlyRun_OffersNoUndo()
+    {
+        var b = FakeBackend.Typical();
+        var hibernation = ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.hibernation"), 1L << 30)
+            with { Reversible = true };                         // as 0.11.0 recorded it
+        b.Space = new ActionGroup(ActionGroupKind.Space, b.Space!.Items.Append(hibernation).ToList());
+        var s = await Ready(b);
+        s.SetLevel(SpaceLevel.Mid);
+        await s.RunAsync(ActionGroupKind.Space);
+        var f = HomeFigures.From(s, Tr(), 14, null, Now);
+        Assert.Equal(HomeButton.Rescan, f.ButtonAction);
+        Assert.False(f.ShowPreviousUndo);
+    }
+
     [Fact]
     public async Task Done_ShowsTheReceiptsRealFreedSpace_AndUndo()
     {
         var b = FakeBackend.Typical();
         b.ReceiptToReturn = TestReceipts.Freed("run-1", 9_000_000_000, startupAfter: 13, privacyOff: 1);
         var s = await Ready(b);
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         var f = HomeFigures.From(s, Tr(), 13, null, Now);
         Assert.Equal("Açıldı", f.HeroLabel);
         Assert.Equal(9_000_000_000, f.HeroBytes);
@@ -79,7 +125,7 @@ public sealed class HomeFiguresTests
     public async Task Done_WithNothingUndoable_OffersRescanNotUndo()
     {
         var s = await Ready(FakeBackend.Typical());
-        await s.RunAsync(ActionGroupKind.Space, skipUnrecoverable: true);
+        await s.RunAsync(ActionGroupKind.Space);
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Equal(HomeButton.Rescan, f.ButtonAction);
         Assert.Equal("Tekrar tara", f.Button);
@@ -95,7 +141,7 @@ public sealed class HomeFiguresTests
             ? new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0)
             : new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0);
         var s = await Ready(b);
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Contains("1 iş olmadı", f.Stateline);
         Assert.Equal(Tone.Warn, f.StatelineTone);
@@ -110,7 +156,7 @@ public sealed class HomeFiguresTests
             : new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0);
         b.ReceiptToReturn = TestReceipts.Freed("run-1", 1L << 30) with { DeferredBytes = 2L << 30 };
         var s = await Ready(b);
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         var f = HomeFigures.From(s, Tr(), 14, null, Now, new[] { "chrome" });
         Assert.Contains("2,0 GB daha, chrome kapanınca", f.Stateline);
         Assert.EndsWith("tam etki için yeniden başlat", f.Stateline);
@@ -121,7 +167,7 @@ public sealed class HomeFiguresTests
     {
         var b = FakeBackend.Typical(); b.HoldRun = new ManualResetEventSlim(false);
         var s = await Ready(b);
-        var run = s.RunAsync(null);
+        var run = s.RunAllAsync();
         Assert.True(SpinWait.SpinUntil(() => s.State == SessionState.Running, 2000));
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Equal("Açıldı", f.HeroLabel);
@@ -172,7 +218,7 @@ public sealed class HomeFiguresTests
     public async Task AfterUndo_StatelineSaysWhatCameBack()
     {
         var s = await Ready(FakeBackend.Typical());
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         await s.UndoAsync();
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Equal("3 ayar geri alındı · silinen dosyalar geri gelmez", f.Stateline);
@@ -185,7 +231,7 @@ public sealed class HomeFiguresTests
         var b = FakeBackend.Typical();
         b.ReceiptToReturn = TestReceipts.Freed("run-1", 9_000_000_000);
         var s = await Ready(b);
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         await s.RescanAsync();
         var f = HomeFigures.From(s, Tr(), 13, null, Now);
         Assert.True(f.ShowPreviousUndo);
@@ -200,7 +246,7 @@ public sealed class HomeFiguresTests
             ? new RowResult(id, RowOutcome.Failed, "denied", null, 0, 0)
             : new RowResult(id, RowOutcome.Done, null, null, 0, 0);
         var s = await Ready(b);
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         await s.UndoAsync();
         var f = HomeFigures.From(s, Tr(), 14, null, Now);
         Assert.Equal("2 ayar geri alındı · silinen dosyalar geri gelmez · 1 geri alınamadı", f.Stateline);
@@ -213,7 +259,7 @@ public sealed class HomeFiguresTests
     {
         var b = FakeBackend.Typical();
         var s = await Ready(b);
-        await s.RunAsync(null);
+        await s.RunAllAsync();
         b.FailUndo = new InvalidOperationException("access denied");
         await s.UndoAsync();
         var f = HomeFigures.From(s, Tr(), 14, null, Now);

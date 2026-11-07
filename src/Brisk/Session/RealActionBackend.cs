@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using BriskEngine.Actions;
 using BriskEngine.Cleaning;
 using BriskEngine.Diagnostics;
@@ -20,14 +22,33 @@ public sealed class RealActionBackend : IActionBackend
     // they take turns.
     private readonly object _writes = new();
 
+    // One sampler and one battery probe for the app's lifetime: the sampler
+    // keeps the last reading of every delta (CPU, network, per-app CPU) and
+    // its PDH queries, the battery probe its wear cache and the guard that
+    // keeps a hung WMI read from leaking threads. The temperatures come from
+    // the engine's one sensor probe, which serialises LibreHardwareMonitor
+    // between this sampler and a scan's thermals rule.
+    private readonly SystemMonitor _monitor;
+
+    // Read once, by the first caller; a second caller waits for that read
+    // instead of starting its own set of WMI queries.
+    private readonly Lazy<SpecsInfo> _specs;
+
     public RealActionBackend(ActionEngine engine, Scanner scanner)
     {
         _engine = engine;
         _scanner = scanner;
+        _monitor = new SystemMonitor(engine.Context.Sensors, new RealBatteryProbe(), new RealAppNamer());
+        var specs = new RealSpecsProbe();
+        _specs = new Lazy<SpecsInfo>(specs.Read, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     public IReadOnlyList<ActionGroup> BuildFast() => _engine.Builder.BuildFast();
 
+    /// Every registry target, the ones the console only takes when named
+    /// (profile-git, stale-project-deps, archive-beside-extracted,
+    /// restore-points) included: that opt-in is the console's rule. Here the
+    /// Yer aç level decides, and the runner never reads the flag.
     public ScanResult ScanSpace(Action<TargetScanResult> onTarget) =>
         _scanner.Scan(progress: new Inline(p => { if (p.Result is { } r) onTarget(r); }));
 
@@ -75,6 +96,25 @@ public sealed class RealActionBackend : IActionBackend
         }
         catch (Exception) { return false; }
     });
+
+    public IReadOnlyList<PersonalFile> PersonalFiles(CancellationToken ct) =>
+        BriskEngine.Cleaning.PersonalFiles.Find(BriskEngine.Cleaning.PersonalFiles.DefaultRoots(), ct);
+
+    public long SystemDriveFreeBytes() => new DriveInfo(SystemDriveRoot()).AvailableFreeSpace;
+
+    /// "C:\" from %SystemDrive%; the Windows folder's drive when the
+    /// variable is missing.
+    private static string SystemDriveRoot()
+    {
+        var drive = Environment.GetEnvironmentVariable("SystemDrive");
+        return string.IsNullOrWhiteSpace(drive)
+            ? Path.GetPathRoot(Environment.SystemDirectory)!
+            : drive.TrimEnd('\\') + "\\";
+    }
+
+    public SpecsInfo Specs() => _specs.Value;
+
+    public MonitorSample SampleMonitor() => _monitor.Sample();
 
     /// Progress<T> posts to a captured context; the scan reports from its own
     /// threads and the session marshals, so this one calls straight through.

@@ -499,13 +499,6 @@
   <data name="gui.nav.speed" xml:space="preserve"><value>Speed up</value></data>
   <data name="gui.nav.privacy" xml:space="preserve"><value>Privacy</value></data>
   <data name="gui.nav.settings" xml:space="preserve"><value>Settings</value></data>
-  <data name="gui.sheet.title" xml:space="preserve"><value>These will be deleted for good</value></data>
-  <data name="gui.sheet.downloads" xml:space="preserve"><value>{0} installers in Downloads · {1}</value></data>
-  <data name="gui.sheet.recycle-bin" xml:space="preserve"><value>Recycle Bin · {0}</value></data>
-  <data name="gui.sheet.windows-old" xml:space="preserve"><value>Old Windows copy · {0}</value></data>
-  <data name="gui.sheet.go" xml:space="preserve"><value>Continue</value></data>
-  <data name="gui.sheet.skip" xml:space="preserve"><value>Skip these</value></data>
-  <data name="gui.sheet.list" xml:space="preserve"><value>See the list</value></data>
   <data name="gui.settings.title" xml:space="preserve"><value>Settings</value></data>
   <data name="gui.settings.language" xml:space="preserve"><value>Language</value></data>
   <data name="gui.settings.language.system" xml:space="preserve"><value>System</value></data>

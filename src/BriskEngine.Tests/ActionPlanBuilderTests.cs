@@ -396,6 +396,17 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal(new[] { "privacy.copilot", "space.caches" }, ids.OrderBy(i => i));
     }
 
+    /// Row ids compare without case everywhere else; a caller's plain
+    /// HashSet must not make a skip miss.
+    [Fact]
+    public void ForLevel_skips_ignore_case()
+    {
+        var plan = PlanOf(Item("space.caches", 100), Item("privacy.ads"), Item("privacy.copilot"));
+        var ids = ActionSelection.ForLevel(plan, SpaceLevel.Min,
+            new HashSet<string> { "SPACE.CACHES", "Privacy.Ads" }).RowIds;
+        Assert.Equal(new[] { "privacy.copilot" }, ids);
+    }
+
     [Fact]
     public void ForLevel_keeps_every_listed_file_like_the_default()
     {

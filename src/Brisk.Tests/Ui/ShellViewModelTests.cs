@@ -86,57 +86,24 @@ public sealed class ShellViewModelTests : IDisposable
         Assert.True(k.Shell.Home.IsActive);
     }
 
+    /// No confirmation sheet: Hepsini yap runs everything at once and the
+    /// window stays where it is.
     [Fact]
-    public async Task Sheet_Lines_SayWhatGoesForGood()
+    public async Task HomePrimary_RunsEverything_WithoutAConfirmation()
     {
         var k = await Make();
         k.Shell.Home.Primary.Execute(null);
-        var sheet = k.Shell.Sheet!;
-        Assert.Equal("Bunlar kalıcı silinecek", sheet.Title);
-        Assert.Equal(new[] { "İndirilenler'deki 2 kurulum dosyası · <1 MB", "Geri Dönüşüm Kutusu · 7,5 GB" }, sheet.Lines);
-    }
-
-    [Fact]
-    public async Task Sheet_Go_RunsEverything()
-    {
-        var k = await Make();
-        k.Shell.Home.Primary.Execute(null);
-        k.Shell.Sheet!.Go.Execute(null);
-        Assert.Null(k.Shell.Sheet);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
         Assert.Contains("space.recycle-bin", k.Backend.Runs.Single().RowIds);
+        Assert.Equal(Place.Home, k.Shell.Current);
     }
 
     [Fact]
-    public async Task Sheet_Skip_RunsWithoutTheUnrecoverableRows()
-    {
-        var k = await Make();
-        k.Shell.Home.Primary.Execute(null);
-        k.Shell.Sheet!.Skip.Execute(null);
-        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
-        Assert.DoesNotContain("space.recycle-bin", k.Backend.Runs.Single().RowIds);
-        Assert.Contains("space.caches", k.Backend.Runs.Single().RowIds);
-    }
-
-    [Fact]
-    public async Task Sheet_SeeList_RunsNothing_AndOpensTheDownloads()
-    {
-        var k = await Make();
-        k.Shell.Home.Primary.Execute(null);
-        k.Shell.Sheet!.SeeList.Execute(null);
-        Assert.Null(k.Shell.Sheet);
-        Assert.Empty(k.Backend.Runs);
-        Assert.Equal(Place.Space, k.Shell.Current);
-        Assert.True(k.Shell.Space.Rows.Single(r => r.Id == "space.downloads").IsExpanded);
-    }
-
-    [Fact]
-    public async Task Sheet_FromAPage_RunsOnlyThatGroup()
+    public async Task APageRun_RunsOnlyThatGroup_WithoutAConfirmation()
     {
         var k = await Make();
         k.Shell.Current = Place.Space;
         k.Shell.Space.RunGroup.Execute(null);
-        k.Shell.Sheet!.Go.Execute(null);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
         Assert.All(k.Backend.Runs.Single().RowIds, id => Assert.StartsWith("space.", id));
     }

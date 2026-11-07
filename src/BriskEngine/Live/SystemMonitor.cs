@@ -95,6 +95,14 @@ public sealed class SystemMonitor
 
     private static readonly IReadOnlyList<ProcLoad> None = Array.Empty<ProcLoad>();
 
+    /// Never named in a top list (ruling R19): brisk itself, and the kernel's
+    /// own entries, which are not apps anyone can close. The machine's totals
+    /// still count them.
+    private static readonly HashSet<string> NotApps = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "brisk", "brisk-app", "Idle", "System", "Secure System", "Registry", "Memory Compression",
+    };
+
     private readonly ISystemTimesReader _cpu;
     private readonly IProcessListReader _processes;
     private readonly IAdapterBytesReader _network;
@@ -105,6 +113,7 @@ public sealed class SystemMonitor
     private readonly IAppNamer _namer;
     private readonly int _processorCount;
     private readonly Func<TimeSpan> _now;
+    private readonly int _selfPid;
     private readonly object _gate = new();
 
     private CpuTimes? _cpuBefore;
@@ -129,10 +138,13 @@ public sealed class SystemMonitor
     {
     }
 
+    /// selfPid: the process the lists leave out as brisk whatever its exe is
+    /// named (a download is often renamed); this process when null.
     internal SystemMonitor(ISystemTimesReader cpu, IProcessListReader processes, IAdapterBytesReader network,
         IGpuEngineReader gpu, IMemoryReader memory, ISensorProbe sensors, IBatteryProbe battery, IAppNamer namer,
-        int processorCount, Func<TimeSpan>? now)
+        int processorCount, Func<TimeSpan>? now, int? selfPid = null)
     {
+        _selfPid = selfPid ?? Environment.ProcessId;
         _cpu = cpu;
         _processes = processes;
         _network = network;
@@ -357,12 +369,13 @@ public sealed class SystemMonitor
     }
 
     /// The three apps (processes grouped by name) with the largest known value
-    /// above zero.
+    /// above zero, brisk and the kernel's entries left out.
     private IReadOnlyList<ProcLoad> Top(List<Row> rows, Func<Row, double?> value, bool clampTo100)
     {
         var apps = new Dictionary<string, (double Sum, List<int> Pids, string Name)>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)
         {
+            if (row.Pid == _selfPid || NotApps.Contains(row.Name)) continue;
             if (value(row) is not { } v || !double.IsFinite(v) || v <= 0) continue;
             if (!apps.TryGetValue(row.Name, out var app)) app = (0, new List<int>(), row.Name);
             app.Pids.Add(row.Pid);

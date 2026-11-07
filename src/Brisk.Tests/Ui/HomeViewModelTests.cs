@@ -18,7 +18,6 @@ public sealed class HomeViewModelTests
         public Loc Loc = new();
         public ActionSession Session = null!;
         public HomeViewModel Vm = null!;
-        public List<(IReadOnlyList<ActionItem> Items, ActionGroupKind? Group)> Confirms = new();
         public List<ActionGroupKind> Opened = new();
     }
 
@@ -29,8 +28,7 @@ public sealed class HomeViewModelTests
         k.Loc.SetLanguage("tr");
         Action<Action> post = a => { lock (Gate) a(); };
         k.Session = new ActionSession(k.Backend, post);
-        k.Vm = new HomeViewModel(post, a => a(), k.Session, k.Backend, k.Timers, k.Loc,
-            (items, group) => k.Confirms.Add((items, group)), g => k.Opened.Add(g));
+        k.Vm = new HomeViewModel(post, a => a(), k.Session, k.Backend, k.Timers, k.Loc, g => k.Opened.Add(g));
         await k.Session.LookAsync();
         return k;
     }
@@ -46,27 +44,18 @@ public sealed class HomeViewModelTests
         Assert.Equal("14 → 13", k.Vm.Figures.Speed.Value);
     }
 
+    /// No confirmation: Hepsini yap runs at once, the rows that cannot come
+    /// back included.
     [Fact]
-    public async Task Primary_WithUnrecoverableRows_AsksTheShell_AndDoesNotRun()
+    public async Task Primary_RunsAll_WithoutAsking()
     {
         var k = await Make();
-        k.Vm.Primary.Execute(null);
-        var asked = Assert.Single(k.Confirms);
-        Assert.Equal(new[] { "space.downloads", "space.recycle-bin" }, asked.Items.Select(i => i.Id));
-        Assert.Null(asked.Group);
-        Assert.Empty(k.Backend.Runs);
-    }
-
-    [Fact]
-    public async Task Primary_WithoutUnrecoverableRows_Runs()
-    {
-        var k = await Make();
-        k.Session.SetTicked("space.downloads", false);
-        k.Session.SetTicked("space.recycle-bin", false);
         k.Vm.Primary.Execute(null);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
-        Assert.Single(k.Backend.Runs);
-        Assert.Empty(k.Confirms);
+        var ran = Assert.Single(k.Backend.Runs);
+        Assert.Contains("space.downloads", ran.RowIds);
+        Assert.Contains("space.recycle-bin", ran.RowIds);
+        Assert.Null(k.Session.RunGroup);
     }
 
     [Fact]
@@ -123,9 +112,7 @@ public sealed class HomeViewModelTests
     public async Task ReceiptPolling_StopsOnceAfterRestartNumbersArrive()
     {
         var k = await Make();
-        k.Session.SetTicked("space.downloads", false);
-        k.Session.SetTicked("space.recycle-bin", false);
-        await k.Session.RunAsync(null);
+        await k.Session.RunAllAsync();
         k.Vm.Activate();
         var before = k.Backend.ReceiptRefreshes;
         k.Timers.Advance(TimeSpan.FromSeconds(31));
@@ -148,7 +135,7 @@ public sealed class HomeViewModelTests
         var k = await Make(b => b.Outcome = i => i.Id == "speed.animations"
             ? new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0)
             : new RowResult(i.Id, RowOutcome.Done, null, null, 0, 0));
-        await k.Session.RunAsync(null, skipUnrecoverable: true);
+        await k.Session.RunAllAsync();
         k.Vm.OpenFailed.Execute(null);
         Assert.Equal(new[] { ActionGroupKind.Speed }, k.Opened);
     }

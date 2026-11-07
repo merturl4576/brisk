@@ -76,9 +76,9 @@ public sealed class NewGuiSnapshotTests
     internal static GroupPageViewModel Page(FakeBackend b, ActionGroupKind group, bool run = false, string language = "tr")
     {
         var (home, session) = Home(b, language);
-        if (run) session.RunAsync(null, skipUnrecoverable: true).GetAwaiter().GetResult();
+        if (run) session.RunAllAsync().GetAwaiter().GetResult();
         var loc = home.L;
-        var page = new GroupPageViewModel(session, group, loc, (_, _) => { }, () => new[] { "chrome" });
+        var page = new GroupPageViewModel(session, group, loc, () => new[] { "chrome" });
         Sessions.Add(page, session);
         return page;
     }
@@ -168,12 +168,7 @@ public sealed class NewGuiSnapshotTests
     }
 
     [Fact]
-    public void Shell_HomeWithTheSheet() => ShootShell(() =>
-    {
-        var s = Shell(Catalog());
-        s.Home.Primary.Execute(null);
-        return s;
-    }, "new-shell-sheet");
+    public void Shell_Home() => ShootShell(() => Shell(Catalog()), "new-shell-home");
 
     [Fact]
     public void Shell_Settings() => ShootShell(() =>
@@ -211,7 +206,7 @@ public sealed class NewGuiSnapshotTests
         var gate = new object();
         Action<Action> post = a => { lock (gate) a(); };
         var session = new ActionSession(b, post);
-        var vm = new HomeViewModel(post, a => a(), session, b, new ManualTimers(), loc, (_, _) => { }, _ => { });
+        var vm = new HomeViewModel(post, a => a(), session, b, new ManualTimers(), loc, _ => { });
         session.LookAsync().GetAwaiter().GetResult();
         vm.Activate();
         return (vm, session);
@@ -220,7 +215,7 @@ public sealed class NewGuiSnapshotTests
     internal static HomeViewModel AfterRun(FakeBackend b)
     {
         var (vm, session) = Home(b);
-        session.RunAsync(null).GetAwaiter().GetResult();
+        session.RunAllAsync().GetAwaiter().GetResult();
         return vm;
     }
 
@@ -275,7 +270,7 @@ public sealed class NewGuiSnapshotTests
             Shoot(() =>
             {
                 var (vm, session) = Home(b);
-                _ = session.RunAsync(null, skipUnrecoverable: true);
+                _ = session.RunAllAsync();
                 SpinWait.SpinUntil(() => session.State == SessionState.Running, 2000);
                 return vm;
             }, "new-home-running");

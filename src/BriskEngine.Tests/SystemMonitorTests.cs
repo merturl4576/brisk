@@ -82,10 +82,10 @@ file sealed class Rig
     public TimeSpan Now;
     public readonly SystemMonitor Monitor;
 
-    public Rig()
+    public Rig(int? selfPid = null)
     {
         Monitor = new SystemMonitor(Cpu, Procs, Net, Gpu, Memory, Sensors, Power, new Namer(),
-            processorCount: 4, now: () => Now);
+            processorCount: 4, now: () => Now, selfPid: selfPid);
     }
 
     public MonitorSample Sample()
@@ -280,8 +280,9 @@ public sealed class SystemMonitorTests
     public void A_process_without_cpu_time_is_left_out_of_cpu_only()
     {
         var rig = new Rig();
-        // Access denied: no start time, no CPU time, but its memory is known.
-        var locked = new ProcReading(4, "System", null, null, 300L << 20);
+        // Access denied (a protected process): no start time, no CPU time,
+        // but its memory is known.
+        var locked = new ProcReading(4100, "MsMpEng", null, null, 300L << 20);
         rig.Procs.Next = () => new[] { locked, P(9, "code", 0, ramMb: 100) };
         rig.Sample();
         rig.Procs.Next = () => new[] { locked, P(9, "code", 0.4, ramMb: 100) };
@@ -289,7 +290,36 @@ public sealed class SystemMonitorTests
         var sample = rig.Sample();
 
         Assert.Equal(new[] { "Code" }, sample.TopCpu.Select(t => t.Name));
-        Assert.Equal(new[] { "System", "Code" }, sample.TopRam.Select(t => t.Name));
+        Assert.Equal(new[] { "MsMpEng", "Code" }, sample.TopRam.Select(t => t.Name));
+    }
+
+    /// Ruling R19: brisk itself and the kernel's own entries are not apps the
+    /// user can close; the top lists name neither. The machine totals still
+    /// count them.
+    [Fact]
+    public void Top_lists_leave_out_brisk_and_the_kernel_entries()
+    {
+        var rig = new Rig(selfPid: 77);
+        IReadOnlyList<ProcReading> List(double cpu) => new[]
+        {
+            P(4, "System", cpu, ramMb: 900), P(88, "Registry", cpu, ramMb: 800),
+            P(90, "Secure System", cpu, ramMb: 700), P(91, "Memory Compression", cpu, ramMb: 1_500),
+            P(92, "Idle", cpu, ramMb: 1), P(50, "brisk-app", cpu, ramMb: 600), P(51, "BRISK", cpu, ramMb: 600),
+            // brisk under whatever name its exe was saved as
+            P(77, "brisk-0.12.0", cpu, ramMb: 650),
+            P(10, "code", cpu / 4, ramMb: 100),
+        };
+        rig.Procs.Next = () => List(0);
+        rig.Sample();
+        rig.Procs.Next = () => List(0.4);
+        rig.Gpu.Next = () => new[] { Engine(4, 5), Engine(50, 5), Engine(77, 5), Engine(91, 5), Engine(10, 1) };
+
+        var sample = rig.Sample();
+
+        Assert.Equal(new[] { "Code" }, sample.TopCpu.Select(t => t.Name));
+        Assert.Equal(new[] { "Code" }, sample.TopRam.Select(t => t.Name));
+        Assert.Equal(new[] { "Code" }, sample.TopGpu.Select(t => t.Name));
+        Assert.Equal(21, sample.GpuPercent!.Value, precision: 6);
     }
 
     [Fact]

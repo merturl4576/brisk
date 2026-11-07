@@ -47,12 +47,17 @@ public sealed record ActionSelection(IReadOnlySet<string> RowIds, IReadOnlySet<s
     /// A run at one Yer aç level: every Space row up to that level, plus the
     /// Speed and Privacy rows that are on by default, minus whatever the
     /// user skipped on any page. A Space row without a level is never taken.
-    public static ActionSelection ForLevel(ActionPlan plan, SpaceLevel level, IReadOnlySet<string> skipped) => new(
-        plan.Items
-            .Where(i => i.Group == ActionGroupKind.Space ? i.Level is { } l && l <= level : i.DefaultOn)
-            .Where(i => !skipped.Contains(i.Id))
-            .Select(i => i.Id).ToHashSet(StringComparer.OrdinalIgnoreCase),
-        EveryFile(plan));
+    /// Skips match row ids without case, whatever the caller's set compares.
+    public static ActionSelection ForLevel(ActionPlan plan, SpaceLevel level, IReadOnlySet<string> skipped)
+    {
+        var skip = new HashSet<string>(skipped, StringComparer.OrdinalIgnoreCase);
+        return new(
+            plan.Items
+                .Where(i => i.Group == ActionGroupKind.Space ? i.Level is { } l && l <= level : i.DefaultOn)
+                .Where(i => !skip.Contains(i.Id))
+                .Select(i => i.Id).ToHashSet(StringComparer.OrdinalIgnoreCase),
+            EveryFile(plan));
+    }
 
     private static HashSet<string> EveryFile(ActionPlan plan) =>
         plan.Items.SelectMany(i => i.Files).Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);

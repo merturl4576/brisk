@@ -17,17 +17,15 @@ public sealed class GroupPageViewModel : ViewModelBase
 {
     private readonly ActionSession _session;
     private readonly Loc _loc;
-    private readonly Action<IReadOnlyList<ActionItem>, ActionGroupKind?> _confirm;
     private readonly Func<IReadOnlyList<string>> _deferredApps;
     private readonly string _key;
 
     public GroupPageViewModel(ActionSession session, ActionGroupKind group, Loc loc,
-        Action<IReadOnlyList<ActionItem>, ActionGroupKind?> confirm, Func<IReadOnlyList<string>> deferredApps)
+        Func<IReadOnlyList<string>> deferredApps)
     {
         _session = session;
         Group = group;
         _loc = loc;
-        _confirm = confirm;
         _deferredApps = deferredApps;
         _key = group.ToString().ToLowerInvariant();
         RunGroup = new RelayCommand(OnRun, () => _session.State == SessionState.Ready && !_session.Busy && Ticked().Any());
@@ -70,12 +68,8 @@ public sealed class GroupPageViewModel : ViewModelBase
 
     private IEnumerable<ActionItem> Ticked() => Items().Where(_session.WillRun);
 
-    private void OnRun()
-    {
-        var unrecoverable = _session.NeedsConfirmation(Group);
-        if (unrecoverable.Count > 0) _confirm(unrecoverable, Group);
-        else _ = _session.RunAsync(Group);
-    }
+    /// No confirmation before deleting: the page runs at once.
+    private void OnRun() => _ = _session.RunAsync(Group);
 
     private void OnChanged()
     {
