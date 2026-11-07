@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>brisk — Ana sayfa: canlı sistem monitörü</title>
+<style>
+:root{--ac:#5fd4e8;--tx:#dfeef4;--mu:#7f9aa8;--gr:#3ecf8e;--am:#f0b45a;--ln:rgba(127,154,168,.22)}
+*{box-sizing:border-box}
+body{margin:0;background:#04070b;color:var(--tx);font-family:'Segoe UI Variable','Segoe UI',system-ui,sans-serif}
+.page{max-width:1120px;margin:0 auto;padding:20px 16px 50px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}
+.lead{color:var(--mu);font-size:14px;line-height:1.55;margin:0 0 14px;max-width:960px}
+.lead b{color:var(--tx);font-weight:600}
+
+.panel{position:relative;height:660px;border-radius:14px;overflow:hidden;border:1px solid #12303d;background:radial-gradient(ellipse at 50% 34%,#0f3549 0%,#08222f 44%,#050d14 100%);isolation:isolate;user-select:none}
+.rain{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.rain span{position:absolute;top:-60%;font:12px/14px Consolas,monospace;color:rgba(95,212,232,.09);white-space:pre;animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(170%)}}
+.floor{position:absolute;left:-20%;right:-20%;bottom:-6%;height:44%;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(95,212,232,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(95,212,232,.12) 1px,transparent 1px);background-size:46px 46px;transform:perspective(320px) rotateX(62deg);transform-origin:bottom;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent 95%);mask-image:linear-gradient(to top,#000 30%,transparent 95%);animation:floor 3.5s linear infinite}
+@keyframes floor{to{background-position:0 46px}}
+
+.brand{position:absolute;left:26px;top:18px;display:flex;align-items:center;gap:10px;z-index:4}
+.brand svg{width:28px;height:28px}
+.brand b{font-size:25px;font-weight:500;letter-spacing:.01em}
+.win{position:absolute;right:20px;top:20px;display:flex;gap:18px;z-index:4;color:#cfe8f2}
+.win svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+.nav{position:absolute;left:24px;top:84px;display:grid;gap:26px;z-index:4}
+.tile{width:62px;height:62px;border:1.5px solid rgba(95,212,232,.42);border-radius:6px;display:grid;place-items:center;color:#bfe9f3;position:relative;cursor:pointer;transition:border-color .25s}
+.tile:hover{border-color:var(--ac)}
+.tile svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+.tile.on{background:rgba(95,212,232,.15);border-color:var(--ac);box-shadow:0 0 16px rgba(95,212,232,.32)}
+.tile small{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;color:var(--mu)}
+.tile i{position:absolute;top:-8px;right:-12px;font-style:normal;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:999px;background:#0b2a36;border:1px solid rgba(95,212,232,.5);color:#cfeff7;font-variant-numeric:tabular-nums}
+
+.col{position:absolute;top:100px;width:210px;z-index:3;font-size:13.5px}
+.col.l{left:116px}.col.r{right:24px}
+.col h4{margin:0 0 4px;font-size:13px;font-weight:600;color:#cfe8f2}
+.blk{margin-bottom:16px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--ln)}
+.row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.up{color:var(--ac);font-size:10px;margin-left:4px}
+.ok{color:var(--gr)}
+
+.icons{display:flex;gap:6px;justify-content:flex-end;margin-bottom:10px}
+.ic{width:36px;height:30px;border:1px solid rgba(95,212,232,.35);border-radius:3px;display:grid;place-items:center;color:#9fd8e6;cursor:pointer;transition:all .25s}
+.ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5}
+.ic.on{background:rgba(95,212,232,.2);border-color:var(--ac);color:#e8fbff;box-shadow:0 0 10px rgba(95,212,232,.35)}
+.spec{padding:6px 0 7px 10px;border-top:1px solid var(--ln);border-left:2px solid transparent;transition:border-color .35s,background .35s}
+.spec b{display:block;font-weight:600;font-size:13px;color:#cfe8f2}
+.spec span{display:block;color:var(--mu);font-size:12.5px;line-height:1.45}
+.spec.on{border-left-color:var(--ac);background:linear-gradient(90deg,rgba(95,212,232,.10),transparent)}
+.spec.on span{color:#d4eef6}
+.top{margin-top:12px}
+.top .row{transition:opacity .3s}
+.fade{opacity:0}
+
+.hero{position:absolute;left:50%;top:34px;width:420px;height:420px;transform:translateX(-50%);z-index:2}
+.hero svg{width:100%;height:100%;overflow:visible}
+.rings{transform-origin:210px 210px;transform-box:view-box;transition:transform 1s cubic-bezier(.65,0,.35,1)}
+.drift{transform-origin:210px 210px;transform-box:view-box;animation:spin 26s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-56%);text-align:center;pointer-events:none;z-index:3;transition:opacity .25s,transform .25s}
+.center.out{opacity:0;transform:translate(-50%,-56%) scale(.9)}
+.center .k{font-size:15px;color:#cfe8f2}
+.center .n{font-size:84px;font-weight:300;line-height:1.02;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.center .n u{text-decoration:none;font-size:28px;margin-left:6px}
+.center .t{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.heat{width:96px;height:9px;background:repeating-linear-gradient(105deg,transparent 0 3px,#04121a 3px 5px),linear-gradient(90deg,#3d6fb3,#7b5fb8,#c2577f,#d64c5a);border-radius:2px;opacity:.9}
+.heat.cool{background:repeating-linear-gradient(105deg,transparent 0 3px,#04121a 3px 5px),linear-gradient(90deg,#2f8fb0,#3fb6c9,#5fd4e8)}
+.center .s{font-size:12px;color:var(--mu);margin-top:6px}
+
+.plat{position:absolute;left:0;right:0;bottom:0;height:236px;z-index:2}
+.plat svg{width:100%;height:100%}
+.flow{stroke-dasharray:5 9;animation:flow 1.8s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-28}}
+.sat{cursor:pointer}
+.sat:hover .disc{stroke:#e8fbff}
+
+.cta{position:absolute;right:22px;bottom:22px;z-index:4;display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mu);background:rgba(4,16,22,.72);border:1px solid rgba(95,212,232,.25);border-radius:999px;padding:6px 6px 6px 16px}
+.cta b{color:var(--tx);font-weight:600}
+.cta button{font:inherit;font-weight:600;color:#03222b;background:var(--ac);border:0;border-radius:999px;padding:7px 14px;cursor:pointer}
+.foot{color:var(--mu);font-size:12.5px;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Ana sayfa = canlı sistem monitörü</h1>
+<p class="lead">Alttaki <b>üç yuvarlaktan birine tıkla</b>. Zemin döner ve tıkladığın öne gelir, büyük gösterge de dönerek o parçaya geçer. Sağdaki küçük ikonlar artık göstergeyi döndürmüyor, sadece o donanımın bilgisini öne çıkarıyor. <b>Donanım adları senin bilgisayarından</b>. Yüzdeler ve hızlar örnek, ama canlıymış gibi oynuyor.</p>
+
+<div class="panel" id="panel">
+  <div class="rain" id="rain"></div>
+  <div class="floor"></div>
+
+  <div class="brand">
+    <svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" stroke="#5fd4e8" stroke-width="2" fill="none"/><path d="M9 15l4-6v5h4l-4 6v-5z" fill="#5fd4e8"/></svg>
+    <b>brisk</b>
+  </div>
+  <div class="win">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </div>
+
+  <div class="nav">
+    <div class="tile on" data-choice="nav-genel"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M6 11h3l2-4 2 7 2-3h3M9 20h6"/></svg><small>Genel</small></div>
+    <div class="tile" data-choice="nav-yer"><i>39 GB</i><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg><small>Yer aç</small></div>
+    <div class="tile" data-choice="nav-hiz"><i>9</i><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4.5-5"/></svg><small>Hızlandır</small></div>
+    <div class="tile" data-choice="nav-gizlilik"><i>7</i><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/></svg><small>Gizlilik</small></div>
+  </div>
+
+  <div class="col l">
+    <div class="blk">
+      <h4>Ağ hızı</h4>
+      <div class="row"><span>Yükleme</span><span><b id="upv">83</b> Kbps<span class="up">▲</span></span></div>
+      <div class="row"><span>İndirme</span><span><b id="dnv">112</b> Kbps<span class="up">▼</span></span></div>
+    </div>
+    <div class="blk">
+      <h4>Pil</h4>
+      <div class="row"><span>Kalan şarj</span><span>100 %</span></div>
+      <div class="row"><span>Durum</span><span class="ok">Prizde</span></div>
+    </div>
+    <div class="blk">
+      <h4>Isı</h4>
+      <div class="row"><span>İşlemci</span><span><b id="tc">66</b> °C</span></div>
+      <div class="row"><span>Ekran kartı</span><span><b id="tg">52</b> °C</span></div>
+    </div>
+  </div>
+
+  <div class="col r">
+    <div class="icons">
+      <div class="ic" data-k="disk" data-choice="ikon-disk" title="Disk"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="1.5"/><circle cx="17" cy="12" r="1.2"/><path d="M6 12h6"/></svg></div>
+      <div class="ic" data-k="cpu" data-choice="ikon-islemci" title="İşlemci"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg></div>
+      <div class="ic" data-k="gpu" data-choice="ikon-ekran" title="Ekran kartı"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="11" rx="1"/><circle cx="15.5" cy="11.5" r="3"/><path d="M6 9.5h4M6 13.5h4M5 17v2M9 17v2"/></svg></div>
+      <div class="ic" data-k="ram" data-choice="ikon-bellek" title="Bellek"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="9" rx="1"/><path d="M6 10v3M9.5 10v3M13 10v3M16.5 10v3M5 16v2M19 16v2"/></svg></div>
+    </div>
+    <div class="spec" data-k="cpu"><b>İşlemci</b><span>Intel Core i7-10750H · 2,60 GHz<br>6 çekirdek, 12 iş parçacığı</span></div>
+    <div class="spec" data-k="gpu"><b>Ekran kartı</b><span>NVIDIA GeForce GTX 1650 Ti<br>Intel UHD Graphics</span></div>
+    <div class="spec" data-k="ram"><b>Bellek</b><span>32 GB (31,8 GB kullanılabilir)</span></div>
+    <div class="spec" data-k="disk"><b>Disk</b><span>Kingston KC3000 · 1 TB SSD</span></div>
+    <div class="top" id="top"></div>
+  </div>
+
+  <div class="hero">
+    <svg viewBox="0 0 420 420" id="g"></svg>
+    <div class="center" id="center">
+      <div class="k" id="ck">İşlemci</div>
+      <div class="n"><span id="cn">20</span><u id="cu">%</u></div>
+      <div class="t" id="ct"><span class="heat" id="heat"></span><span id="ctv">66 °C</span></div>
+      <div class="s" id="cs">Intel Core i7-10750H</div>
+    </div>
+  </div>
+
+  <div class="plat"><svg viewBox="0 0 1000 236" preserveAspectRatio="xMidYMax meet" id="p"></svg></div>
+
+  <div class="cta"><span>brisk hazır: <b>39 GB</b> · <b>9 uygulama</b> · <b>7 ayar</b></span><button data-choice="hepsini-yap">Hepsini yap</button></div>
+</div>
+<p class="foot">Yer aç, Hızlandır ve Gizlilik bu taslakta yok, onları ayrıca konuşacağız. Soldaki rozetler (39 GB, 9, 7) ve sağ alttaki "Hepsini yap" şeridi benim tahminim.</p>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+function pt(r,d){const a=(d-90)*Math.PI/180;return[210+r*Math.cos(a),210+r*Math.sin(a)]}
+function arc(r,a0,a1){const[x0,y0]=pt(r,a0),[x1,y1]=pt(r,a1);const sw=((a1-a0)%360+360)%360;return`M${x0} ${y0}A${r} ${r} 0 ${sw>180?1:0} 1 ${x1} ${y1}`}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* rain */
+(()=>{const r=$('#rain'),k='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワ0123456789';
+for(let i=0;i<26;i++){const s=document.createElement('span');let t='';for(let j=0;j<40;j++)t+=k[Math.random()*k.length|0]+'\n';
+s.textContent=t;s.style.left=(i*3.9+Math.random()*2)+'%';s.style.animationDuration=(9+Math.random()*12)+'s';s.style.animationDelay=(-Math.random()*20)+'s';r.appendChild(s)}})();
+
+/* data (hardware names are real; live numbers are sample) */
+const M={
+ cpu:{name:'İşlemci',v:20,t:66,sub:'Intel Core i7-10750H',top:[['Claude Code','9 %'],['Google Chrome','6 %'],['Visual Studio Code','4 %']]},
+ ram:{name:'Bellek',v:58,sub:'18,4 / 31,8 GB kullanılıyor',top:[['Visual Studio Code','5,6 GB'],['Claude Code','2,9 GB'],['Wispr Flow','634 MB']]},
+ gpu:{name:'Ekran kartı',v:20,t:52,sub:'NVIDIA GeForce GTX 1650 Ti',top:[['Google Chrome','8 %'],['LivelyWallpaper','6 %'],['Masaüstü (dwm)','4 %']]}
+};
+const ORDER=['cpu','gpu','ram'];            // on the floor: front, right, left
+let sel='cpu',rot=0,lit=0,busy=false;
+
+/* gauge */
+const g=$('#g');
+const rings=el('g',{class:'rings'},g);
+const drift=el('g',{class:'drift'},rings);
+el('path',{d:arc(200,18,300),stroke:'#5fd4e8','stroke-width':1.6,fill:'none',opacity:.45},drift);
+el('path',{d:arc(200,322,8),stroke:'#e8fbff','stroke-width':3.2,fill:'none','stroke-linecap':'round'},drift);
+el('path',{d:arc(208,120,160),stroke:'#5fd4e8','stroke-width':1,fill:'none',opacity:.35},drift);
+for(let i=0;i<72;i++){const d=i*5,L=i%6===0?16:7,[x0,y0]=pt(182-L,d),[x1,y1]=pt(182,d);el('line',{x1:x0,y1:y0,x2:x1,y2:y1,stroke:'#9fd8e6','stroke-width':i%6===0?1.6:1,opacity:i%6===0?.7:.35},rings)}
+[45,135,225,315].forEach(d=>{const[x0,y0]=pt(116,d),[x1,y1]=pt(160,d);el('line',{x1:x0,y1:y0,x2:x1,y2:y1,stroke:'#9fd8e6','stroke-width':1,opacity:.45},rings)});
+[0,90,180,270].forEach(d=>{const[x0,y0]=pt(150,d),[x1,y1]=pt(162,d);el('line',{x1:x0,y1:y0,x2:x1,y2:y1,stroke:'#9fd8e6','stroke-width':1,opacity:.35},rings)});
+el('circle',{cx:210,cy:210,r:112,stroke:'#9fd8e6','stroke-width':1,fill:'none',opacity:.35},rings);
+el('circle',{cx:210,cy:210,r:120,stroke:'#9fd8e6','stroke-width':.8,fill:'none',opacity:.2,'stroke-dasharray':'2 6'},rings);
+el('circle',{cx:210,cy:210,r:105,fill:'rgba(5,20,28,.55)',stroke:'none'},g);
+const SEG=30,segs=[];                      // value bar: bottom of the left side, climbing to the top
+for(let i=0;i<SEG;i++){const d=182+i*(176/(SEG-1)),[x0,y0]=pt(130,d),[x1,y1]=pt(148,d);segs.push(el('line',{x1:x0,y1:y0,x2:x1,y2:y1,'stroke-width':5,'stroke-linecap':'butt'},g))}
+function paintSegs(n){segs.forEach((s,i)=>{const on=i<n;s.setAttribute('stroke',on?(i>=SEG*.8?'#f0b45a':'#f2fbff'):'rgba(95,212,232,.13)')})}
+
+/* center */
+function center(k,v){const m=M[k];$('#ck').textContent=m.name;$('#cn').textContent=Math.round(v);$('#cs').textContent=m.sub;
+ const t=$('#ct');if(m.t){t.style.visibility='visible';$('#ctv').textContent=m.t+' °C';$('#heat').className='heat'+(m.t<58?' cool':'')}else t.style.visibility='hidden'}
+function side(k){$$('.spec').forEach(s=>s.classList.toggle('on',s.dataset.k===k));$$('.ic').forEach(s=>s.classList.toggle('on',s.dataset.k===k));
+ if(!M[k])return;const top=$('#top');top.classList.add('fade');
+ setTimeout(()=>{top.innerHTML='<h4>Şu an en çok kullanan</h4>'+M[k].top.map(([a,b])=>`<div class="row"><span>${a}</span><span>${b}</span></div>`).join('');top.classList.remove('fade')},220)}
+
+/* floor carousel */
+const p=$('#p'),CX=500,CY=96,RX=330,RY=58;
+el('ellipse',{cx:CX,cy:CY,rx:RX,ry:RY,fill:'none',stroke:'#5fd4e8','stroke-width':1.2,opacity:.45},p);
+el('ellipse',{cx:CX,cy:CY,rx:RX+14,ry:RY+5,fill:'none',stroke:'#5fd4e8','stroke-width':.8,opacity:.18},p);
+[150,112,74].forEach((r,i)=>el('ellipse',{cx:CX,cy:CY,rx:r,ry:r*.2,fill:i===2?'rgba(95,212,232,.10)':'none',stroke:'#5fd4e8','stroke-width':i===0?1.6:1,opacity:.6-i*.12},p));
+const beam=el('path',{fill:'url(#bm)',opacity:.5},p);
+const defs=el('defs',{},p),lg=el('linearGradient',{id:'bm',x1:0,y1:0,x2:0,y2:1},defs);
+el('stop',{offset:0,'stop-color':'#5fd4e8','stop-opacity':.0},lg);el('stop',{offset:1,'stop-color':'#5fd4e8','stop-opacity':.28},lg);
+const links={},sats={};
+ORDER.forEach(k=>{links[k]=el('path',{fill:'none',stroke:'#5fd4e8','stroke-width':1.2,opacity:.55,class:'flow'},p)});
+ORDER.forEach(k=>{const s=el('g',{class:'sat','data-choice':'uydu-'+k},p);
+ el('ellipse',{class:'halo',rx:58,ry:15,fill:'rgba(95,212,232,.12)'},s);
+ el('ellipse',{class:'disc',rx:42,ry:11,fill:'rgba(6,24,32,.9)',stroke:'#9fe6f4','stroke-width':1.6},s);
+ el('ellipse',{rx:26,ry:6.5,fill:'none',stroke:'#5fd4e8','stroke-width':1.2,opacity:.8},s);
+ el('ellipse',{rx:10,ry:2.6,fill:'#5fd4e8',opacity:.55},s);
+ const tg=el('g',{class:'tag'},s);
+ el('rect',{x:-62,y:-46,width:124,height:24,rx:2,fill:'rgba(4,16,22,.75)',stroke:'#5fd4e8','stroke-width':1,opacity:.9},tg);
+ el('path',{class:'ar',d:'M-5 -22L0 -16L5 -22',fill:'rgba(4,16,22,.75)',stroke:'#5fd4e8','stroke-width':1},tg);
+ const tx=el('text',{y:-29,'text-anchor':'middle','font-size':14,fill:'#dfeef4','font-family':'Segoe UI, system-ui'},tg);tx.textContent='';
+ sats[k]={g:s,t:tx,tag:tg};s.addEventListener('click',()=>pick(k))});
+const base={cpu:0,gpu:120,ram:240};
+function placeFloor(){ORDER.forEach(k=>{const th=(base[k]+rot)*Math.PI/180,x=CX+RX*Math.sin(th),y=CY+RY*Math.cos(th),d=(Math.cos(th)+1)/2,sc=.72+.38*d;
+ const s=sats[k];s.g.setAttribute('transform',`translate(${x} ${y}) scale(${sc})`);s.g.style.opacity=.55+.45*d;
+ links[k].setAttribute('d',`M${CX} ${CY}Q${(CX+x)/2} ${Math.max(CY,y)+18} ${x} ${y}`);
+ const front=d>.97;s.tag.setAttribute('transform',front?'translate(0 76)':'');s.tag.querySelector('.ar').style.display=front?'none':'';s.t.setAttribute('font-weight',front?600:400)});
+ ORDER.map(k=>sats[k].g).sort((a,b)=>parseFloat(a.style.opacity)-parseFloat(b.style.opacity)).forEach(n=>p.appendChild(n));
+ beam.setAttribute('d',`M${CX-58} ${CY-6}L${CX+58} ${CY-6}L${CX+30} ${CY+RY}L${CX-30} ${CY+RY}Z`)}
+function tags(){ORDER.forEach(k=>sats[k].t.textContent=`${Math.round(M[k].v)} %  ${M[k].name}`)}
+
+/* switching */
+function pick(k){if(busy||k===sel){side(k in M?k:sel);return}busy=true;
+ let delta=((-base[k])-rot)%360;delta=((delta%360)+540)%360-180;      // shortest way round
+ const r0=rot,r1=rot+delta,t0=performance.now(),from=lit,to=Math.round(M[k].v/100*SEG);
+ $('#center').classList.add('out');
+ rings.style.transform=`rotate(${(parseFloat(rings.dataset.r||0)+(delta>0?-120:120))}deg)`;rings.dataset.r=parseFloat(rings.dataset.r||0)+(delta>0?-120:120);
+ setTimeout(()=>{sel=k;center(k,0);$('#center').classList.remove('out')},300);
+ side(k);
+ (function step(now){const t=Math.min(1,(now-t0)/1000),e=ease(t);rot=r0+(r1-r0)*e;placeFloor();
+  const n=t<.45?Math.round(from*(1-t/.45)):Math.round(to*Math.min(1,(t-.45)/.55));lit=n;paintSegs(n);
+  if(t>.3)$('#cn').textContent=Math.round(M[k].v*Math.min(1,(t-.3)/.7));
+  if(t<1)requestAnimationFrame(step);else{rot=((r1%360)+360)%360;busy=false;placeFloor()}})(t0)}
+function specOnly(k){$$('.spec').forEach(s=>s.classList.toggle('on',s.dataset.k===k));$$('.ic').forEach(s=>s.classList.toggle('on',s.dataset.k===k))}
+$$('.ic').forEach(i=>i.addEventListener('click',()=>specOnly(i.dataset.k)));   // icons only light up the hardware info; the gauge turns only from the floor
+
+/* live jitter */
+const J=(v,a,lo,hi)=>Math.max(lo,Math.min(hi,v+(Math.random()*2-1)*a));
+let up=83,dn=112;
+setInterval(()=>{M.cpu.v=J(M.cpu.v,4,9,38);M.gpu.v=J(M.gpu.v,3,12,30);M.ram.v=J(M.ram.v,.6,56,61);M.cpu.t=Math.round(J(M.cpu.t,1.5,58,72));M.gpu.t=Math.round(J(M.gpu.t,1,49,56));
+ up=Math.round(J(up,25,20,240));dn=Math.round(J(dn,60,40,900));$('#upv').textContent=up;$('#dnv').textContent=dn;$('#tc').textContent=M.cpu.t;$('#tg').textContent=M.gpu.t;
+ tags();if(!busy){center(sel,M[sel].v);lit=Math.round(M[sel].v/100*SEG);paintSegs(lit)}},1000);
+
+center('cpu',M.cpu.v);side('cpu');tags();placeFloor();lit=Math.round(M.cpu.v/100*SEG);paintSegs(lit);
+</script>
+</body>
+</html>
