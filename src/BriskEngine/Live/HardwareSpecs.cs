@@ -71,13 +71,26 @@ public sealed class RealSpecsProbe : ISpecsProbe
 
     /// What Task Manager calls usable: installed memory minus what firmware
     /// and devices reserve.
-    private static long? UsableRam()
+    private static long? UsableRam() => MemoryStatus.Read()?.Total;
+}
+
+/// Physical memory as GlobalMemoryStatusEx reports it: the total Windows can
+/// use, and what is available now. Shared by the spec block (the total) and
+/// the live monitor (in use = total - available, Task Manager's "In use").
+internal readonly record struct MemoryReading(long Total, long Available);
+
+internal static class MemoryStatus
+{
+    /// null when the call fails or the total is not a positive size.
+    internal static MemoryReading? Read()
     {
         try
         {
             var status = new MemoryStatusEx { dwLength = (uint)Marshal.SizeOf<MemoryStatusEx>() };
             if (!GlobalMemoryStatusEx(ref status)) return null;
-            return status.ullTotalPhys is > 0 and <= long.MaxValue ? (long)status.ullTotalPhys : null;
+            if (status.ullTotalPhys is 0 or > long.MaxValue) return null;
+            var available = (long)Math.Min(status.ullAvailPhys, status.ullTotalPhys);
+            return new MemoryReading((long)status.ullTotalPhys, available);
         }
         catch (Exception)
         {
