@@ -64,6 +64,7 @@ brisk must work on any Windows PC of any brand (his `briskhakkinda.txt`, point 1
   - motion at 20 fps or less, rain in four lanes, glow without blur;
   - the pixel fire is a small canvas (about 40×14 cells) capped at 20 fps;
   - honour the Windows "show animations" setting and the existing "moving background" setting: reduced motion gives static frames and instant number changes.
+    - *Revised 2026-11-08 (ruling R30):* brisk follows its own "Hareketli arka plan" setting instead of Windows' "show animations". That one switch covers the rain, the rings, the glow, Home's turn and the counting numbers. The reason: brisk's own `speed.animations` row (Hızlandır, on by default in Hepsini yap) turns the Windows flag off, so honouring that flag would freeze the stage after every Hepsini yap.
 - **Localization:** all strings go through `Loc`, in TR and EN. The Turkish strings in this doc and the mockups are the final TR copy. EN gets plain equivalents.
 - **Tests:** the existing suite stays green. Engine changes (new targets, level mapping, `--group`) get unit tests. View models get tests where the 0.11.0 code already has them.
 - **Process:**

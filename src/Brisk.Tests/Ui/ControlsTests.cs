@@ -85,6 +85,60 @@ public sealed class ControlsTests
         });
     }
 
+    /// Ruling R30: one motion switch for the whole stage, brisk's own
+    /// "Hareketli arka plan". Windows' "show animations" is not an input of
+    /// the window's clock (AmbientClock.ForStage): brisk's speed.animations
+    /// row turns that flag off, so whatever it says on this machine — off
+    /// after a Hepsini yap — the setting alone decides. On: the rain, the
+    /// spinning rings, the gauge sweep, the counting number and Home's turn
+    /// all move. Off: static frames, every value lands at once.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Moving_background_setting_alone_decides_the_stage_motion(bool movingBackground)
+    {
+        SnapshotRenderer.OnUiThread(() =>
+        {
+            var clock = AmbientClock.ForStage(() => movingBackground, renderTier: () => 2);
+            AmbientClock.Install(clock);
+            try
+            {
+                clock.SetVisible(true);
+                var atmosphere = new Atmosphere(clock);
+                var arc = new Ellipse { Width = 100, Height = 100 };
+                Ambient.SetMotion(arc, AmbientMotion.Spin);
+                Ambient.Attach(arc, clock);
+                var gauge = new TickGauge { Glide = true };
+                var numeral = new HeroNumeral { Kind = HeroKind.Percent, Culture = Tr, Glide = true };
+                var floor = new FloorCarousel();
+                var rings = new Turntable();
+
+                gauge.Fraction = 0.58;
+                numeral.Percent = 58;
+                floor.Angle = -120;
+                rings.Angle = 120;
+
+                Assert.Equal(movingBackground, Ambient.Moving);
+                Assert.Equal(movingBackground, atmosphere.MotionRunning);
+                Assert.Equal(movingBackground, (arc.RenderTransform as RotateTransform)?.HasAnimatedProperties ?? false);
+                Assert.Equal(movingBackground, gauge.HasAnimatedProperties);
+                Assert.Equal(movingBackground, numeral.HasAnimatedProperties);
+                Assert.Equal(movingBackground, floor.HasAnimatedProperties);
+                Assert.Equal(movingBackground, rings.ShownAngle != 120);
+                if (!movingBackground)
+                {
+                    Assert.Equal(0.58, gauge.ShownFraction);
+                    Assert.Equal("58", numeral.Number);
+                    Assert.Equal(-120, floor.ShownAngle);
+                }
+            }
+            finally
+            {
+                AmbientClock.Install(new AmbientClock(() => true));
+            }
+        });
+    }
+
     [Fact]
     public void Atmosphere_HasTheMockupsRainColumns_AndStopsWhenUndecorated()
     {

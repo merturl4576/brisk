@@ -43,11 +43,13 @@ public static class Ambient
     }
 
     /// Whether a data-driven change may animate (a number counting, a gauge
-    /// turning): the ambient clock runs (window visible, the moving
-    /// background setting on, a GPU-composed window) and Windows' own "show
-    /// animations" is on. Otherwise the change lands at once — reduced
-    /// motion is static frames and instant numbers.
-    public static bool Moving => AmbientClock.Instance.IsActive && SystemParameters.ClientAreaAnimation;
+    /// turning): the ambient clock runs (window visible, the "Hareketli arka
+    /// plan" setting on, a GPU-composed window), the same switch as the rain.
+    /// Otherwise the change lands at once — reduced motion is static frames
+    /// and instant numbers. Windows' "show animations" is not asked (ruling
+    /// R30): brisk's own speed.animations row turns it off, and the stage
+    /// must not freeze after Hepsini yap.
+    public static bool Moving => AmbientClock.Instance.IsActive;
 
     private static void Start(FrameworkElement element)
     {
