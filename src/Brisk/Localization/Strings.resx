@@ -304,7 +304,7 @@
   <data name="action.space.shaders.title" xml:space="preserve"><value>Game shader caches</value></data>
   <data name="action.space.shaders.cost" xml:space="preserve"><value>Games may stutter on first launch.</value></data>
   <data name="action.space.hibernation.title" xml:space="preserve"><value>Hibernation file</value></data>
-  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Fast startup turns off.</value></data>
+  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Fast startup off · can re-enable</value></data>
   <data name="action.space.hibernation.name" xml:space="preserve"><value>hiberfil.sys</value></data>
   <data name="action.space.hibernation.cost-laptop" xml:space="preserve"><value>Open work lost if battery dies.</value></data>
   <data name="action.space.windows-old.title" xml:space="preserve"><value>Old Windows copy</value></data>

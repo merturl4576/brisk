@@ -35,7 +35,7 @@ public sealed class ActionPlanBuilder
         new(row.Id, row.Group, row.TitleKey, row.Title, costKey ?? row.CostKey, cost ?? row.Cost,
             row.NameKey, row.WindowsName, bytes, defaultOn ?? row.DefaultOn, row.NeedsRestart,
             row.NeedsAdmin, row.Reversible, row.LinkKind, row.LinkIds,
-            files ?? Array.Empty<ActionFile>());
+            files ?? Array.Empty<ActionFile>(), row.Level, row.Lost);
 
     /// The rows that need no cleanup scan; the window shows them first.
     public IReadOnlyList<ActionGroup> BuildFast() => new[]
@@ -125,8 +125,9 @@ public sealed class ActionPlanBuilder
                 {
                     var bytes = Target("hibernation-file")?.TotalBytes ?? 0;
                     if (bytes == 0) break;
+                    // Unticked everywhere (MID); a laptop is told what it risks.
                     yield return _ctx.Powercfg.HasBattery()
-                        ? ItemFrom(row, bytes, defaultOn: false,
+                        ? ItemFrom(row, bytes,
                             cost: ActionCatalog.HibernationLaptopCost, costKey: ActionCatalog.HibernationLaptopCostKey)
                         : ItemFrom(row, bytes);
                     break;

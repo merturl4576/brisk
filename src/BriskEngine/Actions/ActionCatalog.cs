@@ -3,9 +3,11 @@ using System.Linq;
 
 namespace BriskEngine.Actions;
 
+/// Level is set on every Space row and on no other; Lost marks a Space row
+/// whose deletion cannot be brought back (the amber "can't be undone").
 public sealed record RowDef(string Id, ActionGroupKind Group, string Title, string? Cost,
     string? WindowsName, bool DefaultOn, bool NeedsRestart, bool NeedsAdmin, bool Reversible,
-    ActionLinkKind LinkKind, IReadOnlyList<string> LinkIds)
+    ActionLinkKind LinkKind, IReadOnlyList<string> LinkIds, SpaceLevel? Level = null, bool Lost = false)
 {
     public string TitleKey => $"action.{Id}.title";
     public string? CostKey => Cost is null ? null : $"action.{Id}.cost";
@@ -21,37 +23,48 @@ public static class ActionCatalog
         ActionLinkKind kind = ActionLinkKind.Rules, string[]? links = null) =>
         new(id, g, title, cost, name, on, restart, admin, reversible, kind, links ?? System.Array.Empty<string>());
 
+    /// A Space row. Its level is its default: only MIN is ticked (spec: the
+    /// default selection is MIN). `lost` = deleting it cannot be brought
+    /// back. Never reversible: Yer aç has no undo.
+    private static RowDef S(string id, SpaceLevel level, string title, string? cost, string? name,
+        string[] links, bool lost = false, bool admin = false, ActionLinkKind kind = ActionLinkKind.Cleanup) =>
+        new(id, Space, title, cost, name, DefaultOn: level == SpaceLevel.Min, NeedsRestart: false,
+            NeedsAdmin: admin, Reversible: false, kind, links, level, lost);
+
     private const ActionGroupKind Space = ActionGroupKind.Space;
     private const ActionGroupKind Speed = ActionGroupKind.Speed;
     private const ActionGroupKind Privacy = ActionGroupKind.Privacy;
-    private const ActionLinkKind Clean = ActionLinkKind.Cleanup;
+    private const SpaceLevel Min = SpaceLevel.Min;
+    private const SpaceLevel Mid = SpaceLevel.Mid;
+    private const SpaceLevel Max = SpaceLevel.Max;
 
     public static IReadOnlyList<RowDef> Rows { get; } = new[]
     {
-        // ---- Space: buckets. component-store stays last: DISM takes minutes.
-        R("space.caches", Space, "Caches and temporary files", null, null, reversible: false, kind: Clean,
+        // ---- Space: buckets, sorted MIN → MID → MAX. MIN regenerates or is
+        // never needed again, MID has a small cost, MAX includes what cannot
+        // come back. component-store stays last in caches: DISM takes minutes.
+        S("space.caches", Min, "Caches and temporary files", null, null,
             links: new[] { "user-temp", "chrome-cache", "edge-cache", "firefox-cache", "brave-cache",
                 "opera-cache", "thumbnail-cache", "discord-cache", "spotify-storage", "teams-cache",
                 "slack-cache", "vscode-cache", "whatsapp-cache", "telegram-media-cache", "crash-dumps",
                 "wer-reports", "wer-system", "windows-temp", "windows-update-cache",
                 "delivery-optimization", "component-store" }),
-        R("space.developer", Space, "Developer caches", "Downloads again later.", null,
-            reversible: false, kind: Clean,
+        S("space.developer", Min, "Developer caches", "Downloads again later.", null,
             links: new[] { "npm-cache", "pip-cache", "yarn-cache", "pnpm-store", "nuget-http-cache",
                 "cargo-registry-cache", "gradle-caches" }),
-        R("space.shaders", Space, "Game shader caches", "Games may stutter on first launch.", null,
-            on: false, reversible: false, kind: Clean,
+        // Switching hibernation back on is a Settings fact, not brisk's undo.
+        S("space.hibernation", Mid, "Hibernation file", "Fast startup off · can re-enable", "hiberfil.sys",
+            admin: true, kind: ActionLinkKind.Rules, links: new[] { "hibernation" }),
+        S("space.shaders", Mid, "Game shader caches", "Games may stutter on first launch.", null,
             links: new[] { "nvidia-shader-cache", "amd-shader-cache", "d3d-shader-cache" }),
-        R("space.hibernation", Space, "Hibernation file", "Fast startup turns off.", "hiberfil.sys",
-            admin: true, links: new[] { "hibernation" }),
-        R("space.windows-old", Space, "Old Windows copy", "No going back to old Windows.", "Windows.old",
-            admin: true, reversible: false, kind: Clean, links: new[] { "windows-old" }),
-        R("space.downloads", Space, "Installers in Downloads", "Can't be undone.", null,
-            reversible: false, kind: Clean, links: new[] { "old-installers" }),
-        R("space.docker", Space, "Docker's unused data", "Stopped containers are deleted.", "docker system prune",
-            on: false, reversible: false, kind: Clean, links: new[] { "docker-prune" }),
-        R("space.recycle-bin", Space, "Recycle Bin", null, null, reversible: false, kind: Clean,
+        S("space.downloads", Mid, "Installers in Downloads", "Can't be undone.", null, lost: true,
+            links: new[] { "old-installers" }),
+        S("space.recycle-bin", Mid, "Recycle Bin", null, null, lost: true,
             links: new[] { "empty-recycle-bin" }),
+        S("space.windows-old", Max, "Old Windows copy", "No going back to old Windows.", "Windows.old",
+            lost: true, admin: true, links: new[] { "windows-old" }),
+        S("space.docker", Max, "Docker's unused data", "Stopped containers are deleted.", "docker system prune",
+            lost: true, links: new[] { "docker-prune" }),
 
         // ---- Speed: fixed switches (startup entries are added per machine).
         R("speed.power-mode", Speed, "Full power when plugged in", "The fan may spin more.",

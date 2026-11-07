@@ -188,4 +188,73 @@ public sealed class CliActionTests
         }
         finally { Directory.Delete(data, true); }
     }
+
+    /// Spec open item: `brisk run --group speed` printed the whole plan.
+    [Fact]
+    public void Run_group_prints_only_that_group()
+    {
+        var plan = PlanOf(
+            new ActionGroup(ActionGroupKind.Space, new[] { Item("space.caches", 1L << 30) }),
+            new ActionGroup(ActionGroupKind.Speed, new[] { Item("speed.animations") }));
+        var o = new StringWriter();
+
+        Program.PrintPlan(plan, o, ActionSelection.Default(plan).Only(ActionGroupKind.Speed, plan),
+            ActionGroupKind.Speed);
+
+        var text = o.ToString();
+        Assert.DoesNotContain("Free up space", text);
+        Assert.DoesNotContain("Caches and temporary files", text);
+        Assert.DoesNotContain("several minutes", text);
+        Assert.Contains("Speed up", text);
+        Assert.Contains("[x] Window opening animations", text);
+    }
+
+    /// `brisk run` without --yes over a scan of temp files posing as the
+    /// named registry targets. Plan only: nothing is deleted.
+    private static string RunPlanText(CliCommand cmd, params string[] targetIds)
+    {
+        var data = Directory.CreateTempSubdirectory("brisk-cli-run-").FullName;
+        try
+        {
+            var targets = targetIds.Select(id =>
+            {
+                var dir = Directory.CreateDirectory(Path.Combine(data, "fake-" + id)).FullName;
+                File.WriteAllBytes(Path.Combine(dir, "x.bin"), new byte[4096]);
+                return BriskEngine.Cleaning.CleanupTargetRegistry.All.Single(t => t.Id == id)
+                    with { PathTemplates = new[] { dir } };
+            }).ToList();
+            var engine = ActionEngine.CreateReal(TestContext.Empty(data), new FakeRunner(), () => false);
+            var scanner = new BriskEngine.Cleaning.Scanner(targets, new FakeRunningApps());
+            var o = new StringWriter();
+            Assert.Equal(0, Program.RunActions(cmd, scanner, engine, o));
+            Assert.Contains("nothing changed", o.ToString());
+            return o.ToString();
+        }
+        finally { Directory.Delete(data, true); }
+    }
+
+    [Fact]
+    public void Run_group_speed_leaves_the_space_rows_out_of_the_printed_plan()
+    {
+        var text = RunPlanText(CliParser.Parse(new[] { "run", "--group", "speed" }), "npm-cache");
+        Assert.DoesNotContain("Free up space", text);
+        Assert.DoesNotContain("Developer caches", text);
+
+        Assert.Contains("[x] Developer caches", RunPlanText(CliParser.Parse(new[] { "run" }), "npm-cache"));
+    }
+
+    [Fact]
+    public void Run_level_ticks_the_rows_up_to_that_level()
+    {
+        string Line(string text, string title) =>
+            text.Split('\n').Single(l => l.Contains(title, StringComparison.Ordinal)).Trim();
+
+        var min = RunPlanText(CliParser.Parse(new[] { "run" }), "npm-cache", "nvidia-shader-cache");
+        Assert.StartsWith("[x] Developer caches", Line(min, "Developer caches"));
+        Assert.StartsWith("[ ] Game shader caches", Line(min, "Game shader caches"));
+
+        var mid = RunPlanText(CliParser.Parse(new[] { "run", "--level", "mid" }), "npm-cache", "nvidia-shader-cache");
+        Assert.StartsWith("[x] Developer caches", Line(mid, "Developer caches"));
+        Assert.StartsWith("[x] Game shader caches", Line(mid, "Game shader caches"));
+    }
 }

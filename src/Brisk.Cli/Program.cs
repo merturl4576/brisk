@@ -584,13 +584,15 @@ public static class Program
 
     /// Ticks what the selection runs (the defaults when there is none), and
     /// names every file a ticked row deletes: a file the user was never
-    /// shown must not be deleted.
-    public static void PrintPlan(ActionPlan plan, TextWriter o, ActionSelection? selection = null)
+    /// shown must not be deleted. `only` prints that group alone.
+    public static void PrintPlan(ActionPlan plan, TextWriter o, ActionSelection? selection = null,
+        ActionGroupKind? only = null)
     {
         selection ??= ActionSelection.Default(plan);
+        var shown = plan.Groups.Where(g => only is null || g.Kind == only).ToList();
         o.WriteLine();
         o.WriteLine("One click (brisk run --yes):");
-        foreach (var group in plan.Groups)
+        foreach (var group in shown)
         {
             o.WriteLine($"  {Groupname(group.Kind)}");
             foreach (var item in group.Items)
@@ -603,7 +605,8 @@ public static class Program
                     o.WriteLine($"          {Path.GetFileName(f.Path)}  {Fmt.Bytes(f.Bytes)}");
             }
         }
-        if (plan.Items.Any(i => selection.RowIds.Contains(i.Id) && i.LinkIds.Contains("component-store")))
+        if (shown.SelectMany(g => g.Items)
+            .Any(i => selection.RowIds.Contains(i.Id) && i.LinkIds.Contains("component-store")))
             o.WriteLine("  The Windows update cleanup runs last and can take several minutes. Leave this window open.");
     }
 
@@ -636,19 +639,22 @@ public static class Program
     public static int RunActions(CliCommand cmd, Scanner scanner, ActionEngine engine, TextWriter o)
     {
         var plan = engine.BuildPlan(scanner.Scan());
-        var selection = ActionSelection.Default(plan);
-        if (cmd.Group is { } g)
-            selection = selection.Only(Enum.Parse<ActionGroupKind>(g, ignoreCase: true), plan);
+        // --level is how far Free up space goes (MIN when not given); Speed
+        // and Privacy keep their defaults at every level.
+        var level = cmd.SpaceLevel is { } l ? Enum.Parse<SpaceLevel>(l, ignoreCase: true) : SpaceLevel.Min;
+        var selection = ActionSelection.ForLevel(plan, level, new HashSet<string>());
+        ActionGroupKind? group = cmd.Group is { } g ? Enum.Parse<ActionGroupKind>(g, ignoreCase: true) : null;
+        if (group is { } only) selection = selection.Only(only, plan);
 
         if (!cmd.Yes)
         {
             o.WriteLine("PLAN (nothing changed) — add --yes to apply the ticked rows");
-            PrintPlan(plan, o, selection);
+            PrintPlan(plan, o, selection, group);
             return 0;
         }
 
         // The run shows what it acts on before it acts.
-        PrintPlan(plan, o, selection);
+        PrintPlan(plan, o, selection, group);
         o.WriteLine();
         // Behind --yes, and only when Space is in the run: processing the
         // queue deletes the caches whose apps have closed.
@@ -736,6 +742,7 @@ public static class Program
         Console.WriteLine("    --target <id>            clean a single target by id (see 'brisk targets')");
         Console.WriteLine("    --yes                    actually delete (otherwise print plan)");
         Console.WriteLine("  run                        one click: free space, speed up, privacy");
+        Console.WriteLine("    --level <min|mid|max>    how far Free up space goes (default min)");
         Console.WriteLine("    --group <space|speed|privacy>  only that group");
         Console.WriteLine("    --yes                    apply (without it: show the plan, change nothing)");
         Console.WriteLine("  undo                       undo the latest run");

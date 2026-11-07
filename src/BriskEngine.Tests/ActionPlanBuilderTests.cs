@@ -111,14 +111,17 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal("Games may stutter on first launch.", row.Cost);
     }
 
+    /// MID since the monitor GUI wave, so unticked everywhere; a laptop
+    /// still gets the battery warning as its cost.
     [Fact]
-    public void Build_Hibernation_TickedOnADesktop_UntickedOnALaptop()
+    public void Build_Hibernation_IsMid_AndALaptopGetsTheBatteryCost()
     {
         var desktop = Make();
         ((FakePowercfg)desktop.Ctx.Powercfg).Battery = false;
         var row = Row(desktop.Builder.Build(Scan(T("hibernation-file", 13_000)), Now), "space.hibernation")!;
-        Assert.True(row.DefaultOn);
-        Assert.Equal("Fast startup turns off.", row.Cost);
+        Assert.False(row.DefaultOn);
+        Assert.Equal(SpaceLevel.Mid, row.Level);
+        Assert.Equal("Fast startup off · can re-enable", row.Cost);
 
         var laptop = Make();
         ((FakePowercfg)laptop.Ctx.Powercfg).Battery = true;
@@ -135,13 +138,13 @@ public sealed class ActionPlanBuilderTests
         var scan = Scan(new TargetScanResult(target, new[]
         {
             new ResolvedItem("old-installers", @"C:\Users\x\Downloads\a.exe", 100, Now.AddDays(-60)),
-            new ResolvedItem("old-installers", @"C:\Users\x\Downloads\b.iso", 900, Now.AddDays(-90)),
+            new ResolvedItem("old-installers", @"C:\Users\x\Downloads\b.msi", 900, Now.AddDays(-90)),
         }, null));
 
         var row = Row(kit.Builder.Build(scan, Now), "space.downloads")!;
 
         Assert.Equal(1000, row.Bytes);
-        Assert.Equal(@"C:\Users\x\Downloads\b.iso", row.Files[0].Path);
+        Assert.Equal(@"C:\Users\x\Downloads\b.msi", row.Files[0].Path);
         Assert.Equal(2, row.Files.Count);
     }
 
@@ -195,5 +198,128 @@ public sealed class ActionPlanBuilderTests
         kit.Ui.Minimize = false;
         kit.Ui.ClientArea = false;
         Assert.Null(Row(kit.Builder.Build(Scan(), Now), "speed.animations"));
+    }
+
+    // ---- Space levels (monitor GUI wave): MIN regenerates, MID costs a
+    // little, MAX includes what cannot come back. Each level includes the
+    // ones below it, and only MIN is ticked by default.
+
+    [Fact]
+    public void Every_space_row_has_a_level_and_no_other_row_does()
+    {
+        Assert.All(ActionCatalog.Rows.Where(r => r.Group == ActionGroupKind.Space),
+            r => Assert.True(r.Level is not null, $"{r.Id} has no level"));
+        Assert.All(ActionCatalog.Rows.Where(r => r.Group != ActionGroupKind.Space), r =>
+        {
+            Assert.True(r.Level is null, $"{r.Id} is not a Space row but has a level");
+            Assert.False(r.Lost, $"{r.Id} is not a Space row but is marked lost");
+        });
+    }
+
+    [Theory]
+    [InlineData("space.caches", SpaceLevel.Min, false)]
+    [InlineData("space.developer", SpaceLevel.Min, false)]
+    [InlineData("space.hibernation", SpaceLevel.Mid, false)]
+    [InlineData("space.shaders", SpaceLevel.Mid, false)]
+    [InlineData("space.downloads", SpaceLevel.Mid, true)]
+    [InlineData("space.recycle-bin", SpaceLevel.Mid, true)]
+    [InlineData("space.windows-old", SpaceLevel.Max, true)]
+    [InlineData("space.docker", SpaceLevel.Max, true)]
+    public void Space_rows_carry_the_spec_level_and_only_min_is_on(string id, SpaceLevel level, bool lost)
+    {
+        var row = ActionCatalog.Find(id);
+        Assert.Equal(level, row.Level);
+        Assert.Equal(lost, row.Lost);
+        Assert.Equal(level == SpaceLevel.Min, row.DefaultOn);
+    }
+
+    /// Spec, undo model: hibernation can be switched back on in Settings,
+    /// but brisk does not offer it as undo.
+    [Fact]
+    public void Hibernation_is_not_offered_as_undo() =>
+        Assert.False(ActionCatalog.Find("space.hibernation").Reversible);
+
+    [Fact]
+    public void Build_SpaceItemsCarryTheirRowsLevelAndLostFlag()
+    {
+        var kit = Make();
+        kit.Space.Bin = 700;
+        var plan = kit.Builder.Build(Scan(T("user-temp", 100), T("nvidia-shader-cache", 200)), Now);
+
+        Assert.Equal(SpaceLevel.Min, Row(plan, "space.caches")!.Level);
+        Assert.Equal(SpaceLevel.Mid, Row(plan, "space.shaders")!.Level);
+        Assert.False(Row(plan, "space.shaders")!.Lost);
+        Assert.True(Row(plan, "space.recycle-bin")!.Lost);
+        Assert.Null(Row(plan, "speed.animations")!.Level);
+    }
+
+    private static ActionPlan PlanOf(params ActionItem[] items) => new(Now,
+        items.GroupBy(i => i.Group).Select(g => new ActionGroup(g.Key, g.ToList())).ToList(), Scan());
+
+    private static ActionItem Item(string id, long? bytes = null) =>
+        ActionPlanBuilder.ItemFrom(ActionCatalog.Find(id), bytes);
+
+    private static readonly IReadOnlySet<string> NoSkips = new HashSet<string>();
+
+    [Fact]
+    public void Default_selection_ticks_only_min_space_rows()
+    {
+        // Downloads (MID) and Windows.old (MAX) were ticked before levels came.
+        var plan = PlanOf(Item("space.caches", 100), Item("space.downloads", 200), Item("space.windows-old", 300));
+        Assert.Equal(new[] { "space.caches" }, ActionSelection.Default(plan).RowIds);
+    }
+
+    [Fact]
+    public void ForLevel_is_cumulative_and_honours_skips()
+    {
+        var plan = PlanOf(Item("space.caches", 100), Item("space.developer", 100),
+            Item("space.shaders", 200), Item("space.downloads", 200),
+            Item("space.windows-old", 300), Item("space.docker", 300),
+            Item("speed.animations"), Item("speed.vm-platform"), Item("privacy.ads"));
+
+        var mid = ActionSelection.ForLevel(plan, SpaceLevel.Mid,
+            new HashSet<string> { "space.developer" }).RowIds;
+        Assert.Contains("space.caches", mid);
+        Assert.DoesNotContain("space.developer", mid);   // skipped
+        Assert.Contains("space.shaders", mid);
+        Assert.Contains("space.downloads", mid);
+        Assert.DoesNotContain("space.windows-old", mid); // MAX
+        Assert.DoesNotContain("space.docker", mid);
+
+        var max = ActionSelection.ForLevel(plan, SpaceLevel.Max, NoSkips).RowIds;
+        Assert.Contains("space.docker", max);
+        Assert.Contains("space.windows-old", max);
+        Assert.Contains("space.caches", max);
+
+        // Speed and Privacy ride along with their own defaults at every level.
+        foreach (var level in new[] { SpaceLevel.Min, SpaceLevel.Mid, SpaceLevel.Max })
+        {
+            var ids = ActionSelection.ForLevel(plan, level, NoSkips).RowIds;
+            Assert.Contains("speed.animations", ids);
+            Assert.Contains("privacy.ads", ids);
+            Assert.DoesNotContain("speed.vm-platform", ids);
+        }
+        Assert.Equal(ActionSelection.Default(plan).RowIds.OrderBy(i => i),
+            ActionSelection.ForLevel(plan, SpaceLevel.Min, NoSkips).RowIds.OrderBy(i => i));
+    }
+
+    /// Ruling R2: a skip is a skip on every page, not only on Yer aç.
+    [Fact]
+    public void ForLevel_skips_apply_to_speed_and_privacy_rows_too()
+    {
+        var plan = PlanOf(Item("space.caches", 100), Item("speed.animations"), Item("privacy.ads"),
+            Item("privacy.copilot"));
+        var ids = ActionSelection.ForLevel(plan, SpaceLevel.Max,
+            new HashSet<string> { "speed.animations", "privacy.ads" }).RowIds;
+        Assert.Equal(new[] { "privacy.copilot", "space.caches" }, ids.OrderBy(i => i));
+    }
+
+    [Fact]
+    public void ForLevel_keeps_every_listed_file_like_the_default()
+    {
+        var file = new ActionFile(@"C:\Users\x\Downloads\setup.exe", 10, null);
+        var plan = PlanOf(ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.downloads"), 10,
+            files: new[] { file }));
+        Assert.Contains(file.Path, ActionSelection.ForLevel(plan, SpaceLevel.Mid, NoSkips).Files);
     }
 }

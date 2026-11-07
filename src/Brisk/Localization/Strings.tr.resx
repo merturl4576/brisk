@@ -298,24 +298,24 @@
   <data name="readback.on.held.today" xml:space="preserve"><value>Bugün açtın, hâlâ açık</value></data>
   <data name="readback.on.held.yesterday" xml:space="preserve"><value>Dün açtın, hâlâ açık</value></data>
   <data name="readback.on.reverted" xml:space="preserve"><value>Bunu {0} tarihinde açmıştın; şu an yeniden kapalı.</value></data>
-  <data name="action.space.caches.title" xml:space="preserve"><value>Önbellekler ve geçici dosyalar</value></data>
+  <data name="action.space.caches.title" xml:space="preserve"><value>Önbellekler</value></data>
   <data name="action.space.developer.title" xml:space="preserve"><value>Geliştirici önbellekleri</value></data>
   <data name="action.space.developer.cost" xml:space="preserve"><value>Sonra yeniden iner.</value></data>
-  <data name="action.space.shaders.title" xml:space="preserve"><value>Oyun shader önbellekleri</value></data>
-  <data name="action.space.shaders.cost" xml:space="preserve"><value>Oyunlar ilk açılışta takılabilir.</value></data>
+  <data name="action.space.shaders.title" xml:space="preserve"><value>Oyun gölgelendirici önbelleği</value></data>
+  <data name="action.space.shaders.cost" xml:space="preserve"><value>Oyunların ilk açılışı biraz yavaşlar</value></data>
   <data name="action.space.hibernation.title" xml:space="preserve"><value>Hazırda bekletme dosyası</value></data>
-  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Hızlı açılış kapanır.</value></data>
+  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Hızlı başlatma kapanır · geri açılabilir</value></data>
   <data name="action.space.hibernation.name" xml:space="preserve"><value>hiberfil.sys</value></data>
   <data name="action.space.hibernation.cost-laptop" xml:space="preserve"><value>Pil biterse açık işler kaybolur.</value></data>
   <data name="action.space.windows-old.title" xml:space="preserve"><value>Eski Windows kopyası</value></data>
   <data name="action.space.windows-old.cost" xml:space="preserve"><value>Eski Windows'a dönülemez.</value></data>
   <data name="action.space.windows-old.name" xml:space="preserve"><value>Windows.old</value></data>
-  <data name="action.space.downloads.title" xml:space="preserve"><value>İndirilenler'deki kurulum dosyaları</value></data>
+  <data name="action.space.downloads.title" xml:space="preserve"><value>İndirilenler: kurulum dosyaları</value></data>
   <data name="action.space.downloads.cost" xml:space="preserve"><value>Geri alınamaz.</value></data>
   <data name="action.space.docker.title" xml:space="preserve"><value>Docker'ın kullanılmayan verisi</value></data>
   <data name="action.space.docker.cost" xml:space="preserve"><value>Durmuş container'lar silinir.</value></data>
   <data name="action.space.docker.name" xml:space="preserve"><value>docker system prune</value></data>
-  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Geri Dönüşüm Kutusu</value></data>
+  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Geri dönüşüm kutusu</value></data>
   <data name="action.speed.power-mode.title" xml:space="preserve"><value>Şarjdayken tam güç</value></data>
   <data name="action.speed.power-mode.cost" xml:space="preserve"><value>Fan daha çok dönebilir.</value></data>
   <data name="action.speed.power-mode.name" xml:space="preserve"><value>Güç modu: En iyi performans</value></data>

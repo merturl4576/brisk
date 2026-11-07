@@ -5,7 +5,8 @@ namespace Brisk.Cli;
 
 public sealed record CliCommand(string Verb, string? RuleId = null, string? Level = null,
     bool Json = false, bool Yes = false, bool All = false, bool Undo = false,
-    bool Keep = false, string? Target = null, string? Error = null, string? Group = null);
+    bool Keep = false, string? Target = null, string? Error = null, string? Group = null,
+    string? SpaceLevel = null);
 
 public static class CliParser
 {
@@ -14,6 +15,9 @@ public static class CliParser
                 "run", "undo", "receipt", "live" };
     private static readonly HashSet<string> Groups = new() { "space", "speed", "privacy" };
     private static readonly HashSet<string> Levels = new() { "safe", "developer", "deep" };
+    /// `run --level` is the Free up space level; `clean --level` stays the
+    /// cleanup level. Neither verb takes the other's words.
+    private static readonly HashSet<string> SpaceLevels = new() { "min", "mid", "max" };
 
     public static CliCommand Parse(string[] args)
     {
@@ -34,7 +38,9 @@ public static class CliParser
                 case "--keep": cmd = cmd with { Keep = true }; break;
                 case "--rule" when i + 1 < args.Length:
                     cmd = cmd with { RuleId = args[++i] }; break;
-                case "--level" when i + 1 < args.Length && Levels.Contains(args[i + 1]):
+                case "--level" when i + 1 < args.Length && verb == "run" && SpaceLevels.Contains(args[i + 1]):
+                    cmd = cmd with { SpaceLevel = args[++i] }; break;
+                case "--level" when i + 1 < args.Length && verb != "run" && Levels.Contains(args[i + 1]):
                     cmd = cmd with { Level = args[++i] }; break;
                 case "--target" when i + 1 < args.Length:
                     cmd = cmd with { Target = args[++i] }; break;

@@ -62,6 +62,11 @@ public sealed class ActionCatalogTests
         Assert.False(ActionCatalog.Find("privacy.location").DefaultOn);
         Assert.True(ActionCatalog.Find("space.caches").DefaultOn);
         Assert.Equal("component-store", ActionCatalog.Find("space.caches").LinkIds[^1]);
+        // Monitor GUI wave: a Space row is on exactly when it is MIN.
+        Assert.All(ActionCatalog.Rows.Where(r => r.Group == ActionGroupKind.Space),
+            r => Assert.Equal(r.Level == SpaceLevel.Min, r.DefaultOn));
+        foreach (var id in new[] { "space.downloads", "space.recycle-bin", "space.windows-old", "space.hibernation" })
+            Assert.False(ActionCatalog.Find(id).DefaultOn, $"{id} is above MIN, so it starts unticked");
     }
 
     [Fact]

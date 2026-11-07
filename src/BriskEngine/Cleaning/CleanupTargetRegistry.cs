@@ -125,9 +125,9 @@ public static class CleanupTargetRegistry
             new[] { @"%SystemDrive%\hiberfil.sys" }, optIn: true, noBin: true, admin: true),
         T("component-store", "Windows component store (superseded updates)", CleanupLevel.Deep, "System",
             System.Array.Empty<string>(), optIn: true, admin: true),
+        // No *.iso: a disk image is a personal file, never deleted or counted.
         T("old-installers", "Old installers in Downloads", CleanupLevel.Deep, "Downloads",
-            new[] { @"%USERPROFILE%\Downloads\*.exe", @"%USERPROFILE%\Downloads\*.msi",
-                    @"%USERPROFILE%\Downloads\*.iso" },
+            new[] { @"%USERPROFILE%\Downloads\*.exe", @"%USERPROFILE%\Downloads\*.msi" },
             pick: true),
         T("empty-recycle-bin", "Empty Recycle Bin", CleanupLevel.Deep, "System",
             System.Array.Empty<string>(), noBin: true, pick: true),

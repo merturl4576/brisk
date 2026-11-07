@@ -78,6 +78,17 @@ public class CleanupTargetRegistryTests
         Assert.Equal(CleanupLevel.Deep, t.Level);
     }
 
+    /// An .iso is a personal file (monitor GUI wave): never counted, never
+    /// deletable. Before the wave old-installers swept them out of Downloads.
+    [Fact]
+    public void Old_installers_never_takes_an_iso()
+    {
+        var t = CleanupTargetRegistry.All.Single(t => t.Id == "old-installers");
+        Assert.DoesNotContain(t.PathTemplates, p => p.EndsWith(".iso", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(CleanupTargetRegistry.All.SelectMany(x => x.PathTemplates),
+            p => p.EndsWith(".iso", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public void DockerPrune_IsExplicitOptIn()
     {
