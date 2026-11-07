@@ -49,6 +49,7 @@ public sealed class ActionCatalogTests
     [InlineData("space.profile-git", "profile-git", false)]
     [InlineData("space.project-deps", "stale-project-deps", false)]
     [InlineData("space.archives", "archive-beside-extracted", false)]
+    [InlineData("space.restore-points", "restore-points", true)]
     public void NewSpaceRowsLinkTheirTarget(string rowId, string targetId, bool admin)
     {
         var row = ActionCatalog.Find(rowId);

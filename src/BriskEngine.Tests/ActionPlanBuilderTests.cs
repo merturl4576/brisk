@@ -231,6 +231,7 @@ public sealed class ActionPlanBuilderTests
     [InlineData("space.profile-git", SpaceLevel.Max, true)]
     [InlineData("space.project-deps", SpaceLevel.Mid, false)]
     [InlineData("space.archives", SpaceLevel.Max, true)]
+    [InlineData("space.restore-points", SpaceLevel.Max, true)]
     public void Space_rows_carry_the_spec_level_and_only_min_is_on(string id, SpaceLevel level, bool lost)
     {
         var row = ActionCatalog.Find(id);
@@ -288,6 +289,49 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal(3_740, archives.Bytes);
         Assert.False(archives.DefaultOn);
         Assert.True(archives.Lost);
+    }
+
+    // ---- Restore points (MAX): every one but the newest. Windows cannot say
+    // what deleting them frees until it has, so the row carries no size.
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void No_row_with_zero_or_one_restore_point(int count)
+    {
+        var kit = Make();
+        kit.Space.RestorePoints = () => count;
+        Assert.Null(Row(kit.Builder.Build(Scan(), Now), "space.restore-points"));
+    }
+
+    [Fact]
+    public void Row_has_unknown_size()
+    {
+        var kit = Make();
+        kit.Space.RestorePoints = () => 3;
+        var row = Row(kit.Builder.Build(Scan(), Now), "space.restore-points")!;
+        Assert.Null(row.Bytes);   // "—" on screen: never a guess, never counted
+        Assert.Equal(SpaceLevel.Max, row.Level);
+        Assert.True(row.Lost);
+        Assert.False(row.DefaultOn);
+        Assert.True(row.NeedsAdmin);
+        Assert.Equal(new[] { "restore-points" }, row.LinkIds);
+    }
+
+    /// vssadmin denied (not an administrator) or missing reads as null in the
+    /// real probe; a probe that throws is the same. Neither is "0 points".
+    [Fact]
+    public void Probe_failure_means_no_row()
+    {
+        var unknown = Make();
+        unknown.Space.RestorePoints = () => null;
+        Assert.Null(Row(unknown.Builder.Build(Scan(), Now), "space.restore-points"));
+
+        var throwing = Make();
+        throwing.Space.RestorePoints = () => throw new InvalidOperationException("vssadmin");
+        var plan = throwing.Builder.Build(Scan(T("user-temp", 100)), Now);
+        Assert.Null(Row(plan, "space.restore-points"));
+        Assert.NotNull(Row(plan, "space.caches"));   // the other rows still come
     }
 
     private static ActionPlan PlanOf(params ActionItem[] items) => new(Now,

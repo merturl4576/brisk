@@ -669,6 +669,125 @@ public sealed class CleanRunnerTests : IDisposable
         Assert.Equal(0, entry.Bytes);
     }
 
+    // ---- Restore points: vssadmin takes the oldest, one at a time, and
+    // brisk stops one short of the count, so the newest is never asked for.
+
+    /// The system drive's shadow copies as vssadmin sees them: `list` prints
+    /// one device line per copy left, `delete ... /oldest` takes one away.
+    /// FailOnDelete: the n-th delete call (1-based) exits 5 and takes nothing.
+    private sealed class FakeVssadmin : IProcessRunner
+    {
+        public int Shadows;
+        public int ListExit;
+        public int FailOnDelete;
+        public List<string> Commands { get; } = new();
+        public FakeVssadmin(int shadows) => Shadows = shadows;
+        public IReadOnlyList<string> Deletes => Commands.Where(c => c.Contains("delete shadows")).ToList();
+
+        public (int ExitCode, string StdOut) Run(string exe, string args)
+        {
+            Commands.Add($"{exe} {args}");
+            if (args.StartsWith("list shadows", StringComparison.Ordinal))
+                return (ListExit, string.Concat(Enumerable.Range(1, Shadows).Select(i =>
+                    $"   Shadow Copy Volume: \\\\?\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy{i}\n")));
+            if (!args.StartsWith("delete shadows", StringComparison.Ordinal)) return (1, "");
+            if (Deletes.Count == FailOnDelete) return (5, "");
+            if (args.Contains("/oldest") && Shadows > 0) Shadows--;
+            return (0, "");
+        }
+    }
+
+    private static TargetScanResult RestorePointsScan() => new(
+        CleanupTargetRegistry.All.Single(t => t.Id == "restore-points"), Array.Empty<ResolvedItem>(), null);
+
+    private static readonly string DeleteOldest =
+        $"vssadmin delete shadows /for={ShadowCopies.SystemDrive} /oldest /quiet";
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(5)]
+    public void Deletes_count_minus_one_oldest(int count)
+    {
+        var vss = new FakeVssadmin(count);
+        var free = new Queue<long>(new[] { 100L << 30, 104L << 30 });   // 100 GB before, 104 GB after
+
+        var report = Runner(vss, elevated: true, free: () => free.Dequeue())
+            .Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.StartsWith("vssadmin list shadows", vss.Commands[0]);   // counted at delete time
+        Assert.Equal(count - 1, vss.Deletes.Count);
+        Assert.All(vss.Deletes, c => Assert.Equal(DeleteOldest, c));  // never by id, never /all
+        Assert.Equal(1, vss.Shadows);                                  // the newest is still there
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("(restore points)", entry.Path);
+        Assert.Equal("removed", entry.Action);
+        Assert.Equal(4L << 30, entry.Bytes);
+        Assert.Contains("observed", entry.Reason);
+    }
+
+    /// The scan saw several, but by the time the row runs at most one is left
+    /// (removed in Windows meanwhile). The count is read again, so a stale
+    /// number can never make the last /oldest take the newest.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Restore_points_delete_nothing_when_at_most_one_is_left(int count)
+    {
+        var vss = new FakeVssadmin(count);
+
+        var report = Runner(vss, elevated: true).Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Empty(vss.Deletes);
+        Assert.Equal(count, vss.Shadows);
+        Assert.Equal("refused", Assert.Single(report.Entries).Action);
+    }
+
+    [Fact]
+    public void Restore_points_delete_nothing_when_vssadmin_cannot_count()
+    {
+        var denied = new FakeVssadmin(4) { ListExit = 2 };
+        var report = Runner(denied, elevated: true).Clean(RestorePointsScan(), dryRun: false);
+        Assert.Empty(denied.Deletes);
+        Assert.Equal(4, denied.Shadows);
+        Assert.Equal("error", Assert.Single(report.Entries).Action);
+
+        var missing = new ScriptedRunner((_, _) => throw new System.ComponentModel.Win32Exception(2));
+        report = Runner(missing, elevated: true).Clean(RestorePointsScan(), dryRun: false);
+        Assert.DoesNotContain(missing.Commands, c => c.Contains("delete"));
+        Assert.Equal("error", Assert.Single(report.Entries).Action);
+    }
+
+    [Fact]
+    public void Restore_points_stop_at_the_first_failed_delete()
+    {
+        var vss = new FakeVssadmin(4) { FailOnDelete = 2 };
+
+        var report = Runner(vss, elevated: true, free: () => 100L << 30)
+            .Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Equal(2, vss.Deletes.Count);   // the second failed; no third try
+        Assert.Equal(3, vss.Shadows);
+        Assert.Equal(new[] { "external", "error" }, report.Entries.Select(e => e.Action));
+        Assert.Equal(0, report.Entries[0].Bytes);   // the drive showed no rise: nothing claimed
+        Assert.Contains("vssadmin exited 5", report.Entries[1].Reason);
+    }
+
+    [Fact]
+    public void Restore_points_unelevated_refused_and_dry_run_runs_nothing()
+    {
+        var vss = new FakeVssadmin(3);
+
+        var refused = Runner(vss, elevated: false).Clean(RestorePointsScan(), dryRun: false);
+        Assert.Equal("refused", Assert.Single(refused.Entries).Action);
+
+        var dry = Runner(vss, elevated: true).Clean(RestorePointsScan(), dryRun: true);
+        var entry = Assert.Single(dry.Entries);
+        Assert.Equal("dry-run", entry.Action);
+        Assert.Equal(0, entry.Bytes);   // no size is known before deleting
+        Assert.Empty(vss.Commands);
+        Assert.Equal(3, vss.Shadows);
+    }
+
     /// BACKSTOP PIN (2026-08-30 review): BypassesRecycleBin used to be a flag
     /// nothing read — a future noBin target added to the registry without a
     /// matching removal case would have fallen through to the shell loop and

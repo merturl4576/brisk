@@ -77,6 +77,9 @@ public static class ActionCatalog
             lost: true, links: new[] { "profile-git" }),
         S("space.archives", Max, "Archives already extracted beside them", null, null,
             lost: true, links: new[] { "archive-beside-extracted" }),
+        // Its size is unknown until they are gone: the row carries no bytes.
+        S("space.restore-points", Max, "Old restore points", "The newest stays, the rest go.", null,
+            lost: true, admin: true, links: new[] { "restore-points" }),
 
         // ---- Speed: fixed switches (startup entries are added per machine).
         R("speed.power-mode", Speed, "Full power when plugged in", "The fan may spin more.",

@@ -12,7 +12,8 @@ namespace BriskEngine.Tests;
 
 public class CleanupTargetRegistryTests
 {
-    private static readonly HashSet<string> PathlessIds = new() { "docker-prune", "empty-recycle-bin", "component-store" };
+    private static readonly HashSet<string> PathlessIds =
+        new() { "docker-prune", "empty-recycle-bin", "component-store", "restore-points" };
 
     [Fact]
     public void Ids_AreUnique()
@@ -282,6 +283,21 @@ public class CleanupTargetRegistryTests
         }
         Assert.True(deps.Regenerates);
         Assert.False(archives.Regenerates);
+    }
+
+    /// Restore points (monitor GUI wave): vssadmin removes them, so there are
+    /// no templates; nothing goes near the shell (past the bin); and opt-in,
+    /// so a plain `clean --level deep` never deletes them.
+    [Fact]
+    public void Restore_points_target_is_pathless_admin_opt_in()
+    {
+        var t = Get("restore-points");
+        Assert.Empty(t.PathTemplates);
+        Assert.False(t.Dynamic);
+        Assert.Equal(CleanupLevel.Deep, t.Level);
+        Assert.True(t.RequiresElevation);
+        Assert.True(t.BypassesRecycleBin);
+        Assert.True(t.RequiresExplicitOptIn);
     }
 
     /// Ruling R1: a byte is counted once. No new target's path sits inside,

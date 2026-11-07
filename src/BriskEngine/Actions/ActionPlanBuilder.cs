@@ -155,6 +155,18 @@ public sealed class ActionPlanBuilder
                     yield return ItemFrom(row, bytes);
                     break;
                 }
+                case "space.restore-points":
+                {
+                    // Something to remove only when there is more than the
+                    // newest. Windows cannot say what removing them frees
+                    // until it has, so the row has no size ("—"), and no
+                    // total counts it. Unknown count (vssadmin denied or
+                    // missing) = no row.
+                    var count = Safe(() => _space.RestorePointCount());
+                    if (count is null or < 2) break;
+                    yield return ItemFrom(row, bytes: null);
+                    break;
+                }
                 default:
                 {
                     var bytes = row.LinkIds.Select(Target).OfType<TargetScanResult>()

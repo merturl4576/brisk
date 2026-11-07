@@ -161,7 +161,7 @@ public sealed class ActionRunner
     }
 
     private static bool IsPathless(string id) =>
-        id is "docker-prune" or "empty-recycle-bin" or "component-store";
+        id is "docker-prune" or "empty-recycle-bin" or "component-store" or "restore-points";
 
     private TargetScanResult SelectedDownloads(TargetScanResult t, ActionSelection selection, List<string> reasons)
     {

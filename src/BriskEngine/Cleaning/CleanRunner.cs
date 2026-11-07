@@ -199,6 +199,14 @@ public sealed class CleanRunner
                     }
                 }
                 return new CleanReport(entries);
+            case "restore-points":
+                if (scan.Target.RequiresElevation && !_isElevated())
+                    Record(RestorePointsPath, 0, "refused", "requires administrator");
+                else if (dryRun)
+                    Record(RestorePointsPath, 0, "dry-run");   // no size is known before deleting
+                else
+                    RemoveOldRestorePoints(Record);
+                return new CleanReport(entries);
         }
 
         // BACKSTOP (2026-08-30 review): BypassesRecycleBin is a promise that
@@ -379,6 +387,55 @@ public sealed class CleanRunner
         }
         Flush();
         return new CleanReport(entries);
+    }
+
+    private const string RestorePointsPath = "(restore points)";
+
+    /// Every restore point but the newest: vssadmin's /oldest, run one time
+    /// fewer than there are points. The count is read again here, not taken
+    /// from the scan — a point removed in between would otherwise make the
+    /// last /oldest take the newest. Unknown count = nothing deleted.
+    private void RemoveOldRestorePoints(Action<string, long, string, string?> record)
+    {
+        var count = ShadowCopies.Count(_processRunner);
+        if (count is null)
+        {
+            record(RestorePointsPath, 0, "error", "vssadmin could not count the restore points");
+            return;
+        }
+        if (count < 2)
+        {
+            record(RestorePointsPath, 0, "refused", "only the newest restore point is left");
+            return;
+        }
+
+        var before = _systemDriveFreeBytes();
+        var removed = 0;
+        string? failure = null;
+        for (var i = 0; i < count - 1; i++)
+        {
+            try
+            {
+                var (exit, _) = _processRunner.Run("vssadmin", ShadowCopies.DeleteOldestArgs);
+                if (exit != 0) { failure = $"vssadmin exited {exit}"; break; }
+            }
+            catch (Exception ex) { failure = ex.Message; break; }
+            removed++;
+        }
+
+        if (removed > 0)
+        {
+            // As with the component store, the drive is the only witness:
+            // a rise is reported as a reading, no rise as nothing.
+            var gained = Math.Max(0, _systemDriveFreeBytes() - before);
+            var what = $"{removed} of {count} restore points removed, the newest kept";
+            if (gained > 0)
+                record(RestorePointsPath, gained, "removed",
+                    $"{what}; free space rose by this much while vssadmin ran — observed on the drive, not a count of files");
+            else
+                record(RestorePointsPath, 0, "external", $"{what}; free space did not rise");
+        }
+        if (failure is not null) record(RestorePointsPath, 0, "error", failure);
     }
 
     private CleanReport RemoveOutsideTheBin(TargetScanResult scan, bool dryRun,

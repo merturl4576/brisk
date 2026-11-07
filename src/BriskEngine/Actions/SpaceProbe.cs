@@ -11,6 +11,9 @@ public interface ISpaceProbe
     /// null: Docker is not installed, or its engine is not running.
     long? DockerReclaimableBytes();
     long RecycleBinBytes();
+    /// The system drive's restore points; null when vssadmin cannot say
+    /// (missing, or not run as administrator).
+    int? RestorePointCount();
 }
 
 public sealed class RealSpaceProbe : ISpaceProbe
@@ -56,4 +59,6 @@ public sealed class RealSpaceProbe : ISpaceProbe
         var info = new ShQueryRbInfo { cbSize = Marshal.SizeOf<ShQueryRbInfo>() };
         return SHQueryRecycleBinW(null, ref info) == 0 ? info.i64Size : 0;
     }
+
+    public int? RestorePointCount() => ShadowCopies.Count(_runner);
 }
