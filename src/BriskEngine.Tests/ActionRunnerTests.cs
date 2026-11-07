@@ -228,6 +228,40 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.NotNull(_runs.Load(run.RunId)!.UndoneUtc);
     }
 
+    /// Ruling R21: the window's Geri al reverses the Speed and Privacy rules
+    /// alone. A run that also turned hibernation off (0.11.0 recorded it as
+    /// undoable) keeps it off, and the run counts as undone.
+    [Fact]
+    public void Undo_OnlyTheListedRules_LeavesTheRestAsTheRunLeftThem()
+    {
+        var runner = Runner();
+        var hibernation = Row("space.hibernation", 10) with { Reversible = true };
+        var run = runner.Run(Plan(NoScan, hibernation, Row("speed.animations")),
+            Select("space.hibernation", "speed.animations"));
+        Assert.Equal(new[] { "hibernation", "window-animations" }, run.UndoableRuleIds.OrderBy(i => i));
+
+        var undone = runner.Undo(run.RunId, new HashSet<string> { "window-animations" });
+
+        Assert.Equal("window-animations", Assert.Single(undone).RowId);
+        Assert.Equal(RowOutcome.Done, undone[0].Outcome);
+        Assert.True(_ui.Minimize);                                         // animations back
+        Assert.Null(_journal.LastUndoablePriorState("window-animations"));
+        Assert.NotNull(_journal.LastUndoablePriorState("hibernation"));    // never switched back on
+        Assert.NotNull(_runs.Load(run.RunId)!.UndoneUtc);
+    }
+
+    [Fact]
+    public void Undo_NamingNoRuleOfTheRun_DoesNothing()
+    {
+        var runner = Runner();
+        var run = runner.Run(Plan(NoScan, Row("speed.animations")), Select("speed.animations"));
+
+        Assert.Empty(runner.Undo(run.RunId, new HashSet<string> { "hibernation" }));
+
+        Assert.False(_ui.Minimize);
+        Assert.Null(_runs.Load(run.RunId)!.UndoneUtc);
+    }
+
     [Fact]
     public void Undo_WithAFailedRow_LeavesTheRunUndoable()
     {

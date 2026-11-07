@@ -40,8 +40,12 @@ public sealed class FakeBackend : IActionBackend
 
     public IReadOnlyList<ActionGroup> BuildFast() => FailFast is null ? Fast : throw FailFast;
 
+    /// Blocks the space half of a look until a test releases it.
+    public ManualResetEventSlim? HoldScan;
+
     public ScanResult ScanSpace(Action<TargetScanResult> onTarget)
     {
+        HoldScan?.Wait(TimeSpan.FromSeconds(10));
         if (FailSpace is not null) throw FailSpace;
         foreach (var t in Sized) onTarget(t);
         return new ScanResult(Sized);
@@ -73,13 +77,20 @@ public sealed class FakeBackend : IActionBackend
 
     public Exception? FailUndo;
     public Func<string, RowResult>? UndoOutcome;
+    public ManualResetEventSlim? HoldUndo;
+    /// Every rule an undo was asked to reverse, in the order asked.
+    public List<string> UndoneRules = new();
 
-    /// Like the engine: the run is stamped undone only when every row came back.
-    public IReadOnlyList<RowResult> Undo(string runId)
+    /// Like the engine: only the rules asked for, newest first; the run is
+    /// stamped undone only when every one of them came back.
+    public IReadOnlyList<RowResult> Undo(string runId, IReadOnlySet<string> ruleIds)
     {
+        HoldUndo?.Wait(TimeSpan.FromSeconds(10));
         if (FailUndo is not null) throw FailUndo;
         Undone.Add(runId);
-        var results = Latest!.UndoableRuleIds
+        var asked = Latest!.UndoableRuleIds.Reverse().Where(ruleIds.Contains).ToList();
+        UndoneRules.AddRange(asked);
+        var results = asked
             .Select(id => UndoOutcome?.Invoke(id) ?? new RowResult(id, RowOutcome.Done, null, null, 0, 0)).ToList();
         if (results.All(r => r.Outcome == RowOutcome.Done)) Latest = Latest with { UndoneUtc = DateTime.UtcNow };
         return results;
@@ -138,8 +149,8 @@ public sealed class FakeBackend : IActionBackend
         return PersonalByCall is { } by ? by(call) : Personal.ToList();
     }
 
-    public long FreeBytes = 100_000_000_000;
-    public long SystemDriveFreeBytes() => FreeBytes;
+    public long? FreeBytes = 100_000_000_000;
+    public long? SystemDriveFreeBytes() => FreeBytes;
 
     public SpecsInfo SpecsToReturn = new("Test CPU", 2600, 6, 12, new[] { "Test GPU" }, 32L << 30, 31L << 30,
         "Test disk", 1_000_000_000_000);

@@ -18,7 +18,9 @@ public interface IActionBackend
     ScanResult ScanSpace(Action<TargetScanResult> onTarget);
     ActionGroup? BuildSpace(ScanResult scan);
     RunRecord Run(ActionPlan plan, ActionSelection selection, Action<ActionItem> onRowStart, Action<RowResult> onRow);
-    IReadOnlyList<RowResult> Undo(string runId);
+    /// Reverses only these rules of the run (Geri al names its Speed and
+    /// Privacy rules); the run's other rules stay as it left them.
+    IReadOnlyList<RowResult> Undo(string runId, IReadOnlySet<string> ruleIds);
     RunRecord? LatestRun();
     Receipt? RefreshReceipt(string runId);
     void ProcessDeferred();
@@ -39,8 +41,9 @@ public interface IActionBackend
     IReadOnlyList<PersonalFile> PersonalFiles(CancellationToken ct);
 
     /// Free bytes on the drive that holds %SystemDrive%, as Explorer shows
-    /// them. Throws when the drive cannot be read: the page shows "—", never 0.
-    long SystemDriveFreeBytes();
+    /// them; null when the drive cannot be read (the page shows "—"). Never
+    /// throws, never a guessed 0.
+    long? SystemDriveFreeBytes();
 
     /// The machine's specs, read once and kept: the first call may block for
     /// seconds on a broken WMI, every later one returns at once.

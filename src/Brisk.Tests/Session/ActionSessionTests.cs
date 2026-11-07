@@ -437,7 +437,7 @@ public sealed class ActionSessionTests
         var run = s.RunAsync(ActionGroupKind.Space);             // pressed at MIN
         Assert.True(SpinWait.SpinUntil(() => s.State == SessionState.Running, 2000));
 
-        s.SetLevel(SpaceLevel.Max);                             // refused while busy
+        s.SetLevel(SpaceLevel.Max);                             // refused while a run is going
         s.ToggleSkip("space.caches");                           // refused while running
         Assert.Equal(SpaceLevel.Min, s.Level);
         Assert.False(s.IsSkipped("space.caches"));
@@ -483,6 +483,76 @@ public sealed class ActionSessionTests
         Assert.False(s.InRunAll(ItemOf(s, "privacy.location")));
         await s.RunAsync(ActionGroupKind.Privacy);
         Assert.Equal(new[] { "privacy.ads", "privacy.location" }, b.Runs.Single().RowIds.OrderBy(i => i, Ordinal));
+    }
+
+    /// Ruling R22: the level is free while a look goes (the run still takes
+    /// its selection at the press) and refused while an undo is in flight.
+    [Fact]
+    public async Task Level_is_free_during_the_look_and_refused_during_an_undo()
+    {
+        var b = Levels(); var s = NewSession(b);
+        await s.LookAsync();
+        b.HoldScan = new ManualResetEventSlim(false);
+        var look = s.RescanAsync();
+        Assert.Equal(SessionState.Looking, s.State);
+        Assert.True(s.Busy);
+        s.SetLevel(SpaceLevel.Mid);
+        Assert.Equal(SpaceLevel.Mid, s.Level);
+        b.HoldScan.Set();
+        await look;
+        await s.RunAsync(ActionGroupKind.Space);
+        Assert.Equal(new[] { "space.caches", "space.shaders" }, b.Runs[0].RowIds.OrderBy(i => i, Ordinal));
+
+        await s.RescanAsync();
+        await s.RunAsync(ActionGroupKind.Privacy);
+        Assert.True(s.CanUndo);
+        b.HoldUndo = new ManualResetEventSlim(false);
+        var undo = s.UndoAsync();
+        s.SetLevel(SpaceLevel.Max);                             // refused: the undo is in flight
+        s.ToggleSkip("space.caches");
+        Assert.Equal(SpaceLevel.Mid, s.Level);
+        Assert.False(s.IsSkipped("space.caches"));
+        b.HoldUndo.Set();
+        await undo;
+        s.SetLevel(SpaceLevel.Max);
+        Assert.Equal(SpaceLevel.Max, s.Level);
+    }
+
+    /// Ruling R21: Geri al reverses the Speed and Privacy rules of the run
+    /// alone. Hepsini yap ran Space and both pages in one run; a Space rule
+    /// in it (0.11.0's hibernation, then on by default) stays as it is.
+    [Fact]
+    public async Task Undo_reverses_only_the_speed_and_privacy_rules_of_the_run()
+    {
+        var b = FakeBackend.Typical();
+        var hibernation = ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.hibernation"), 1L << 30)
+            with { Reversible = true, Level = SpaceLevel.Min };
+        b.Space = new ActionGroup(ActionGroupKind.Space, b.Space!.Items.Append(hibernation).ToList());
+        var s = NewSession(b);
+        await s.LookAsync();
+        await s.RunAllAsync();
+        Assert.Contains("hibernation", s.LastRun!.UndoableRuleIds);
+        Assert.True(s.CanUndo);
+
+        await s.UndoAsync();
+
+        Assert.Equal(new[] { "privacy.ads", "speed.animations", "startup:HKCU:Spotify" },
+            b.UndoneRules.OrderBy(i => i, Ordinal));
+        Assert.DoesNotContain(s.UndoResults!, r => r.RowId == "hibernation");
+        Assert.NotNull(b.Latest!.UndoneUtc);                    // the run counts as undone
+        Assert.False(s.CanUndo);
+    }
+
+    [Fact]
+    public async Task Undo_of_a_previous_run_leaves_its_space_rules_alone()
+    {
+        var b = Levels();
+        b.Latest = new RunRecord("old", DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(-1),
+            Array.Empty<RowResult>(), new[] { "hibernation", "advertising-id", "startup:HKCU:Spotify" });
+        var s = NewSession(b);
+        await s.LookAsync();
+        await s.UndoAsync();
+        Assert.Equal(new[] { "startup:HKCU:Spotify", "advertising-id" }, b.UndoneRules);
     }
 
     [Fact]

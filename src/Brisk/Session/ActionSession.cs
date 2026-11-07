@@ -38,6 +38,8 @@ public sealed class ActionSession
     private readonly Dictionary<string, RowResult> _results = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<TargetScanResult> _sized = new();
     private bool _busy;
+    // Busy with a run or an undo, not a look: from the press until it ends.
+    private bool _acting;
     private CancellationTokenSource? _personalWalk;
 
     public ActionSession(IActionBackend backend, Action<Action> post)
@@ -122,10 +124,10 @@ public sealed class ActionSession
         return Find(rowId) is { } item && !DefaultTaken(item);
     }
 
-    /// A run or an undo holds the session (from the press on, before the
-    /// Running state lands). A look does not: rows may be tapped as they
-    /// arrive.
-    private bool Acting => Busy && State != SessionState.Looking;
+    /// A run or an undo holds the session, from the press on (before the
+    /// Running state lands). A look does not: rows may be tapped and the
+    /// level picked while it goes.
+    private bool Acting { get { lock (_gate) return _acting; } }
 
     /// One tap on a row: skip it, or take it back. Does nothing to a locked
     /// row, an unknown row, or while a run or undo is going.
@@ -142,11 +144,12 @@ public sealed class ActionSession
         else _rowOverrides[item.Id] = taken;
     }
 
-    /// Refused while a scan, run or undo is going: the run takes the
-    /// selection of the moment it was pressed, and nothing moves under it.
+    /// Refused while a run or an undo is going: the run takes the selection
+    /// of the moment it was pressed, and nothing moves under it. Free during
+    /// a look, which does not read the level.
     public void SetLevel(SpaceLevel level)
     {
-        if (Busy || level == Level) return;
+        if (Acting || level == Level) return;
         Level = level;
         Changed?.Invoke();
     }
@@ -221,19 +224,25 @@ public sealed class ActionSession
 
     // ---- operations
 
-    private bool TryBegin()
+    /// acting: a run or an undo, as opposed to a look.
+    private bool TryBegin(bool acting)
     {
         lock (_gate)
         {
             if (_busy) return false;
             _busy = true;
+            _acting = acting;
             return true;
         }
     }
 
     private void End()
     {
-        lock (_gate) _busy = false;
+        lock (_gate)
+        {
+            _busy = false;
+            _acting = false;
+        }
     }
 
     private void Apply(Action change) => _post(() =>
@@ -252,7 +261,7 @@ public sealed class ActionSession
         Apply(change);
     }
 
-    public Task LookAsync() => TryBegin() ? LookCore() : Task.CompletedTask;
+    public Task LookAsync() => TryBegin(acting: false) ? LookCore() : Task.CompletedTask;
 
     public Task RescanAsync() => LookAsync();
 
@@ -352,7 +361,7 @@ public sealed class ActionSession
     /// The selection is taken now, at the press.
     public Task RunAllAsync()
     {
-        if (State != SessionState.Ready || Plan is not { } plan || !TryBegin()) return Task.CompletedTask;
+        if (State != SessionState.Ready || Plan is not { } plan || !TryBegin(acting: true)) return Task.CompletedTask;
         return RunCore(null, plan, RunAllSelection(plan));
     }
 
@@ -361,7 +370,7 @@ public sealed class ActionSession
     /// run is refused and a tap ignored.
     public Task RunAsync(ActionGroupKind group)
     {
-        if (State != SessionState.Ready || Plan is not { } plan || !TryBegin()) return Task.CompletedTask;
+        if (State != SessionState.Ready || Plan is not { } plan || !TryBegin(acting: true)) return Task.CompletedTask;
         return RunCore(group, plan, PageSelection(plan, group));
     }
 
@@ -418,12 +427,15 @@ public sealed class ActionSession
 
     public async Task UndoAsync()
     {
-        if (!CanUndo || !TryBegin()) return;
-        var runId = LastRun!.RunId;
+        if (!CanUndo || !TryBegin(acting: true)) return;
+        var run = LastRun!;
+        // Geri al reverses Speed and Privacy alone: a Space rule the run holds
+        // (0.11.0 recorded hibernation as undoable) stays as the run left it.
+        var rules = run.UndoableRuleIds.Where(UndoesSpeedOrPrivacy).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Apply(() => UndoError = null);
         try
         {
-            var results = await Task.Run(() => _backend.Undo(runId)).ConfigureAwait(false);
+            var results = await Task.Run(() => _backend.Undo(run.RunId, rules)).ConfigureAwait(false);
             var latest = await Task.Run(_backend.LatestRun).ConfigureAwait(false);
             Finish(() =>
             {

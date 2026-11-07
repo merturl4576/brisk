@@ -228,12 +228,23 @@ public sealed class ActionRunner
 
     /// Reverses a run's reversible rules, newest first. Deleted files are not
     /// in the list: they cannot come back, and undo never says they did.
-    public IReadOnlyList<RowResult> Undo(string runId)
+    public IReadOnlyList<RowResult> Undo(string runId) => Undo(runId, only: null);
+
+    /// As Undo(runId), for the run's rules named in `only` alone (null = every
+    /// one). The others stay as the run left them: the window's Geri al names
+    /// the Speed and Privacy rules, so a Space rule an older run recorded as
+    /// undoable (0.11.0's hibernation) is never switched back. The run is
+    /// stamped undone once every rule asked for came back; when the run holds
+    /// none of them nothing is done or stamped.
+    public IReadOnlyList<RowResult> Undo(string runId, IReadOnlySet<string>? only)
     {
         var record = _runs.Load(runId);
         if (record is null) return Array.Empty<RowResult>();
+        var asked = only is null ? null : new HashSet<string>(only, StringComparer.OrdinalIgnoreCase);
+        var ids = Enumerable.Reverse(record.UndoableRuleIds).Where(id => asked is null || asked.Contains(id)).ToList();
+        if (asked is not null && ids.Count == 0) return Array.Empty<RowResult>();
         var results = new List<RowResult>();
-        foreach (var id in Enumerable.Reverse(record.UndoableRuleIds))
+        foreach (var id in ids)
         {
             var rule = _rules.Find(id);
             var prior = _journal.LastUndoablePriorState(id);

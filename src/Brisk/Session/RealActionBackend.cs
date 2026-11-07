@@ -60,9 +60,9 @@ public sealed class RealActionBackend : IActionBackend
         lock (_writes) return _engine.Runner.Run(plan, selection, onRow, onRowStart);
     }
 
-    public IReadOnlyList<RowResult> Undo(string runId)
+    public IReadOnlyList<RowResult> Undo(string runId, IReadOnlySet<string> ruleIds)
     {
-        lock (_writes) return _engine.Runner.Undo(runId);
+        lock (_writes) return _engine.Runner.Undo(runId, ruleIds);
     }
 
     public RunRecord? LatestRun() => _engine.Runs.Latest();
@@ -100,7 +100,15 @@ public sealed class RealActionBackend : IActionBackend
     public IReadOnlyList<PersonalFile> PersonalFiles(CancellationToken ct) =>
         BriskEngine.Cleaning.PersonalFiles.Find(BriskEngine.Cleaning.PersonalFiles.DefaultRoots(), ct);
 
-    public long SystemDriveFreeBytes() => new DriveInfo(SystemDriveRoot()).AvailableFreeSpace;
+    public long? SystemDriveFreeBytes() => FreeBytesOn(SystemDriveRoot());
+
+    /// What Explorer calls free on that drive; null when it cannot be read
+    /// (no such drive, not ready, access refused).
+    internal static long? FreeBytesOn(string root)
+    {
+        try { return new DriveInfo(root).AvailableFreeSpace; }
+        catch (Exception) { return null; }
+    }
 
     /// "C:\" from %SystemDrive%; the Windows folder's drive when the
     /// variable is missing.
