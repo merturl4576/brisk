@@ -105,6 +105,29 @@ public sealed class SafetyValidatorTests : IDisposable
         Assert.Contains("verified", result.Reason, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// profile-git removes ~\.git and nothing that only shares its name or
+    /// prefix. "~" is a temp home here: the real ~\.git is a live repository.
+    [Fact]
+    public void Profile_git_is_authorized_only_as_itself()
+    {
+        var registered = BriskEngine.Cleaning.CleanupTargetRegistry.All.Single(t => t.Id == "profile-git");
+        Assert.Equal(new[] { @"~\.git" }, registered.PathTemplates);
+        Assert.Equal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".git"),
+            BriskEngine.Paths.PathExpander.Expand(registered.PathTemplates[0]));
+
+        var home = Path.Combine(_root, "home");
+        var git = Directory.CreateDirectory(Path.Combine(home, ".git")).FullName;
+        File.WriteAllText(Path.Combine(git, "HEAD"), "ref: refs/heads/main");
+        var gitconfig = Path.Combine(home, ".gitconfig");
+        File.WriteAllText(gitconfig, "[user]");
+        var nested = Directory.CreateDirectory(Path.Combine(home, "Documents", "x", ".git")).FullName;
+        var target = registered with { PathTemplates = new[] { git } };
+
+        Assert.True(_validator.Authorize(git, target).Allowed);
+        Assert.False(_validator.Authorize(gitconfig, target).Allowed);
+        Assert.False(_validator.Authorize(nested, target).Allowed);
+    }
+
     [Fact]
     public void VeryLongPath_IsStillAuthorized()
     {

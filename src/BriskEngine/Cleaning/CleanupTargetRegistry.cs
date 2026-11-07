@@ -8,8 +8,8 @@ public static class CleanupTargetRegistry
     private static CleanupTarget T(string id, string name, CleanupLevel level,
         string category, string[] paths, bool contents = false, bool regen = false,
         string? app = null, bool pick = false, bool optIn = false,
-        bool noBin = false, bool admin = false) =>
-        new(id, name, level, paths, category, contents, regen, app, pick, optIn, noBin, admin);
+        bool noBin = false, bool admin = false, int? minAge = null) =>
+        new(id, name, level, paths, category, contents, regen, app, pick, optIn, noBin, admin, minAge);
 
     /// Every Chromium profile, not only "Default": a second profile's cache
     /// was invisible to brisk before.
@@ -128,7 +128,7 @@ public static class CleanupTargetRegistry
         // No *.iso: a disk image is a personal file, never deleted or counted.
         T("old-installers", "Old installers in Downloads", CleanupLevel.Deep, "Downloads",
             new[] { @"%USERPROFILE%\Downloads\*.exe", @"%USERPROFILE%\Downloads\*.msi" },
-            pick: true),
+            pick: true, minAge: Scanner.OldInstallerMinAgeDays),
         T("empty-recycle-bin", "Empty Recycle Bin", CleanupLevel.Deep, "System",
             System.Array.Empty<string>(), noBin: true, pick: true),
         // ---- Action-flow additions (2026-10-16)
@@ -148,5 +148,44 @@ public static class CleanupTargetRegistry
         T("d3d-shader-cache", "DirectX shader cache", CleanupLevel.Deep, "Game",
             new[] { @"%LOCALAPPDATA%\D3DSCache" },
             contents: true, regen: true, optIn: true),
+        // ---- Monitor GUI wave (2026-11-07): whole leftover files and folders.
+        // Kernel dumps: LiveKernelReports (a 10.3 GB WATCHDOG dump on the
+        // maintainer's PC) plus the classic Minidump and MEMORY.DMP. No other
+        // target covers these: crash-dumps is user-mode app dumps under
+        // %LOCALAPPDATA%, the WER targets are report queues. A week old first,
+        // so a crash being investigated keeps its dump.
+        T("live-kernel-reports", "Old kernel crash dumps", CleanupLevel.Deep, "System",
+            new[] { @"%SystemRoot%\LiveKernelReports\*.dmp", @"%SystemRoot%\LiveKernelReports\*\*.dmp",
+                    @"%SystemRoot%\Minidump\*.dmp", @"%SystemRoot%\MEMORY.DMP" },
+            admin: true, minAge: 7),
+        // Setup logs of finished upgrades (602 MB of *.log on the maintainer's
+        // PC). Only *.log and *.etl, never *.xml: answer files and migration
+        // records live there. The scanner yields nothing while
+        // $WINDOWS.~BT exists, i.e. while an upgrade is still running.
+        T("panther-logs", "Windows setup logs", CleanupLevel.Deep, "System",
+            new[] { @"%SystemRoot%\Panther\*.log", @"%SystemRoot%\Panther\*.etl",
+                    @"%SystemRoot%\Panther\UnattendGC\*.log", @"%SystemRoot%\Panther\UnattendGC\*.etl" },
+            admin: true, minAge: 7),
+        // Extracted vendor driver installers. The installed driver lives in
+        // the Windows driver store; these copies only re-run setup, and the
+        // vendor app downloads them again when it needs them. NVIDIA App's OTA
+        // folder, seen on the maintainer's PC (2026-11-07): channel "crd" held
+        // the installed Studio driver (595.79) as a <hash>\ download plus its
+        // post-processing\ extraction; "grd" is its Game Ready twin (empty
+        // there). The "nvapp" channel is left alone: it held the app's own
+        // staged update, newer than the installed app — not a driver
+        // leftover. A week old first, so a running install keeps its files.
+        T("driver-installer-leftovers", "Old driver installers", CleanupLevel.Deep, "System",
+            new[] { @"%SystemDrive%\NVIDIA\DisplayDriver", @"%SystemDrive%\AMD\*",
+                    @"%ProgramData%\NVIDIA Corporation\NVIDIA App\UpdateFramework\ota-artifacts\grd\*",
+                    @"%ProgramData%\NVIDIA Corporation\NVIDIA App\UpdateFramework\ota-artifacts\crd\*" },
+            admin: true, minAge: 7),
+        // A git repository at the profile root makes every git-aware tool
+        // (VS Code, for one) walk the whole home folder. The folder goes
+        // whole, and only when it is a real folder (the scanner checks).
+        // Opt-in: deleting it ends that repository's history, so it never
+        // rides a plain `clean --level deep`.
+        T("profile-git", "Git repository in the home folder", CleanupLevel.Deep, "Developer",
+            new[] { @"~\.git" }, optIn: true),
     };
 }

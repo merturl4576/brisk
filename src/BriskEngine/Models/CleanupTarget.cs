@@ -8,6 +8,10 @@ namespace BriskEngine.Models;
 /// (The 2026-08-17 live incident: modern WhatsApp Desktop runs as
 /// "WhatsApp.Root", so an exact match on "WhatsApp" silently never fired
 /// and a 310 MB locked cache landed in the promise.)
+///
+/// MinAgeDays: an item written fewer than this many days ago (or whose age
+/// cannot be read) is not offered — old installers 30; kernel dumps, setup
+/// logs and driver installers 7.
 public sealed record CleanupTarget(
     string Id,
     string DisplayName,
@@ -20,7 +24,8 @@ public sealed record CleanupTarget(
     bool RequiresIndividualSelection = false,
     bool RequiresExplicitOptIn = false,
     bool BypassesRecycleBin = false,
-    bool RequiresElevation = false)
+    bool RequiresElevation = false,
+    int? MinAgeDays = null)
 {
     /// Every process name that counts as "this app is running". Trimmed
     /// and empties dropped (review round 1): a bare Split would let a

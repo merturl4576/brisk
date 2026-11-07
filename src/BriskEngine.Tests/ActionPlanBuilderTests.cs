@@ -225,6 +225,10 @@ public sealed class ActionPlanBuilderTests
     [InlineData("space.recycle-bin", SpaceLevel.Mid, true)]
     [InlineData("space.windows-old", SpaceLevel.Max, true)]
     [InlineData("space.docker", SpaceLevel.Max, true)]
+    [InlineData("space.crash-dumps", SpaceLevel.Min, false)]
+    [InlineData("space.setup-logs", SpaceLevel.Min, false)]
+    [InlineData("space.driver-leftovers", SpaceLevel.Min, false)]
+    [InlineData("space.profile-git", SpaceLevel.Max, true)]
     public void Space_rows_carry_the_spec_level_and_only_min_is_on(string id, SpaceLevel level, bool lost)
     {
         var row = ActionCatalog.Find(id);
@@ -251,6 +255,21 @@ public sealed class ActionPlanBuilderTests
         Assert.False(Row(plan, "space.shaders")!.Lost);
         Assert.True(Row(plan, "space.recycle-bin")!.Lost);
         Assert.Null(Row(plan, "speed.animations")!.Level);
+    }
+
+    [Fact]
+    public void Build_NewSpaceRowsCountTheirTargets()
+    {
+        var plan = Make().Builder.Build(Scan(T("live-kernel-reports", 10_300), T("panther-logs", 600),
+            T("driver-installer-leftovers", 700), T("profile-git", 6_540)), Now);
+
+        Assert.Equal(10_300, Row(plan, "space.crash-dumps")!.Bytes);
+        Assert.Equal(600, Row(plan, "space.setup-logs")!.Bytes);
+        Assert.Equal(700, Row(plan, "space.driver-leftovers")!.Bytes);
+        var git = Row(plan, "space.profile-git")!;
+        Assert.Equal(6_540, git.Bytes);
+        Assert.False(git.DefaultOn);
+        Assert.Equal("Can't be undone.", git.Cost);
     }
 
     private static ActionPlan PlanOf(params ActionItem[] items) => new(Now,

@@ -78,6 +78,33 @@ public sealed class TemplateResolverTests : IDisposable
         }
     }
 
+    /// %SystemRoot%\LiveKernelReports and \Minidump refuse a listing to a
+    /// non-elevated process (the CLI). An unreadable folder resolves to
+    /// nothing: the scan goes on, and the validator allows nothing there.
+    [Fact]
+    public void UnreadableFolder_ResolvesToNothing()
+    {
+        var locked = Directory.CreateDirectory(Path.Combine(_root, "locked"));
+        File.WriteAllText(Path.Combine(locked.FullName, "a.dmp"), "x");
+        var me = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
+        var deny = new System.Security.AccessControl.FileSystemAccessRule(me,
+            System.Security.AccessControl.FileSystemRights.ListDirectory,
+            System.Security.AccessControl.AccessControlType.Deny);
+        var acl = locked.GetAccessControl();
+        acl.AddAccessRule(deny);
+        locked.SetAccessControl(acl);
+        try
+        {
+            Assert.Empty(TemplateResolver.Resolve(Path.Combine(locked.FullName, "*.dmp")));
+            Assert.Empty(TemplateResolver.Resolve(Path.Combine(locked.FullName, "*", "*.dmp")));
+        }
+        finally
+        {
+            acl.RemoveAccessRule(deny);
+            locked.SetAccessControl(acl);
+        }
+    }
+
     public void Dispose()
     {
         try { Directory.Delete(_root, recursive: true); } catch { }

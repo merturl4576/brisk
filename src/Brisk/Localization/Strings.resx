@@ -316,6 +316,11 @@
   <data name="action.space.docker.cost" xml:space="preserve"><value>Stopped containers are deleted.</value></data>
   <data name="action.space.docker.name" xml:space="preserve"><value>docker system prune</value></data>
   <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Recycle Bin</value></data>
+  <data name="action.space.crash-dumps.title" xml:space="preserve"><value>Old crash reports</value></data>
+  <data name="action.space.setup-logs.title" xml:space="preserve"><value>Windows setup logs</value></data>
+  <data name="action.space.driver-leftovers.title" xml:space="preserve"><value>Old driver installers</value></data>
+  <data name="action.space.profile-git.title" xml:space="preserve"><value>Git repository in your home folder</value></data>
+  <data name="action.space.profile-git.cost" xml:space="preserve"><value>Can't be undone.</value></data>
   <data name="action.speed.power-mode.title" xml:space="preserve"><value>Full power when plugged in</value></data>
   <data name="action.speed.power-mode.cost" xml:space="preserve"><value>The fan may spin more.</value></data>
   <data name="action.speed.power-mode.name" xml:space="preserve"><value>Power mode: Best performance</value></data>

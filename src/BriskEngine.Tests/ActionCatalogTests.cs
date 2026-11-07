@@ -40,6 +40,40 @@ public sealed class ActionCatalogTests
             Assert.Contains(id, targets);
     }
 
+    /// Ruling R1: each new target arrives with its Space row, and the row
+    /// asks for administrator exactly when its target does.
+    [Theory]
+    [InlineData("space.crash-dumps", "live-kernel-reports", true)]
+    [InlineData("space.setup-logs", "panther-logs", true)]
+    [InlineData("space.driver-leftovers", "driver-installer-leftovers", true)]
+    [InlineData("space.profile-git", "profile-git", false)]
+    public void NewSpaceRowsLinkTheirTarget(string rowId, string targetId, bool admin)
+    {
+        var row = ActionCatalog.Find(rowId);
+        Assert.Equal(ActionLinkKind.Cleanup, row.LinkKind);
+        Assert.Equal(new[] { targetId }, row.LinkIds);
+        Assert.Equal(admin, row.NeedsAdmin);
+        Assert.Equal(admin, CleanupTargetRegistry.All.Single(t => t.Id == targetId).RequiresElevation);
+    }
+
+    /// A byte is counted once: no target feeds two Space rows.
+    [Fact]
+    public void NoTargetFeedsTwoSpaceRows()
+    {
+        var links = ActionCatalog.Rows.Where(r => r.Group == ActionGroupKind.Space)
+            .SelectMany(r => r.LinkIds).ToList();
+        Assert.Equal(links.Count, links.Distinct().Count());
+        Assert.Contains("crash-dumps", ActionCatalog.Find("space.caches").LinkIds);
+    }
+
+    [Fact]
+    public void SpaceRowsAreSortedMinMidMax()
+    {
+        var levels = ActionCatalog.Rows.Where(r => r.Group == ActionGroupKind.Space)
+            .Select(r => r.Level!.Value).ToList();
+        Assert.Equal(levels.OrderBy(l => l), levels);
+    }
+
     [Fact]
     public void CostLinesAreSixWordsAtMost()
     {

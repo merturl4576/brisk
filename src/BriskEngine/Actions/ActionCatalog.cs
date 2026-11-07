@@ -52,6 +52,12 @@ public static class ActionCatalog
         S("space.developer", Min, "Developer caches", "Downloads again later.", null,
             links: new[] { "npm-cache", "pip-cache", "yarn-cache", "pnpm-store", "nuget-http-cache",
                 "cargo-registry-cache", "gradle-caches" }),
+        S("space.crash-dumps", Min, "Old crash reports", null, null, admin: true,
+            links: new[] { "live-kernel-reports" }),
+        S("space.setup-logs", Min, "Windows setup logs", null, null, admin: true,
+            links: new[] { "panther-logs" }),
+        S("space.driver-leftovers", Min, "Old driver installers", null, null, admin: true,
+            links: new[] { "driver-installer-leftovers" }),
         // Switching hibernation back on is a Settings fact, not brisk's undo.
         S("space.hibernation", Mid, "Hibernation file", "Fast startup off · can re-enable", "hiberfil.sys",
             admin: true, kind: ActionLinkKind.Rules, links: new[] { "hibernation" }),
@@ -65,6 +71,8 @@ public static class ActionCatalog
             lost: true, admin: true, links: new[] { "windows-old" }),
         S("space.docker", Max, "Docker's unused data", "Stopped containers are deleted.", "docker system prune",
             lost: true, links: new[] { "docker-prune" }),
+        S("space.profile-git", Max, "Git repository in your home folder", "Can't be undone.", null,
+            lost: true, links: new[] { "profile-git" }),
 
         // ---- Speed: fixed switches (startup entries are added per machine).
         R("speed.power-mode", Speed, "Full power when plugged in", "The fan may spin more.",

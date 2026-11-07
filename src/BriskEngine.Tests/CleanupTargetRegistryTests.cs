@@ -212,6 +212,83 @@ public class CleanupTargetRegistryTests
         Assert.True(t.RequiresElevation);
     }
 
+    private static CleanupTarget Get(string id) => CleanupTargetRegistry.All.Single(t => t.Id == id);
+
+    /// Monitor GUI wave: four path-template targets, each a decision about
+    /// one kind of leftover. Kernel dumps, setup logs and driver installers
+    /// are a week old before they count; ~\.git never rides a plain
+    /// `clean --level deep` (its loss is the user's whole home history).
+    [Fact]
+    public void New_targets_are_registered_with_rules()
+    {
+        var dumps = Get("live-kernel-reports");
+        Assert.Equal(new[]
+        {
+            @"%SystemRoot%\LiveKernelReports\*.dmp", @"%SystemRoot%\LiveKernelReports\*\*.dmp",
+            @"%SystemRoot%\Minidump\*.dmp", @"%SystemRoot%\MEMORY.DMP",
+        }, dumps.PathTemplates);
+        Assert.Equal(7, dumps.MinAgeDays);
+
+        var panther = Get("panther-logs");
+        Assert.Equal(7, panther.MinAgeDays);
+        Assert.All(panther.PathTemplates, p => Assert.True(
+            p.EndsWith(@"\*.log", StringComparison.Ordinal) || p.EndsWith(@"\*.etl", StringComparison.Ordinal), p));
+        Assert.DoesNotContain(panther.PathTemplates, p => p.Contains(".xml", StringComparison.OrdinalIgnoreCase));
+
+        var drivers = Get("driver-installer-leftovers");
+        Assert.Contains(@"%SystemDrive%\NVIDIA\DisplayDriver", drivers.PathTemplates);
+        Assert.Contains(@"%SystemDrive%\AMD\*", drivers.PathTemplates);
+        Assert.Contains(drivers.PathTemplates, p => p.Contains(@"\UpdateFramework\ota-artifacts\"));
+        Assert.Equal(7, drivers.MinAgeDays);
+
+        var git = Get("profile-git");
+        Assert.Equal(new[] { @"~\.git" }, git.PathTemplates);
+        Assert.Null(git.MinAgeDays);
+        Assert.False(git.RequiresElevation);
+        Assert.True(git.RequiresExplicitOptIn);
+
+        foreach (var t in new[] { dumps, panther, drivers, git })
+        {
+            Assert.Equal(CleanupLevel.Deep, t.Level);
+            Assert.False(t.DeletesContentsNotDirectory, $"{t.Id} deletes whole paths");
+            Assert.False(t.BypassesRecycleBin, $"{t.Id}: Space runs already delete for good");
+        }
+        foreach (var t in new[] { dumps, panther, drivers })
+            Assert.True(t.RequiresElevation, $"{t.Id} lives in a system folder");
+
+        Assert.Equal(30, Scanner.OldInstallerMinAgeDays);
+        Assert.Equal(Scanner.OldInstallerMinAgeDays, Get("old-installers").MinAgeDays);
+    }
+
+    /// Ruling R1: a byte is counted once. No new target's path sits inside,
+    /// on, or above any other target's path — crash-dumps (app dumps under
+    /// %LOCALAPPDATA%) and the WER queues stay with space.caches, and the
+    /// kernel's Minidump/MEMORY.DMP are nobody else's.
+    [Theory]
+    [InlineData("live-kernel-reports")]
+    [InlineData("panther-logs")]
+    [InlineData("driver-installer-leftovers")]
+    [InlineData("profile-git")]
+    public void New_target_paths_overlap_no_other_target(string id)
+    {
+        foreach (var mine in FixedRoots(Get(id)))
+        foreach (var other in CleanupTargetRegistry.All.Where(t => t.Id != id))
+        foreach (var theirs in FixedRoots(other))
+            Assert.False(mine.Equals(theirs, StringComparison.OrdinalIgnoreCase)
+                || mine.StartsWith(theirs + '\\', StringComparison.OrdinalIgnoreCase)
+                || theirs.StartsWith(mine + '\\', StringComparison.OrdinalIgnoreCase),
+                $"{id} ({mine}) overlaps {other.Id} ({theirs})");
+    }
+
+    /// The part of each template no wildcard can move: the folder above the
+    /// first '*' segment, or the whole path when there is no '*'.
+    private static IEnumerable<string> FixedRoots(CleanupTarget t) =>
+        t.PathTemplates.Select(PathExpander.Expand).OfType<string>().Select(p =>
+        {
+            var star = p.IndexOf('*');
+            return Path.GetFullPath(star < 0 ? p : p[..p.LastIndexOf('\\', star)]);
+        });
+
     [Theory]
     [InlineData("chrome-cache")]
     [InlineData("edge-cache")]

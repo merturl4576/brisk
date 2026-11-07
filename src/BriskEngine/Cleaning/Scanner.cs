@@ -13,20 +13,30 @@ public sealed class Scanner
 {
     public const int OldInstallerMinAgeDays = 30;
 
+    private const string PantherLogsId = "panther-logs";
+    private const string ProfileGitId = "profile-git";
+
     private readonly IReadOnlyList<CleanupTarget> _targets;
     private readonly IProcessLister _processes;
     private readonly ILockProbe? _lockProbe;
+    private readonly Func<bool> _upgradeInProgress;
 
     /// lockProbe (additive, round 11): when present, every emitted item is
     /// probed for delete-locks so ReclaimableBytes can promise honestly.
     /// Without one (unit tests, fakes) nothing is marked locked.
+    /// upgradeInProgress: whether a Windows feature upgrade is under way;
+    /// by default, whether %SystemDrive%\$WINDOWS.~BT exists.
     public Scanner(IReadOnlyList<CleanupTarget> targets, IProcessLister processes,
-        ILockProbe? lockProbe = null)
+        ILockProbe? lockProbe = null, Func<bool>? upgradeInProgress = null)
     {
         _targets = targets;
         _processes = processes;
         _lockProbe = lockProbe;
+        _upgradeInProgress = upgradeInProgress ?? UpgradeFolderExists;
     }
+
+    private static bool UpgradeFolderExists() =>
+        PathExpander.Expand(@"%SystemDrive%\$WINDOWS.~BT") is { } bt && Directory.Exists(bt);
 
     public ScanResult Scan(CancellationToken ct = default,
         IProgress<ScanProgress>? progress = null)
@@ -53,6 +63,11 @@ public sealed class Scanner
         // now say what closing the app would free.
         var appRunning = target.AppProcessCandidates.Any(_processes.IsRunning);
 
+        // An upgrade still writes its Panther logs: nothing to offer, and no
+        // skip reason either (that would read as "close an app").
+        if (target.Id == PantherLogsId && _upgradeInProgress())
+            return new TargetScanResult(target, new List<ResolvedItem>(), null);
+
         // ONE probe budget for the whole target (review round 1): every
         // item draws from it, so a many-child temp dir is bounded at the
         // target, not per item.
@@ -75,13 +90,14 @@ public sealed class Scanner
                     continue;
                 }
 
+                // ~\.git counts only as a real folder: a .git FILE is a
+                // worktree's pointer, and removing a junction frees nothing.
+                if (target.Id == ProfileGitId && !IsRealFolder(path)) continue;
+
                 DateTime? lastWrite = null;
                 try { lastWrite = File.GetLastWriteTimeUtc(path); } catch { }
 
-                if (target.Id == "old-installers" &&
-                    (lastWrite is null ||
-                     lastWrite > DateTime.UtcNow.AddDays(-OldInstallerMinAgeDays)))
-                    continue;
+                if (TooYoung(target, lastWrite)) continue;
 
                 items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct),
                     lastWrite, Locked: false));   // probed below, largest first
@@ -146,11 +162,26 @@ public sealed class Scanner
                 DateTime? lastWrite = null;
                 try { lastWrite = File.GetLastWriteTimeUtc(child); } catch { }
 
+                if (TooYoung(target, lastWrite)) continue;
+
                 items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct),
                     lastWrite, Locked: false));   // probed by the caller, largest first
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this child on any other exception
         }
+    }
+
+    /// The target's age rule: an item written within MinAgeDays — or whose
+    /// age cannot be read — is not offered.
+    private static bool TooYoung(CleanupTarget target, DateTime? lastWriteUtc) =>
+        target.MinAgeDays is { } days &&
+        (lastWriteUtc is null || lastWriteUtc > DateTime.UtcNow.AddDays(-days));
+
+    private static bool IsRealFolder(string path)
+    {
+        var attributes = File.GetAttributes(path);
+        return (attributes & FileAttributes.Directory) != 0
+            && (attributes & FileAttributes.ReparsePoint) == 0;
     }
 }
