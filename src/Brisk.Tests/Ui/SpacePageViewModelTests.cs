@@ -152,6 +152,63 @@ public sealed class SpacePageViewModelTests
         Assert.True(shaders.Skipped);                              // the skip is kept
     }
 
+    /// R61: after Tekrar tara the Downloads and archives rows list the new
+    /// scan's files, so a file that aged into the rule between the two scans
+    /// is named before it can be deleted, and one already gone is not.
+    [Fact]
+    public async Task File_lists_follow_the_rescan()
+    {
+        var k = await Make(b => AddRows(b, FakeBackend.Row("space.archives", ActionGroupKind.Space, 4_000,
+            on: false, reversible: false, level: SpaceLevel.Max, lost: true,
+            files: new[] { new ActionFile(@"C:\U\Kali.7z", 4_000, null) })));
+        var page = k.Page();
+        RowViewModel RowOf(string id) => page.Rows.Single(r => r.Id == id);
+        Assert.Equal(new[] { @"C:\D\a.exe", @"C:\D\b.msi" }, RowOf("space.downloads").Files.Select(f => f.Path));
+
+        k.Backend.Space = new ActionGroup(ActionGroupKind.Space, k.Backend.Space!.Items.Select(i => i.Id switch
+        {
+            "space.downloads" => i with { Bytes = 500, Files = new[]
+            {
+                new ActionFile(@"C:\D\new.exe", 400, null), new ActionFile(@"C:\D\b.msi", 100, null),
+            } },
+            "space.archives" => i with { Bytes = 6_000, Files = new[]
+            {
+                new ActionFile(@"C:\U\Kali.7z", 4_000, null), new ActionFile(@"C:\U\Thesis.zip", 2_000, null),
+            } },
+            _ => i,
+        }).ToList());
+        await k.Session.RescanAsync();
+
+        Assert.Equal(new[] { @"C:\D\new.exe", @"C:\D\b.msi" }, RowOf("space.downloads").Files.Select(f => f.Path));
+        Assert.Equal(new[] { @"C:\U\Kali.7z", @"C:\U\Thesis.zip" }, RowOf("space.archives").Files.Select(f => f.Path));
+    }
+
+    /// R61, the row itself: a row kept across a re-plan (the same instance,
+    /// its expand state with it) takes the new plan's files, and says so.
+    [Fact]
+    public async Task A_kept_row_takes_the_new_plans_files()
+    {
+        var k = await Make();
+        var row = k.Page().Rows.Single(r => r.Id == "space.downloads");
+        var raised = new List<string?>();
+        row.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        row.Replace(row.Item with { Bytes = 500, Files = new[]
+        {
+            new ActionFile(@"C:\D\new.exe", 400, null), new ActionFile(@"C:\D\b.msi", 100, null),
+        } });
+
+        Assert.Equal(new[] { @"C:\D\new.exe", @"C:\D\b.msi" }, row.Files.Select(f => f.Path));
+        Assert.Contains(nameof(RowViewModel.Files), raised);
+        Assert.Contains(nameof(RowViewModel.HasFiles), raised);
+
+        raised.Clear();
+        var files = row.Files;
+        row.Replace(row.Item with { Bytes = 500 });                  // the same paths: the same file rows
+        Assert.Same(files, row.Files);
+        Assert.DoesNotContain(nameof(RowViewModel.Files), raised);
+    }
+
     /// A row that cannot come back says so once, in amber: its own cost when
     /// it has one (the Downloads row's "Geri alınamaz."), the plain words
     /// when it has none.

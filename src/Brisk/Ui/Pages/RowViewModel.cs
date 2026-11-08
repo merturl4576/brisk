@@ -31,8 +31,7 @@ public sealed class RowViewModel : ViewModelBase
         _loc = loc;
         _deferredApps = deferredApps;
         _shownLevel = shownLevel;
-        Files = item.Files.OrderByDescending(f => f.Bytes)
-            .Select(f => new FileViewModel(f, session, loc)).ToList();
+        Files = FilesOf(item);
         ToggleExpand = new RelayCommand(() => IsExpanded = !IsExpanded, () => HasDetails);
         TapCommand = new RelayCommand(Tap);
         SelectAllFiles = new RelayCommand(() => SetAllFiles(true));
@@ -160,7 +159,11 @@ public sealed class RowViewModel : ViewModelBase
     public RelayCommand ToggleExpand { get; }
     public RelayCommand SelectAllFiles { get; }
     public RelayCommand SelectNoFiles { get; }
-    public IReadOnlyList<FileViewModel> Files { get; }
+    public IReadOnlyList<FileViewModel> Files { get; private set; }
+
+    /// Largest first, as the row lists them.
+    private IReadOnlyList<FileViewModel> FilesOf(ActionItem item) => item.Files.OrderByDescending(f => f.Bytes)
+        .Select(f => new FileViewModel(f, _session, _loc)).ToList();
 
     private RowResult? ResultRow => _session.Results.TryGetValue(Item.Id, out var r) ? r : null;
 
@@ -191,10 +194,19 @@ public sealed class RowViewModel : ViewModelBase
         foreach (var f in Files) f.IsTicked = on;
     }
 
-    /// The same row in a newer plan: keep the instance, take the new facts.
+    /// The same row in a newer plan: keep the instance, take the new facts —
+    /// its files too (R61), so every file a run deletes is one the row lists.
     internal void Replace(ActionItem item)
     {
         Item = item;
+        if (!item.Files.OrderByDescending(f => f.Bytes).SequenceEqual(Files.Select(f => f.File)))
+        {
+            Files = FilesOf(item);
+            Raise(nameof(Files));
+            Raise(nameof(HasFiles));
+            Raise(nameof(HasDetails));
+            ToggleExpand.RaiseCanExecuteChanged();
+        }
         Refresh();
     }
 
@@ -222,6 +234,7 @@ public sealed class FileViewModel : ViewModelBase
         _loc = loc;
     }
 
+    internal ActionFile File => _file;
     public string Path => _file.Path;
     public string Name => System.IO.Path.GetFileName(_file.Path);
     public string Size => Sizes.Format(_file.Bytes, _loc.Culture);
