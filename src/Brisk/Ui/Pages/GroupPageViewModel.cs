@@ -45,6 +45,8 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     public GroupPageViewModel(ActionSession session, ActionGroupKind group, Loc loc,
         Func<IReadOnlyList<string>> deferredApps, IUiTimers? timers = null, Func<bool>? moving = null)
     {
+        if (group == ActionGroupKind.Space)
+            throw new ArgumentException("Yer aç has its own page (SpacePageViewModel).", nameof(group));
         _session = session;
         Group = group;
         _loc = loc;

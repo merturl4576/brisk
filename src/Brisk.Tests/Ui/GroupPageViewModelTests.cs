@@ -401,6 +401,14 @@ public sealed class GroupPageViewModelTests
         Assert.False(page.ShowUndo);
     }
 
+    /// Yer aç has its own page; a GroupPage for it would show no files and no levels.
+    [Fact]
+    public async Task A_group_page_for_space_is_refused()
+    {
+        var k = await Make();
+        Assert.Throws<ArgumentException>(() => k.Page(ActionGroupKind.Space));
+    }
+
     /// Ruling R56: one run = one undo. After Hepsini yap, Geri al on
     /// Hızlandır and on Gizlilik says it reverts both pages; after a page
     /// run it keeps the plain copy.
