@@ -101,6 +101,24 @@ public sealed class ActionSession
     private static bool UndoesSpeedOrPrivacy(string ruleId) =>
         SpeedAndPrivacyRules.Contains(ruleId) || StartupEntryRule.TryParseId(ruleId, out _, out _);
 
+    /// The page each Speed or Privacy rule belongs to: its catalog row's
+    /// group; a startup entry is Hızlandır's.
+    private static readonly Dictionary<string, ActionGroupKind> RuleGroups = ActionCatalog.Rows
+        .Where(r => r.Group != ActionGroupKind.Space)
+        .SelectMany(r => r.LinkIds.Append(r.Id).Select(id => (Id: id, r.Group)))
+        .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(g => g.Key, g => g.First().Group, StringComparer.OrdinalIgnoreCase);
+
+    private static ActionGroupKind? GroupOfRule(string ruleId) =>
+        RuleGroups.TryGetValue(ruleId, out var g) ? g
+        : StartupEntryRule.TryParseId(ruleId, out _, out _) ? ActionGroupKind.Speed
+        : null;
+
+    /// Geri al on a page: the last run can be undone and changed one of
+    /// this page's settings (ruling R31: also after a rescan).
+    public bool CanUndoFor(ActionGroupKind group) =>
+        CanUndo && LastRun!.UndoableRuleIds.Any(r => GroupOfRule(r) == group);
+
     // ---- level and skips
 
     private ActionItem? Find(string rowId) =>

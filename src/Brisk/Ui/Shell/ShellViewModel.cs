@@ -6,7 +6,6 @@ using BriskEngine.Actions;
 using Brisk.Localization;
 using Brisk.Session;
 using Brisk.Ui.Home;
-using Brisk.Ui.Live;
 using Brisk.Ui.Pages;
 using Brisk.ViewModels;
 
@@ -44,14 +43,11 @@ public sealed class ShellViewModel : ViewModelBase
         _session = session;
         Settings = settings;
         Home = new HomeViewModel(post, background, session, backend, timers, loc, Open);
-        Space = new GroupPageViewModel(session, ActionGroupKind.Space, loc, backend.DeferredApps);
-        Speed = new GroupPageViewModel(session, ActionGroupKind.Speed, loc, backend.DeferredApps);
-        Privacy = new GroupPageViewModel(session, ActionGroupKind.Privacy, loc, backend.DeferredApps);
-        Load = new LoadPanelViewModel(post, background, backend, session, timers, loc);
-        Connections = new ConnectionsViewModel(post, background, backend, timers, loc);
-        Usage = new UsageViewModel(post, background, backend, loc);
-        Speed.Above = new object[] { Load };
-        Privacy.Below = new object[] { Connections, Usage };
+        // The pages play their scan only while brisk's moving background runs (ruling R30).
+        Func<bool> moving = () => clock.IsActive;
+        Space = new GroupPageViewModel(session, ActionGroupKind.Space, loc, backend.DeferredApps, timers, moving);
+        Speed = new GroupPageViewModel(session, ActionGroupKind.Speed, loc, backend.DeferredApps, timers, moving);
+        Privacy = new GroupPageViewModel(session, ActionGroupKind.Privacy, loc, backend.DeferredApps, timers, moving);
         _lastState = session.State;
         _lastUndo = session.UndoResults;
         _homeBadge = Badge(Place.Home);
@@ -67,9 +63,6 @@ public sealed class ShellViewModel : ViewModelBase
     public GroupPageViewModel Space { get; }
     public GroupPageViewModel Speed { get; }
     public GroupPageViewModel Privacy { get; }
-    public LoadPanelViewModel Load { get; }
-    public ConnectionsViewModel Connections { get; }
-    public UsageViewModel Usage { get; }
     public UiSettingsViewModel Settings { get; }
 
     private Place _current = Place.Home;
@@ -81,6 +74,7 @@ public sealed class ShellViewModel : ViewModelBase
             if (value == _current) return;
             Deactivate(_current);
             _current = value;
+            Page(_current)?.Enter();
             if (_visible) Activate(_current);
             Raise(nameof(Current));
             Raise(nameof(CurrentContent));
@@ -99,9 +93,16 @@ public sealed class ShellViewModel : ViewModelBase
         _ => Home,
     };
 
-    /// Rain and the grid floor: Genel and Ayarlar stand on the stage; the
-    /// pages are plain until they get theirs.
-    public bool Decorated => _current is Place.Home or Place.Settings;
+    /// Rain and the grid floor: every place stands on the stage.
+    public bool Decorated => true;
+
+    private GroupPageViewModel? Page(Place place) => place switch
+    {
+        Place.Space => Space,
+        Place.Speed => Speed,
+        Place.Privacy => Privacy,
+        _ => null,
+    };
 
     public bool IsHome { get => _current == Place.Home; set { if (value) Current = Place.Home; } }
     public bool IsSpace { get => _current == Place.Space; set { if (value) Current = Place.Space; } }
@@ -127,7 +128,7 @@ public sealed class ShellViewModel : ViewModelBase
     /// A tile's badge now. Yer aç: the known bytes of the selected level
     /// minus skips (ActionSession.LevelBytes — the Yer aç button's number;
     /// rows with no size and personal files never count). Hızlandır and
-    /// Gizlilik: their rows that are not skipped (the page run's count).
+    /// Gizlilik: the rows their page's button runs (ruling R35).
     /// Genel carries no number, only its ✓ after Hepsini yap.
     public NavBadge Badge(Place place)
     {
@@ -147,8 +148,7 @@ public sealed class ShellViewModel : ViewModelBase
             {
                 if (_session.State == SessionState.Looking && _session.Plan is null && _session.FastGroups.Count == 0)
                     return new NavBadge(null, true, false);
-                var group = place == Place.Speed ? ActionGroupKind.Speed : ActionGroupKind.Privacy;
-                var count = _session.Items.Count(i => i.Group == group && !_session.IsSkipped(i.Id));
+                var count = (place == Place.Speed ? Speed : Privacy).SelectedCount;
                 return new NavBadge(count > 0 ? count.ToString(_loc.Culture) : null, false, done);
             }
             default:
@@ -179,10 +179,23 @@ public sealed class ShellViewModel : ViewModelBase
         RefreshBadges();
     }
 
+    /// A tile gets its ✓ only when a row of its own went through (ruling
+    /// R29); Genel when any row did.
     private void MarkDone(ActionGroupKind? group)
     {
-        foreach (var p in PlacesOf(group)) _done.Add(p);
+        var through = _session.Items
+            .Where(i => _session.Results.TryGetValue(i.Id, out var r) && RowWords.Succeeded(r))
+            .Select(i => i.Group).ToHashSet();
+        foreach (var p in PlacesOf(group))
+            if (p == Place.Home ? through.Count > 0 : through.Contains(GroupOf(p))) _done.Add(p);
     }
+
+    private static ActionGroupKind GroupOf(Place place) => place switch
+    {
+        Place.Space => ActionGroupKind.Space,
+        Place.Speed => ActionGroupKind.Speed,
+        _ => ActionGroupKind.Privacy,
+    };
 
     /// The tiles a run speaks for: Hepsini yap (no group) is Genel and all three pages.
     private static IEnumerable<Place> PlacesOf(ActionGroupKind? group) => group switch
@@ -214,24 +227,13 @@ public sealed class ShellViewModel : ViewModelBase
 
     private void Activate(Place place)
     {
-        switch (place)
-        {
-            case Place.Home: Home.Activate(); break;
-            case Place.Speed: Load.Activate(); break;
-            case Place.Privacy:
-                Connections.Activate();
-                Usage.Activate();
-                break;
-        }
+        if (place == Place.Home) Home.Activate();
+        else Page(place)?.Activate();
     }
 
     private void Deactivate(Place place)
     {
-        switch (place)
-        {
-            case Place.Home: Home.Deactivate(); break;
-            case Place.Speed: Load.Deactivate(); break;
-            case Place.Privacy: Connections.Deactivate(); break;
-        }
+        if (place == Place.Home) Home.Deactivate();
+        else Page(place)?.Deactivate();
     }
 }

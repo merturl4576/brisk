@@ -78,7 +78,7 @@ public sealed class GroupPageViewModelTests
         downloads.SelectAllFiles.Execute(null);
         Assert.All(downloads.Files, f => Assert.True(f.IsTicked));
 
-        Assert.Equal("4 seçili · 15 GB", page.Footer);   // caches, shaders, downloads, bin
+        Assert.Equal("15 GB boşalt", page.Button);   // caches, shaders, downloads, bin
     }
 
     /// No confirmation: the Space page runs its level at once, the Recycle
@@ -104,7 +104,7 @@ public sealed class GroupPageViewModelTests
         page.RunGroup.Execute(null);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
         Assert.Equal(new[] { "privacy.ads" }, k.Backend.Runs.Single().RowIds.ToArray());
-        Assert.Equal("1 seçili", page.Footer);
+        Assert.True(SpinWait.SpinUntil(() => page.Button == "✓ Tamam", 3000));
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public sealed class GroupPageViewModelTests
         });
         await k.Session.RunAllAsync();
         var privacy = k.Page(ActionGroupKind.Privacy).Rows.Single(r => r.Id == "privacy.ads");
-        Assert.Equal("Kapandı ✓", privacy.Result);
+        Assert.Equal("✓ kapandı", privacy.Result);
         Assert.Equal(ResultTone.Good, privacy.ResultTone);
         var failed = k.Page(ActionGroupKind.Speed).Rows.Single(r => r.Id == "speed.animations");
         Assert.Equal("Olmadı", failed.Result);
@@ -175,6 +175,268 @@ public sealed class GroupPageViewModelTests
         var run = k.Session.RunAllAsync();
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Running, 2000));
         Assert.False(page.RunGroup.CanExecute(null));
+        k.Backend.HoldRun.Set();
+        await run;
+    }
+
+    // ---- the Hızlandır and Gizlilik pages (Task 11)
+
+    /// Every timer step runs under the session's lock, so a change landing
+    /// from a look's thread never interleaves with a tick.
+    private static void Step(ManualTimers timers, int ms)
+    {
+        lock (Gate) timers.Advance(TimeSpan.FromMilliseconds(ms));
+    }
+
+    private static int Shown(GroupPageViewModel page) => page.Main.Concat(page.Also).Count(r => r.Revealed);
+
+    /// Entering the page plays the scan: one row every 300 ms, and only rows
+    /// the look has delivered. Before Speed's half arrives nothing shows,
+    /// whatever the clock does; the number is the shown rows that will run.
+    [Fact]
+    public async Task Reveal_never_outruns_results()
+    {
+        var hold = new ManualResetEventSlim(false);
+        var k = new Kit();
+        k.Backend.HoldFast = hold;
+        k.Loc.SetLanguage("tr");
+        k.Session = new ActionSession(k.Backend, a => { lock (Gate) a(); });
+        var timers = new ManualTimers();
+        var page = new GroupPageViewModel(k.Session, ActionGroupKind.Speed, k.Loc, () => new[] { "chrome" },
+            timers, () => true);
+        page.Enter();
+        page.Activate();
+
+        var look = k.Session.LookAsync();
+        Assert.True(SpinWait.SpinUntil(() => k.Session.SpaceReady, 3000));   // the other half is in
+        for (var i = 0; i < 5; i++)
+        {
+            Step(timers, 300);
+            Assert.Equal(PagePhase.Scanning, page.Phase);
+            Assert.Equal(0, Shown(page));
+            Assert.Equal("0", page.Gauge.Number);
+            Assert.False(page.ShowButton);
+            Assert.False(page.ShowRight);
+        }
+        Assert.Equal("Açılış taranıyor…", page.Gauge.Label);
+
+        hold.Set();
+        await look;
+        Assert.True(SpinWait.SpinUntil(() => k.Session.PersonalFilesReady, 3000));
+        Assert.Equal(0, Shown(page));                        // the data is in; the reveal has not stepped yet
+
+        Step(timers, 300);                                   // Spotify
+        Assert.Equal(1, Shown(page));
+        Assert.Equal("1", page.Gauge.Number);
+        Assert.Equal(PagePhase.Scanning, page.Phase);
+        Step(timers, 300);                                   // animations
+        Assert.Equal(2, Shown(page));
+        Assert.Equal("2", page.Gauge.Number);
+        Assert.True(Shown(page) <= page.Main.Count + page.Also.Count);
+        Step(timers, 300);                                   // the scan ends a step after the last row
+        Assert.Equal(PagePhase.Ready, page.Phase);
+        Assert.True(page.ShowButton);
+        Assert.True(page.ShowRight);                         // OneDrive, off by default: İstersen ekle
+        Assert.Equal(new[] { "startup:HKCU:OneDrive" }, page.Extra.Select(r => r.Id));
+        Assert.Equal("2 değişikliği yap", page.Button);
+
+        // A new look restarts the scan on the page being looked at.
+        hold.Reset();
+        var again = k.Session.RescanAsync();
+        Assert.True(SpinWait.SpinUntil(() => k.Session.SpaceReady, 3000));
+        Step(timers, 900);
+        Assert.Equal(PagePhase.Scanning, page.Phase);
+        Assert.Equal(0, Shown(page));
+        hold.Set();
+        await again;
+        Assert.True(SpinWait.SpinUntil(() => k.Session.PersonalFilesReady, 3000));
+
+        // Motion off: every delivered row at once, and no scan once the data is in.
+        var still = new GroupPageViewModel(k.Session, ActionGroupKind.Speed, k.Loc, () => new[] { "chrome" },
+            timers, () => false);
+        still.Enter();
+        still.Activate();
+        Assert.Equal(PagePhase.Ready, still.Phase);
+        Assert.Equal(2, Shown(still));
+
+        // Leaving stops the page's timer.
+        page.Deactivate();
+        still.Deactivate();
+        Assert.Equal(0, timers.Live);
+    }
+
+    /// A tap skips a row or takes it back; a row off by default is added.
+    /// The number, the button and the nav badge use the same count.
+    [Fact]
+    public async Task Tap_toggles_skip_and_total()
+    {
+        var k = await Make();
+        var page = k.Page(ActionGroupKind.Speed);
+        Assert.Equal(new[] { "startup:HKCU:Spotify" }, page.Main.Select(r => r.Id));
+        Assert.Equal(new[] { "speed.animations" }, page.Also.Select(r => r.Id));
+        Assert.Equal(2, page.SelectedCount);
+        Assert.Equal("2", page.Gauge.Number);
+        Assert.Equal("değişiklik", page.Gauge.Unit);
+
+        var spotify = page.Main.Single();
+        Assert.Equal("durdur", spotify.Value);
+        spotify.Tap();
+        Assert.True(spotify.Skipped);
+        Assert.True(spotify.Off);
+        Assert.True(k.Session.IsSkipped("startup:HKCU:Spotify"));
+        Assert.Equal(1, page.SelectedCount);
+        Assert.Equal("1", page.Gauge.Number);
+        Assert.Equal("1 ayarı değiştir", page.Button);
+        spotify.TapCommand.Execute(null);
+        Assert.False(spotify.Skipped);
+        Assert.Equal("2 değişikliği yap", page.Button);
+
+        page.Also.Single().Tap();
+        Assert.Equal("1 uygulamayı durdur", page.Button);
+        Assert.Equal("Açılışta durdurulacak", page.Gauge.Label);
+        Assert.Equal("uygulama", page.Gauge.Unit);
+        Assert.Equal("Windows ile açılan 2 uygulamadan", page.Gauge.Caption);
+
+        var onedrive = page.Extra.Single();
+        Assert.Equal("+ ekle", onedrive.Value);
+        Assert.False(onedrive.Off);
+        onedrive.Tap();
+        Assert.True(onedrive.Added);
+        Assert.Equal("✓ eklendi", onedrive.Value);
+        Assert.Equal(2, page.SelectedCount);
+        Assert.Equal("2 uygulamayı durdur", page.Button);
+
+        // Privacy: "İstersen ekle" holds location; the button says "kapat".
+        var privacy = k.Page(ActionGroupKind.Privacy);
+        Assert.Equal("1 ayarı kapat", privacy.Button);
+        privacy.Extra.Single().Tap();
+        Assert.Equal("2 ayarı kapat", privacy.Button);
+        Assert.Equal("Bilgisayarından dışarı veri gönderen ayarlar", privacy.Gauge.Caption);
+    }
+
+    /// Bırakıyorum: a startup app off by default with a cost (brisk protects
+    /// it). It says "kalsın" and a tap does nothing.
+    [Fact]
+    public async Task Protected_startup_apps_stay_and_cannot_be_tapped()
+    {
+        var k = await Make(b => b.Fast[0] = b.Fast[0] with
+        {
+            Items = b.Fast[0].Items.Append(new ActionItem("startup:HKLM:SecurityHealth", ActionGroupKind.Speed, null,
+                "Windows Güvenliği", null, "Virus protection", null, null, null, false, false, true, true,
+                ActionLinkKind.Rules, new[] { "startup:HKLM:SecurityHealth" }, Array.Empty<ActionFile>())).ToList(),
+        });
+        var page = k.Page(ActionGroupKind.Speed);
+        var keep = page.Keep.Single();
+        Assert.Equal("startup:HKLM:SecurityHealth", keep.Id);
+        Assert.Equal("kalsın", keep.Value);
+        keep.Tap();
+        Assert.True(k.Session.IsSkipped(keep.Id));
+        Assert.Equal(2, page.SelectedCount);
+    }
+
+    [Fact]
+    public async Task Button_disabled_when_nothing_selected()
+    {
+        var k = await Make();
+        var page = k.Page(ActionGroupKind.Privacy);
+        Assert.True(page.RunGroup.CanExecute(null));
+        page.Main.Single().Tap();
+        Assert.Equal(0, page.SelectedCount);
+        Assert.Equal("Hiçbir şey seçili değil", page.Button);
+        Assert.False(page.RunGroup.CanExecute(null));
+        Assert.Equal("0", page.Gauge.Number);
+        page.RunGroup.Execute(null);
+        Assert.Empty(k.Backend.Runs);
+
+        var speed = k.Page(ActionGroupKind.Speed);
+        foreach (var r in speed.Main.Concat(speed.Also).ToList()) r.Tap();
+        Assert.Equal("Hiçbir şey seçili değil", speed.Button);
+        Assert.False(speed.RunGroup.CanExecute(null));
+    }
+
+    /// The run turns the rows green with their own word, the gauge says
+    /// what happened, the button reads "✓ Tamam" and Geri al shows; it
+    /// stays for that run after a rescan (ruling R31), and only on the page
+    /// whose settings the run changed.
+    [Fact]
+    public async Task Undo_visible_after_done()
+    {
+        var k = await Make();
+        var page = k.Page(ActionGroupKind.Speed);
+        var privacy = k.Page(ActionGroupKind.Privacy);
+        var space = k.Page(ActionGroupKind.Space);
+        Assert.False(page.ShowUndo);
+
+        page.RunGroup.Execute(null);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done && !k.Session.Busy, 3000));
+        Assert.Equal(PagePhase.Done, page.Phase);
+        Assert.Equal("✓ Tamam", page.Button);
+        Assert.True(page.ButtonOk);
+        Assert.False(page.RunGroup.CanExecute(null));
+        Assert.True(page.ShowUndo);
+        Assert.True(page.Undo.CanExecute(null));
+        Assert.Equal("✓ durdu", page.Main.Single().Value);
+        Assert.True(page.Main.Single().Done);
+        Assert.Equal("✓ kapandı", page.Also.Single().Value);
+        Assert.Equal("Değiştirildi", page.Gauge.Label);
+        Assert.Equal("2", page.Gauge.Number);
+        Assert.True(page.Gauge.Green);
+        Assert.Equal("Farkı bir sonraki açılışta görürsün", page.Gauge.Caption);
+        Assert.False(privacy.ShowUndo);
+        Assert.Equal("Tekrar tara", privacy.Button);           // run once, then rescan (ruling R37)
+        Assert.False(space.ShowUndo);
+
+        await k.Session.RescanAsync();
+        Assert.Equal(PagePhase.Ready, page.Phase);
+        Assert.True(page.ShowUndo);
+        Assert.Equal("2 değişikliği yap", page.Button);
+        Assert.False(privacy.ShowUndo);
+
+        page.Undo.Execute(null);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.UndoResults is not null && k.Session.State == SessionState.Ready
+            && !k.Session.Busy, 3000));
+        Assert.Contains("startup:HKCU:Spotify", k.Backend.UndoneRules);
+        Assert.False(page.ShowUndo);
+    }
+
+    /// Every row failed: no green, no "✓ Tamam"; the gauge says Olmadı and
+    /// the button offers a fresh look.
+    [Fact]
+    public async Task A_run_where_everything_failed_offers_a_rescan()
+    {
+        var k = await Make(b => b.Outcome = i => new RowResult(i.Id, RowOutcome.Failed, "access denied", null, 0, 0));
+        var page = k.Page(ActionGroupKind.Privacy);
+        page.RunGroup.Execute(null);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done && !k.Session.Busy, 3000));
+        Assert.Equal(PagePhase.Done, page.Phase);
+        Assert.Equal("Olmadı", page.Gauge.Label);
+        Assert.True(page.Gauge.Bad);
+        Assert.False(page.Gauge.Green);
+        Assert.Equal("Tekrar tara", page.Button);
+        Assert.False(page.ButtonOk);
+        Assert.False(page.ShowUndo);
+        Assert.Equal("Olmadı", page.Main.Single().Value);
+        Assert.True(page.RunGroup.CanExecute(null));
+        page.RunGroup.Execute(null);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Ready && !k.Session.Busy, 3000));
+        Assert.Equal("1 ayarı kapat", page.Button);
+    }
+
+    /// While a run goes the page says so and nothing is tappable.
+    [Fact]
+    public async Task Running_page_says_so_and_ignores_taps()
+    {
+        var k = await Make();
+        k.Backend.HoldRun = new ManualResetEventSlim(false);
+        var page = k.Page(ActionGroupKind.Privacy);
+        var run = k.Session.RunAsync(ActionGroupKind.Privacy);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Running, 2000));
+        Assert.Equal(PagePhase.Running, page.Phase);
+        Assert.Equal("Kapatılıyor…", page.Button);
+        Assert.True(page.ButtonBusy);
+        Assert.Equal("Kapatılıyor…", page.Gauge.Label);
+        page.Extra.Single().Tap();
+        Assert.False(page.Extra.Single().Added);
         k.Backend.HoldRun.Set();
         await run;
     }

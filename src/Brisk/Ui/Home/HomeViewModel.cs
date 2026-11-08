@@ -464,11 +464,11 @@ public sealed class HomeViewModel : ViewModelBase
             return new HomeStrip("", back, notBack > 0 ? Tone.Warn : Tone.Good, runAll, taken, HomeButton.RunAll, false);
         }
         if (!taken) return new HomeStrip("", _loc["gui.state.nothing"], Tone.Good, null, false, HomeButton.None, false);
-        var apps = items.Count(i => i.Group == ActionGroupKind.Speed && s.InRunAll(i));
-        var settings = items.Count(i => i.Group == ActionGroupKind.Privacy && s.InRunAll(i));
+        // Apps and settings as the pages count them (ruling R34): a Speed setting is a setting.
+        var (apps, settings) = RowWords.Count(items.Where(s.InRunAll));
         return new HomeStrip(_loc["gui.home.strip.ready"],
             string.Join(Sep, Sizes.Format(s.LevelBytes(SpaceLevel.Min), C),
-                _loc.F("gui.home.strip.apps", apps), _loc.F("gui.home.strip.settings", settings)),
+                RowWords.Apps(apps, _loc), RowWords.Settings(settings, _loc)),
             Tone.Normal, runAll, true, HomeButton.RunAll, false);
     }
 
@@ -481,18 +481,14 @@ public sealed class HomeViewModel : ViewModelBase
     private HomeStrip DoneStrip(IReadOnlyList<ActionItem> items)
     {
         var s = _session;
-        var groupOf = items.GroupBy(i => i.Id, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().Group, StringComparer.OrdinalIgnoreCase);
-        int Through(ActionGroupKind group) => s.Results.Values.Count(r =>
-            r.Outcome is RowOutcome.Done or RowOutcome.PendingRestart
-            && r.ReadBack is not (ReadBackState.Reverted or ReadBackState.WrittenButIgnored)
-            && groupOf.TryGetValue(r.RowId, out var g) && g == group);
+        var (apps, settings) = RowWords.Count(items.DistinctBy(i => i.Id, StringComparer.OrdinalIgnoreCase)
+            .Where(i => s.Results.TryGetValue(i.Id, out var r) && RowWords.Succeeded(r)));
 
         var parts = new List<string>();
         if (s.RunGroup is null or ActionGroupKind.Space)
             parts.Add(Sizes.Format(s.Receipt?.FreedBytes ?? s.Results.Values.Sum(r => r.BytesFreed), C));
-        if (Through(ActionGroupKind.Speed) is > 0 and var apps) parts.Add(_loc.F("gui.home.strip.apps", apps));
-        if (Through(ActionGroupKind.Privacy) is > 0 and var settings) parts.Add(_loc.F("gui.home.strip.settings", settings));
+        if (apps > 0) parts.Add(RowWords.Apps(apps, _loc));
+        if (settings > 0) parts.Add(RowWords.Settings(settings, _loc));
         var failed = s.Results.Values.Count(r => r.Outcome == RowOutcome.Failed);
         if (failed > 0) parts.Add(_loc.F("gui.state.done.failed", failed));
         if (s.Results.Values.Any(r => r.Outcome == RowOutcome.PendingRestart))

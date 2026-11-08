@@ -509,6 +509,64 @@
   <data name="gui.footer.count" xml:space="preserve"><value>{0} ticked</value></data>
   <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} ticked · {1}</value></data>
   <data name="gui.footer.run" xml:space="preserve"><value>Do these</value></data>
+  <data name="gui.row.verb.stop" xml:space="preserve"><value>stop</value></data>
+  <data name="gui.row.verb.on" xml:space="preserve"><value>turn on</value></data>
+  <data name="gui.row.verb.off" xml:space="preserve"><value>turn off</value></data>
+  <data name="gui.row.verb.delete" xml:space="preserve"><value>delete</value></data>
+  <data name="gui.row.done.stop" xml:space="preserve"><value>✓ stopped</value></data>
+  <data name="gui.row.done.on" xml:space="preserve"><value>✓ on</value></data>
+  <data name="gui.row.done.off" xml:space="preserve"><value>✓ off</value></data>
+  <data name="gui.row.done.delete" xml:space="preserve"><value>✓ deleted</value></data>
+  <data name="gui.page.button.none" xml:space="preserve"><value>Nothing selected</value></data>
+  <data name="gui.page.button.ok" xml:space="preserve"><value>✓ Done</value></data>
+  <data name="gui.page.button.space" xml:space="preserve"><value>Free {0}</value></data>
+  <data name="gui.page.button.apps" xml:space="preserve"><value>Stop {0} apps</value></data>
+  <data name="gui.page.button.apps.one" xml:space="preserve"><value>Stop {0} app</value></data>
+  <data name="gui.page.button.settings" xml:space="preserve"><value>Change {0} settings</value></data>
+  <data name="gui.page.button.settings.one" xml:space="preserve"><value>Change {0} setting</value></data>
+  <data name="gui.page.button.mixed" xml:space="preserve"><value>Make {0} changes</value></data>
+  <data name="gui.page.button.mixed.one" xml:space="preserve"><value>Make {0} change</value></data>
+  <data name="gui.page.button.privacy" xml:space="preserve"><value>Turn off {0} settings</value></data>
+  <data name="gui.page.button.privacy.one" xml:space="preserve"><value>Turn off {0} setting</value></data>
+  <data name="gui.home.strip.apps.one" xml:space="preserve"><value>{0} app</value></data>
+  <data name="gui.home.strip.settings.one" xml:space="preserve"><value>{0} setting</value></data>
+  <data name="gui.page.speed.list" xml:space="preserve"><value>What I'll stop</value></data>
+  <data name="gui.page.privacy.list" xml:space="preserve"><value>What I'll turn off</value></data>
+  <data name="gui.page.space.list" xml:space="preserve"><value>What I'll delete</value></data>
+  <data name="gui.page.speed.also" xml:space="preserve"><value>Also</value></data>
+  <data name="gui.page.speed.keep" xml:space="preserve"><value>Leaving alone</value></data>
+  <data name="gui.page.extra" xml:space="preserve"><value>Add if you like</value></data>
+  <data name="gui.page.hint" xml:space="preserve"><value>tap to skip</value></data>
+  <data name="gui.page.keep.value" xml:space="preserve"><value>stays</value></data>
+  <data name="gui.page.extra.add" xml:space="preserve"><value>+ add</value></data>
+  <data name="gui.page.extra.added" xml:space="preserve"><value>✓ added</value></data>
+  <data name="gui.page.speed.scan" xml:space="preserve"><value>Reading startup…</value></data>
+  <data name="gui.page.privacy.scan" xml:space="preserve"><value>Reading settings…</value></data>
+  <data name="gui.page.space.scan" xml:space="preserve"><value>Scanning…</value></data>
+  <data name="gui.page.speed.label.apps" xml:space="preserve"><value>Stopped at startup</value></data>
+  <data name="gui.page.speed.label.mixed" xml:space="preserve"><value>To change</value></data>
+  <data name="gui.page.privacy.label" xml:space="preserve"><value>To turn off</value></data>
+  <data name="gui.page.space.label" xml:space="preserve"><value>Can be freed</value></data>
+  <data name="gui.page.unit.apps" xml:space="preserve"><value>apps</value></data>
+  <data name="gui.page.unit.apps.one" xml:space="preserve"><value>app</value></data>
+  <data name="gui.page.unit.settings" xml:space="preserve"><value>settings</value></data>
+  <data name="gui.page.unit.settings.one" xml:space="preserve"><value>setting</value></data>
+  <data name="gui.page.unit.changes" xml:space="preserve"><value>changes</value></data>
+  <data name="gui.page.unit.changes.one" xml:space="preserve"><value>change</value></data>
+  <data name="gui.page.speed.caption.apps" xml:space="preserve"><value>of the {0} apps that start with Windows</value></data>
+  <data name="gui.page.privacy.caption" xml:space="preserve"><value>Settings that send data off your PC</value></data>
+  <data name="gui.page.space.caption" xml:space="preserve"><value>{0} of unneeded files found</value></data>
+  <data name="gui.page.speed.busy.apps" xml:space="preserve"><value>Stopping…</value></data>
+  <data name="gui.page.speed.busy.mixed" xml:space="preserve"><value>Working…</value></data>
+  <data name="gui.page.privacy.busy" xml:space="preserve"><value>Turning off…</value></data>
+  <data name="gui.page.space.busy" xml:space="preserve"><value>Freeing…</value></data>
+  <data name="gui.page.speed.done.apps" xml:space="preserve"><value>Stopped</value></data>
+  <data name="gui.page.speed.done.mixed" xml:space="preserve"><value>Changed</value></data>
+  <data name="gui.page.privacy.done" xml:space="preserve"><value>Turned off</value></data>
+  <data name="gui.page.space.done" xml:space="preserve"><value>Freed</value></data>
+  <data name="gui.page.speed.done.caption" xml:space="preserve"><value>You'll feel it on the next start</value></data>
+  <data name="gui.page.privacy.done.caption" xml:space="preserve"><value>Windows works the same, less data leaves</value></data>
+  <data name="gui.page.space.done.caption" xml:space="preserve"><value>Caches grow back on their own as needed</value></data>
   <data name="gui.load.title" xml:space="preserve"><value>Slowing you now</value></data>
   <data name="gui.load.none" xml:space="preserve"><value>Nothing is slowing you now ✓</value></data>
   <data name="gui.conn.title" xml:space="preserve"><value>Talking to now</value></data>

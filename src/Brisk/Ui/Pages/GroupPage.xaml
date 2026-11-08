@@ -192,7 +192,6 @@
 
         <ScrollViewer Grid.Row="1" Style="{StaticResource Ui.Scroll}">
             <StackPanel MaxWidth="860" HorizontalAlignment="Left" Width="860">
-                <ItemsControl ItemsSource="{Binding Above}" />
                 <ItemsControl ItemsSource="{Binding Rows}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -214,14 +213,13 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <ItemsControl ItemsSource="{Binding Below}" Margin="0,24,0,0" />
             </StackPanel>
         </ScrollViewer>
 
         <DockPanel Grid.Row="2" Margin="0,14,0,0">
             <Button DockPanel.Dock="Right" Style="{StaticResource Ui.Primary}" Command="{Binding RunGroup}"
                     Content="{Binding L[gui.footer.run]}" />
-            <TextBlock Style="{StaticResource Ui.MutedText}" VerticalAlignment="Center" Text="{Binding Footer}" />
+            <TextBlock Style="{StaticResource Ui.MutedText}" VerticalAlignment="Center" Text="{Binding Button}" />
         </DockPanel>
     </Grid>
 </UserControl>

@@ -118,43 +118,12 @@ public sealed class NewGuiSnapshotTests
         return p;
     }, "new-page-space");
 
+    /// The 0.11.0 live panels are not on the pages (ruling R36).
     [Fact]
-    public void Page_Speed_WithWhatIsSlowingYou() => ShootPage(() =>
-    {
-        var b = Catalog();
-        b.Load.Add(new AppLoad("MsMpEng", "MsMpEng", 22, 300L << 20, true, "action.load.note.defender",
-            "Defender is scanning", new[] { 9 }, false));
-        b.Startup.Add(new BriskEngine.Diagnostics.StartupEntry("HKCU", "Discord", true, false, @"C:\D\Discord.exe"));
-        var page = Page(b, ActionGroupKind.Speed);
-        var loc = page.L;
-        var gate = new object();
-        var load = new Brisk.Ui.Live.LoadPanelViewModel(a => { lock (gate) a(); }, a => a(), b,
-            SessionOf(page), new ManualTimers(), loc);
-        load.Activate();
-        page.Above = new object[] { load };
-        return page;
-    }, "new-page-speed");
+    public void Page_Speed() => ShootPage(() => Page(Catalog(), ActionGroupKind.Speed), "new-page-speed");
 
     [Fact]
-    public void Page_Privacy_WithConnectionsAndUsage() => ShootPage(() =>
-    {
-        var b = Catalog();
-        b.Usage = new[]
-        {
-            new UsageRow("Google Chrome", 3L << 30, 41L << 30), new UsageRow("Windows (system)", 900L << 20, 12L << 30),
-            new UsageRow("Discord", 400L << 20, 6L << 30),
-        };
-        var page = Page(b, ActionGroupKind.Privacy);
-        var loc = page.L;
-        var gate = new object();
-        Action<Action> post = a => { lock (gate) a(); };
-        var conn = new Brisk.Ui.Live.ConnectionsViewModel(post, a => a(), b, new ManualTimers(), loc);
-        var usage = new Brisk.Ui.Live.UsageViewModel(post, a => a(), b, loc);
-        conn.Activate();
-        usage.Activate();
-        page.Below = new object[] { conn, usage };
-        return page;
-    }, "new-page-privacy");
+    public void Page_Privacy() => ShootPage(() => Page(Catalog(), ActionGroupKind.Privacy), "new-page-privacy");
 
     internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr", Brisk.Ui.AmbientClock? clock = null)
     {

@@ -8,7 +8,8 @@ using Brisk.Session;
 namespace Brisk.Tests.Session;
 
 /// The engine as the window sees it, scripted. Everything is synchronous;
-/// HoldRun blocks a run until a test releases it, HoldPersonal the walk for
+/// HoldRun blocks a run until a test releases it, HoldFast and HoldScan the
+/// two halves of a look, HoldPersonal the walk for
 /// personal files. Nothing here touches the machine (ruling R6).
 public sealed class FakeBackend : IActionBackend
 {
@@ -38,7 +39,14 @@ public sealed class FakeBackend : IActionBackend
     public List<int> Closed = new(), Killed = new();
     public HashSet<int> Alive = new();
 
-    public IReadOnlyList<ActionGroup> BuildFast() => FailFast is null ? Fast : throw FailFast;
+    /// Blocks the fast half of a look (Speed and Privacy) until a test releases it.
+    public ManualResetEventSlim? HoldFast;
+
+    public IReadOnlyList<ActionGroup> BuildFast()
+    {
+        HoldFast?.Wait(TimeSpan.FromSeconds(10));
+        return FailFast is null ? Fast : throw FailFast;
+    }
 
     /// Blocks the space half of a look until a test releases it.
     public ManualResetEventSlim? HoldScan;

@@ -509,6 +509,64 @@
   <data name="gui.footer.count" xml:space="preserve"><value>{0} seçili</value></data>
   <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} seçili · {1}</value></data>
   <data name="gui.footer.run" xml:space="preserve"><value>Bunları yap</value></data>
+  <data name="gui.row.verb.stop" xml:space="preserve"><value>durdur</value></data>
+  <data name="gui.row.verb.on" xml:space="preserve"><value>aç</value></data>
+  <data name="gui.row.verb.off" xml:space="preserve"><value>kapat</value></data>
+  <data name="gui.row.verb.delete" xml:space="preserve"><value>sil</value></data>
+  <data name="gui.row.done.stop" xml:space="preserve"><value>✓ durdu</value></data>
+  <data name="gui.row.done.on" xml:space="preserve"><value>✓ açıldı</value></data>
+  <data name="gui.row.done.off" xml:space="preserve"><value>✓ kapandı</value></data>
+  <data name="gui.row.done.delete" xml:space="preserve"><value>✓ silindi</value></data>
+  <data name="gui.page.button.none" xml:space="preserve"><value>Hiçbir şey seçili değil</value></data>
+  <data name="gui.page.button.ok" xml:space="preserve"><value>✓ Tamam</value></data>
+  <data name="gui.page.button.space" xml:space="preserve"><value>{0} boşalt</value></data>
+  <data name="gui.page.button.apps" xml:space="preserve"><value>{0} uygulamayı durdur</value></data>
+  <data name="gui.page.button.apps.one" xml:space="preserve"><value>{0} uygulamayı durdur</value></data>
+  <data name="gui.page.button.settings" xml:space="preserve"><value>{0} ayarı değiştir</value></data>
+  <data name="gui.page.button.settings.one" xml:space="preserve"><value>{0} ayarı değiştir</value></data>
+  <data name="gui.page.button.mixed" xml:space="preserve"><value>{0} değişikliği yap</value></data>
+  <data name="gui.page.button.mixed.one" xml:space="preserve"><value>{0} değişikliği yap</value></data>
+  <data name="gui.page.button.privacy" xml:space="preserve"><value>{0} ayarı kapat</value></data>
+  <data name="gui.page.button.privacy.one" xml:space="preserve"><value>{0} ayarı kapat</value></data>
+  <data name="gui.home.strip.apps.one" xml:space="preserve"><value>{0} uygulama</value></data>
+  <data name="gui.home.strip.settings.one" xml:space="preserve"><value>{0} ayar</value></data>
+  <data name="gui.page.speed.list" xml:space="preserve"><value>Durduracaklarım</value></data>
+  <data name="gui.page.privacy.list" xml:space="preserve"><value>Kapatacaklarım</value></data>
+  <data name="gui.page.space.list" xml:space="preserve"><value>Sileceklerim</value></data>
+  <data name="gui.page.speed.also" xml:space="preserve"><value>Ayrıca</value></data>
+  <data name="gui.page.speed.keep" xml:space="preserve"><value>Bırakıyorum</value></data>
+  <data name="gui.page.extra" xml:space="preserve"><value>İstersen ekle</value></data>
+  <data name="gui.page.hint" xml:space="preserve"><value>dokunursan atlarım</value></data>
+  <data name="gui.page.keep.value" xml:space="preserve"><value>kalsın</value></data>
+  <data name="gui.page.extra.add" xml:space="preserve"><value>+ ekle</value></data>
+  <data name="gui.page.extra.added" xml:space="preserve"><value>✓ eklendi</value></data>
+  <data name="gui.page.speed.scan" xml:space="preserve"><value>Açılış taranıyor…</value></data>
+  <data name="gui.page.privacy.scan" xml:space="preserve"><value>Ayarlar okunuyor…</value></data>
+  <data name="gui.page.space.scan" xml:space="preserve"><value>Taranıyor…</value></data>
+  <data name="gui.page.speed.label.apps" xml:space="preserve"><value>Açılışta durdurulacak</value></data>
+  <data name="gui.page.speed.label.mixed" xml:space="preserve"><value>Değiştirilecek</value></data>
+  <data name="gui.page.privacy.label" xml:space="preserve"><value>Kapatılacak</value></data>
+  <data name="gui.page.space.label" xml:space="preserve"><value>Boşaltılabilir</value></data>
+  <data name="gui.page.unit.apps" xml:space="preserve"><value>uygulama</value></data>
+  <data name="gui.page.unit.apps.one" xml:space="preserve"><value>uygulama</value></data>
+  <data name="gui.page.unit.settings" xml:space="preserve"><value>ayar</value></data>
+  <data name="gui.page.unit.settings.one" xml:space="preserve"><value>ayar</value></data>
+  <data name="gui.page.unit.changes" xml:space="preserve"><value>değişiklik</value></data>
+  <data name="gui.page.unit.changes.one" xml:space="preserve"><value>değişiklik</value></data>
+  <data name="gui.page.speed.caption.apps" xml:space="preserve"><value>Windows ile açılan {0} uygulamadan</value></data>
+  <data name="gui.page.privacy.caption" xml:space="preserve"><value>Bilgisayarından dışarı veri gönderen ayarlar</value></data>
+  <data name="gui.page.space.caption" xml:space="preserve"><value>{0} gereksiz dosya bulundu</value></data>
+  <data name="gui.page.speed.busy.apps" xml:space="preserve"><value>Durduruluyor…</value></data>
+  <data name="gui.page.speed.busy.mixed" xml:space="preserve"><value>Yapılıyor…</value></data>
+  <data name="gui.page.privacy.busy" xml:space="preserve"><value>Kapatılıyor…</value></data>
+  <data name="gui.page.space.busy" xml:space="preserve"><value>Boşaltılıyor…</value></data>
+  <data name="gui.page.speed.done.apps" xml:space="preserve"><value>Durduruldu</value></data>
+  <data name="gui.page.speed.done.mixed" xml:space="preserve"><value>Değiştirildi</value></data>
+  <data name="gui.page.privacy.done" xml:space="preserve"><value>Kapatıldı</value></data>
+  <data name="gui.page.space.done" xml:space="preserve"><value>Boşaldı</value></data>
+  <data name="gui.page.speed.done.caption" xml:space="preserve"><value>Farkı bir sonraki açılışta görürsün</value></data>
+  <data name="gui.page.privacy.done.caption" xml:space="preserve"><value>Windows aynen çalışır, dışarı giden veri azalır</value></data>
+  <data name="gui.page.space.done.caption" xml:space="preserve"><value>Önbellekler gerektikçe kendiliğinden yeniden oluşur</value></data>
   <data name="gui.load.title" xml:space="preserve"><value>Şu an kasanlar</value></data>
   <data name="gui.load.none" xml:space="preserve"><value>Şu an seni yavaşlatan yok ✓</value></data>
   <data name="gui.conn.title" xml:space="preserve"><value>Şu an konuştukları</value></data>

@@ -185,6 +185,9 @@ public sealed class ShellViewModelTests : IDisposable
         Assert.All(Tiles, p => Assert.False(k.Shell.Badge(p).Done));
     }
 
+    /// Only the place on screen runs: Home's monitor, or the page's scan.
+    /// The pages stand on the stage too; the 0.11.0 live panels are not on
+    /// them (ruling R36), so nothing samples load or connections.
     [Fact]
     public async Task Navigating_ActivatesOnlyTheShownPlace()
     {
@@ -193,23 +196,67 @@ public sealed class ShellViewModelTests : IDisposable
         Assert.Equal(Place.Home, k.Shell.Current);
         var homeSamples = k.Backend.MonitorSamples;                 // Home's live monitor
         Assert.True(homeSamples >= 1);
-        Assert.Equal(0, k.Backend.LoadSamples);
 
         k.Shell.Current = Place.Speed;
-        Assert.Equal(1, k.Backend.LoadSamples);                     // the speed panel samples at once
         Assert.False(k.Shell.Home.IsActive);
-        Assert.False(k.Shell.Decorated);
+        Assert.True(k.Shell.Speed.IsActive);
+        Assert.True(k.Shell.Decorated);
+        // Entering plays the page's scan; the moving background is on.
+        Assert.Equal(Brisk.Ui.Pages.PagePhase.Scanning, k.Shell.Speed.Phase);
 
         k.Shell.Current = Place.Privacy;
-        Assert.Equal(1, k.Backend.UsageReads);
-        var reads = k.Backend.ConnectionReads;
+        Assert.False(k.Shell.Speed.IsActive);
+        Assert.True(k.Shell.Privacy.IsActive);
         k.Timers.Advance(TimeSpan.FromSeconds(4));
-        Assert.True(k.Backend.ConnectionReads > reads);
+        Assert.Equal(Brisk.Ui.Pages.PagePhase.Ready, k.Shell.Privacy.Phase);
         Assert.Equal(homeSamples, k.Backend.MonitorSamples);       // Home's sampler stopped with it
+        Assert.Equal(0, k.Backend.LoadSamples);
+        Assert.Equal(0, k.Backend.ConnectionReads);
+        Assert.Equal(0, k.Backend.UsageReads);
 
         k.Shell.Current = Place.Home;
         Assert.True(k.Shell.Decorated);
         Assert.True(k.Shell.Home.IsActive);
+        Assert.False(k.Shell.Privacy.IsActive);
+    }
+
+    /// The nav badge and the page's button share one count (ruling R35): a
+    /// row added on a page counts on its tile too.
+    [Fact]
+    public async Task Badge_count_is_the_page_buttons_count()
+    {
+        var k = await Make();
+        Assert.Equal("2", k.Shell.SpeedBadge.Text);
+        Assert.Equal("2 değişikliği yap", k.Shell.Speed.Button);
+        k.Shell.Speed.Extra.Single().Tap();                          // OneDrive, off by default
+        Assert.Equal(3, k.Shell.Speed.SelectedCount);
+        Assert.Equal("3", k.Shell.SpeedBadge.Text);
+        Assert.Equal("3 değişikliği yap", k.Shell.Speed.Button);   // two apps and a setting
+        k.Shell.Privacy.Main.Single().Tap();
+        Assert.Null(k.Shell.PrivacyBadge.Text);
+        Assert.Equal("Hiçbir şey seçili değil", k.Shell.Privacy.Button);
+    }
+
+    /// ✓ follows the page's done state: a run where every row failed leaves
+    /// no tick (ruling R29); one row through is enough.
+    [Fact]
+    public async Task Badge_done_only_when_a_row_went_through()
+    {
+        var k = await Make(setup: b => b.Outcome = i => new RowResult(i.Id, RowOutcome.Failed, "denied", null, 0, 0));
+        await k.Session.RunAsync(ActionGroupKind.Privacy);
+        Assert.Equal(SessionState.Done, k.Session.State);
+        Assert.False(k.Shell.PrivacyBadge.Done);
+
+        // Hepsini yap: only the Speed row went through.
+        await k.Session.RescanAsync();
+        k.Backend.Outcome = i => i.Id == "speed.animations"
+            ? new RowResult(i.Id, RowOutcome.Done, null, null, 0, 0)
+            : new RowResult(i.Id, RowOutcome.Failed, "denied", null, 0, 0);
+        await k.Session.RunAllAsync();
+        Assert.True(k.Shell.SpeedBadge.Done);
+        Assert.True(k.Shell.HomeBadge.Done);
+        Assert.False(k.Shell.PrivacyBadge.Done);
+        Assert.False(k.Shell.SpaceBadge.Done);
     }
 
     [Fact]

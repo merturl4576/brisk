@@ -205,13 +205,13 @@ public sealed class HomeViewModelTests
     public async Task Strip_after_run_all_offers_undo_only_for_speed_privacy()
     {
         var k = await Make(WithHibernation);
-        Assert.Equal("brisk hazır: 6,6 GB · 2 uygulama · 1 ayar", k.Vm.Strip.Text);
+        Assert.Equal("brisk hazır: 6,6 GB · 1 uygulama · 2 ayar", k.Vm.Strip.Text);
         Assert.Equal("Hepsini yap", k.Vm.Strip.Button);
         Assert.False(k.Vm.Strip.ShowUndo);
 
         k.Vm.Primary.Execute(null);
         Assert.True(Until(() => k.Session.State == SessionState.Done));
-        Assert.Equal("Son işlem: 6,6 GB · 2 uygulama · 1 ayar", k.Vm.Strip.Text);
+        Assert.Equal("Son işlem: 6,6 GB · 1 uygulama · 2 ayar", k.Vm.Strip.Text);
         Assert.Equal("Tekrar tara", k.Vm.Strip.Button);
         Assert.True(k.Vm.Strip.ShowUndo);
         Assert.Contains("hibernation", k.Session.LastRun!.UndoableRuleIds);
@@ -270,7 +270,7 @@ public sealed class HomeViewModelTests
             : new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0));
         await k.Session.RunAllAsync();
         Assert.True(Until(() => k.Session.State == SessionState.Done));
-        Assert.Equal("Son işlem: 5,6 GB · 2 uygulama · 1 ayar · tam etki için yeniden başlat", k.Vm.Strip.Text);
+        Assert.Equal("Son işlem: 5,6 GB · 1 uygulama · 2 ayar · tam etki için yeniden başlat", k.Vm.Strip.Text);
 
         var plain = await Make();
         await plain.Session.RunAllAsync();
@@ -372,7 +372,7 @@ public sealed class HomeViewModelTests
     public async Task Primary_RunsAll_WithoutAsking()
     {
         var k = await Make();
-        Assert.Equal("brisk hazır: 5,6 GB · 2 uygulama · 1 ayar", k.Vm.Strip.Text);
+        Assert.Equal("brisk hazır: 5,6 GB · 1 uygulama · 2 ayar", k.Vm.Strip.Text);
         k.Vm.Primary.Execute(null);
         Assert.True(Until(() => k.Session.State == SessionState.Done));
         var ran = Assert.Single(k.Backend.Runs);
@@ -391,7 +391,7 @@ public sealed class HomeViewModelTests
         var k = await Make();
         k.Session.ToggleSkip("startup:HKCU:Spotify");
         k.Session.ToggleSkip("space.caches");
-        Assert.Equal("brisk hazır: 0 GB · 1 uygulama · 1 ayar", k.Vm.Strip.Text);
+        Assert.Equal("brisk hazır: 0 GB · 0 uygulama · 2 ayar", k.Vm.Strip.Text);
     }
 
     [Fact]
