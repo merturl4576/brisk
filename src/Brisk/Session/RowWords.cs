@@ -56,13 +56,11 @@ public static class RowWords
         _ => "delete",
     };
 
-    /// The page's one button: "15 GB boşalt", "2 uygulamayı durdur", "2 ayarı
+    /// Hızlandır's and Gizlilik's one button: "2 uygulamayı durdur", "2 ayarı
     /// değiştir", "3 değişikliği yap", "2 ayarı kapat"; nothing selected says so.
-    public static string Button(ActionGroupKind group, IReadOnlyCollection<ActionItem> selected, Loc loc, long bytes)
+    public static string Button(ActionGroupKind group, IReadOnlyCollection<ActionItem> selected, Loc loc)
     {
         if (selected.Count == 0) return loc["gui.page.button.none"];
-        if (group == ActionGroupKind.Space)
-            return loc.F("gui.page.button.space", Sizes.Format(bytes, loc.Culture));
         if (group == ActionGroupKind.Privacy) return Counted("gui.page.button.privacy", selected.Count, loc);
         var (apps, settings) = Count(selected);
         var key = settings == 0 ? "gui.page.button.apps"

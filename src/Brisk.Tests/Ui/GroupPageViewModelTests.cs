@@ -16,6 +16,10 @@ public sealed class GroupPageViewModelTests
         public Loc Loc = new();
         public ActionSession Session = null!;
         public GroupPageViewModel Page(ActionGroupKind g) => new(Session, g, Loc, () => new[] { "chrome" });
+
+        /// Yer aç has its own page; its rows are the same RowViewModel.
+        public SpacePageViewModel Space() => new(Session, Loc, () => new[] { "chrome" }, () => null,
+            a => a(), a => { lock (Gate) a(); });
     }
 
     private static async Task<Kit> Make(Action<FakeBackend>? setup = null)
@@ -32,7 +36,7 @@ public sealed class GroupPageViewModelTests
     public async Task Rows_FollowThePlanOrder_AndTickTheSession()
     {
         var k = await Make();
-        var page = k.Page(ActionGroupKind.Space);
+        var page = k.Space();
         Assert.Equal(new[] { "space.caches", "space.shaders", "space.downloads", "space.recycle-bin" },
             page.Rows.Select(r => r.Id));
         var shaders = page.Rows[1];
@@ -55,7 +59,7 @@ public sealed class GroupPageViewModelTests
     public async Task Rows_KeepTheirInstances_WhenOnlyTicksChange()
     {
         var k = await Make();
-        var page = k.Page(ActionGroupKind.Space);
+        var page = k.Space();
         var first = page.Rows[0];
         k.Session.ToggleSkip("space.recycle-bin");
         Assert.Same(first, page.Rows[0]);
@@ -66,7 +70,7 @@ public sealed class GroupPageViewModelTests
     {
         var k = await Make();
         k.Session.SetLevel(SpaceLevel.Mid);                     // the Downloads row is MID
-        var page = k.Page(ActionGroupKind.Space);
+        var page = k.Space();
         var downloads = page.Rows.Single(r => r.Id == "space.downloads");
         Assert.Equal(new[] { "a.exe", "b.msi" }, downloads.Files.Select(f => f.Name));
         Assert.True(downloads.HasDetails);
@@ -88,7 +92,7 @@ public sealed class GroupPageViewModelTests
     {
         var k = await Make();
         k.Session.SetLevel(SpaceLevel.Mid);
-        var page = k.Page(ActionGroupKind.Space);
+        var page = k.Space();
         Assert.True(page.RunGroup.CanExecute(null));
         page.RunGroup.Execute(null);
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
@@ -123,7 +127,7 @@ public sealed class GroupPageViewModelTests
         var failed = k.Page(ActionGroupKind.Speed).Rows.Single(r => r.Id == "speed.animations");
         Assert.Equal("Olmadı", failed.Result);
         Assert.Equal("access denied", failed.ResultReason);
-        var deferred = k.Page(ActionGroupKind.Space).Rows.Single(r => r.Id == "space.caches");
+        var deferred = k.Space().Rows.Single(r => r.Id == "space.caches");
         Assert.Equal("chrome kapanınca temizlenecek", deferred.Result);
     }
 
@@ -134,7 +138,7 @@ public sealed class GroupPageViewModelTests
             ? new RowResult(i.Id, RowOutcome.Skipped, "nothing to clean", null, 0, 0)
             : new RowResult(i.Id, RowOutcome.Done, null, null, 0, 0));
         await k.Session.RunAllAsync();
-        var row = k.Page(ActionGroupKind.Space).Rows.Single(r => r.Id == "space.caches");
+        var row = k.Space().Rows.Single(r => r.Id == "space.caches");
         Assert.Equal("Atlandı", row.Result);
         Assert.Equal(ResultTone.Muted, row.ResultTone);
         Assert.Null(row.ResultReason);
@@ -147,7 +151,7 @@ public sealed class GroupPageViewModelTests
         {
             ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.caches"), 100),
         }));
-        var row = k.Page(ActionGroupKind.Space).Rows.Single();
+        var row = k.Space().Rows.Single();
         var turkish = row.Title;
         var raised = new List<string?>();
         row.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
@@ -161,7 +165,7 @@ public sealed class GroupPageViewModelTests
     public async Task Expand_OpensTheRow()
     {
         var k = await Make();
-        var page = k.Page(ActionGroupKind.Space);
+        var page = k.Space();
         page.Expand("space.downloads");
         Assert.True(page.Rows.Single(r => r.Id == "space.downloads").IsExpanded);
     }
@@ -364,7 +368,6 @@ public sealed class GroupPageViewModelTests
         var k = await Make();
         var page = k.Page(ActionGroupKind.Speed);
         var privacy = k.Page(ActionGroupKind.Privacy);
-        var space = k.Page(ActionGroupKind.Space);
         Assert.False(page.ShowUndo);
 
         page.RunGroup.Execute(null);
@@ -384,7 +387,6 @@ public sealed class GroupPageViewModelTests
         Assert.Equal("Farkı bir sonraki açılışta görürsün", page.Gauge.Caption);
         Assert.False(privacy.ShowUndo);
         Assert.Equal("Tekrar tara", privacy.Button);           // run once, then rescan (ruling R37)
-        Assert.False(space.ShowUndo);
 
         await k.Session.RescanAsync();
         Assert.Equal(PagePhase.Ready, page.Phase);

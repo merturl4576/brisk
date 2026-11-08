@@ -223,7 +223,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
             if (_session.State is SessionState.Done or SessionState.Failed) return _loc["gui.button.rescan"];
             // The rows are in but the rest of the look is not: the run waits
             // for it, and the button says so (ruling R41).
-            if (_session.State == SessionState.Looking) return _loc["gui.page.space.scan"];
+            if (_session.State == SessionState.Looking) return _loc["gui.page.scan"];
             if (SelectedCount == 0) return _loc["gui.page.button.none"];
             return _loc.F("gui.page.button.space", Sizes.Format(_session.LevelBytes(Level), _loc.Culture));
         }
@@ -246,7 +246,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
                 {
                     var shown = Rows.Where(r => r.Revealed && r.Item.Bytes is not null && _session.WillRun(r.Item))
                         .Sum(r => _session.SelectedBytes(r.Item));
-                    return new SpaceGauge(_loc["gui.page.space.scan"], shown, null, Ratio(shown, total), false, false);
+                    return new SpaceGauge(_loc["gui.page.scan"], shown, null, Ratio(shown, total), false, false);
                 }
                 case PagePhase.Running:
                 {

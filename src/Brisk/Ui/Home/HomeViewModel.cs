@@ -16,6 +16,12 @@ namespace Brisk.Ui.Home;
 /// The parts the floor satellites stand for, in floor order: front, right, left.
 public enum Part { Cpu, Gpu, Ram }
 
+/// The colour the strip's figures wear.
+public enum Tone { Normal, Good, Warn, Bad }
+
+/// What the strip's button does.
+public enum HomeButton { None, RunAll, Rescan, Retry }
+
 /// The right column's spec blocks, one per icon.
 public enum SpecBlock { Disk, Cpu, Gpu, Ram }
 

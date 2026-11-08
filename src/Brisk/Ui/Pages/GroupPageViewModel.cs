@@ -24,10 +24,10 @@ public enum PageSection { Main, Also, Keep, Extra }
 public sealed record PageGauge(string Label, string Number, string? Unit, string? Caption, double Fraction,
     bool Green, bool Bad);
 
-/// One of the three detail pages: its group's rows in plan order, split in
-/// the page's lists; one button that runs the page (or offers a new look
-/// once a run is over); Geri al for the last undoable run. The ticks are the
-/// session's, shared with Home.
+/// Hızlandır or Gizlilik (Yer aç has SpacePageViewModel): its group's rows
+/// in plan order, split in the page's lists; one button that runs the page
+/// (or offers a new look once a run is over); Geri al for the last undoable
+/// run. The ticks are the session's, shared with Home.
 ///
 /// The scan: entering the page plays it, one Main/Also row every 300 ms,
 /// and only rows the look has delivered. With brisk's moving background off
@@ -62,7 +62,6 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     public ActionGroupKind Group { get; }
     public Loc L => _loc;
     public string Title => _loc[$"gui.page.{_key}.title"];
-    public string Header => _loc[$"gui.page.{_key}.header"];
     public string ListTitle => _loc[$"gui.page.{_key}.list"];
     public string Hint => _loc["gui.page.hint"];
     public string AlsoTitle => _loc["gui.page.speed.also"];
@@ -117,9 +116,8 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
             if (_session.State is SessionState.Done or SessionState.Failed) return _loc["gui.button.rescan"];
             // This page's rows are in but the rest of the look is not: the run
             // waits for it, and the button says so (ruling R41).
-            if (_session.State == SessionState.Looking) return _loc["gui.page.space.scan"];
-            var selected = Selected().ToList();
-            return RowWords.Button(Group, selected, _loc, selected.Sum(_session.SelectedBytes));
+            if (_session.State == SessionState.Looking) return _loc["gui.page.scan"];
+            return RowWords.Button(Group, Selected().ToList(), _loc);
         }
     }
 
@@ -150,13 +148,6 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
                 _ => ReadyLabel(shown),
             };
             var caption = phase == PagePhase.Scanning ? null : ReadyCaption(shown);
-            if (Group == ActionGroupKind.Space)
-            {
-                var bytes = shown.Sum(_session.SelectedBytes);
-                var (number, unit) = Sizes.Split(bytes, _loc.Culture);
-                var total = Items().Sum(i => i.Bytes ?? 0);
-                return new PageGauge(label, number, unit, caption, Ratio(bytes, total), false, false);
-            }
             var listed = phase == PagePhase.Scanning ? Math.Max(Listed().Count(), 1) : Denominator(shown);
             return new PageGauge(label, shown.Count.ToString(_loc.Culture), Unit(shown), caption,
                 Ratio(shown.Count, listed), false, false);
@@ -191,9 +182,8 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     }
 
     /// The look has delivered this page's rows.
-    private bool DataIn => Group == ActionGroupKind.Space
-        ? _session.SpaceReady || _session.State != SessionState.Looking
-        : _session.Plan is not null || _session.FastGroups.Count > 0 || _session.State != SessionState.Looking;
+    private bool DataIn =>
+        _session.Plan is not null || _session.FastGroups.Count > 0 || _session.State != SessionState.Looking;
 
     private IEnumerable<RowViewModel> Listed() => Main.Concat(Also);
 
@@ -226,8 +216,6 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     private string ReadyCaption(IReadOnlyCollection<ActionItem> shown) => Group switch
     {
         ActionGroupKind.Speed => SpeedCaption(shown),
-        ActionGroupKind.Space => _loc.F("gui.page.space.caption",
-            Sizes.Format(Items().Sum(i => i.Bytes ?? 0), _loc.Culture)),
         _ => _loc["gui.page.privacy.caption"],
     };
 
@@ -268,20 +256,13 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
         var ran = Ran().ToList();
         var through = Succeeded().ToList();
         if (through.Count == 0)
-            return new PageGauge(_loc["action.result.failed"], "0", Group == ActionGroupKind.Space ? "GB" : Unit(through),
-                null, 0, false, true);
+            return new PageGauge(_loc["action.result.failed"], "0", Unit(through), null, 0, false, true);
         var label = Group switch
         {
             ActionGroupKind.Speed => _loc[AppsOnly(through) ? "gui.page.speed.done.apps" : "gui.page.speed.done.mixed"],
             _ => _loc[$"gui.page.{_key}.done"],
         };
         var caption = _loc[$"gui.page.{_key}.done.caption"];
-        if (Group == ActionGroupKind.Space)
-        {
-            var freed = through.Sum(i => _session.Results[i.Id].BytesFreed);
-            var (number, unit) = Sizes.Split(freed, _loc.Culture);
-            return new PageGauge(label, number, unit, caption, Ratio(through.Count, ran.Count), true, false);
-        }
         return new PageGauge(label, through.Count.ToString(_loc.Culture), Unit(through), caption,
             Ratio(through.Count, ran.Count), true, false);
     }
@@ -314,7 +295,7 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
 
     private void OnLanguage(object? sender, PropertyChangedEventArgs e)
     {
-        foreach (var name in new[] { nameof(Title), nameof(Header), nameof(ListTitle), nameof(Hint), nameof(AlsoTitle),
+        foreach (var name in new[] { nameof(Title), nameof(ListTitle), nameof(Hint), nameof(AlsoTitle),
                      nameof(KeepTitle), nameof(ExtraTitle), nameof(UndoText) })
             Raise(name);
         RaiseState();
@@ -324,10 +305,9 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     /// Hızlandır: startup apps on by default, then the settings ("Ayrıca");
     /// a startup app off by default with a cost is protected (Bırakıyorum);
     /// every other row off by default may be added. Gizlilik: on by default,
-    /// or İstersen ekle. Yer aç keeps one list until its own page (Task 12).
+    /// or İstersen ekle.
     private PageSection SectionOf(ActionItem item)
     {
-        if (Group == ActionGroupKind.Space) return PageSection.Main;
         if (item.DefaultOn)
             return Group == ActionGroupKind.Speed && !RowWords.IsStartupApp(item) ? PageSection.Also : PageSection.Main;
         return Group == ActionGroupKind.Speed && RowWords.IsStartupApp(item) && item.Cost is not null

@@ -10,7 +10,7 @@ using BriskEngine.Models;
 namespace Brisk.Session;
 
 /// Every engine call the window makes. Calls may block (a scan, a run, a
-/// ten-second load sample, a walk of the user's folders, a WMI read);
+/// walk of the user's folders, a WMI read);
 /// callers run them off the UI thread.
 public interface IActionBackend
 {
@@ -26,14 +26,6 @@ public interface IActionBackend
     void ProcessDeferred();
     IReadOnlyList<DeferredCleanQueue.Entry> DeferredPending();
     IReadOnlyList<string> DeferredApps();
-    int EnabledStartupCount();
-    IReadOnlyList<StartupEntry> StartupEntries();
-    IReadOnlyList<AppLoad> SampleLoad();
-    ConnectionSnapshot ReadConnections();
-    IReadOnlyList<UsageRow>? ReadUsage();
-    void Close(IReadOnlyList<int> pids);
-    void Kill(IReadOnlyList<int> pids);
-    bool IsRunning(IReadOnlyList<int> pids);
 
     /// The user's own large files (VM disks, ISOs, emulators): listed locked,
     /// never counted, never deleted. A walk of seconds; throws

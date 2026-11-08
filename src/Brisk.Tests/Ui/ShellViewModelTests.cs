@@ -210,9 +210,6 @@ public sealed class ShellViewModelTests : IDisposable
         k.Timers.Advance(TimeSpan.FromSeconds(4));
         Assert.Equal(Brisk.Ui.Pages.PagePhase.Ready, k.Shell.Privacy.Phase);
         Assert.Equal(homeSamples, k.Backend.MonitorSamples);       // Home's sampler stopped with it
-        Assert.Equal(0, k.Backend.LoadSamples);
-        Assert.Equal(0, k.Backend.ConnectionReads);
-        Assert.Equal(0, k.Backend.UsageReads);
 
         k.Shell.Current = Place.Home;
         Assert.True(k.Shell.Decorated);

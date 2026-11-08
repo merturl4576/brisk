@@ -27,17 +27,6 @@ public sealed class FakeBackend : IActionBackend
     public int DeferredProcessed;
     public List<DeferredCleanQueue.Entry> Deferred = new();
     public List<string> DeferredAppNames = new();
-    public int Enabled = 14;
-    public List<StartupEntry> Startup = new();
-    public List<AppLoad> Load = new();
-    public int LoadSamples;
-    public ConnectionSnapshot Connections = new(Array.Empty<ConnectionRow>(), true);
-    public Exception? FailConnections;
-    public int ConnectionReads;
-    public IReadOnlyList<UsageRow>? Usage = Array.Empty<UsageRow>();
-    public int UsageReads;
-    public List<int> Closed = new(), Killed = new();
-    public HashSet<int> Alive = new();
 
     /// Blocks the fast half of a look (Speed and Privacy) until a test releases it.
     public ManualResetEventSlim? HoldFast;
@@ -116,20 +105,6 @@ public sealed class FakeBackend : IActionBackend
     public void ProcessDeferred() => DeferredProcessed++;
     public IReadOnlyList<DeferredCleanQueue.Entry> DeferredPending() => Deferred;
     public IReadOnlyList<string> DeferredApps() => DeferredAppNames;
-    public int EnabledStartupCount() => Enabled;
-    public IReadOnlyList<StartupEntry> StartupEntries() => Startup;
-    public IReadOnlyList<AppLoad> SampleLoad() { LoadSamples++; return Load; }
-
-    public ConnectionSnapshot ReadConnections()
-    {
-        ConnectionReads++;
-        return FailConnections is null ? Connections : throw FailConnections;
-    }
-
-    public IReadOnlyList<UsageRow>? ReadUsage() { UsageReads++; return Usage; }
-    public void Close(IReadOnlyList<int> pids) => Closed.AddRange(pids);
-    public void Kill(IReadOnlyList<int> pids) { Killed.AddRange(pids); foreach (var p in pids) Alive.Remove(p); }
-    public bool IsRunning(IReadOnlyList<int> pids) => pids.Any(Alive.Contains);
 
     public List<PersonalFile> Personal = new();
     /// When set, decides each walk's answer by its call number (1-based).

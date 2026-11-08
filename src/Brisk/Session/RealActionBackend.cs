@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -78,24 +77,6 @@ public sealed class RealActionBackend : IActionBackend
     public IReadOnlyList<string> DeferredApps() => _engine.Deferred.Pending()
         .Select(e => CleanupTargetRegistry.All.FirstOrDefault(t => t.Id == e.TargetId)?.AppDisplayName)
         .OfType<string>().Distinct().ToList();
-
-    public int EnabledStartupCount() => _engine.Startup.List().Count(e => e.Enabled);
-    public IReadOnlyList<StartupEntry> StartupEntries() => _engine.Startup.List();
-    public IReadOnlyList<AppLoad> SampleLoad() => _engine.Load.Sample();
-    public ConnectionSnapshot ReadConnections() => _engine.Connections.Read();
-    public IReadOnlyList<UsageRow>? ReadUsage() => _engine.Usage.Top();
-    public void Close(IReadOnlyList<int> pids) => _engine.Closer.RequestClose(pids);
-    public void Kill(IReadOnlyList<int> pids) => _engine.Closer.Kill(pids);
-
-    public bool IsRunning(IReadOnlyList<int> pids) => pids.Any(pid =>
-    {
-        try
-        {
-            using var p = Process.GetProcessById(pid);
-            return !p.HasExited;
-        }
-        catch (Exception) { return false; }
-    });
 
     public IReadOnlyList<PersonalFile> PersonalFiles(CancellationToken ct) =>
         BriskEngine.Cleaning.PersonalFiles.Find(BriskEngine.Cleaning.PersonalFiles.DefaultRoots(), ct);

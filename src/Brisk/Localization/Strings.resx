@@ -430,10 +430,6 @@
   <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetry connections {0} → {1}</value></data>
   <data name="action.restart" xml:space="preserve"><value>Restart for full effect</value></data>
   <data name="action.undo" xml:space="preserve"><value>Undo</value></data>
-  <data name="gui.home.label.looking" xml:space="preserve"><value>Looking</value></data>
-  <data name="gui.home.label.ready" xml:space="preserve"><value>Space to free</value></data>
-  <data name="gui.home.label.freed" xml:space="preserve"><value>Freed</value></data>
-  <data name="gui.home.label.failed" xml:space="preserve"><value>Couldn't look</value></data>
   <data name="gui.home.cpu" xml:space="preserve"><value>{0}% CPU</value></data>
   <data name="gui.home.part.cpu" xml:space="preserve"><value>CPU</value></data>
   <data name="gui.home.part.gpu" xml:space="preserve"><value>Graphics</value></data>
@@ -463,52 +459,28 @@
   <data name="gui.home.strip.last" xml:space="preserve"><value>Last run:</value></data>
   <data name="gui.home.strip.apps" xml:space="preserve"><value>{0} apps</value></data>
   <data name="gui.home.strip.settings" xml:space="preserve"><value>{0} settings</value></data>
-  <data name="gui.sat.speed" xml:space="preserve"><value>Speed up · at startup</value></data>
-  <data name="gui.sat.space" xml:space="preserve"><value>Free up space</value></data>
-  <data name="gui.sat.privacy" xml:space="preserve"><value>Privacy</value></data>
-  <data name="gui.sat.speed.value" xml:space="preserve"><value>{0} → {1}</value></data>
-  <data name="gui.sat.speed.done" xml:space="preserve"><value>✓ {0} left</value></data>
-  <data name="gui.sat.space.done" xml:space="preserve"><value>✓ {0}</value></data>
-  <data name="gui.sat.privacy.value" xml:space="preserve"><value>{0} settings</value></data>
-  <data name="gui.sat.privacy.done" xml:space="preserve"><value>✓ {0} off</value></data>
-  <data name="gui.sat.pending" xml:space="preserve"><value>…</value></data>
-  <data name="gui.state.looking" xml:space="preserve"><value>Looking: {0} · {1}/{2}</value></data>
   <data name="gui.state.looking.start" xml:space="preserve"><value>Looking…</value></data>
-  <data name="gui.state.ready" xml:space="preserve"><value>Ready · {0} tasks ticked</value></data>
   <data name="gui.state.nothing" xml:space="preserve"><value>Nothing to do ✓</value></data>
   <data name="gui.state.running" xml:space="preserve"><value>Working: {0}</value></data>
   <data name="gui.state.running.slow" xml:space="preserve"><value>{0} · may take minutes</value></data>
-  <data name="gui.state.done.freed" xml:space="preserve"><value>{0} freed</value></data>
-  <data name="gui.state.done.startup" xml:space="preserve"><value>{0} apps off startup</value></data>
-  <data name="gui.state.done.privacy" xml:space="preserve"><value>{0} settings off</value></data>
   <data name="gui.state.done.deferred" xml:space="preserve"><value>{0} more when {1} closes</value></data>
   <data name="gui.state.done.failed" xml:space="preserve"><value>{0} didn't work</value></data>
   <data name="gui.state.done.restart" xml:space="preserve"><value>restart for full effect</value></data>
   <data name="gui.state.undone" xml:space="preserve"><value>{0} settings undone · deleted files don't come back</value></data>
   <data name="gui.state.failed" xml:space="preserve"><value>Couldn't look: {0}</value></data>
-  <data name="gui.state.previous" xml:space="preserve"><value>Last time: {0}</value></data>
-  <data name="gui.state.previous.boot" xml:space="preserve"><value>startup {0} s → {1} s</value></data>
-  <data name="gui.state.previous.ram" xml:space="preserve"><value>{0} RAM freed</value></data>
   <data name="gui.button.run-all" xml:space="preserve"><value>Do it all</value></data>
-  <data name="gui.button.looking" xml:space="preserve"><value>Looking…</value></data>
   <data name="gui.button.running" xml:space="preserve"><value>Working…</value></data>
   <data name="gui.button.undo" xml:space="preserve"><value>Undo</value></data>
   <data name="gui.button.rescan" xml:space="preserve"><value>Scan again</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Try again</value></data>
   <data name="gui.load.measuring" xml:space="preserve"><value>Measuring…</value></data>
   <data name="gui.page.space.title" xml:space="preserve"><value>Free up space</value></data>
-  <data name="gui.page.space.header" xml:space="preserve"><value>Ticked ones get deleted</value></data>
   <data name="gui.page.speed.title" xml:space="preserve"><value>Speed up</value></data>
-  <data name="gui.page.speed.header" xml:space="preserve"><value>Ticked ones stop</value></data>
   <data name="gui.page.privacy.title" xml:space="preserve"><value>Privacy</value></data>
-  <data name="gui.page.privacy.header" xml:space="preserve"><value>Ticked ones are stopped</value></data>
   <data name="gui.row.restart" xml:space="preserve"><value>After restart</value></data>
   <data name="gui.row.windows-name" xml:space="preserve"><value>In Windows: {0}</value></data>
   <data name="gui.files.all" xml:space="preserve"><value>Select all</value></data>
   <data name="gui.files.none" xml:space="preserve"><value>None</value></data>
-  <data name="gui.footer.count" xml:space="preserve"><value>{0} ticked</value></data>
-  <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} ticked · {1}</value></data>
-  <data name="gui.footer.run" xml:space="preserve"><value>Do these</value></data>
   <data name="gui.row.verb.stop" xml:space="preserve"><value>stop</value></data>
   <data name="gui.row.verb.on" xml:space="preserve"><value>turn on</value></data>
   <data name="gui.row.verb.off" xml:space="preserve"><value>turn off</value></data>
@@ -542,7 +514,7 @@
   <data name="gui.page.extra.added" xml:space="preserve"><value>✓ added</value></data>
   <data name="gui.page.speed.scan" xml:space="preserve"><value>Reading startup…</value></data>
   <data name="gui.page.privacy.scan" xml:space="preserve"><value>Reading settings…</value></data>
-  <data name="gui.page.space.scan" xml:space="preserve"><value>Scanning…</value></data>
+  <data name="gui.page.scan" xml:space="preserve"><value>Scanning…</value></data>
   <data name="gui.page.speed.label.apps" xml:space="preserve"><value>Stopped at startup</value></data>
   <data name="gui.page.speed.label.mixed" xml:space="preserve"><value>To change</value></data>
   <data name="gui.page.privacy.label" xml:space="preserve"><value>To turn off</value></data>
@@ -566,7 +538,6 @@
   <data name="gui.page.space.done" xml:space="preserve"><value>Freed</value></data>
   <data name="gui.page.speed.done.caption" xml:space="preserve"><value>You'll feel it on the next start</value></data>
   <data name="gui.page.privacy.done.caption" xml:space="preserve"><value>Windows works the same, less data leaves</value></data>
-  <data name="gui.page.space.done.caption" xml:space="preserve"><value>Caches grow back on their own as needed</value></data>
   <data name="gui.level.min" xml:space="preserve"><value>MIN</value></data>
   <data name="gui.level.mid" xml:space="preserve"><value>MID</value></data>
   <data name="gui.level.max" xml:space="preserve"><value>MAX</value></data>

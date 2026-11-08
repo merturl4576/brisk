@@ -23,18 +23,6 @@ public sealed class NewGuiSnapshotTests
     internal static FakeBackend Rich()
     {
         var b = FakeBackend.Typical();
-        b.Load.AddRange(new[]
-        {
-            new AppLoad("chrome", "Google Chrome", 34, 2L << 30, false, null, null, new[] { 1 }, true),
-            new AppLoad("claude", "Claude", 2, 1_500L << 20, false, null, null, new[] { 2 }, true),
-            new AppLoad("discord", "Discord", 1, 900L << 20, false, null, null, new[] { 3 }, true),
-        });
-        b.Connections = new ConnectionSnapshot(new[]
-        {
-            new ConnectionRow("Google Chrome", "Google", "www.google.com", 6, false, false),
-            new ConnectionRow("Discord", "Cloudflare", null, 2, false, false),
-            new ConnectionRow("Windows", "Microsoft", "v10.events.data.microsoft.com", 1, true, false),
-        }, true);
         // The maintainer's laptop as Home reads it (specs verified live
         // 2026-11-07; the load numbers are the mockup's): the tallest columns
         // Home draws — a battery with health and cycles, two GPUs, a CPU

@@ -26,21 +26,19 @@ public sealed class RowWordsTests
         var loc = Tr();
         var apps = new[] { App("Spotify"), App("Discord") };
         var settings = new[] { Catalog("speed.animations"), Catalog("speed.windowed-games") };
-        Assert.Equal("2 uygulamayı durdur", RowWords.Button(ActionGroupKind.Speed, apps, loc, 0));
-        Assert.Equal("2 ayarı değiştir", RowWords.Button(ActionGroupKind.Speed, settings, loc, 0));
-        Assert.Equal("3 değişikliği yap", RowWords.Button(ActionGroupKind.Speed, apps.Append(settings[0]).ToList(), loc, 0));
-        Assert.Equal("Hiçbir şey seçili değil", RowWords.Button(ActionGroupKind.Speed, Array.Empty<ActionItem>(), loc, 0));
+        Assert.Equal("2 uygulamayı durdur", RowWords.Button(ActionGroupKind.Speed, apps, loc));
+        Assert.Equal("2 ayarı değiştir", RowWords.Button(ActionGroupKind.Speed, settings, loc));
+        Assert.Equal("3 değişikliği yap", RowWords.Button(ActionGroupKind.Speed, apps.Append(settings[0]).ToList(), loc));
+        Assert.Equal("Hiçbir şey seçili değil", RowWords.Button(ActionGroupKind.Speed, Array.Empty<ActionItem>(), loc));
     }
 
     [Fact]
-    public void Privacy_and_space_buttons()
+    public void Privacy_buttons()
     {
         var loc = Tr();
         Assert.Equal("2 ayarı kapat", RowWords.Button(ActionGroupKind.Privacy,
-            new[] { Catalog("privacy.ads"), Catalog("privacy.location") }, loc, 0));
-        Assert.Equal("Hiçbir şey seçili değil", RowWords.Button(ActionGroupKind.Privacy, Array.Empty<ActionItem>(), loc, 0));
-        Assert.Equal("5,6 GB boşalt", RowWords.Button(ActionGroupKind.Space,
-            new[] { FakeBackend.Row("space.caches", ActionGroupKind.Space, 6_000_000_000) }, loc, 6_000_000_000));
+            new[] { Catalog("privacy.ads"), Catalog("privacy.location") }, loc));
+        Assert.Equal("Hiçbir şey seçili değil", RowWords.Button(ActionGroupKind.Privacy, Array.Empty<ActionItem>(), loc));
     }
 
     /// English says "1 app" and "2 apps"; Turkish has one form.
@@ -49,8 +47,8 @@ public sealed class RowWordsTests
     {
         var loc = new Loc();
         loc.SetLanguage("en");
-        Assert.Equal("Stop 1 app", RowWords.Button(ActionGroupKind.Speed, new[] { App("Spotify") }, loc, 0));
-        Assert.Equal("Stop 2 apps", RowWords.Button(ActionGroupKind.Speed, new[] { App("Spotify"), App("Discord") }, loc, 0));
+        Assert.Equal("Stop 1 app", RowWords.Button(ActionGroupKind.Speed, new[] { App("Spotify") }, loc));
+        Assert.Equal("Stop 2 apps", RowWords.Button(ActionGroupKind.Speed, new[] { App("Spotify"), App("Discord") }, loc));
         Assert.Equal("1 app", RowWords.Apps(1, loc));
         Assert.Equal("3 settings", RowWords.Settings(3, loc));
         Assert.Equal("1 uygulama", RowWords.Apps(1, Tr()));
