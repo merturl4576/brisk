@@ -13,7 +13,7 @@ namespace Brisk.Ui.Pages;
 /// One plain row: a title in everyday words, a short cost line, and a value
 /// on the right: what brisk will do ("durdur", a size), then what it did
 /// ("✓ durdu"). A tap skips the row or takes it back; a row off by default
-/// is added. Windows' own name shows on hover (and, for Downloads, every file).
+/// is added. Windows' own name shows on hover (and, for Downloads and archives, every file).
 public sealed class RowViewModel : ViewModelBase
 {
     private readonly ActionSession _session;

@@ -90,7 +90,7 @@ Sana ait büyük dosyalar *Senin dosyaların · brisk dokunmaz* başlığı alt�
 
 ### Silmeden önce soru sormaz
 
-Pencere çıkmaz. Hepsini yap MIN çalıştırır ve MIN'de hiçbir satır turuncuyla geri gelmez diye işaretli değil: MIN, kendini yeniden kuran önbellekler ile bir daha gerekmeyecek eski kurulum kayıtları, çökme raporları ve sürücü kurulum dosyalarıdır. Geri gelmeyecek bir satır bunu satırın üstünde, turuncuyla söyler ("Geri alınamaz." ya da tam olarak neyin kaybolduğu); bu satırlar MID ve MAX'ta durur ve ancak Yer aç sayfasında o seviyeyi seçersen çalışır. MAX ekranda uyarılır, sorulmaz. Her satır sen bir şeye basmadan önce ekranda ve dokunursan atlanır.
+Pencere çıkmaz. Hepsini yap MIN çalıştırır ve MIN'de hiçbir satır turuncuyla geri gelmez diye işaretli değil: MIN, kendini yeniden kuran önbellekler ve geçici dosyalar, Windows Update indirmeleri ve güncelleme artıkları ile bir daha gerekmeyecek eski kurulum kayıtları, çökme raporları ve sürücü kurulum dosyalarıdır. Geri gelmeyecek bir satır bunu satırın üstünde, turuncuyla söyler ("Geri alınamaz." ya da tam olarak neyin kaybolduğu); bu satırlar MID ve MAX'ta durur ve ancak Yer aç sayfasında o seviyeyi seçersen çalışır. MAX ekranda uyarılır, sorulmaz. Her satır sen bir şeye basmadan önce ekranda ve dokunursan atlanır.
 
 ---
 

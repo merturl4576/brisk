@@ -90,7 +90,7 @@ Large files that are yours are listed under *Your files · brisk won't touch the
 
 ### Nothing asks before deleting
 
-There is no dialog. Do it all runs MIN, and no MIN row is marked in amber as one that cannot come back: MIN is caches that rebuild themselves, plus old setup logs, crash reports and driver installers that are never needed again. A row that cannot come back says so on the row, in amber ("Can't be undone.", or exactly what is lost), and those rows sit at MID and MAX, which run only when you pick that level on the Free up space page. MAX is warned on screen, not asked. Every row is on screen before you press anything, and a tap skips it.
+There is no dialog. Do it all runs MIN, and no MIN row is marked in amber as one that cannot come back: MIN is caches and temporary files that rebuild themselves, Windows Update downloads and update leftovers, plus old setup logs, crash reports and driver installers that are never needed again. A row that cannot come back says so on the row, in amber ("Can't be undone.", or exactly what is lost), and those rows sit at MID and MAX, which run only when you pick that level on the Free up space page. MAX is warned on screen, not asked. Every row is on screen before you press anything, and a tap skips it.
 
 ---
 

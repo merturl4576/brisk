@@ -132,7 +132,7 @@ public sealed class ActionPlanBuilder
                 {
                     var bytes = Target("hibernation-file")?.TotalBytes ?? 0;
                     if (bytes == 0) break;
-                    // Unticked everywhere (MID); a laptop is told what it risks.
+                    // MID: not in the default (MIN) selection; a laptop is told what it risks.
                     yield return _ctx.Powercfg.HasBattery()
                         ? ItemFrom(row, bytes,
                             cost: ActionCatalog.HibernationLaptopCost, costKey: ActionCatalog.HibernationLaptopCostKey)

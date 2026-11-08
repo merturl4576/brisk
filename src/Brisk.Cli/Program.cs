@@ -602,7 +602,7 @@ public static class Program
                 var cost = item.Cost is null ? "" : $"  — {item.Cost}";
                 o.WriteLine($"    {box} {item.Title}{size}{cost}");
                 if (IsOptIn(item))
-                    o.WriteLine("          opt-in, never in a one-click run — take it on purpose: "
+                    o.WriteLine("          opt-in, never in `brisk run` — take it on purpose: "
                         + string.Join(" · ", OptInTargets(item, plan).Select(id => "brisk clean --target " + id)));
                 foreach (var f in item.Files)
                     o.WriteLine($"          {Path.GetFileName(f.Path)}  {Fmt.Bytes(f.Bytes)}");

@@ -16,7 +16,7 @@
              The code-behind cross-fades it when the level changes. -->
         <SolidColorBrush x:Key="LevelBrush" Color="#5FD4E8" />
 
-        <!-- One file of the Downloads row: tick, name, size (the column is 210 wide). -->
+        <!-- One file of the Downloads or archives row: tick, name, size (the column is 210 wide). -->
         <DataTemplate x:Key="FileTemplate">
             <Grid Margin="0,2">
                 <Grid.ColumnDefinitions>
@@ -407,7 +407,7 @@
 
         <!-- ===== The hero gauge: what the chosen level frees, then what it freed ===== -->
         <Grid Canvas.Left="350" Canvas.Top="96" Width="400" Height="400">
-            <!-- The rings turn 120° when a satellite comes to the front. -->
+            <!-- The rings turn 120° each time the page is entered. -->
             <c:Turntable Angle="{Binding RingAngle}">
                 <Ellipse Width="384" Height="384" Stroke="{StaticResource LevelBrush}" StrokeThickness="2"
                          StrokeDashArray="75 528" StrokeDashCap="Round" Opacity="0.75"
