@@ -250,9 +250,10 @@ public sealed class CliActionTests
         string Line(string text, string title) =>
             text.Split('\n').Single(l => l.Contains(title, StringComparison.Ordinal)).Trim();
 
-        var min = RunPlanText(CliParser.Parse(new[] { "run" }), "npm-cache", "nvidia-shader-cache");
+        // Plain `brisk run` is MIN: hibernation (a MID row) stays unticked.
+        var min = RunPlanText(CliParser.Parse(new[] { "run" }), "npm-cache", "hibernation-file");
         Assert.StartsWith("[x] Developer caches", Line(min, "Developer caches"));
-        Assert.StartsWith("[ ] Game shader caches", Line(min, "Game shader caches"));
+        Assert.StartsWith("[ ] Hibernation file", Line(min, "Hibernation file"));
 
         var mid = RunPlanText(CliParser.Parse(new[] { "run", "--level", "mid" }), "npm-cache", "hibernation-file");
         Assert.StartsWith("[x] Developer caches", Line(mid, "Developer caches"));
