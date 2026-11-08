@@ -201,7 +201,7 @@ What the maintainer owns: the product decisions, the safety rules, the architect
 
 What keeps that honest:
 
-- Every rule, switch and receipt runs against fake probes in 1,782 tests that pin what each one does and refuses to do.
+- Every rule, switch and receipt runs against fake probes in 1,788 tests that pin what each one does and refuses to do.
 - The specs and implementation plans that drove each release are public under [`docs/superpowers`](docs/superpowers).
 - Every change was reviewed before merge, and the commit history records its own corrections instead of rewriting them.
 - Every release ran on real machines the maintainer owns before it shipped.
@@ -215,7 +215,7 @@ If you find a place where the code claims more than it proves, that is the bug r
 Requires the .NET 8 SDK. Windows only: brisk reads the registry, WMI, the Windows event log and hardware sensors, so there is nothing here that could honestly run anywhere else.
 
 ```
-dotnet test brisk.sln -c Release      # 1,782 tests
+dotnet test brisk.sln -c Release      # 1,788 tests
 dotnet run --project src/Brisk.Cli -- run
 pwsh -File scripts/publish.ps1        # both single-file executables into artifacts/
 ```

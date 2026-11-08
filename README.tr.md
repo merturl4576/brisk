@@ -201,7 +201,7 @@ Geliştiricinin sahip oldukları: ürün kararları, güvenlik kuralları, mimar
 
 Bunu dürüst tutan şeyler:
 
-- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.782 testte sahte ölçümlere karşı çalışıyor.
+- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.788 testte sahte ölçümlere karşı çalışıyor.
 - Her sürümü yönlendiren spesifikasyonlar ve uygulama planları [`docs/superpowers`](docs/superpowers) altında açık.
 - Her değişiklik birleştirilmeden önce incelendi; commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
 - Her sürüm, yayımlanmadan önce geliştiricinin kendi makinelerinde çalıştı.
@@ -215,7 +215,7 @@ Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projeni
 .NET 8 SDK gerekir. Sadece Windows: brisk kayıt defterini, WMI'ı, Windows olay günlüğünü ve donanım sensörlerini okuyor; başka bir yerde dürüstçe çalışabilecek bir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1.782 test
+dotnet test brisk.sln -c Release      # 1.788 test
 dotnet run --project src/Brisk.Cli -- run
 pwsh -File scripts/publish.ps1        # iki tek dosyalık exe artifacts/ içine
 ```
