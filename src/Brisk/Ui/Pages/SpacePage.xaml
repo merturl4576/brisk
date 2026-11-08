@@ -173,6 +173,8 @@
              full colour, a 15 % fill and a glow. Name (and ⚠ on MAX) and
              tagline on the left, the size on the right. The MAX tile's fire
              comes in as the button's content, under the text. -->
+        <DropShadowEffect x:Key="FireTextShadow" Color="Black" BlurRadius="4" ShadowDepth="1" Direction="270"
+                          Opacity="1" />
         <Style x:Key="LevelTile" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -215,8 +217,8 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Ui.TextBase}" FontSize="13" FontWeight="Bold"
-                                               Foreground="{Binding Color}" Text="{Binding Name}" />
+                                    <TextBlock x:Name="LevelName" Style="{StaticResource Ui.TextBase}" FontSize="13"
+                                               FontWeight="Bold" Foreground="{Binding Color}" Text="{Binding Name}" />
                                     <Viewbox x:Name="Warn" Width="13" Height="13" Margin="6,0,0,0" Visibility="Collapsed"
                                              VerticalAlignment="Center">
                                         <Canvas Width="16" Height="16">
@@ -229,8 +231,8 @@
                                 </StackPanel>
                                 <TextBlock x:Name="Tagline" Grid.Row="1" Style="{StaticResource Ui.MutedText}" FontSize="11.5"
                                            Margin="0,2,0,0" Text="{Binding Tagline}" TextWrapping="Wrap" />
-                                <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" VerticalAlignment="Center"
-                                            Margin="8,0,0,0">
+                                <StackPanel x:Name="Size" Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal"
+                                            VerticalAlignment="Center" Margin="8,0,0,0">
                                     <TextBlock Style="{StaticResource Ui.TextBase}" FontSize="22" FontWeight="Light"
                                                Foreground="#E8FBFF" Text="{Binding Number}" />
                                     <TextBlock Style="{StaticResource Ui.MutedText}" FontSize="12" Margin="3,0,0,3"
@@ -242,6 +244,11 @@
                             <DataTrigger Binding="{Binding IsMax}" Value="True">
                                 <Setter TargetName="Warn" Property="Visibility" Value="Visible" />
                                 <Setter TargetName="Scrim" Property="Visibility" Value="Visible" />
+                                <!-- The mockup's text-shadow: the scrim fades out toward the bottom,
+                                     so a wrapped tagline line would sit on bare flames. -->
+                                <Setter TargetName="LevelName" Property="Effect" Value="{StaticResource FireTextShadow}" />
+                                <Setter TargetName="Size" Property="Effect" Value="{StaticResource FireTextShadow}" />
+                                <Setter TargetName="Tagline" Property="Effect" Value="{StaticResource FireTextShadow}" />
                             </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Edge" Property="Opacity" Value="1" />

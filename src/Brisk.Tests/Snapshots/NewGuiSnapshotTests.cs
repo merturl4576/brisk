@@ -198,6 +198,31 @@ public sealed class NewGuiSnapshotTests
         Assert.InRange(Width(() => new SpacePage { DataContext = SpacePageOf(Catalog()) }, "new-page-space-caption"), 1, 210);
     }
 
+    /// The MAX tile's words sit on the fire, and the scrim fades out toward
+    /// the bottom, so a wrapped tagline line (EN at 720) lands on bare
+    /// flames. Like the mockup's text-shadow (space-levels.html:158), the
+    /// MAX name, size and tagline carry a dark shadow; MIN and MID do not.
+    [Fact]
+    public void MaxTile_Words_CarryADarkShadowOverTheFire()
+    {
+        SnapshotRenderer.Capture(() => new Grid { Width = Canvas.Width, Height = Canvas.Height,
+                Children = { new SpacePage { DataContext = SpacePageOf(Catalog()) } } },
+            Canvas, "new-page-space-maxtile", inspect: root =>
+            {
+                var page = (FrameworkElement)((Grid)root).Children[0];
+                var tiles = ((System.Windows.Controls.Panel)page.FindName("Tiles")!).Children.Cast<System.Windows.Controls.Button>().ToArray();
+                Assert.Equal(3, tiles.Length);
+                foreach (var part in new[] { "LevelName", "Size", "Tagline" })
+                {
+                    var max = (FrameworkElement)tiles[2].Template.FindName(part, tiles[2])!;
+                    var shadow = Assert.IsType<System.Windows.Media.Effects.DropShadowEffect>(max.Effect);
+                    Assert.Equal(System.Windows.Media.Colors.Black, shadow.Color);
+                    foreach (var calm in tiles[..2])
+                        Assert.Null(((FrameworkElement)calm.Template.FindName(part, calm)!).Effect);
+                }
+            });
+    }
+
     internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr", Brisk.Ui.AmbientClock? clock = null)
     {
         var loc = new Loc();
