@@ -132,6 +132,9 @@ public sealed class GroupPageViewModel : ViewModelBase
     public bool ShowButton => Phase != PagePhase.Scanning;
     public bool ShowRight => Phase != PagePhase.Scanning && (Keep.Count > 0 || Extra.Count > 0);
 
+    /// The "Ayrıca" heading: once the scan has reached one of its rows.
+    public bool ShowAlso => Also.Any(r => r.Revealed);
+
     /// Geri al: the last run can be undone and changed this page's settings (ruling R31).
     public bool ShowUndo => _session.CanUndoFor(Group);
 
@@ -392,7 +395,8 @@ public sealed class GroupPageViewModel : ViewModelBase
     private void RaiseState()
     {
         foreach (var name in new[] { nameof(Phase), nameof(SelectedCount), nameof(Button), nameof(ButtonOk),
-                     nameof(ButtonBusy), nameof(ShowButton), nameof(ShowRight), nameof(ShowUndo), nameof(Gauge) })
+                     nameof(ButtonBusy), nameof(ShowButton), nameof(ShowRight), nameof(ShowAlso), nameof(ShowUndo),
+                     nameof(Gauge) })
             Raise(name);
         RunGroup.RaiseCanExecuteChanged();
         Undo.RaiseCanExecuteChanged();
