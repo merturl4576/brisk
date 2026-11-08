@@ -34,9 +34,9 @@ One line, if you trust it. You should not have to, so the script is [63 readable
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
 ```
 
-Or do it by hand: download **`brisk-app.exe`** from [Releases](https://github.com/merturl4576/brisk/releases) and run it. One file. Nothing is installed, and nothing on your machine changes until you press **Do it all**.
+Or do it by hand: download **`brisk-app.exe`** from [Releases](https://github.com/merturl4576/brisk/releases) and run it. One file. Nothing is installed, and nothing on your machine changes until you press **Do it all** or a page's own button.
 
-Prefer a terminal? Download **`brisk.exe`** instead. `brisk run` prints the same plan and changes nothing; `brisk run --yes` does it.
+Prefer a terminal? Download **`brisk.exe`** instead. `brisk run` prints the same plan and changes nothing; `brisk run --yes` does it. `--level mid` or `--level max` takes Free up space further, as described below.
 
 Neither file needs .NET installed, and neither needs the other. Verify your download against `SHA256SUMS.txt` in the same release.
 
@@ -48,48 +48,59 @@ Neither file needs .NET installed, and neither needs the other. Verify your down
 
 ## What one click does
 
-The window starts looking the moment it opens. Within seconds Home shows how much space it found, how many programs start with Windows, how many apps are online right now and what is slowing the PC at this moment. **Do it all** runs every ticked row. The three pages, **Free up space**, **Speed up** and **Privacy**, list the same rows, so you can untick anything first.
+Home is a live view of the machine: CPU, graphics and memory gauges, temperature, network, battery (on a laptop), the machine's specs and the apps using the most right now. A strip at the bottom says what brisk found, for example *brisk is ready: 12 GB · 9 apps · 14 settings*, next to **Do it all**. Do it all frees space at the MIN level, takes the listed programs off startup and turns off the listed settings. The three pages, **Free up space**, **Speed up** and **Privacy**, list the same rows, and each one runs only its own group. Tap a row to skip it.
 
 ### Free up space
 
-| Row | Ticked | Why |
-|---|---|---|
-| Caches and temporary files: every browser profile, app caches, thumbnails, crash dumps, Windows Update and Delivery Optimization downloads, update leftovers | yes | they rebuild themselves |
-| Developer caches: npm, pnpm, pip, NuGet, Yarn, Cargo, Gradle | yes | they download again when needed |
-| Installers in Downloads (`.exe` `.msi` `.iso`), each file listed with its own box | yes | asked first, see below |
-| Recycle Bin | yes | asked first |
-| Old Windows copy | yes | asked first; no going back to the old Windows |
-| Hibernation file | desktops only | a laptop hibernates on a dying battery, and without the file open work is lost |
-| Game shader caches | no | games stutter while they rebuild them |
-| Docker's unused data | no | stopped containers are deleted |
+Three levels, each one including the levels before it. **Do it all** always runs MIN. On the Free up space page you pick the level, and its button runs that one.
 
-Caches are deleted for real, not moved to the Recycle Bin, so the free space actually changes. A cache whose app is open, Chrome or Discord for example, waits in the tray and is cleaned when that app closes. Desktop, Documents and your large files are never touched: brisk names the biggest ones and leaves them alone.
+| Level | Row | What goes, and the cost |
+|---|---|---|
+| MIN | Caches and temporary files | every browser profile's cache, app caches, thumbnails, app crash dumps and error reports, Windows temp, Windows Update and Delivery Optimization downloads, update leftovers. They rebuild themselves. |
+| MIN | Developer caches | npm, pnpm, pip, NuGet, Yarn, Cargo, Gradle. They download again when needed. |
+| MIN | Old crash reports | Windows' kernel dumps (LiveKernelReports, Minidump, MEMORY.DMP) older than 7 days |
+| MIN | Windows setup logs | `.log` and `.etl` files in Windows' setup folder (Panther) older than 7 days, none while an upgrade runs |
+| MIN | Old driver installers | the extracted NVIDIA and AMD installers left behind, older than 7 days |
+| MID | Hibernation file | on a desktop, Fast startup goes off, and you can switch it back on; on a laptop, open work is lost if the battery dies |
+| MID | Game shader caches | games may stutter on first launch |
+| MID | Installers in Downloads | `.exe` and `.msi` files written 30 or more days ago, each file with its own box. Can't be undone. |
+| MID | Recycle Bin | can't be undone |
+| MID | Dependency folders of old projects | `node_modules` or `.next` beside a `package.json`, or a Python venv, in a project whose other top-level files and folders are all 90 or more days old. `npm install` brings them back. |
+| MAX | Old Windows copy | no going back to the old Windows |
+| MAX | Docker's unused data | `docker system prune`: stopped containers are deleted |
+| MAX | Git repository in your home folder | the `.git` folder directly in your user folder, with that repository's history. Can't be undone. |
+| MAX | Archives already extracted beside them | a `.7z`, `.zip` or `.rar` of 1 GiB or more next to a folder of the same name holding at least as many bytes. Only the archive goes. |
+| MAX | Old restore points | every restore point but the newest. Windows does not report their size, so the row shows "—". |
+
+Caches are deleted for real, not moved to the Recycle Bin, so the free space actually changes. A cache whose app is open, Chrome or Discord for example, waits in the tray and is cleaned when that app closes.
+
+Two rows look inside your own folders: old projects' dependency folders and extracted archives. They walk Desktop, Documents, Downloads and the usual project folders (`source\repos`, `Projects`, `dev`, `code`, `repos`), four levels deep, and never follow a junction. Each path is checked against its rule again, on the disk, at the moment it would be deleted.
+
+Large files that are yours are listed under *Your files · brisk won't touch them*: virtual machine disks (`.vdi`, `.vhdx`, `.vmdk`, but not the WSL and Docker stores), `.iso` images, Android emulators and BlueStacks, each 1 GiB or more. They never count toward any number and are never deleted.
 
 ### Speed up
 
-- **Slowing you now.** The apps using the most CPU or memory, measured over ten seconds and grouped by app, so Chrome's thirty processes are one row. **Close** asks the app to close, so it can ask you to save. **Force close** appears only if it is still running five seconds later. Windows' own processes get a one-line explanation ("Windows is installing updates") instead of a button.
-- **Startup programs.** Everything Task Manager lists, switched off the way Task Manager does it, so you can turn any of them back on there. All ticked except the ones you would miss: antivirus, audio, touchpad and GPU helpers, OneDrive and other sync clients, password managers, VPNs and keyboard tools. Those stay unticked, each with its reason.
-- **Switches.** Full power while plugged in, background game recording off, GPU scheduling on, optimisations for windowed games, window animations off. Memory integrity and Virtual Machine Platform are listed because Microsoft's own gaming guidance names them, and they stay unticked: the first lowers security, the second breaks WSL and Docker.
+- **Startup programs.** Everything Task Manager lists, switched off the way Task Manager does it, so you can turn any of them back on there. All of them go except the ones you would miss: antivirus, audio, touchpad and GPU helpers, OneDrive and other sync clients, password managers, VPNs and keyboard tools. Those are listed under *Leaving alone*, each with its reason.
+- **Switches.** Full power while plugged in, background game recording off, GPU scheduling on, optimisations for windowed games, window animations off. Memory integrity and Virtual Machine Platform are listed under *Add if you like*, because Microsoft's own gaming guidance names them, and they run only if you add them: the first lowers security, the second breaks WSL and Docker.
 
 ### Privacy
 
-- **Switches.** Usage data sent to Microsoft, background data-collection tasks, error reports, the advertising ID and tailored suggestions, activity history, Start menu ads, web results in Start search, online speech and typing, "How do you like Windows?" prompts, Recall, Copilot, sharing updates with strangers over the internet (sharing on your own network stays), and programs becoming administrator without asking. Location is listed but unticked, because Find my device needs it.
-- **Talking to now.** Which app is connected to which company right now, refreshed every two seconds, with Microsoft's telemetry hosts tagged. A connection does not mean data was sent, and the page says so.
-- **Sent in 30 days.** Windows' own per-app record of bytes sent and received. Amounts only, never contents.
+- **Switches.** Usage data sent to Microsoft, background data-collection tasks, error reports, the advertising ID and tailored suggestions, activity history, Start menu ads, web results in Start search, online speech and typing, "How do you like Windows?" prompts, Recall, Copilot, sharing updates with strangers over the internet (sharing on your own network stays), and programs becoming administrator without asking. Location is listed under *Add if you like*, because Find my device needs it.
+- **In a terminal.** `brisk live` prints, once, the apps using the most CPU and memory, which app is connected to which company right now (Microsoft's telemetry hosts tagged), and Windows' own 30-day per-app record of bytes sent and received. A connection does not mean data was sent, and the amounts are amounts only, never contents.
 
-### The one question it asks
+### Nothing asks before deleting
 
-Do it all asks nothing, except when files that cannot come back are about to go: installers in Downloads, the Recycle Bin, the old Windows copy. Then a sheet lists them with their sizes, every time, and offers **Continue**, **Skip these** or **See the list**. Nobody loses a file they were not shown.
+There is no dialog. Do it all runs MIN, and MIN holds nothing that cannot come back. A row that cannot come back says so on the row, in amber ("Can't be undone.", or exactly what is lost), and those rows sit at MID and MAX, which run only when you pick that level on the Free up space page. MAX is warned on screen, not asked. Every row is on screen before you press anything, and a tap skips it.
 
 ---
 
 ## The proof
 
-Every tool in this category says "done". brisk shows numbers it did not make up:
+Every tool in this category says "done". brisk shows numbers it did not make up. Right after a run, the strip on Home sums it up (*Last run: …*); `brisk receipt` prints these numbers whenever you ask:
 
 - **Space:** free bytes on the system drive before and after the run. The number Explorer shows, not "items selected".
 - **Startup:** enabled startup programs before and after.
-- **Boot time:** Windows' own boot timing, the one it writes to its event log, for recent boots against the first boot after the run. Open brisk after the restart and Home leads with it.<!-- TODO-RUN: *Last time: n GB freed · startup n s → n s · n GB RAM freed*, from the maintainer's laptop. -->
+- **Boot time:** Windows' own boot timing, the one it writes to its event log, for recent boots against the first boot after the run. After the restart, `brisk receipt` prints it.<!-- TODO-RUN: *Last time: n GB freed · startup n s → n s · n GB RAM freed*, from the maintainer's laptop. -->
 - **RAM:** the memory the switched-off startup programs were using. It is counted only after the next boot confirms none of them started; one that started anyway is named and left out of the number.
 - **Privacy:** every switch is read back after the run and reports **Off ✓**, **Windows ignored it** (some editions write a policy down and then ignore it) or **Turned back on**.
 
@@ -97,7 +108,7 @@ A number that goes the wrong way is shown too. A tool that only shows you the go
 
 ### Undo
 
-**Undo** reverses every setting and startup change of the run, newest first, and says plainly that deleted files do not come back. Every setting is written to a journal before it is changed, so even a row that failed halfway can be undone. If an undo fails, brisk says so and the run stays undoable.
+**Undo**, on Home after a run and on the Speed up and Privacy pages, reverses every setting and startup change of the run, newest first, and says plainly that deleted files do not come back. Free up space has no undo: deleted files are gone, and Undo does not switch hibernation back on. Every setting is written to a journal before it is changed, so even a row that failed halfway can be undone. If an undo fails, brisk says so and the run stays undoable.
 
 ---
 
@@ -105,7 +116,7 @@ A number that goes the wrong way is shown too. A tool that only shows you the go
 
 - **No registry cleaning.** It has never been shown to make Windows faster, and it can break installed software.
 - **No removing Windows' own apps.** Debloat scripts break things that are hard to bring back; brisk leaves the apps where they are.
-- **No deleting your files without listing them first.** Caches rebuild themselves; files you made or downloaded are shown by name before they go.
+- **No deleting what cannot come back without showing it first.** Caches rebuild themselves. A row that cannot come back is on screen, marked in amber, before anything runs, and Do it all never includes one.
 - **No speed claim it cannot source.** The boot time is Windows' own record. Where brisk has no measurement, it shows none.
 - **No telemetry, no account, no cloud, no AI in the product.** brisk opens no network connection. There is no server to send anything to.
 - **No fake urgency.** No red "1,247 problems found!", no countdown, no Pro version. There is nothing to upsell.
@@ -133,6 +144,7 @@ Commands:
     --target <id>            clean a single target by id (see 'brisk targets')
     --yes                    actually delete (otherwise print plan)
   run                        one click: free space, speed up, privacy
+    --level <min|mid|max>    how far Free up space goes (default min)
     --group <space|speed|privacy>  only that group
     --yes                    apply (without it: show the plan, change nothing)
   undo                       undo the latest run
@@ -145,6 +157,8 @@ Commands:
 ```
 
 Without `--yes`, `run`, `fix` and `clean` print what they would do and change nothing.
+
+`brisk run` frees space at MIN, like Do it all. `brisk clean --level deep` leaves out the targets you have to ask for by name: the old Windows copy, the hibernation file, the component store, the shader caches, Docker's unused data, the git repository in your home folder, old projects' dependency folders, extracted archives and restore points. Name one with `--target <id>`; `brisk targets` lists the ids.
 
 ---
 
@@ -159,13 +173,13 @@ Usually true. That is why brisk measures: the free space Windows reports before 
 They do. brisk does not have one and never will.
 
 **"The cleaner will eat files I care about."**
-It works from an allowlist of caches, not from a pattern. Every path is checked against a registered template with junctions resolved, protected folders (Documents, Desktop, Pictures, OneDrive, system roots) win over any template, and a Downloads file is deleted only if it is the exact file you were shown: if its size or date changed since, it is skipped.
+It works from an allowlist, not from a pattern. Every path is checked against a registered template with junctions resolved, and protected folders (Documents, Desktop, Pictures, OneDrive, system roots) win over any template. The two rows that look inside Desktop and Documents, old projects' dependency folders and extracted archives, have no template: each path must sit inside a folder they walk and still fit its rule, read again from the disk at the moment of deletion. Your VM disks, `.iso` images and emulators are listed and never deleted. A Downloads file is deleted only if it is the exact file you were shown: if its size or date changed since, it is skipped.
 
 **"Closed-source binary that itself phones home."**
-GPL-3.0 and no network code. The connection list and the 30-day usage are read from Windows on your machine; nothing leaves it.
+GPL-3.0 and no network code. The connection list and the 30-day usage that `brisk live` prints are read from Windows on your machine; nothing leaves it.
 
 **"It will flip settings behind my back."**
-One click does change settings: that is the point. Every row is on screen, ticked or not, before you press anything; nothing runs until you press; every change is journaled and can be undone from the same button.
+One click does change settings: that is the point. Every row is on screen before you press anything, including the ones that will not run; nothing runs until you press; every setting change is journaled and can be undone with Undo.
 
 **"Unsigned exe. Instant no."**
 Fair. The release ships SHA-256 digests, the install script refuses a download that does not match, and code signing is being applied for. Until then SmartScreen's warning is honest, and so is this paragraph.
@@ -185,7 +199,7 @@ What the maintainer owns: the product decisions, the safety rules, the architect
 
 What keeps that honest:
 
-- Every rule, switch and receipt runs against fake probes in 1,604 tests that pin what each one does and refuses to do.
+- Every rule, switch and receipt runs against fake probes in 1,776 tests that pin what each one does and refuses to do.
 - The specs and implementation plans that drove each release are public under [`docs/superpowers`](docs/superpowers).
 - Every change was reviewed before merge, and the commit history records its own corrections instead of rewriting them.
 - Every release ran on real machines the maintainer owns before it shipped.
@@ -199,7 +213,7 @@ If you find a place where the code claims more than it proves, that is the bug r
 Requires the .NET 8 SDK. Windows only: brisk reads the registry, WMI, the Windows event log and hardware sensors, so there is nothing here that could honestly run anywhere else.
 
 ```
-dotnet test brisk.sln -c Release      # 1,604 tests
+dotnet test brisk.sln -c Release      # 1,776 tests
 dotnet run --project src/Brisk.Cli -- run
 pwsh -File scripts/publish.ps1        # both single-file executables into artifacts/
 ```
