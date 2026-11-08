@@ -72,11 +72,13 @@
                         </Grid>
                     </Grid>
                 </Border>
-                <!-- Outside the tap area: the Downloads row's files. -->
+                <!-- Outside the tap area: the Downloads and archives rows' files. Off while a
+                     run goes, and gone on a locked row (R57). -->
                 <Button x:Name="Expand" Style="{StaticResource Ui.Link}" Content="▾" Command="{Binding ToggleExpand}"
                         HorizontalAlignment="Left" Margin="0,0,0,4"
                         Visibility="{Binding HasFiles, Converter={StaticResource Present}}" />
-                <StackPanel Margin="0,0,0,8" Visibility="{Binding IsExpanded, Converter={StaticResource Present}}">
+                <StackPanel x:Name="FilePanel" Margin="0,0,0,8" IsEnabled="{Binding FilesLive}"
+                            Visibility="{Binding IsExpanded, Converter={StaticResource Present}}">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <Button Style="{StaticResource Ui.Link}" Command="{Binding SelectAllFiles}"
                                 Content="{Binding DataContext.L[gui.files.all], RelativeSource={RelativeSource AncestorType=UserControl}}" />
@@ -101,6 +103,7 @@
                     <Setter TargetName="RowName" Property="Foreground" Value="{StaticResource Ui.Muted}" />
                     <Setter TargetName="Box" Property="Cursor" Value="Arrow" />
                     <Setter TargetName="Expand" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="FilePanel" Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Lit}" Value="True">
                     <DataTrigger.EnterActions>

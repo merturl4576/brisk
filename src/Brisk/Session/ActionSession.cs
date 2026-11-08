@@ -150,7 +150,7 @@ public sealed class ActionSession
     /// A run or an undo holds the session, from the press on (before the
     /// Running state lands). A look does not: rows may be tapped and the
     /// level picked while it goes.
-    private bool Acting { get { lock (_gate) return _acting; } }
+    public bool Acting { get { lock (_gate) return _acting; } }
 
     /// One tap on a row: skip it, or take it back. Does nothing to a locked
     /// row, an unknown row, or while a run or undo is going.
@@ -205,9 +205,11 @@ public sealed class ActionSession
 
     public bool IsFileTicked(string path) => !_fileOverrides.TryGetValue(path, out var on) || on;
 
+    /// Refused while a run or an undo is going, like SetTicked (R57): the run
+    /// took its files at the press. Changed still fires so a box can spring back.
     public void SetFileTicked(string path, bool on)
     {
-        _fileOverrides[path] = on;
+        if (!Acting) _fileOverrides[path] = on;
         Changed?.Invoke();
     }
 

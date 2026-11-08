@@ -209,6 +209,43 @@ public sealed class SpacePageViewModelTests
         Assert.DoesNotContain(nameof(RowViewModel.Files), raised);
     }
 
+    /// R57: a file tick is refused while a run is going, like a row tick: the
+    /// run took its files at the press, and the running gauge does not move.
+    /// The file boxes and the Hepsi/Hiçbiri links are off meanwhile, and a
+    /// locked row has none live at all.
+    [Fact]
+    public async Task File_ticks_are_refused_while_a_run_goes()
+    {
+        var k = await Make();
+        var page = k.Page();
+        var downloads = page.Rows.Single(r => r.Id == "space.downloads");
+        Assert.True(downloads.Locked);                              // MID, the page is on MIN
+        Assert.False(downloads.FilesLive);
+
+        page.Levels[1].Select.Execute(null);
+        Assert.True(downloads.FilesLive);
+        k.Backend.HoldRun = new ManualResetEventSlim(false);
+        var run = k.Session.RunAsync(ActionGroupKind.Space);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Running, 2000));
+        lock (Gate)
+        {
+            Assert.Equal(PagePhase.Running, page.Phase);
+            var before = page.Gauge.Bytes;
+            Assert.False(downloads.FilesLive);
+
+            k.Session.SetFileTicked(@"C:\D\a.exe", false);
+            downloads.SelectNoFiles.Execute(null);
+
+            Assert.True(k.Session.IsFileTicked(@"C:\D\a.exe"));
+            Assert.True(k.Session.IsFileTicked(@"C:\D\b.msi"));
+            Assert.All(downloads.Files, f => Assert.True(f.IsTicked));
+            Assert.Equal(before, page.Gauge.Bytes);
+        }
+        k.Backend.HoldRun.Set();
+        await run;
+        Assert.Contains(@"C:\D\a.exe", k.Backend.Runs.Single().Files);
+    }
+
     /// A row that cannot come back says so once, in amber: its own cost when
     /// it has one (the Downloads row's "Geri alınamaz."), the plain words
     /// when it has none.

@@ -71,6 +71,11 @@ public sealed class RowViewModel : ViewModelBase
     /// A Space row above the level the page shows: dimmed, the tap does nothing.
     public bool Locked => _shownLevel is { } shown ? ActionSession.IsLockedAt(Item, shown()) : _session.IsLocked(Item);
 
+    /// The file boxes and the Hepsi/Hiçbiri links take a click: not on a
+    /// locked row, and not while a run or undo goes (R57) — the run took its
+    /// files at the press.
+    public bool FilesLive => !Locked && !_session.Acting;
+
     /// Yer aç: the row's level ("MID") and its colour; a row with no level sits under MAX.
     public string? LevelName => Item.Group == ActionGroupKind.Space ? SpaceLevels.Name(SpaceLevels.Of(Item), _loc) : null;
     public string? LevelColor => Item.Group == ActionGroupKind.Space ? SpaceLevels.Color(SpaceLevels.Of(Item)) : null;
@@ -215,7 +220,7 @@ public sealed class RowViewModel : ViewModelBase
         foreach (var name in new[] { nameof(Title), nameof(Cost), nameof(RestartText), nameof(WindowsName), nameof(Size),
                      nameof(IsTicked), nameof(Result), nameof(ResultTone), nameof(ResultReason),
                      nameof(Skipped), nameof(Off), nameof(Added), nameof(Done), nameof(Value), nameof(Note),
-                     nameof(Warning), nameof(Locked), nameof(LevelName), nameof(LevelColor) })
+                     nameof(Warning), nameof(Locked), nameof(FilesLive), nameof(LevelName), nameof(LevelColor) })
             Raise(name);
         foreach (var f in Files) f.Refresh();
     }
