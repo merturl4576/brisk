@@ -37,6 +37,13 @@ public sealed class ActionPlanBuilder
             row.NeedsAdmin, row.Reversible, row.LinkKind, row.LinkIds,
             files ?? Array.Empty<ActionFile>(), row.Level, row.Lost);
 
+    /// The targets whose items a row lists one by one, by name and size, each
+    /// ticked until the user unticks it: Downloads' installers, and the MAX
+    /// row's archives (R58), so a row that cannot be undone names what it
+    /// deletes. ActionRunner deletes only a listed file left ticked.
+    internal static readonly IReadOnlySet<string> FileListedTargets =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "old-installers", "archive-beside-extracted" };
+
     /// The rows that need no cleanup scan; the window shows them first.
     public IReadOnlyList<ActionGroup> BuildFast() => new[]
         {
@@ -133,8 +140,9 @@ public sealed class ActionPlanBuilder
                     break;
                 }
                 case "space.downloads":
+                case "space.archives":
                 {
-                    var t = Target("old-installers");
+                    var t = Target(row.LinkIds.Single());
                     if (t is null || t.Items.Count == 0) break;
                     var files = t.Items.OrderByDescending(i => i.Bytes)
                         .Select(i => new ActionFile(i.Path, i.Bytes, i.LastWriteUtc)).ToList();

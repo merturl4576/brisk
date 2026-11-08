@@ -163,7 +163,9 @@ public sealed class ActionRunner
     private static bool IsPathless(string id) =>
         id is "docker-prune" or "empty-recycle-bin" or "component-store" or "restore-points";
 
-    private TargetScanResult SelectedDownloads(TargetScanResult t, ActionSelection selection, List<string> reasons)
+    /// A file-listed target (Downloads, archives) gives the cleaner only the
+    /// listed files the user left ticked, each unchanged since the plan.
+    private TargetScanResult SelectedFiles(TargetScanResult t, ActionSelection selection, List<string> reasons)
     {
         var keep = new List<ResolvedItem>();
         foreach (var i in t.Items)
@@ -207,7 +209,7 @@ public sealed class ActionRunner
             }
             if (t.Target.RequiresElevation && !_isElevated()) { adminSkips++; continue; }
 
-            var toClean = id == "old-installers" ? SelectedDownloads(t, selection, reasons) : t;
+            var toClean = ActionPlanBuilder.FileListedTargets.Contains(id) ? SelectedFiles(t, selection, reasons) : t;
             if (toClean.Items.Count == 0 && !IsPathless(id)) continue;
 
             var report = _cleaner.Clean(toClean, dryRun: false, permanent: true);

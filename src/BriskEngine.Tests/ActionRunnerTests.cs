@@ -39,11 +39,11 @@ public sealed class ActionRunnerTests : IDisposable
 
     /// The cleaner always gets a fake System Restore: no test may reach the
     /// real one (ruling R6).
-    private ActionRunner Runner(FakeRestorePoints? restorePoints = null)
+    private ActionRunner Runner(FakeRestorePoints? restorePoints = null, SafetyValidator? validator = null)
     {
         var rules = new ActionRules(new ActionProbes(new FakeRunner(), _ui, new FakeOverlay(), new FakeFeatures(),
             new FakeTasks(), new StartupManager(_reg, null), () => false));
-        var cleaner = new CleanRunner(new SafetyValidator(), _recycler, new ActionLog(Path.Combine(_root, "log.jsonl")),
+        var cleaner = new CleanRunner(validator ?? new SafetyValidator(), _recycler, new ActionLog(Path.Combine(_root, "log.jsonl")),
             new FakeRunner(), () => _elevated, null, () => 0, new WindowsDeleter(),
             restorePoints ?? new FakeRestorePoints());
         return new ActionRunner(_ctx, rules, _journal, cleaner, _deferred, _runs, () => _elevated, s => _stat(s));
@@ -187,6 +187,47 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.Equal(RowOutcome.Skipped, row.Outcome);
         Assert.Contains("changed", row.Reason);
         Assert.Equal(0, row.BytesFreed);
+    }
+
+    /// R58: the archives row deletes the archives it listed and left ticked,
+    /// and nothing else: an unticked one stays on disk, and so does one the
+    /// scan found but the row never listed. The extracted copies are never touched.
+    [SparseFact]
+    public void Run_ArchivesRow_DeletesOnlyTheTickedListedArchives()
+    {
+        var projects = Directory.CreateDirectory(Path.Combine(_root, "projects")).FullName;
+        string Archive(string name)
+        {
+            var archive = SparseFile.Create(Path.Combine(projects, name), DynamicTargets.MinArchiveBytes + 1);
+            Directory.CreateDirectory(Path.Combine(projects, Path.GetFileNameWithoutExtension(name)));
+            SparseFile.Create(Path.Combine(projects, Path.GetFileNameWithoutExtension(name), "data.bin"),
+                2 * DynamicTargets.MinArchiveBytes);
+            return archive;
+        }
+        var kali = Archive("Kali.7z");
+        var thesis = Archive("Thesis.zip");
+        var unlisted = Archive("Other.rar");
+        ResolvedItem Item(string path) => new("archive-beside-extracted", path, new FileInfo(path).Length,
+            File.GetLastWriteTimeUtc(path));
+        ActionFile Listed(string path) => new(path, new FileInfo(path).Length, File.GetLastWriteTimeUtc(path));
+
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "archive-beside-extracted");
+        var scan = new ScanResult(new[] { new TargetScanResult(target,
+            new[] { Item(kali), Item(thesis), Item(unlisted) }, null) });
+        var plan = Plan(scan, Row("space.archives", 2 * (DynamicTargets.MinArchiveBytes + 1),
+            new[] { Listed(kali), Listed(thesis) }));
+        var selection = new ActionSelection(new HashSet<string> { "space.archives" },
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { kali });   // Thesis.zip unticked
+        var validator = new SafetyValidator(() => new[] { projects }, () => DateTime.UtcNow);
+
+        var row = Assert.Single(Runner(validator: validator).Run(plan, selection).Rows);
+
+        Assert.Equal(RowOutcome.Done, row.Outcome);
+        Assert.False(File.Exists(kali));
+        Assert.True(File.Exists(thesis));
+        Assert.True(File.Exists(unlisted));
+        Assert.True(Directory.Exists(Path.Combine(projects, "Kali")));
+        Assert.Equal(DynamicTargets.MinArchiveBytes + 1, row.BytesFreed);
     }
 
     [Fact]

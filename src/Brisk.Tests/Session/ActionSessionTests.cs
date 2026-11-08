@@ -77,6 +77,36 @@ public sealed class ActionSessionTests
         Assert.DoesNotContain("space.downloads", ran);
     }
 
+    /// R58: the MAX archives row lists its archives like Downloads: its size
+    /// is the ticked ones, and an unticked one is not in the run's files.
+    [Fact]
+    public async Task ArchivesRow_CountsAndRunsOnlyItsTickedArchives()
+    {
+        var b = FakeBackend.Typical();
+        b.Space = new ActionGroup(ActionGroupKind.Space, new[]
+        {
+            FakeBackend.Row("space.archives", ActionGroupKind.Space, 5_000_000_000, on: false, reversible: false,
+                level: SpaceLevel.Max, lost: true, files: new[]
+                {
+                    new ActionFile(@"C:\U\Desktop\Kali.7z", 4_000_000_000, null),
+                    new ActionFile(@"C:\U\Desktop\Thesis.zip", 1_000_000_000, null),
+                }),
+        });
+        var s = NewSession(b);
+        await s.LookAsync();
+        s.SetLevel(SpaceLevel.Max);
+        Assert.Equal(5_000_000_000, s.LevelBytes(SpaceLevel.Max));
+
+        s.SetFileTicked(@"C:\U\Desktop\Thesis.zip", false);
+        Assert.Equal(4_000_000_000, s.LevelBytes(SpaceLevel.Max));
+        Assert.Equal(4_000_000_000, s.SelectedBytes(s.Items.Single(i => i.Id == "space.archives")));
+        await s.RunAsync(ActionGroupKind.Space);
+        var run = b.Runs.Single();
+        Assert.Contains("space.archives", run.RowIds);
+        Assert.Contains(@"C:\U\Desktop\Kali.7z", run.Files);
+        Assert.DoesNotContain(@"C:\U\Desktop\Thesis.zip", run.Files);
+    }
+
     /// No confirmation before deleting: a row that cannot come back runs as
     /// soon as its level is chosen (MAX warns on the page, not in a dialog).
     [Fact]

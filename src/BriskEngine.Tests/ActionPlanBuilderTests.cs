@@ -148,6 +148,27 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal(2, row.Files.Count);
     }
 
+    /// R58: the MAX archives row names each archive it deletes, the way the
+    /// Downloads row names its installers; its size is the files' sum.
+    [Fact]
+    public void Build_ArchivesRowListsEachArchive()
+    {
+        var kit = Make();
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "archive-beside-extracted");
+        var scan = Scan(new TargetScanResult(target, new[]
+        {
+            new ResolvedItem("archive-beside-extracted", @"C:\Users\x\Desktop\Thesis.zip", 1_200, Now.AddDays(-5)),
+            new ResolvedItem("archive-beside-extracted", @"C:\Users\x\Downloads\Kali.7z", 4_000, Now.AddDays(-50)),
+        }, null));
+
+        var row = Row(kit.Builder.Build(scan, Now), "space.archives")!;
+
+        Assert.Equal(5_200, row.Bytes);
+        Assert.Equal(new[] { @"C:\Users\x\Downloads\Kali.7z", @"C:\Users\x\Desktop\Thesis.zip" },
+            row.Files.Select(f => f.Path));
+        Assert.Equal(new long[] { 4_000, 1_200 }, row.Files.Select(f => f.Bytes));
+    }
+
     [Fact]
     public void Build_DockerAndRecycleBinComeFromTheSpaceProbe()
     {
