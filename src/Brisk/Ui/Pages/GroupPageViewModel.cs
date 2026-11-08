@@ -122,6 +122,9 @@ public sealed class GroupPageViewModel : ViewModelBase
                     return _loc["gui.page.button.ok"];
             }
             if (_session.State is SessionState.Done or SessionState.Failed) return _loc["gui.button.rescan"];
+            // This page's rows are in but the rest of the look is not: the run
+            // waits for it, and the button says so (ruling R41).
+            if (_session.State == SessionState.Looking) return _loc["gui.page.space.scan"];
             var selected = Selected().ToList();
             return RowWords.Button(Group, selected, _loc, selected.Sum(_session.SelectedBytes));
         }
@@ -153,7 +156,7 @@ public sealed class GroupPageViewModel : ViewModelBase
                 PagePhase.Running => BusyText(),
                 _ => ReadyLabel(shown),
             };
-            var caption = phase == PagePhase.Scanning ? null : ReadyCaption();
+            var caption = phase == PagePhase.Scanning ? null : ReadyCaption(shown);
             if (Group == ActionGroupKind.Space)
             {
                 var bytes = shown.Sum(_session.SelectedBytes);
@@ -322,13 +325,23 @@ public sealed class GroupPageViewModel : ViewModelBase
         _ => _loc[$"gui.page.{_key}.label"],
     };
 
-    private string ReadyCaption() => Group switch
+    private string ReadyCaption(IReadOnlyCollection<ActionItem> shown) => Group switch
     {
-        ActionGroupKind.Speed => _loc.F("gui.page.speed.caption.apps", Items().Count(RowWords.IsStartupApp)),
+        ActionGroupKind.Speed => SpeedCaption(shown),
         ActionGroupKind.Space => _loc.F("gui.page.space.caption",
             Sizes.Format(Items().Sum(i => i.Bytes ?? 0), _loc.Culture)),
         _ => _loc["gui.page.privacy.caption"],
     };
+
+    /// Apps only: out of the apps that start with Windows. Otherwise what the
+    /// number holds, "2 uygulama · 3 ayar", or "3 ayar" (rulings R34, R39).
+    private string SpeedCaption(IReadOnlyCollection<ActionItem> shown)
+    {
+        var (apps, settings) = RowWords.Count(shown);
+        if (settings == 0) return _loc.F("gui.page.speed.caption.apps", Items().Count(RowWords.IsStartupApp));
+        var words = RowWords.Settings(settings, _loc);
+        return apps == 0 ? words : RowWords.Apps(apps, _loc) + " · " + words;
+    }
 
     /// "uygulama" when every row is a startup app, "ayar" when every one is
     /// a setting, "değişiklik" when mixed; Gizlilik counts settings.

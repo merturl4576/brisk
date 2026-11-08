@@ -440,4 +440,120 @@ public sealed class GroupPageViewModelTests
         k.Backend.HoldRun.Set();
         await run;
     }
+
+    /// The Speed caption says what the number holds (R39): out of the apps
+    /// that start with Windows only when every row is an app; otherwise the
+    /// apps and the settings apart. The default selection is mixed.
+    [Fact]
+    public async Task Speed_caption_counts_apps_and_settings_apart()
+    {
+        var k = await Make();
+        var page = k.Page(ActionGroupKind.Speed);
+        Assert.Equal("2", page.Gauge.Number);
+        Assert.Equal("1 uygulama · 1 ayar", page.Gauge.Caption);
+
+        page.Main.Single().Tap();                                // Spotify out: settings only
+        Assert.Equal("1 ayar", page.Gauge.Caption);
+
+        page.Main.Single().Tap();
+        page.Also.Single().Tap();                                // animations out: apps only
+        Assert.Equal("Windows ile açılan 2 uygulamadan", page.Gauge.Caption);
+
+        k.Loc.SetLanguage("en");
+        page.Also.Single().Tap();
+        Assert.Equal("1 app · 1 setting", page.Gauge.Caption);
+    }
+
+    /// Once the page's run is over a tap changes nothing: not a row that
+    /// went through, not "+ ekle" (pages.html:346).
+    [Fact]
+    public async Task Taps_after_the_run_change_nothing()
+    {
+        var k = await Make();
+        var page = k.Page(ActionGroupKind.Speed);
+        page.RunGroup.Execute(null);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
+        Assert.Equal(PagePhase.Done, page.Phase);
+
+        var spotify = page.Main.Single();
+        Assert.Equal("✓ durdu", spotify.Value);
+        spotify.Tap();
+        spotify.TapCommand.Execute(null);
+        spotify.Tap();
+        Assert.False(spotify.Skipped);
+        Assert.False(spotify.Off);
+        Assert.False(k.Session.IsSkipped("startup:HKCU:Spotify"));
+        Assert.Equal("✓ durdu", spotify.Value);
+
+        var onedrive = page.Extra.Single();
+        onedrive.Tap();
+        Assert.False(onedrive.Added);
+        Assert.False(onedrive.Off);
+        Assert.Equal("+ ekle", onedrive.Value);
+        Assert.Equal("✓ Tamam", page.Button);
+    }
+
+    /// A row that needs a restart says so under its cost before the run;
+    /// after it, a change waiting for the restart keeps its done word and the
+    /// muted "Yeniden başlatınca" line (R40).
+    [Fact]
+    public async Task Restart_rows_keep_their_note_before_and_after_the_run()
+    {
+        var k = await Make(b =>
+        {
+            b.Fast[1] = new ActionGroup(ActionGroupKind.Privacy, b.Fast[1].Items
+                .Select(i => i.Id == "privacy.ads" ? i with { NeedsRestart = true } : i).ToArray());
+            b.Outcome = i => new RowResult(i.Id,
+                i.Id == "privacy.ads" ? RowOutcome.PendingRestart : RowOutcome.Done, null, null, 0, 0);
+        });
+        var page = k.Page(ActionGroupKind.Privacy);
+        var ads = page.Main.Single(r => r.Id == "privacy.ads");
+        Assert.Equal("Yeniden başlatınca", ads.RestartText);
+        Assert.Equal("kapat", ads.Value);
+        Assert.Null(page.Extra.Single().RestartText);
+
+        page.RunGroup.Execute(null);
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Done, 3000));
+        Assert.Equal("✓ kapandı", ads.Result);
+        Assert.Equal("✓ kapandı", ads.Value);
+        Assert.True(ads.Done);
+        Assert.Equal("Yeniden başlatınca", ads.RestartText);
+
+        k.Loc.SetLanguage("en");
+        Assert.Equal("After restart", ads.RestartText);
+    }
+
+    /// Speed's half lands before the Space scan: the page's scan ends, and
+    /// the button says "Taranıyor…" (disabled) until the whole look is in,
+    /// then the count (R41).
+    [Fact]
+    public async Task Button_waits_for_the_whole_look()
+    {
+        var hold = new ManualResetEventSlim(false);
+        var k = new Kit();
+        k.Backend.HoldScan = hold;
+        k.Loc.SetLanguage("tr");
+        k.Session = new ActionSession(k.Backend, a => { lock (Gate) a(); });
+        var page = new GroupPageViewModel(k.Session, ActionGroupKind.Speed, k.Loc, () => new[] { "chrome" },
+            new ManualTimers(), () => false);
+        page.Enter();
+        page.Activate();
+        Assert.Equal(PagePhase.Scanning, page.Phase);
+
+        var look = k.Session.LookAsync();
+        Assert.True(SpinWait.SpinUntil(() => page.Phase == PagePhase.Ready, 3000));   // the fast half is in
+        Assert.Equal(SessionState.Looking, k.Session.State);
+        Assert.False(k.Session.SpaceReady);
+        Assert.True(page.ShowButton);
+        Assert.Equal("Taranıyor…", page.Button);
+        Assert.False(page.RunGroup.CanExecute(null));
+        Assert.Equal(2, page.Main.Concat(page.Also).Count(r => r.Revealed));
+
+        hold.Set();
+        await look;
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Ready, 3000));
+        Assert.Equal("2 değişikliği yap", page.Button);
+        Assert.True(page.RunGroup.CanExecute(null));
+        page.Deactivate();
+    }
 }

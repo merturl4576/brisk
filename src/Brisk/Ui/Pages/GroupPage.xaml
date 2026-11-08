@@ -46,6 +46,8 @@
                             <TextBlock x:Name="RowName" Style="{StaticResource Ui.RowTitle}" Text="{Binding Title}" TextWrapping="Wrap" />
                             <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding Cost}" Margin="0,2,0,0" TextWrapping="Wrap"
                                        Visibility="{Binding Cost, Converter={StaticResource Present}}" />
+                            <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding RestartText}" Margin="0,2,0,0"
+                                       Visibility="{Binding RestartText, Converter={StaticResource Present}}" />
                             <TextBlock Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.Red}"
                                        Text="{Binding ResultReason}" Margin="0,2,0,0" TextWrapping="Wrap"
                                        Visibility="{Binding ResultReason, Converter={StaticResource Present}}" />
@@ -129,6 +131,8 @@
                         <TextBlock Style="{StaticResource Ui.RowTitle}" Text="{Binding Title}" TextWrapping="Wrap" />
                         <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding Cost}" Margin="0,2,0,0" TextWrapping="Wrap"
                                    Visibility="{Binding Cost, Converter={StaticResource Present}}" />
+                        <TextBlock Style="{StaticResource Ui.RowCost}" Text="{Binding RestartText}" Margin="0,2,0,0"
+                                   Visibility="{Binding RestartText, Converter={StaticResource Present}}" />
                         <TextBlock Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.Red}"
                                    Text="{Binding ResultReason}" Margin="0,2,0,0" TextWrapping="Wrap"
                                    Visibility="{Binding ResultReason, Converter={StaticResource Present}}" />

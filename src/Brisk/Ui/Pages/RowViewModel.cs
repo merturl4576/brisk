@@ -40,7 +40,12 @@ public sealed class RowViewModel : ViewModelBase
     public string Title => Item.TitleKey is null ? Item.Title : _loc.Title(Item.TitleKey, Item.Title);
     public string? Cost => Item.Cost is null ? null : Item.CostKey is null ? Item.Cost : _loc.Title(Item.CostKey, Item.Cost);
     public bool NeedsRestart => Item.NeedsRestart;
-    public string? RestartText => Item.NeedsRestart ? _loc["gui.row.restart"] : null;
+    /// "Yeniden başlatınca", muted under the cost: before the run on a row
+    /// that needs a restart; after it on a row whose change waits for one,
+    /// next to its done word (ruling R40).
+    public string? RestartText => ResultRow is { } r
+        ? r.Outcome == RowOutcome.PendingRestart ? _loc["gui.row.restart"] : null
+        : Item.NeedsRestart ? _loc["gui.row.restart"] : null;
 
     public string? WindowsName => Item.WindowsName is null
         ? null
@@ -99,12 +104,18 @@ public sealed class RowViewModel : ViewModelBase
     }
 
     /// Skip the row or take it back; Bırakıyorum rows stay as they are. The
-    /// session refuses it while a run or an undo goes.
+    /// session refuses it while a run or an undo goes. Once the page's run is
+    /// over a tap changes nothing: it would not run, and the row would lie.
     public void Tap()
     {
         if (_section == PageSection.Keep) return;
+        if (ResultRow is not null || PageDone) return;
         _session.ToggleSkip(Item.Id);
     }
+
+    /// The page's run is over: the session is done and ran this row's group.
+    private bool PageDone => _session.State == SessionState.Done
+        && _session.Items.Any(i => i.Group == Item.Group && _session.Results.ContainsKey(i.Id));
 
     public RelayCommand TapCommand { get; }
 
