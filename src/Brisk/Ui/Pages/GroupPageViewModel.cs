@@ -33,7 +33,7 @@ public sealed record PageGauge(string Label, string Number, string? Unit, string
 /// and only rows the look has delivered. With brisk's moving background off
 /// (or no timers) every delivered row shows at once. A page that was never
 /// entered shows every row.
-public sealed class GroupPageViewModel : ViewModelBase
+public sealed class GroupPageViewModel : ViewModelBase, IStagePage
 {
     private static readonly TimeSpan RevealStep = TimeSpan.FromMilliseconds(300);
 

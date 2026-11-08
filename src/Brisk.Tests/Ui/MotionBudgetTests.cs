@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Brisk.Tests.Snapshots;
 using Brisk.Ui;
+using Brisk.Ui.Controls;
 using Brisk.Ui.Shell;
 using Xunit.Abstractions;
 
@@ -38,6 +39,30 @@ public sealed class MotionBudgetTests
         wait();
         p.Refresh();
         return (p.TotalProcessorTime - before).TotalMilliseconds / (span.TotalMilliseconds * Environment.ProcessorCount) * 100;
+    }
+
+    /// The MAX tile's fire ticks at most 20 times a second, only while the
+    /// ambient clock runs, and leaves no timer behind when it stops.
+    [Fact]
+    public void PixelFire_draws_at_most_twenty_frames_a_second()
+    {
+        SnapshotRenderer.OnUiThread(() =>
+        {
+            var timers = new ManualTimers();
+            var clock = new AmbientClock(() => true);
+            clock.SetVisible(true);
+            var fire = new PixelFire(clock, timers, new Random(1));
+            Assert.True(fire.Running);
+            Assert.True(PixelFire.FrameInterval >= TimeSpan.FromMilliseconds(50));
+
+            var before = fire.Frames;
+            timers.Advance(TimeSpan.FromSeconds(1));
+            Assert.InRange(fire.Frames - before, 1, 20);
+
+            clock.SetVisible(false);
+            Assert.False(fire.Running);
+            Assert.Equal(0, timers.Live);
+        });
     }
 
     [ManualFact]

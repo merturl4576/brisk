@@ -567,6 +567,22 @@
   <data name="gui.page.speed.done.caption" xml:space="preserve"><value>You'll feel it on the next start</value></data>
   <data name="gui.page.privacy.done.caption" xml:space="preserve"><value>Windows works the same, less data leaves</value></data>
   <data name="gui.page.space.done.caption" xml:space="preserve"><value>Caches grow back on their own as needed</value></data>
+  <data name="gui.level.min" xml:space="preserve"><value>MIN</value></data>
+  <data name="gui.level.mid" xml:space="preserve"><value>MID</value></data>
+  <data name="gui.level.max" xml:space="preserve"><value>MAX</value></data>
+  <data name="gui.level.min.tagline" xml:space="preserve"><value>Comes back on its own</value></data>
+  <data name="gui.level.mid.tagline" xml:space="preserve"><value>Has a small cost</value></data>
+  <data name="gui.level.max.tagline" xml:space="preserve"><value>Includes what can't come back</value></data>
+  <data name="gui.page.space.done.caption.min" xml:space="preserve"><value>Caches come back over time</value></data>
+  <data name="gui.page.space.done.caption.mid" xml:space="preserve"><value>Installers don't come back</value></data>
+  <data name="gui.page.space.done.caption.max" xml:space="preserve"><value>Some of what's deleted won't come back</value></data>
+  <data name="gui.page.space.disk" xml:space="preserve"><value>{0} drive</value></data>
+  <data name="gui.page.space.free.now" xml:space="preserve"><value>Free space</value></data>
+  <data name="gui.page.space.free.after" xml:space="preserve"><value>Free after</value></data>
+  <data name="gui.page.space.free.done" xml:space="preserve"><value>Free now</value></data>
+  <data name="gui.page.space.levels" xml:space="preserve"><value>Level</value></data>
+  <data name="gui.page.space.mine" xml:space="preserve"><value>Your files · brisk won't touch them</value></data>
+  <data name="gui.row.lost" xml:space="preserve"><value>Can't be undone.</value></data>
   <data name="gui.load.title" xml:space="preserve"><value>Slowing you now</value></data>
   <data name="gui.load.none" xml:space="preserve"><value>Nothing is slowing you now ✓</value></data>
   <data name="gui.conn.title" xml:space="preserve"><value>Talking to now</value></data>

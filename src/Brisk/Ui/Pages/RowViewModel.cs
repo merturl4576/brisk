@@ -56,6 +56,26 @@ public sealed class RowViewModel : ViewModelBase
 
     public string? Size => Item.Bytes is null ? null : Sizes.Format(_session.SelectedBytes(Item), _loc.Culture);
 
+    /// The cost line in muted grey. A row that cannot come back shows its
+    /// cost as the Warning instead, so the amber words appear once.
+    public string? Note => Item.Lost ? null : Cost;
+
+    /// A row that cannot come back says so in amber: its own cost when it
+    /// has one ("Geri alınamaz."), the plain words when it has none.
+    public string? Warning => Item.Lost ? Cost ?? _loc["gui.row.lost"] : null;
+
+    /// A Space row above the chosen level: dimmed, the tap does nothing.
+    public bool Locked => _session.IsLocked(Item);
+
+    /// Yer aç: the row's level ("MID") and its colour; a row with no level sits under MAX.
+    public string? LevelName => Item.Group == ActionGroupKind.Space ? SpaceLevels.Name(SpaceLevels.Of(Item), _loc) : null;
+    public string? LevelColor => Item.Group == ActionGroupKind.Space ? SpaceLevels.Color(SpaceLevels.Of(Item)) : null;
+
+    /// Yer aç: false, then true a beat later, when a level up takes the row in;
+    /// the row flashes on the turn to true.
+    private bool _lit;
+    public bool Lit { get => _lit; internal set => Set(ref _lit, value); }
+
     /// Where the page shows the row; set by the page.
     private PageSection _section;
     public PageSection Section
@@ -97,7 +117,7 @@ public sealed class RowViewModel : ViewModelBase
             {
                 PageSection.Keep => _loc["gui.page.keep.value"],
                 PageSection.Extra => _loc[Added ? "gui.page.extra.added" : "gui.page.extra.add"],
-                _ when Item.Group == ActionGroupKind.Space => Size,
+                _ when Item.Group == ActionGroupKind.Space => Size ?? "—",
                 _ => RowWords.Verb(Item, _loc),
             };
         }
@@ -177,7 +197,8 @@ public sealed class RowViewModel : ViewModelBase
     {
         foreach (var name in new[] { nameof(Title), nameof(Cost), nameof(RestartText), nameof(WindowsName), nameof(Size),
                      nameof(IsTicked), nameof(Result), nameof(ResultTone), nameof(ResultReason),
-                     nameof(Skipped), nameof(Off), nameof(Added), nameof(Done), nameof(Value) })
+                     nameof(Skipped), nameof(Off), nameof(Added), nameof(Done), nameof(Value), nameof(Note),
+                     nameof(Warning), nameof(Locked), nameof(LevelName), nameof(LevelColor) })
             Raise(name);
         foreach (var f in Files) f.Refresh();
     }

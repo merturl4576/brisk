@@ -567,6 +567,22 @@
   <data name="gui.page.speed.done.caption" xml:space="preserve"><value>Farkı bir sonraki açılışta görürsün</value></data>
   <data name="gui.page.privacy.done.caption" xml:space="preserve"><value>Windows aynen çalışır, dışarı giden veri azalır</value></data>
   <data name="gui.page.space.done.caption" xml:space="preserve"><value>Önbellekler gerektikçe kendiliğinden yeniden oluşur</value></data>
+  <data name="gui.level.min" xml:space="preserve"><value>MIN</value></data>
+  <data name="gui.level.mid" xml:space="preserve"><value>MID</value></data>
+  <data name="gui.level.max" xml:space="preserve"><value>MAX</value></data>
+  <data name="gui.level.min.tagline" xml:space="preserve"><value>Kendiliğinden geri gelir</value></data>
+  <data name="gui.level.mid.tagline" xml:space="preserve"><value>Küçük bir bedeli var</value></data>
+  <data name="gui.level.max.tagline" xml:space="preserve"><value>Geri alınamayanlar dahil</value></data>
+  <data name="gui.page.space.done.caption.min" xml:space="preserve"><value>Önbellekler zamanla geri gelir</value></data>
+  <data name="gui.page.space.done.caption.mid" xml:space="preserve"><value>Kurulum dosyaları geri gelmez</value></data>
+  <data name="gui.page.space.done.caption.max" xml:space="preserve"><value>Silinenlerin bir kısmı geri gelmez</value></data>
+  <data name="gui.page.space.disk" xml:space="preserve"><value>{0} diski</value></data>
+  <data name="gui.page.space.free.now" xml:space="preserve"><value>Şu an boş</value></data>
+  <data name="gui.page.space.free.after" xml:space="preserve"><value>Sonra boş</value></data>
+  <data name="gui.page.space.free.done" xml:space="preserve"><value>Şimdi boş</value></data>
+  <data name="gui.page.space.levels" xml:space="preserve"><value>Seviye</value></data>
+  <data name="gui.page.space.mine" xml:space="preserve"><value>Senin dosyaların · brisk dokunmaz</value></data>
+  <data name="gui.row.lost" xml:space="preserve"><value>Geri alınamaz.</value></data>
   <data name="gui.load.title" xml:space="preserve"><value>Şu an kasanlar</value></data>
   <data name="gui.load.none" xml:space="preserve"><value>Şu an seni yavaşlatan yok ✓</value></data>
   <data name="gui.conn.title" xml:space="preserve"><value>Şu an konuştukları</value></data>
