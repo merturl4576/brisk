@@ -401,6 +401,40 @@ public sealed class GroupPageViewModelTests
         Assert.False(page.ShowUndo);
     }
 
+    /// Ruling R56: one run = one undo. After Hepsini yap, Geri al on
+    /// Hızlandır and on Gizlilik says it reverts both pages; after a page
+    /// run it keeps the plain copy.
+    [Fact]
+    public async Task Undo_after_RunAll_names_both_pages()
+    {
+        var k = await Make();
+        var speed = k.Page(ActionGroupKind.Speed);
+        var privacy = k.Page(ActionGroupKind.Privacy);
+        Assert.Equal("Geri al", speed.UndoText);
+
+        await k.Session.RunAllAsync();
+        Assert.True(speed.ShowUndo);
+        Assert.True(privacy.ShowUndo);
+        Assert.Equal("Geri al (Hızlandır + Gizlilik)", speed.UndoText);
+        Assert.Equal("Geri al (Hızlandır + Gizlilik)", privacy.UndoText);
+        k.Loc.SetLanguage("en");
+        Assert.Equal("Undo (Speed up + Privacy)", speed.UndoText);
+    }
+
+    [Fact]
+    public async Task Undo_after_a_page_run_keeps_the_plain_copy()
+    {
+        var k = await Make();
+        var speed = k.Page(ActionGroupKind.Speed);
+        var raised = new List<string?>();
+        speed.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        await k.Session.RunAsync(ActionGroupKind.Speed);
+        Assert.True(speed.ShowUndo);
+        Assert.Equal("Geri al", speed.UndoText);
+        Assert.Contains(nameof(GroupPageViewModel.UndoText), raised);
+    }
+
     /// Every row failed: no green, no "✓ Tamam"; the gauge says Olmadı and
     /// the button offers a fresh look.
     [Fact]

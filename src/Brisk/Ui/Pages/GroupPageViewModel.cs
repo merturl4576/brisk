@@ -67,7 +67,9 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     public string AlsoTitle => _loc["gui.page.speed.also"];
     public string KeepTitle => _loc["gui.page.speed.keep"];
     public string ExtraTitle => _loc["gui.page.extra"];
-    public string UndoText => _loc["gui.button.undo"];
+    /// One run = one undo (ruling R56): after Hepsini yap the copy names
+    /// both pages, so nothing comes back on the other page silently.
+    public string UndoText => _loc[_session.UndoSpansBothPages ? "gui.button.undo.both" : "gui.button.undo"];
 
     public ObservableCollection<RowViewModel> Rows => _rows.Rows;
     public ObservableCollection<RowViewModel> Main { get; } = new();
@@ -287,7 +289,7 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     {
         foreach (var name in new[] { nameof(Phase), nameof(SelectedCount), nameof(Button), nameof(ButtonOk),
                      nameof(ButtonBusy), nameof(ShowButton), nameof(ShowRight), nameof(ShowAlso), nameof(ShowUndo),
-                     nameof(Gauge) })
+                     nameof(UndoText), nameof(Gauge) })
             Raise(name);
         RunGroup.RaiseCanExecuteChanged();
         Undo.RaiseCanExecuteChanged();

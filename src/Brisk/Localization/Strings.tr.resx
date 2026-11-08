@@ -471,6 +471,7 @@
   <data name="gui.button.run-all" xml:space="preserve"><value>Hepsini yap</value></data>
   <data name="gui.button.running" xml:space="preserve"><value>Yapılıyor…</value></data>
   <data name="gui.button.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="gui.button.undo.both" xml:space="preserve"><value>Geri al (Hızlandır + Gizlilik)</value></data>
   <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
   <data name="gui.load.measuring" xml:space="preserve"><value>Ölçülüyor…</value></data>

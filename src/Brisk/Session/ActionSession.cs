@@ -119,6 +119,11 @@ public sealed class ActionSession
     public bool CanUndoFor(ActionGroupKind group) =>
         CanUndo && LastRun!.UndoableRuleIds.Any(r => GroupOfRule(r) == group);
 
+    /// Geri al reverts the whole run (ruling R56): true when that run
+    /// changed settings on both Hızlandır and Gizlilik (a Hepsini yap), so
+    /// each page's button can say it undoes both.
+    public bool UndoSpansBothPages => CanUndoFor(ActionGroupKind.Speed) && CanUndoFor(ActionGroupKind.Privacy);
+
     // ---- level and skips
 
     private ActionItem? Find(string rowId) =>
