@@ -212,7 +212,7 @@ public sealed class HomeViewModelTests
         k.Vm.Primary.Execute(null);
         Assert.True(Until(() => k.Session.State == SessionState.Done));
         Assert.Equal("Son işlem: 6,6 GB · 2 uygulama · 1 ayar", k.Vm.Strip.Text);
-        Assert.Null(k.Vm.Strip.Button);
+        Assert.Equal("Tekrar tara", k.Vm.Strip.Button);
         Assert.True(k.Vm.Strip.ShowUndo);
         Assert.Contains("hibernation", k.Session.LastRun!.UndoableRuleIds);
 
@@ -236,6 +236,134 @@ public sealed class HomeViewModelTests
     }
 
     // ---- the strip and its button
+
+    /// After a run Home is never a dead end: Tekrar tara is always offered,
+    /// with no undo too, and the look it starts brings the resting strip and
+    /// Hepsini yap back.
+    [Fact]
+    public async Task Strip_after_a_run_offers_rescan_which_brings_run_all_back()
+    {
+        var k = await Make();
+        foreach (var id in new[] { "startup:HKCU:Spotify", "speed.animations", "privacy.ads" }) k.Session.ToggleSkip(id);
+        k.Vm.Primary.Execute(null);
+        Assert.True(Until(() => k.Session.State == SessionState.Done));
+        Assert.False(k.Vm.Strip.ShowUndo);
+        Assert.Equal("Tekrar tara", k.Vm.Strip.Button);
+        Assert.Equal(HomeButton.Rescan, k.Vm.Strip.ButtonAction);
+        Assert.True(k.Vm.Primary.CanExecute(null));
+
+        k.Vm.Primary.Execute(null);
+        Assert.True(Until(() => k.Session.State == SessionState.Ready));
+        Assert.StartsWith("brisk hazır: ", k.Vm.Strip.Text);
+        Assert.Equal("Hepsini yap", k.Vm.Strip.Button);
+        Assert.Equal(HomeButton.RunAll, k.Vm.Strip.ButtonAction);
+        Assert.True(k.Vm.Primary.CanExecute(null));
+    }
+
+    /// 0.11.0's "restart for full effect": a row that waits for a restart
+    /// says so on the post-run strip.
+    [Fact]
+    public async Task Strip_after_a_run_says_when_a_restart_is_needed()
+    {
+        var k = await Make(b => b.Outcome = i => i.Id == "speed.animations"
+            ? new RowResult(i.Id, RowOutcome.PendingRestart, null, null, 0, 0)
+            : new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0));
+        await k.Session.RunAllAsync();
+        Assert.True(Until(() => k.Session.State == SessionState.Done));
+        Assert.Equal("Son işlem: 5,6 GB · 2 uygulama · 1 ayar · tam etki için yeniden başlat", k.Vm.Strip.Text);
+
+        var plain = await Make();
+        await plain.Session.RunAllAsync();
+        Assert.True(Until(() => plain.Session.State == SessionState.Done));
+        Assert.DoesNotContain("yeniden başlat", plain.Vm.Strip.Text);
+    }
+
+    /// 0.11.0's deferred note: caches an open app holds are cleaned once it
+    /// closes, and the post-run strip names the size and the apps.
+    [Fact]
+    public async Task Strip_after_a_run_names_the_caches_left_until_their_apps_close()
+    {
+        var k = await Make(b =>
+        {
+            b.ReceiptToReturn = TestReceipts.Freed("run-1", 6_000_000_000) with { DeferredBytes = 2_300_000_000 };
+            b.DeferredAppNames.AddRange(new[] { "chrome", "discord" });
+        });
+        await k.Session.RunAllAsync();
+        Assert.True(Until(() => k.Session.State == SessionState.Done));
+        Assert.EndsWith("2,1 GB daha, chrome, discord kapanınca", k.Vm.Strip.Text);
+
+        // No app named (the queue cannot be read, or it is empty): no note.
+        var unnamed = await Make(b => b.ReceiptToReturn = TestReceipts.Freed("run-1", 1) with { DeferredBytes = 2_300_000_000 });
+        await unnamed.Session.RunAllAsync();
+        Assert.True(Until(() => unnamed.Session.State == SessionState.Done));
+        Assert.DoesNotContain("kapanınca", unnamed.Vm.Strip.Text);
+    }
+
+    /// 0.11.0's slow-step hint: while the row that holds the component store
+    /// runs (DISM, minutes), the strip says it can take a few minutes.
+    [Fact]
+    public async Task Strip_while_running_the_slow_step_says_it_takes_minutes()
+    {
+        // Each held row stops the run on it until the test has looked.
+        var holds = new Dictionary<string, ManualResetEventSlim>
+        {
+            ["space.caches"] = new(false), ["speed.animations"] = new(false),
+        };
+        var k = await Make(b =>
+        {
+            var caches = ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.caches"), 6_000_000_000) with { Level = SpaceLevel.Min };
+            b.Space = new ActionGroup(ActionGroupKind.Space, new[] { caches });
+            b.Outcome = i =>
+            {
+                if (holds.TryGetValue(i.Id, out var hold)) hold.Wait(TimeSpan.FromSeconds(5));
+                return new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0);
+            };
+        });
+        Assert.Contains("component-store", k.Session.Items.Single(i => i.Id == "space.caches").LinkIds);
+        var run = k.Session.RunAllAsync();
+        var seen = new List<string>();
+        try
+        {
+            for (var n = 0; n < holds.Count; n++)
+            {
+                string? at = null;
+                Assert.True(Until(() => (at = k.Session.CurrentRowId) is { } id && holds.TryGetValue(id, out var h) && !h.IsSet));
+                lock (Gate)
+                {
+                    if (at == "space.caches") Assert.EndsWith(" · birkaç dakika sürebilir", k.Vm.Strip.Text);
+                    else Assert.Equal("Yapılıyor: speed.animations", k.Vm.Strip.Text);   // any other row: the plain line
+                }
+                seen.Add(at!);
+                holds[at!].Set();
+            }
+        }
+        finally
+        {
+            foreach (var h in holds.Values) h.Set();
+        }
+        await run;
+        Assert.Equal(holds.Keys.OrderBy(x => x, Ordinal), seen.OrderBy(x => x, Ordinal));
+    }
+
+    /// Ruling R31: the rescan that follows a failed undo is the resting
+    /// strip: the error is said, Geri al is not offered there (the Speed and
+    /// Privacy pages keep it for that run).
+    [Fact]
+    public async Task Strip_after_a_failed_undo_says_so_without_offering_undo()
+    {
+        var k = await Make(b => b.FailUndo = new InvalidOperationException("erişim yok"));
+        await k.Session.RunAllAsync();
+        Assert.True(Until(() => k.Session.State == SessionState.Done));
+        Assert.True(k.Vm.Strip.ShowUndo);
+
+        k.Vm.Undo.Execute(null);
+        Assert.True(Until(() => k.Session.UndoError is not null && k.Session.State == SessionState.Ready));
+        Assert.Equal("Geri alınamadı: erişim yok", k.Vm.Strip.Text);
+        Assert.Equal(Tone.Bad, k.Vm.Strip.Tone);
+        Assert.False(k.Vm.Strip.ShowUndo);
+        Assert.True(k.Session.CanUndo);                      // the run stays undoable, from its pages
+        Assert.Equal("Hepsini yap", k.Vm.Strip.Button);
+    }
 
     /// No confirmation: Hepsini yap runs at once — Yer aç at MIN and the
     /// default Speed and Privacy rows; the MID rows that cannot come back

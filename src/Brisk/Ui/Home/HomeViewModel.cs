@@ -434,8 +434,11 @@ public sealed class HomeViewModel : ViewModelBase
                 var row = s.CurrentRowId is { } id
                     ? items.FirstOrDefault(i => string.Equals(i.Id, id, StringComparison.OrdinalIgnoreCase))
                     : null;
+                var title = row is null ? null : row.TitleKey is null ? row.Title : _loc.Title(row.TitleKey, row.Title);
+                // The row that holds the component store runs DISM: minutes, said up front.
                 var doing = row is null ? _loc["gui.button.running"]
-                    : _loc.F("gui.state.running", row.TitleKey is null ? row.Title : _loc.Title(row.TitleKey, row.Title));
+                    : row.LinkIds.Contains("component-store") ? _loc.F("gui.state.running.slow", title!)
+                    : _loc.F("gui.state.running", title!);
                 return new HomeStrip("", doing, Tone.Normal, null, false, HomeButton.None, false);
             }
             case SessionState.Done:
@@ -448,9 +451,11 @@ public sealed class HomeViewModel : ViewModelBase
         // Ready. What Hepsini yap takes: Yer aç at MIN, the default Speed and
         // Privacy rows, minus skips (ActionSession.InRunAll; ruling R4).
         var taken = items.Count(s.InRunAll) > 0;
+        // A failed undo is followed by a rescan: the resting strip has no Geri
+        // al (ruling R31); the Speed and Privacy pages keep it for that run.
         if (s.UndoError is { } undoError)
             return new HomeStrip("", _loc.F("gui.state.undo-error", undoError), Tone.Bad, runAll, taken,
-                HomeButton.RunAll, s.CanUndo);
+                HomeButton.RunAll, false);
         if (s.UndoResults is { } undone)
         {
             var back = _loc.F("gui.state.undone", undone.Count(r => r.Outcome == RowOutcome.Done));
@@ -469,8 +474,10 @@ public sealed class HomeViewModel : ViewModelBase
 
     /// "Son işlem: 45 GB · 9 uygulama · 7 ayar": the groups the run held, what
     /// went through in each (a setting Windows put back does not count), the
-    /// rows that failed. Geri al only while the run can be undone, which
-    /// reverses its Speed and Privacy settings alone (ruling R21).
+    /// rows that failed, a restart some rows wait for, and the caches left
+    /// until their apps close. Geri al only while the run can be undone, which
+    /// reverses its Speed and Privacy settings alone (ruling R21); Tekrar tara
+    /// always, and the look it starts brings the resting strip back.
     private HomeStrip DoneStrip(IReadOnlyList<ActionItem> items)
     {
         var s = _session;
@@ -488,9 +495,20 @@ public sealed class HomeViewModel : ViewModelBase
         if (Through(ActionGroupKind.Privacy) is > 0 and var settings) parts.Add(_loc.F("gui.home.strip.settings", settings));
         var failed = s.Results.Values.Count(r => r.Outcome == RowOutcome.Failed);
         if (failed > 0) parts.Add(_loc.F("gui.state.done.failed", failed));
+        if (s.Results.Values.Any(r => r.Outcome == RowOutcome.PendingRestart))
+            parts.Add(_loc["gui.state.done.restart"]);
+        if (s.Receipt is { DeferredBytes: > 0 } receipt && SafeDeferredApps() is { Count: > 0 } waitingFor)
+            parts.Add(_loc.F("gui.state.done.deferred", Sizes.Format(receipt.DeferredBytes, C), string.Join(", ", waitingFor)));
         if (parts.Count == 0) parts.Add(_loc["action.result.done"]);
         return new HomeStrip(_loc["gui.home.strip.last"], string.Join(Sep, parts), failed > 0 ? Tone.Warn : Tone.Normal,
-            null, false, HomeButton.None, s.CanUndo);
+            _loc["gui.button.rescan"], true, HomeButton.Rescan, s.CanUndo);
+    }
+
+    /// The apps whose caches wait for them to close; none when unreadable.
+    private IReadOnlyList<string> SafeDeferredApps()
+    {
+        try { return _backend.DeferredApps(); }
+        catch (Exception) { return Array.Empty<string>(); }
     }
 
     private void OnPrimary()
@@ -502,6 +520,7 @@ public sealed class HomeViewModel : ViewModelBase
                 _ = _session.RunAllAsync();
                 break;
             case HomeButton.Retry:
+            case HomeButton.Rescan:
                 _ = _session.RescanAsync();
                 break;
         }

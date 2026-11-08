@@ -391,7 +391,7 @@
                            Text="{Binding Strip.Lead}"
                            Visibility="{Binding Strip.Lead, Converter={StaticResource Present}}" />
                 <TextBlock FontFamily="{StaticResource Ui.Font}" FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center" MaxWidth="560" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" MaxWidth="640" TextTrimming="CharacterEllipsis"
                            Text="{Binding Strip.Body}">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">

@@ -308,8 +308,9 @@ public sealed class NewGuiSnapshotTests
         return element.TransformToAncestor(ancestor).TransformBounds(new Rect(element.RenderSize));
     }
 
-    /// The GIF moment's longest strip (freed, apps, settings, failed) stays
-    /// on one line and clear of the floor satellites.
+    /// The GIF moment's longest strip (freed, apps, settings, failed, the
+    /// restart, the caches left for their apps, Geri al, Tekrar tara) stays
+    /// on one line, right of the nav and clear of the floor satellites.
     [Fact]
     public void Home_Done_TheLongestStrip_StaysClearOfTheSatellites()
     {
@@ -320,7 +321,9 @@ public sealed class NewGuiSnapshotTests
             "privacy.location" or "privacy.ads" => new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0),
             _ => new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0),
         };
-        b.ReceiptToReturn = TestReceipts.Freed("run-1", 28_346_784_153, startupAfter: 3, privacyOff: 8);
+        b.ReceiptToReturn = TestReceipts.Freed("run-1", 28_346_784_153, startupAfter: 3, privacyOff: 8)
+            with { DeferredBytes = 2_300_000_000 };
+        b.DeferredAppNames.AddRange(new[] { "chrome", "discord", "spotify" });
         var overlaps = new List<string>();
         Rect strip = default;
         SnapshotRenderer.Capture(() => Frame(AfterRun(b)), Canvas, "new-home-done-long", inspect: root =>
