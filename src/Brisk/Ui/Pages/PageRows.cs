@@ -17,13 +17,16 @@ internal sealed class PageRows
     private readonly ActionGroupKind _group;
     private readonly Loc _loc;
     private readonly Func<IReadOnlyList<string>> _deferredApps;
+    private readonly Func<SpaceLevel>? _shownLevel;
 
-    public PageRows(ActionSession session, ActionGroupKind group, Loc loc, Func<IReadOnlyList<string>> deferredApps)
+    public PageRows(ActionSession session, ActionGroupKind group, Loc loc, Func<IReadOnlyList<string>> deferredApps,
+        Func<SpaceLevel>? shownLevel = null)
     {
         _session = session;
         _group = group;
         _loc = loc;
         _deferredApps = deferredApps;
+        _shownLevel = shownLevel;
     }
 
     public ObservableCollection<RowViewModel> Rows { get; } = new();
@@ -75,7 +78,7 @@ internal sealed class PageRows
         foreach (var item in items)
         {
             if (old.TryGetValue(item.Id, out var row)) row.Replace(item);
-            else row = new RowViewModel(item, _session, _loc, _deferredApps);
+            else row = new RowViewModel(item, _session, _loc, _deferredApps, _shownLevel);
             Rows.Add(row);
         }
     }

@@ -271,13 +271,17 @@ public sealed class SpacePageViewModelTests
 
     /// R48: Hepsini yap runs Yer aç at MIN. While it runs and once it is done
     /// the page shows MIN — the tile, the colour, "Sonra boş" — not the level
-    /// the page had picked.
+    /// the page had picked. R49: the headers and the row locks too, so MID and
+    /// MAX rows do not look taken under a MIN tile.
     [Fact]
     public async Task Run_all_shows_min_while_running_and_done()
     {
-        var k = await Make();
+        var k = await Make(b => AddRows(b,
+            FakeBackend.Row("space.archives", ActionGroupKind.Space, 1_000_000_000, level: SpaceLevel.Max, lost: true)));
         var page = k.Page();
         page.Levels[2].Select.Execute(null);
+        Assert.All(page.Groups, g => Assert.False(g.Locked));
+        Assert.All(page.Rows, r => Assert.False(r.Locked));
         k.Backend.HoldRun = new ManualResetEventSlim(false);
         var run = k.Session.RunAllAsync();
         Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Running, 2000));
@@ -299,6 +303,10 @@ public sealed class SpacePageViewModelTests
     {
         Assert.Equal(new[] { true, false, false }, page.Levels.Select(t => t.IsSelected));
         Assert.Equal("#5FD4E8", page.LevelColor);
+        Assert.Equal(new[] { false, true, true }, page.Groups.Select(g => g.Locked));
+        Assert.All(page.Groups[0].Rows, r => Assert.False(r.Locked));
+        Assert.All(page.Groups.Skip(1).SelectMany(g => g.Rows), r => Assert.True(r.Locked));
+        Assert.All(page.Groups.Skip(1).SelectMany(g => g.Rows), r => Assert.True(r.Off));
     }
 
     /// The scan reveals rows by id (carry from Task 11): rows the scan has

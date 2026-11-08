@@ -79,7 +79,8 @@ public sealed class LevelTileViewModel : ViewModelBase
 }
 
 /// "Sileceklerim" under one level's header; locked while the level is above
-/// the chosen one. A level with no rows on this machine hides its header.
+/// the one the page shows (ruling R49). A level with no rows on this machine
+/// hides its header.
 public sealed class LevelGroupViewModel : ViewModelBase
 {
     private readonly SpacePageViewModel _page;
@@ -93,7 +94,7 @@ public sealed class LevelGroupViewModel : ViewModelBase
     public SpaceLevel Level { get; }
     public string Name => SpaceLevels.Name(Level, _page.L);
     public string Color => SpaceLevels.Color(Level);
-    public bool Locked => Level > _page.Level;
+    public bool Locked => Level > _page.ShownLevel;
     public ObservableCollection<RowViewModel> Rows { get; } = new();
     public bool HasRows => Rows.Count > 0;
 
@@ -143,7 +144,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
         _timers = timers;
         Levels = SpaceLevels.All.Select(l => new LevelTileViewModel(this, l)).ToList();
         Groups = SpaceLevels.All.Select(l => new LevelGroupViewModel(this, l)).ToList();
-        _rows = new PageRows(session, ActionGroupKind.Space, loc, deferredApps);
+        _rows = new PageRows(session, ActionGroupKind.Space, loc, deferredApps, () => ShownLevel);
         _scan = new PageScan(session, timers, moving, Ordered, () => DataIn, RaiseState);
         RunGroup = new RelayCommand(() => _rows.Run(ButtonOk), () => _rows.CanRun(ButtonOk));
         _lastState = session.State;
@@ -185,9 +186,9 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
 
     public SpaceLevel Level => _session.Level;
 
-    /// The level the tiles, the colour and "Sonra boş" show: the picked one,
-    /// or during and after a run the one it ran at — Hepsini yap frees MIN
-    /// whatever the page had picked (ruling R48).
+    /// The level the tiles, the colour, "Sonra boş", the headers and the row
+    /// locks show: the picked one, or during and after a run the one it ran
+    /// at — Hepsini yap frees MIN whatever the page had picked (rulings R48, R49).
     internal SpaceLevel ShownLevel => Phase is PagePhase.Running or PagePhase.Done ? _ranLevel : Level;
 
     public string LevelColor => SpaceLevels.Color(ShownLevel);

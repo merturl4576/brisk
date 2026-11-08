@@ -19,13 +19,18 @@ public sealed class RowViewModel : ViewModelBase
     private readonly ActionSession _session;
     private readonly Loc _loc;
     private readonly Func<IReadOnlyList<string>> _deferredApps;
+    private readonly Func<SpaceLevel>? _shownLevel;
 
-    public RowViewModel(ActionItem item, ActionSession session, Loc loc, Func<IReadOnlyList<string>> deferredApps)
+    /// `shownLevel`: the level the page shows, when it is not always the
+    /// chosen one (Yer aç during and after a Hepsini yap run, ruling R49).
+    public RowViewModel(ActionItem item, ActionSession session, Loc loc, Func<IReadOnlyList<string>> deferredApps,
+        Func<SpaceLevel>? shownLevel = null)
     {
         Item = item;
         _session = session;
         _loc = loc;
         _deferredApps = deferredApps;
+        _shownLevel = shownLevel;
         Files = item.Files.OrderByDescending(f => f.Bytes)
             .Select(f => new FileViewModel(f, session, loc)).ToList();
         ToggleExpand = new RelayCommand(() => IsExpanded = !IsExpanded, () => HasDetails);
@@ -64,8 +69,8 @@ public sealed class RowViewModel : ViewModelBase
     /// has one ("Geri alınamaz."), the plain words when it has none.
     public string? Warning => Item.Lost ? Cost ?? _loc["gui.row.lost"] : null;
 
-    /// A Space row above the chosen level: dimmed, the tap does nothing.
-    public bool Locked => _session.IsLocked(Item);
+    /// A Space row above the level the page shows: dimmed, the tap does nothing.
+    public bool Locked => _shownLevel is { } shown ? ActionSession.IsLockedAt(Item, shown()) : _session.IsLocked(Item);
 
     /// Yer aç: the row's level ("MID") and its colour; a row with no level sits under MAX.
     public string? LevelName => Item.Group == ActionGroupKind.Space ? SpaceLevels.Name(SpaceLevels.Of(Item), _loc) : null;
@@ -98,7 +103,7 @@ public sealed class RowViewModel : ViewModelBase
 
     /// A row of the list that will not run: tapped out, or above the level.
     public bool Off => _section is PageSection.Main or PageSection.Also
-        && (Skipped || _session.IsLocked(Item));
+        && (Skipped || Locked);
 
     /// An "İstersen ekle" row a tap added to the run.
     public bool Added => _section == PageSection.Extra && _session.WillRun(Item);

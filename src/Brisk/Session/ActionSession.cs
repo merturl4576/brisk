@@ -127,7 +127,12 @@ public sealed class ActionSession
     private static bool InLevel(ActionItem item, SpaceLevel level) => item.Level is { } l && l <= level;
 
     /// A Space row above the chosen level: shown, dimmed, not tappable.
-    public bool IsLocked(ActionItem item) => item.Group == ActionGroupKind.Space && !InLevel(item, Level);
+    public bool IsLocked(ActionItem item) => IsLockedAt(item, Level);
+
+    /// The same at a given level: Yer aç shows MIN's locks during and after
+    /// a Hepsini yap run, whatever level is chosen (ruling R49).
+    public static bool IsLockedAt(ActionItem item, SpaceLevel level) =>
+        item.Group == ActionGroupKind.Space && !InLevel(item, level);
 
     /// A row's default before any tap: a Space row is taken (its level
     /// decides), a Speed or Privacy row as the plan ticks it.
