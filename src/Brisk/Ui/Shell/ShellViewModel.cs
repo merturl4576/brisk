@@ -45,7 +45,8 @@ public sealed class ShellViewModel : ViewModelBase
         Home = new HomeViewModel(post, background, session, backend, timers, loc, Open);
         // The pages play their scan only while brisk's moving background runs (ruling R30).
         Func<bool> moving = () => clock.IsActive;
-        Space = new GroupPageViewModel(session, ActionGroupKind.Space, loc, backend.DeferredApps, timers, moving);
+        Space = new SpacePageViewModel(session, loc, backend.DeferredApps, backend.SystemDriveFreeBytes, background, post,
+            timers, moving);
         Speed = new GroupPageViewModel(session, ActionGroupKind.Speed, loc, backend.DeferredApps, timers, moving);
         Privacy = new GroupPageViewModel(session, ActionGroupKind.Privacy, loc, backend.DeferredApps, timers, moving);
         _lastState = session.State;
@@ -60,7 +61,7 @@ public sealed class ShellViewModel : ViewModelBase
 
     public Loc L => _loc;
     public HomeViewModel Home { get; }
-    public GroupPageViewModel Space { get; }
+    public SpacePageViewModel Space { get; }
     public GroupPageViewModel Speed { get; }
     public GroupPageViewModel Privacy { get; }
     public UiSettingsViewModel Settings { get; }
@@ -96,7 +97,7 @@ public sealed class ShellViewModel : ViewModelBase
     /// Rain and the grid floor: every place stands on the stage.
     public bool Decorated => true;
 
-    private GroupPageViewModel? Page(Place place) => place switch
+    private IStagePage? Page(Place place) => place switch
     {
         Place.Space => Space,
         Place.Speed => Speed,

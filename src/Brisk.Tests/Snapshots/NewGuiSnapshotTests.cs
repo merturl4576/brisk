@@ -110,13 +110,78 @@ public sealed class NewGuiSnapshotTests
         Assert.Empty(errors);
     }
 
-    [Fact]
-    public void Page_Space_WithDownloadsOpen() => ShootPage(() =>
+    /// Yer aç as the shell builds it, entered, at `level`; `run` presses the button and waits for the end.
+    internal static SpacePageViewModel SpacePageOf(FakeBackend b, SpaceLevel level = SpaceLevel.Mid, bool run = false,
+        string language = "tr")
     {
-        var p = Page(Catalog(), ActionGroupKind.Space);
+        var (home, session) = Home(b, language);
+        var page = new SpacePageViewModel(session, home.L, () => new[] { "chrome" }, b.SystemDriveFreeBytes,
+            a => a(), a => a());
+        page.Enter();
+        session.SetLevel(level);
+        if (run) session.RunAsync(ActionGroupKind.Space).GetAwaiter().GetResult();
+        return page;
+    }
+
+    private static Grid SpaceFrame(SpacePageViewModel vm) => new()
+    {
+        Width = Canvas.Width,
+        Height = Canvas.Height,
+        Children =
+        {
+            new Atmosphere(new Brisk.Ui.AmbientClock(() => false)) { Decorated = false },
+            new SpacePage { DataContext = vm },
+        },
+    };
+
+    private static void ShootSpace(Func<SpacePageViewModel> vm, string name, Action<FrameworkElement>? inspect = null)
+    {
+        var errors = BindingErrors.Capture(() =>
+            SnapshotRenderer.Capture(() => SpaceFrame(vm()), Canvas, name, inspect));
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Page_Space_WithDownloadsOpen() => ShootSpace(() =>
+    {
+        var p = SpacePageOf(Catalog());
         p.Expand("space.downloads");
         return p;
     }, "new-page-space");
+
+    [Fact]
+    public void Page_Space_Done() => ShootSpace(() => SpacePageOf(Catalog(), run: true), "new-page-space-done");
+
+    /// The level colour is one brush the code-behind repaints: it must not be
+    /// frozen once the page is on screen, or the cross-fade (moving
+    /// background on) and the instant repaint (off) throw.
+    [Fact]
+    public void Page_Space_Max_LevelColourRepaintsOnScreen() => ShootSpace(() => SpacePageOf(Catalog()),
+        "new-page-space-max", element =>
+        {
+            var page = (SpacePage)((Grid)element).Children[1];
+            var vm = (SpacePageViewModel)page.DataContext;
+            var brush = (System.Windows.Media.SolidColorBrush)page.Resources["LevelBrush"];
+
+            Assert.False(brush.IsFrozen);
+            var moving = Brisk.Ui.AmbientClock.ForStage(() => true, renderTier: () => 2);
+            Brisk.Ui.AmbientClock.Install(moving);
+            try
+            {
+                moving.SetVisible(true);
+                vm.Levels[2].Select.Execute(null);
+                Assert.True(brush.HasAnimatedProperties);
+            }
+            finally
+            {
+                Brisk.Ui.AmbientClock.Install(new Brisk.Ui.AmbientClock(() => true));
+            }
+            vm.Levels[0].Select.Execute(null);
+            vm.Levels[2].Select.Execute(null);
+            Assert.False(brush.HasAnimatedProperties);
+            Assert.Equal(System.Windows.Media.ColorConverter.ConvertFromString(vm.LevelColor), brush.Color);
+            element.UpdateLayout();
+        });
 
     /// The 0.11.0 live panels are not on the pages (ruling R36).
     [Fact]

@@ -18,6 +18,9 @@
         <DataTemplate DataType="{x:Type pages:GroupPageViewModel}">
             <pages:GroupPage />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type pages:SpacePageViewModel}">
+            <pages:SpacePage />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type shell:UiSettingsViewModel}">
             <shell:SettingsView />
         </DataTemplate>

@@ -159,6 +159,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
     }
 
     public Loc L => _loc;
+    public System.Globalization.CultureInfo Culture => _loc.Culture;
     public string Title => _loc["gui.page.space.title"];
     public string ListTitle => _loc["gui.page.space.list"];
     public string Hint => _loc["gui.page.hint"];
@@ -541,7 +542,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
 
     private void OnLanguage(object? sender, PropertyChangedEventArgs e)
     {
-        foreach (var name in new[] { nameof(Title), nameof(ListTitle), nameof(Hint), nameof(LevelsTitle),
+        foreach (var name in new[] { nameof(Culture), nameof(Title), nameof(ListTitle), nameof(Hint), nameof(LevelsTitle),
                      nameof(MineTitle), nameof(DiskTitle), nameof(FreeNowLabel) })
             Raise(name);
         foreach (var r in Rows) r.Refresh();
