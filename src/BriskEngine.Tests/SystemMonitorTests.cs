@@ -108,8 +108,8 @@ public sealed class SystemMonitorTests
     private static IReadOnlyList<AdapterBytes> Adapters(params (string Id, long Sent, long Received)[] rows) =>
         rows.Select(r => new AdapterBytes(r.Id, r.Sent, r.Received)).ToList();
 
-    private static EngineLoad Engine(int pid, double percent, int engine = 0) =>
-        new($"pid_{pid}_luid_0x00000000_0x00010622_phys_0_eng_{engine}_engtype_3D", percent);
+    private static EngineLoad Engine(int pid, double percent, int engine = 0, string luid = "0x00010622") =>
+        new($"pid_{pid}_luid_0x00000000_{luid}_phys_0_eng_{engine}_engtype_3D", percent);
 
     [Fact]
     public void First_sample_has_no_cpu_delta_second_has()
@@ -162,18 +162,33 @@ public sealed class SystemMonitorTests
     }
 
     [Fact]
-    public void Gpu_is_the_3d_engines_summed_and_clamped_to_100()
+    public void Gpu_is_each_adapters_3d_engines_summed_then_the_busiest_adapter()
     {
         var rig = new Rig();
         rig.Procs.Next = () => new[] { P(10, "game", 0), P(11, "dwm", 0) };
 
+        // One adapter: its 3D engines add up.
         rig.Gpu.Next = () => new[] { Engine(10, 30), Engine(10, 12.5, engine: 1), Engine(11, 5), Engine(99, 2) };
         var sample = rig.Sample();
         Assert.Equal(49.5, sample.GpuPercent!.Value, precision: 6);
         // pid 99 is not in the process list: counted in the total, named nowhere.
         Assert.Equal(new[] { ("Game", 42.5), ("Dwm", 5.0) }, sample.TopGpu.Select(t => (t.Name, t.Value)));
 
-        rig.Gpu.Next = () => new[] { Engine(10, 80), Engine(11, 70), Engine(11, 60, engine: 1) };
+        // A hybrid laptop: the iGPU at 30 and the dGPU at 50 read 50, not 80.
+        const string Igpu = "0x00010622", Dgpu = "0x0001A3F0";
+        rig.Gpu.Next = () => new[]
+        {
+            Engine(11, 20, luid: Igpu), Engine(11, 10, engine: 1, luid: Igpu),
+            Engine(10, 45, luid: Dgpu), Engine(11, 5, luid: Dgpu),
+        };
+        var hybrid = rig.Sample();
+        Assert.Equal(50, hybrid.GpuPercent!.Value, precision: 6);
+
+        // One adapter past 100 is clamped to 100; the other one adds nothing to it.
+        rig.Gpu.Next = () => new[]
+        {
+            Engine(10, 80, luid: Dgpu), Engine(11, 70, luid: Dgpu), Engine(11, 60, engine: 1, luid: Igpu),
+        };
         var busy = rig.Sample();
         Assert.Equal(100.0, busy.GpuPercent);
         Assert.Equal(new[] { ("Dwm", 100.0), ("Game", 80.0) }, busy.TopGpu.Select(t => (t.Name, t.Value)));
@@ -452,6 +467,9 @@ public sealed class SystemMonitorTests
         Assert.Null(SystemMonitor.PidOf("luid_0x00000000_0x00010622_phys_0_eng_0_engtype_3D"));
         Assert.Null(SystemMonitor.PidOf("pid__luid"));
         Assert.Null(SystemMonitor.PidOf("pid_99999999999_luid"));
+        Assert.Equal("0x00000000_0x00010622",
+            SystemMonitor.AdapterOf("pid_14380_luid_0x00000000_0x00010622_phys_0_eng_0_engtype_3D"));
+        Assert.Equal("", SystemMonitor.AdapterOf("pid_14380_eng_0_engtype_3D"));
     }
 
     [Fact]

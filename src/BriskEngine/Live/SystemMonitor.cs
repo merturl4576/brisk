@@ -289,23 +289,36 @@ public sealed class SystemMonitor
         return ((long)Math.Round(sent / seconds), (long)Math.Round(received / seconds));
     }
 
-    /// The machine's GPU % (3D engines summed, clamped to 100) and each pid's
-    /// sum. No engine with a reading = no number at all.
+    /// The machine's GPU % and each pid's sum. Each adapter's 3D engines add
+    /// up (clamped to 100); the machine reads its busiest adapter, so a hybrid
+    /// laptop's iGPU at 30 and dGPU at 50 is 50, not 80. No engine with a
+    /// reading = no number at all.
     private static (double? Percent, Dictionary<int, double>? ByPid) Gpu(IReadOnlyList<EngineLoad>? engines)
     {
         if (engines is null) return (null, null);
-        double total = 0;
-        var read = false;
+        var byAdapter = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         var byPid = new Dictionary<int, double>();
         foreach (var engine in engines)
         {
             if (!double.IsFinite(engine.Percent) || engine.Percent < 0) continue;
-            read = true;
-            total += engine.Percent;
+            var adapter = AdapterOf(engine.Instance);
+            byAdapter[adapter] = byAdapter.GetValueOrDefault(adapter) + engine.Percent;
             if (PidOf(engine.Instance) is { } pid)
                 byPid[pid] = byPid.GetValueOrDefault(pid) + engine.Percent;
         }
-        return read ? (Math.Min(total, 100), byPid) : (null, null);
+        return byAdapter.Count > 0 ? (Math.Min(byAdapter.Values.Max(), 100), byPid) : (null, null);
+    }
+
+    /// "pid_1_luid_0x00000000_0x00010622_phys_0_..." → "0x00000000_0x00010622";
+    /// an instance with no luid counts as one adapter of its own ("").
+    internal static string AdapterOf(string instance)
+    {
+        const string Marker = "luid_";
+        var start = instance.IndexOf(Marker, StringComparison.OrdinalIgnoreCase);
+        if (start < 0) return "";
+        start += Marker.Length;
+        var end = instance.IndexOf("_phys", start, StringComparison.OrdinalIgnoreCase);
+        return end < 0 ? instance[start..] : instance[start..end];
     }
 
     /// "pid_14380_luid_..." → 14380; null for any other shape.
