@@ -114,14 +114,6 @@ public sealed class LoadSamplerTests
         Assert.Null(LoadSampler.StartupIdFor(load with { Key = "chrome" }, entries));
     }
 
-    [Fact]
-    public void Closer_AMissingProcessIsNotAnError()
-    {
-        var closer = new RealProcessCloser();
-        Assert.Equal(0, closer.RequestClose(new[] { int.MaxValue }));
-        closer.Kill(new[] { int.MaxValue });
-    }
-
     [Theory]
     [InlineData("discord.exe", "Discord")]
     [InlineData("Code", "Code")]

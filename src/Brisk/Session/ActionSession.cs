@@ -36,7 +36,6 @@ public sealed class ActionSession
     private readonly Dictionary<string, bool> _rowOverrides = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, bool> _fileOverrides = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RowResult> _results = new(StringComparer.OrdinalIgnoreCase);
-    private readonly List<TargetScanResult> _sized = new();
     private bool _busy;
     // Busy with a run or an undo, not a look: from the press until it ends.
     private bool _acting;
@@ -55,8 +54,6 @@ public sealed class ActionSession
     public ActionGroup? SpaceGroup { get; private set; }
     public bool SpaceReady { get; private set; }
     public ActionPlan? Plan { get; private set; }
-    public IReadOnlyList<TargetScanResult> SizedSoFar => _sized;
-    public int TargetCount { get; } = CleanupTargetRegistry.All.Count;
     public string? Error { get; private set; }
     public string? CurrentRowId { get; private set; }
     public IReadOnlyDictionary<string, RowResult> Results => _results;
@@ -305,7 +302,6 @@ public sealed class ActionSession
             SpaceGroup = null;
             SpaceReady = false;
             FastGroups = Array.Empty<ActionGroup>();
-            _sized.Clear();
             _results.Clear();
             CurrentRowId = null;
             PersonalFiles = Array.Empty<PersonalFile>();
@@ -322,7 +318,7 @@ public sealed class ActionSession
             });
             var space = Task.Run(() =>
             {
-                var scan = _backend.ScanSpace(t => Apply(() => _sized.Add(t)));
+                var scan = _backend.ScanSpace(_ => { });
                 var group = _backend.BuildSpace(scan);
                 Apply(() =>
                 {

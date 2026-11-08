@@ -430,7 +430,6 @@
   <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetri bağlantıları {0} → {1}</value></data>
   <data name="action.restart" xml:space="preserve"><value>Tam etki için yeniden başlat</value></data>
   <data name="action.undo" xml:space="preserve"><value>Geri al</value></data>
-  <data name="gui.home.cpu" xml:space="preserve"><value>%{0} CPU</value></data>
   <data name="gui.home.part.cpu" xml:space="preserve"><value>İşlemci</value></data>
   <data name="gui.home.part.gpu" xml:space="preserve"><value>Ekran kartı</value></data>
   <data name="gui.home.part.ram" xml:space="preserve"><value>Bellek</value></data>
@@ -474,7 +473,6 @@
   <data name="gui.button.undo.both" xml:space="preserve"><value>Geri al (Hızlandır + Gizlilik)</value></data>
   <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
-  <data name="gui.load.measuring" xml:space="preserve"><value>Ölçülüyor…</value></data>
   <data name="gui.page.space.title" xml:space="preserve"><value>Yer aç</value></data>
   <data name="gui.page.speed.title" xml:space="preserve"><value>Hızlandır</value></data>
   <data name="gui.page.privacy.title" xml:space="preserve"><value>Gizlilik</value></data>
@@ -556,13 +554,6 @@
   <data name="gui.page.space.levels" xml:space="preserve"><value>Seviye</value></data>
   <data name="gui.page.space.mine" xml:space="preserve"><value>Senin dosyaların · brisk dokunmaz</value></data>
   <data name="gui.row.lost" xml:space="preserve"><value>Geri alınamaz.</value></data>
-  <data name="gui.load.title" xml:space="preserve"><value>Şu an kasanlar</value></data>
-  <data name="gui.load.none" xml:space="preserve"><value>Şu an seni yavaşlatan yok ✓</value></data>
-  <data name="gui.conn.title" xml:space="preserve"><value>Şu an konuştukları</value></data>
-  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetri burada ayırt edilemiyor</value></data>
-  <data name="gui.usage.title" xml:space="preserve"><value>30 günde gönderilenler</value></data>
-  <data name="gui.usage.sent" xml:space="preserve"><value>gönderilen {0}</value></data>
-  <data name="gui.usage.received" xml:space="preserve"><value>alınan {0}</value></data>
   <data name="gui.nav.home" xml:space="preserve"><value>Genel</value></data>
   <data name="gui.nav.space" xml:space="preserve"><value>Yer aç</value></data>
   <data name="gui.nav.speed" xml:space="preserve"><value>Hızlandır</value></data>

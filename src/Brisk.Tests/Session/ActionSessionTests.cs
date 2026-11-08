@@ -26,19 +26,6 @@ public sealed class ActionSessionTests
     }
 
     [Fact]
-    public async Task LookAsync_ReportsSizedTargetsAsTheyArrive()
-    {
-        var b = FakeBackend.Typical();
-        b.Sized.Add(new TargetScanResult(CleanupTargetRegistry.All.First(t => t.Id == "user-temp"),
-            new[] { new ResolvedItem("user-temp", @"C:\t\x", 10, null) }, null));
-        var s = NewSession(b);
-        var sizedCounts = new List<int>();
-        s.Changed += () => sizedCounts.Add(s.SizedSoFar.Count);
-        await s.LookAsync();
-        Assert.Contains(1, sizedCounts);
-    }
-
-    [Fact]
     public async Task LookAsync_FastHalfFails_EndsFailedWithTheMessage()
     {
         var b = FakeBackend.Typical(); b.FailFast = new InvalidOperationException("wmi down");

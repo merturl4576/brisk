@@ -430,7 +430,6 @@
   <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetry connections {0} → {1}</value></data>
   <data name="action.restart" xml:space="preserve"><value>Restart for full effect</value></data>
   <data name="action.undo" xml:space="preserve"><value>Undo</value></data>
-  <data name="gui.home.cpu" xml:space="preserve"><value>{0}% CPU</value></data>
   <data name="gui.home.part.cpu" xml:space="preserve"><value>CPU</value></data>
   <data name="gui.home.part.gpu" xml:space="preserve"><value>Graphics</value></data>
   <data name="gui.home.part.ram" xml:space="preserve"><value>Memory</value></data>
@@ -474,7 +473,6 @@
   <data name="gui.button.undo.both" xml:space="preserve"><value>Undo (Speed up + Privacy)</value></data>
   <data name="gui.button.rescan" xml:space="preserve"><value>Scan again</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Try again</value></data>
-  <data name="gui.load.measuring" xml:space="preserve"><value>Measuring…</value></data>
   <data name="gui.page.space.title" xml:space="preserve"><value>Free up space</value></data>
   <data name="gui.page.speed.title" xml:space="preserve"><value>Speed up</value></data>
   <data name="gui.page.privacy.title" xml:space="preserve"><value>Privacy</value></data>
@@ -556,13 +554,6 @@
   <data name="gui.page.space.levels" xml:space="preserve"><value>Level</value></data>
   <data name="gui.page.space.mine" xml:space="preserve"><value>Your files · brisk won't touch them</value></data>
   <data name="gui.row.lost" xml:space="preserve"><value>Can't be undone.</value></data>
-  <data name="gui.load.title" xml:space="preserve"><value>Slowing you now</value></data>
-  <data name="gui.load.none" xml:space="preserve"><value>Nothing is slowing you now ✓</value></data>
-  <data name="gui.conn.title" xml:space="preserve"><value>Talking to now</value></data>
-  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetry can't be told apart here</value></data>
-  <data name="gui.usage.title" xml:space="preserve"><value>Sent in 30 days</value></data>
-  <data name="gui.usage.sent" xml:space="preserve"><value>sent {0}</value></data>
-  <data name="gui.usage.received" xml:space="preserve"><value>received {0}</value></data>
   <data name="gui.nav.home" xml:space="preserve"><value>Home</value></data>
   <data name="gui.nav.space" xml:space="preserve"><value>Free up space</value></data>
   <data name="gui.nav.speed" xml:space="preserve"><value>Speed up</value></data>

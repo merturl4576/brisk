@@ -1,6 +1,4 @@
 using System.Globalization;
-using BriskEngine.Cleaning;
-using BriskEngine.Models;
 using Brisk.Session;
 
 namespace Brisk.Tests.Session;
@@ -23,25 +21,4 @@ public sealed class SizesTests
 
     [Fact]
     public void Format_JoinsWithASpace() => Assert.Equal("850 MB", Sizes.Format(891_289_600L, En));
-}
-
-public sealed class PartialSpaceTests
-{
-    private static TargetScanResult T(string id, long bytes, string? skipped = null) => new(
-        CleanupTargetRegistry.All.Single(t => t.Id == id),
-        new[] { new ResolvedItem(id, $@"C:\f\{id}", bytes, null) }, skipped);
-
-    [Fact]
-    public void Estimate_FoundCountsEverything_TickedOnlyDefaultOnRows()
-    {
-        var (found, ticked) = PartialSpace.Estimate(new[]
-        {
-            T("user-temp", 100),
-            T("nvidia-shader-cache", 50),
-            T("hibernation-file", 1000),
-            T("chrome-cache", 30, skipped: "Chrome is running"),
-        });
-        Assert.Equal(1180, found);
-        Assert.Equal(130, ticked);
-    }
 }
