@@ -160,6 +160,8 @@ Commands:
 
 `brisk run`, Hepsini yap gibi MIN seviyesinde yer açar. `brisk clean --level deep` adıyla istenmesi gereken hedefleri dışarıda bırakır: eski Windows kopyası, hazırda bekletme dosyası, bileşen deposu, gölgelendirici önbellekleri, Docker'ın kullanılmayan verisi, ev klasöründeki git deposu, eski projelerin indirme klasörleri, açılmış arşivler ve geri yükleme noktaları. Birini `--target <id>` ile adlandır; kimlikleri `brisk targets` listeler.
 
+`brisk run`, yalnızca bu hedeflerin üstüne kurulu satırları (gölgelendirici önbellekleri, Docker, ev klasöründeki git deposu, indirme klasörleri, açılmış arşivler, eski Windows kopyası, geri yükleme noktaları) hiçbir `--level`'da işaretlemez: planı her birini işaretsiz gösterir, yanında onu bilerek alan `brisk clean --target <id>` yazar.
+
 ---
 
 ## Bu türün hak ettiği sorular

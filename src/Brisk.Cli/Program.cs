@@ -601,6 +601,9 @@ public static class Program
                 var size = item.Bytes is { } b ? $"  {Fmt.Bytes(b)}" : "";
                 var cost = item.Cost is null ? "" : $"  — {item.Cost}";
                 o.WriteLine($"    {box} {item.Title}{size}{cost}");
+                if (IsOptIn(item))
+                    o.WriteLine("          opt-in, never in a one-click run — take it on purpose: "
+                        + string.Join(" · ", OptInTargets(item, plan).Select(id => "brisk clean --target " + id)));
                 foreach (var f in item.Files)
                     o.WriteLine($"          {Path.GetFileName(f.Path)}  {Fmt.Bytes(f.Bytes)}");
             }
@@ -641,15 +644,41 @@ public static class Program
     public static string PlanLine(CleanEntry entry) =>
         $"  {entry.Path}  ({(entry.Reason == CleanRunner.SizeUnknownReason ? "—" : Fmt.Bytes(entry.Bytes))})";
 
+    /// An opt-in row (ruling R51): a Free up space row whose every cleanup
+    /// target must be named on purpose (RequiresExplicitOptIn), the same
+    /// targets a plain `brisk clean --level deep` leaves alone. A row that
+    /// mixes them in (the caches row's Windows update cleanup) is not one.
+    public static bool IsOptIn(ActionItem item) =>
+        item.Group == ActionGroupKind.Space && item.LinkKind == ActionLinkKind.Cleanup && item.LinkIds.Count > 0
+        && item.LinkIds.All(id => CleanupTargetRegistry.All.Any(t => t.Id == id && t.RequiresExplicitOptIn));
+
+    /// The opt-in row's targets worth naming: the ones the scan found
+    /// something in, or every one when it found none (docker, restore points).
+    private static IReadOnlyList<string> OptInTargets(ActionItem item, ActionPlan plan)
+    {
+        var found = item.LinkIds.Where(id => plan.Scan.Targets.Any(t => t.Target.Id == id && t.TotalBytes > 0)).ToList();
+        return found.Count > 0 ? found : item.LinkIds;
+    }
+
+    /// What `brisk run` takes, PLAN and --yes alike: --level is how far Free
+    /// up space goes (MIN when not given), Speed and Privacy keep their
+    /// defaults, --group narrows it. An opt-in row is never taken, at any
+    /// level (R51): `brisk clean --target <id>` takes it on purpose.
+    public static ActionSelection RunSelection(CliCommand cmd, ActionPlan plan)
+    {
+        var level = cmd.SpaceLevel is { } l ? Enum.Parse<SpaceLevel>(l, ignoreCase: true) : SpaceLevel.Min;
+        var optIn = plan.Items.Where(IsOptIn).Select(i => i.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var selection = ActionSelection.ForLevel(plan, level, optIn);
+        ActionGroupKind? group = cmd.Group is { } g ? Enum.Parse<ActionGroupKind>(g, ignoreCase: true) : null;
+        if (group is { } only) selection = selection.Only(only, plan);
+        return selection;
+    }
+
     public static int RunActions(CliCommand cmd, Scanner scanner, ActionEngine engine, TextWriter o)
     {
         var plan = engine.BuildPlan(scanner.Scan());
-        // --level is how far Free up space goes (MIN when not given); Speed
-        // and Privacy keep their defaults at every level.
-        var level = cmd.SpaceLevel is { } l ? Enum.Parse<SpaceLevel>(l, ignoreCase: true) : SpaceLevel.Min;
-        var selection = ActionSelection.ForLevel(plan, level, new HashSet<string>());
+        var selection = RunSelection(cmd, plan);
         ActionGroupKind? group = cmd.Group is { } g ? Enum.Parse<ActionGroupKind>(g, ignoreCase: true) : null;
-        if (group is { } only) selection = selection.Only(only, plan);
 
         if (!cmd.Yes)
         {

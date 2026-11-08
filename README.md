@@ -160,6 +160,8 @@ Without `--yes`, `run`, `fix` and `clean` print what they would do and change no
 
 `brisk run` frees space at MIN, like Do it all. `brisk clean --level deep` leaves out the targets you have to ask for by name: the old Windows copy, the hibernation file, the component store, the shader caches, Docker's unused data, the git repository in your home folder, old projects' dependency folders, extracted archives and restore points. Name one with `--target <id>`; `brisk targets` lists the ids.
 
+`brisk run` never ticks the rows built only on those targets (shader caches, Docker, the git repository in your home folder, dependency folders, extracted archives, the old Windows copy, restore points), at any `--level`: its plan shows each one unticked, with the `brisk clean --target <id>` that takes it on purpose.
+
 ---
 
 ## The questions this category has earned

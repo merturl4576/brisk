@@ -220,8 +220,9 @@ public sealed class CliActionTests
             {
                 var dir = Directory.CreateDirectory(Path.Combine(data, "fake-" + id)).FullName;
                 File.WriteAllBytes(Path.Combine(dir, "x.bin"), new byte[4096]);
+                // Dynamic off: a dynamic target would walk the real project folders.
                 return BriskEngine.Cleaning.CleanupTargetRegistry.All.Single(t => t.Id == id)
-                    with { PathTemplates = new[] { dir } };
+                    with { PathTemplates = new[] { dir }, Dynamic = false };
             }).ToList();
             var engine = ActionEngine.CreateReal(TestContext.Empty(data), new FakeRunner(), () => false);
             var scanner = new BriskEngine.Cleaning.Scanner(targets, new FakeRunningApps());
@@ -253,8 +254,51 @@ public sealed class CliActionTests
         Assert.StartsWith("[x] Developer caches", Line(min, "Developer caches"));
         Assert.StartsWith("[ ] Game shader caches", Line(min, "Game shader caches"));
 
-        var mid = RunPlanText(CliParser.Parse(new[] { "run", "--level", "mid" }), "npm-cache", "nvidia-shader-cache");
+        var mid = RunPlanText(CliParser.Parse(new[] { "run", "--level", "mid" }), "npm-cache", "hibernation-file");
         Assert.StartsWith("[x] Developer caches", Line(mid, "Developer caches"));
-        Assert.StartsWith("[x] Game shader caches", Line(mid, "Game shader caches"));
+        Assert.StartsWith("[x] Hibernation file", Line(mid, "Hibernation file"));
+    }
+
+    private static readonly string[] OptInTargets =
+        { "profile-git", "stale-project-deps", "archive-beside-extracted", "nvidia-shader-cache" };
+
+    /// R51: `brisk run` never ticks an opt-in row, at any --level. PLAN
+    /// shows it unticked with the command that takes it on purpose.
+    [Theory]
+    [InlineData("min")]
+    [InlineData("mid")]
+    [InlineData("max")]
+    public void Run_never_ticks_an_opt_in_row_and_says_how_to_take_it(string level)
+    {
+        string Line(string text, string title) =>
+            text.Split('\n').Single(l => l.Contains(title, StringComparison.Ordinal)).Trim();
+
+        var text = RunPlanText(CliParser.Parse(new[] { "run", "--level", level }),
+            OptInTargets.Append("npm-cache").ToArray());
+
+        Assert.StartsWith("[x] Developer caches", Line(text, "Developer caches"));
+        foreach (var title in new[] { "Git repository in your home folder", "Dependency folders of old projects",
+                     "Archives already extracted beside them", "Game shader caches" })
+            Assert.StartsWith("[ ] " + title, Line(text, title));
+        foreach (var id in OptInTargets)
+            Assert.Contains("brisk clean --target " + id, text);
+        Assert.DoesNotContain("brisk clean --target npm-cache", text);
+    }
+
+    /// R51, the --yes path: the selection `run --yes` hands the runner leaves
+    /// every opt-in row out at MAX. Built from the catalog, nothing runs.
+    [Fact]
+    public void Run_yes_at_max_selects_no_opt_in_row()
+    {
+        var space = ActionCatalog.Rows.Where(r => r.Group == ActionGroupKind.Space)
+            .Select(r => ActionPlanBuilder.ItemFrom(r, 1L << 30)).ToList();
+        var plan = PlanOf(new ActionGroup(ActionGroupKind.Space, space));
+        var optIn = new[] { "space.shaders", "space.project-deps", "space.windows-old", "space.docker",
+            "space.profile-git", "space.archives", "space.restore-points" };
+
+        Assert.Equal(optIn.OrderBy(x => x), space.Where(Program.IsOptIn).Select(i => i.Id).OrderBy(x => x));
+
+        var selection = Program.RunSelection(CliParser.Parse(new[] { "run", "--level", "max", "--yes" }), plan);
+        Assert.Equal(space.Select(i => i.Id).Except(optIn).OrderBy(x => x), selection.RowIds.OrderBy(x => x));
     }
 }
