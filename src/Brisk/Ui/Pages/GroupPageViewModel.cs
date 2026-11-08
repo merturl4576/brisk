@@ -35,18 +35,12 @@ public sealed record PageGauge(string Label, string Number, string? Unit, string
 /// entered shows every row.
 public sealed class GroupPageViewModel : ViewModelBase, IStagePage
 {
-    private static readonly TimeSpan RevealStep = TimeSpan.FromMilliseconds(300);
-
     private readonly ActionSession _session;
     private readonly Loc _loc;
-    private readonly Func<IReadOnlyList<string>> _deferredApps;
     private readonly string _key;
-    private readonly IUiTimers? _timers;
-    private readonly Func<bool>? _moving;
+    private readonly PageRows _rows;
+    private readonly PageScan _scan;
     private SessionState _lastState;
-    private bool _entered, _scanning, _active;
-    private int _revealed;
-    private IDisposable? _tick;
 
     public GroupPageViewModel(ActionSession session, ActionGroupKind group, Loc loc,
         Func<IReadOnlyList<string>> deferredApps, IUiTimers? timers = null, Func<bool>? moving = null)
@@ -54,11 +48,10 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
         _session = session;
         Group = group;
         _loc = loc;
-        _deferredApps = deferredApps;
-        _timers = timers;
-        _moving = moving;
         _key = group.ToString().ToLowerInvariant();
-        RunGroup = new RelayCommand(OnRun, CanRun);
+        _rows = new PageRows(session, group, loc, deferredApps);
+        _scan = new PageScan(session, timers, moving, Listed, () => DataIn, RaiseState, () => Keep.Concat(Extra));
+        RunGroup = new RelayCommand(() => _rows.Run(ButtonOk), () => _rows.CanRun(ButtonOk));
         Undo = new RelayCommand(() => _ = _session.UndoAsync(), () => _session.CanUndoFor(Group));
         _lastState = session.State;
         Sync();
@@ -77,7 +70,7 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     public string ExtraTitle => _loc["gui.page.extra"];
     public string UndoText => _loc["gui.button.undo"];
 
-    public ObservableCollection<RowViewModel> Rows { get; } = new();
+    public ObservableCollection<RowViewModel> Rows => _rows.Rows;
     public ObservableCollection<RowViewModel> Main { get; } = new();
     public ObservableCollection<RowViewModel> Also { get; } = new();
     public ObservableCollection<RowViewModel> Keep { get; } = new();
@@ -88,7 +81,7 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
     public RelayCommand RunGroup { get; }
     public RelayCommand Undo { get; }
 
-    public bool IsActive => _active;
+    public bool IsActive => _scan.Active;
 
     private double _ringAngle;
     /// The hero rings' turn; each entry turns them a third further.
@@ -101,7 +94,7 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
             var state = _session.State;
             if (state == SessionState.Running && (_session.RunGroup is null || _session.RunGroup == Group))
                 return PagePhase.Running;
-            if (_scanning) return PagePhase.Scanning;
+            if (_scan.Scanning) return PagePhase.Scanning;
             if (state == SessionState.Done && Ran().Any()) return PagePhase.Done;
             return PagePhase.Ready;
         }
@@ -148,7 +141,7 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
             var phase = Phase;
             if (phase == PagePhase.Done) return DoneGauge();
             var shown = phase == PagePhase.Scanning
-                ? Listed().Take(_revealed).Where(r => _session.WillRun(r.Item)).Select(r => r.Item).ToList()
+                ? Listed().Where(r => _scan.Reached(r) && _session.WillRun(r.Item)).Select(r => r.Item).ToList()
                 : Selected().ToList();
             var label = phase switch
             {
@@ -175,139 +168,44 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
         if (Rows.FirstOrDefault(r => r.Id == rowId) is { } row) row.IsExpanded = true;
     }
 
-    // ---- the scan
+    // ---- the scan (PageScan)
 
     /// The page came on screen: play the scan, unless a run is going or over.
     public void Enter()
     {
-        _entered = true;
-        if (_session.State is not (SessionState.Running or SessionState.Done))
-        {
-            _scanning = true;
-            _revealed = 0;
-            RingAngle += 120;
-        }
-        ApplyReveal();
-        Settle();
+        if (_scan.Enter()) RingAngle += 120;
         RaiseState();
     }
 
     public void Activate()
     {
-        _active = true;
+        _scan.Activate();
         Raise(nameof(IsActive));
-        Settle();
         RaiseState();
     }
 
     public void Deactivate()
     {
-        _active = false;
-        StopTick();
+        _scan.Deactivate();
         Raise(nameof(IsActive));
     }
-
-    private bool Moving => _timers is not null && (_moving?.Invoke() ?? true);
 
     /// The look has delivered this page's rows.
     private bool DataIn => Group == ActionGroupKind.Space
         ? _session.SpaceReady || _session.State != SessionState.Looking
         : _session.Plan is not null || _session.FastGroups.Count > 0 || _session.State != SessionState.Looking;
 
-    private void StartScan()
-    {
-        _scanning = true;
-        _revealed = 0;
-        ApplyReveal();
-    }
-
-    private void EndScan()
-    {
-        _scanning = false;
-        StopTick();
-        ApplyReveal();
-    }
-
-    /// Not moving: every delivered row at once, the scan over once the data
-    /// is in. Moving: the reveal timer runs while the page is on screen.
-    private void Settle()
-    {
-        if (!_scanning) return;
-        if (!Moving)
-        {
-            if (DataIn) EndScan();
-            return;
-        }
-        if (_tick is null && _active) _tick = _timers!.Every(RevealStep, Tick);
-    }
-
-    /// One step: the next delivered row; after the last one, the end of the
-    /// scan once the data is in. With nothing to show the timer stops; the
-    /// next change from the look starts it again.
-    private void Tick()
-    {
-        if (!_scanning)
-        {
-            StopTick();
-            return;
-        }
-        if (_revealed < Listed().Count())
-        {
-            _revealed++;
-            ApplyReveal();
-        }
-        else if (DataIn) EndScan();
-        else StopTick();
-        RaiseState();
-    }
-
-    private void StopTick()
-    {
-        _tick?.Dispose();
-        _tick = null;
-    }
-
     private IEnumerable<RowViewModel> Listed() => Main.Concat(Also);
 
-    private void ApplyReveal()
-    {
-        var all = !_scanning || !Moving;
-        var i = 0;
-        foreach (var row in Listed()) row.Revealed = all || i++ < _revealed;
-        foreach (var row in Keep.Concat(Extra)) row.Revealed = true;
-    }
+    // ---- what the page runs and ran (PageRows)
 
-    // ---- what the page runs and ran
+    private IEnumerable<ActionItem> Items() => _rows.Items();
 
-    private IEnumerable<ActionItem> Items() => _session.Items.Where(i => i.Group == Group);
+    private IEnumerable<ActionItem> Selected() => _rows.Selected();
 
-    private IEnumerable<ActionItem> Selected() => Items().Where(_session.WillRun);
+    private IEnumerable<ActionItem> Ran() => _rows.Ran();
 
-    private IEnumerable<ActionItem> Ran() =>
-        Items().Where(i => _session.Results.ContainsKey(i.Id));
-
-    private IEnumerable<ActionItem> Succeeded() =>
-        Items().Where(i => _session.Results.TryGetValue(i.Id, out var r) && RowWords.Succeeded(r));
-
-    private bool CanRun()
-    {
-        if (_session.Busy) return false;
-        return _session.State switch
-        {
-            SessionState.Ready => SelectedCount > 0,
-            // A run is over: a fresh look, unless this page's run went through ("✓ Tamam").
-            SessionState.Done => !ButtonOk,
-            SessionState.Failed => true,
-            _ => false,
-        };
-    }
-
-    /// No confirmation before deleting: the page runs at once.
-    private void OnRun()
-    {
-        if (!CanRun()) return;
-        _ = _session.State == SessionState.Ready ? _session.RunAsync(Group) : _session.RescanAsync();
-    }
+    private IEnumerable<ActionItem> Succeeded() => _rows.Succeeded();
 
     // ---- words
 
@@ -396,12 +294,11 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
         if (state != _lastState)
         {
             // A new look restarts the scan on a page that was entered; a run ends it.
-            if (state == SessionState.Looking && _entered) StartScan();
-            else if (state == SessionState.Running) EndScan();
+            _scan.OnState(state);
             _lastState = state;
         }
         Sync();
-        Settle();
+        _scan.Settle();
         RaiseState();
     }
 
@@ -438,34 +335,15 @@ public sealed class GroupPageViewModel : ViewModelBase, IStagePage
             : PageSection.Extra;
     }
 
-    /// Same ids in the same order: refresh in place. Otherwise rebuild, keeping
-    /// the instances (and their expanded state) of rows that stayed.
     private void Sync()
     {
-        var items = Items().ToList();
-        if (items.Select(i => i.Id).SequenceEqual(Rows.Select(r => r.Id)))
-        {
-            for (var i = 0; i < items.Count; i++)
-                if (!ReferenceEquals(Rows[i].Item, items[i])) Rows[i].Replace(items[i]);
-                else Rows[i].Refresh();
-        }
-        else
-        {
-            var old = Rows.ToDictionary(r => r.Id);
-            Rows.Clear();
-            foreach (var item in items)
-            {
-                if (old.TryGetValue(item.Id, out var row)) row.Replace(item);
-                else row = new RowViewModel(item, _session, _loc, _deferredApps);
-                Rows.Add(row);
-            }
-        }
+        _rows.Sync();
         foreach (var row in Rows) row.Section = SectionOf(row.Item);
         Fill(Main, PageSection.Main);
         Fill(Also, PageSection.Also);
         Fill(Keep, PageSection.Keep);
         Fill(Extra, PageSection.Extra);
-        ApplyReveal();
+        _scan.Apply();
     }
 
     private void Fill(ObservableCollection<RowViewModel> list, PageSection section)

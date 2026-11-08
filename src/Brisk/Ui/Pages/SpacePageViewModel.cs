@@ -115,24 +115,20 @@ public sealed class LevelGroupViewModel : ViewModelBase
 /// timers) every delivered row shows at once.
 public sealed class SpacePageViewModel : ViewModelBase, IStagePage
 {
-    private static readonly TimeSpan RevealStep = TimeSpan.FromMilliseconds(300);
     private static readonly TimeSpan LightStep = TimeSpan.FromMilliseconds(95);
 
     private readonly ActionSession _session;
     private readonly Loc _loc;
-    private readonly Func<IReadOnlyList<string>> _deferredApps;
     private readonly Func<long?> _freeBytes;
     private readonly Action<Action> _background;
     private readonly Action<Action> _post;
     private readonly IUiTimers? _timers;
-    private readonly Func<bool>? _moving;
-    private readonly HashSet<string> _revealed = new(StringComparer.OrdinalIgnoreCase);
+    private readonly PageRows _rows;
+    private readonly PageScan _scan;
     private readonly List<IDisposable> _lights = new();
     private SessionState _lastState;
     private SpaceLevel _shownLevel;
     private SpaceLevel _ranLevel;
-    private bool _entered, _scanning, _active;
-    private IDisposable? _tick;
     private long? _freeBefore;
 
     public SpacePageViewModel(ActionSession session, Loc loc, Func<IReadOnlyList<string>> deferredApps,
@@ -141,15 +137,15 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
     {
         _session = session;
         _loc = loc;
-        _deferredApps = deferredApps;
         _freeBytes = freeBytes;
         _background = background;
         _post = post;
         _timers = timers;
-        _moving = moving;
         Levels = SpaceLevels.All.Select(l => new LevelTileViewModel(this, l)).ToList();
         Groups = SpaceLevels.All.Select(l => new LevelGroupViewModel(this, l)).ToList();
-        RunGroup = new RelayCommand(OnRun, CanRun);
+        _rows = new PageRows(session, ActionGroupKind.Space, loc, deferredApps);
+        _scan = new PageScan(session, timers, moving, Ordered, () => DataIn, RaiseState);
+        RunGroup = new RelayCommand(() => _rows.Run(ButtonOk), () => _rows.CanRun(ButtonOk));
         _lastState = session.State;
         _shownLevel = session.Level;
         Sync();
@@ -173,7 +169,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
     public IReadOnlyList<LevelGroupViewModel> Groups { get; }
 
     /// Every Space row in plan order; the groups hold the same instances.
-    public ObservableCollection<RowViewModel> Rows { get; } = new();
+    public ObservableCollection<RowViewModel> Rows => _rows.Rows;
     public ObservableCollection<MineRow> Mine { get; } = new();
     public bool ShowMine => _session.PersonalFilesReady && Mine.Count > 0;
 
@@ -181,7 +177,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
     /// or nothing ("✓ Tamam", "Hiçbir şey seçili değil", a run going).
     public RelayCommand RunGroup { get; }
 
-    public bool IsActive => _active;
+    public bool IsActive => _scan.Active;
 
     private double _ringAngle;
     /// The hero rings' turn; each entry turns them a third further.
@@ -203,7 +199,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
             var state = _session.State;
             if (state == SessionState.Running && (_session.RunGroup is null || _session.RunGroup == ActionGroupKind.Space))
                 return PagePhase.Running;
-            if (_scanning) return PagePhase.Scanning;
+            if (_scan.Scanning) return PagePhase.Scanning;
             if (state == SessionState.Done && Ran().Any()) return PagePhase.Done;
             return PagePhase.Ready;
         }
@@ -346,7 +342,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
     {
         foreach (var light in _lights) light.Dispose();
         _lights.Clear();
-        if (to <= from || !Moving) return;
+        if (to <= from || !_scan.Moving) return;
         var rows = Ordered().Where(r => SpaceLevels.Of(r.Item) > from && SpaceLevels.Of(r.Item) <= to).ToList();
         for (var i = 0; i < rows.Count; i++)
         {
@@ -361,135 +357,46 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
         if (Rows.FirstOrDefault(r => r.Id == rowId) is { } row) row.IsExpanded = true;
     }
 
-    // ---- the scan
+    // ---- the scan (PageScan)
 
     /// The page came on screen: play the scan, unless a run is going or over.
     public void Enter()
     {
-        _entered = true;
-        if (_session.State is not (SessionState.Running or SessionState.Done))
+        if (_scan.Enter())
         {
-            _scanning = true;
-            _revealed.Clear();
             RingAngle += 120;
             ReadFree();
         }
-        ApplyReveal();
-        Settle();
         RaiseState();
     }
 
     public void Activate()
     {
-        _active = true;
+        _scan.Activate();
         Raise(nameof(IsActive));
-        Settle();
         RaiseState();
     }
 
     public void Deactivate()
     {
-        _active = false;
-        StopTick();
+        _scan.Deactivate();
         Raise(nameof(IsActive));
     }
-
-    private bool Moving => _timers is not null && (_moving?.Invoke() ?? true);
 
     /// The look has delivered the Space rows.
     private bool DataIn => _session.SpaceReady || _session.State != SessionState.Looking;
 
-    private void StartScan()
-    {
-        _scanning = true;
-        _revealed.Clear();
-        ApplyReveal();
-    }
-
-    private void EndScan()
-    {
-        _scanning = false;
-        StopTick();
-        ApplyReveal();
-    }
-
-    /// Not moving: every delivered row at once, the scan over once the data
-    /// is in. Moving: the reveal timer runs while the page is on screen.
-    private void Settle()
-    {
-        if (!_scanning) return;
-        if (!Moving)
-        {
-            if (DataIn) EndScan();
-            return;
-        }
-        if (_tick is null && _active) _tick = _timers!.Every(RevealStep, Tick);
-    }
-
-    /// One step: the next row in group order the scan has not shown; after
-    /// the last one, the end of the scan once the data is in. With nothing to
-    /// show the timer stops; the next change from the look starts it again.
-    private void Tick()
-    {
-        if (!_scanning)
-        {
-            StopTick();
-            return;
-        }
-        if (Ordered().FirstOrDefault(r => !_revealed.Contains(r.Id)) is { } next)
-        {
-            _revealed.Add(next.Id);
-            ApplyReveal();
-        }
-        else if (DataIn) EndScan();
-        else StopTick();
-        RaiseState();
-    }
-
-    private void StopTick()
-    {
-        _tick?.Dispose();
-        _tick = null;
-    }
-
     private IEnumerable<RowViewModel> Ordered() => Groups.SelectMany(g => g.Rows);
 
-    private void ApplyReveal()
-    {
-        var all = !_scanning || !Moving;
-        foreach (var row in Rows) row.Revealed = all || _revealed.Contains(row.Id);
-    }
+    // ---- what the page runs and ran (PageRows)
 
-    // ---- what the page runs and ran
+    private IEnumerable<ActionItem> Items() => _rows.Items();
 
-    private IEnumerable<ActionItem> Items() => _session.Items.Where(i => i.Group == ActionGroupKind.Space);
+    private IEnumerable<ActionItem> Ran() => _rows.Ran();
 
-    private IEnumerable<ActionItem> Ran() => Items().Where(i => _session.Results.ContainsKey(i.Id));
-
-    private IEnumerable<ActionItem> Succeeded() =>
-        Items().Where(i => _session.Results.TryGetValue(i.Id, out var r) && RowWords.Succeeded(r));
+    private IEnumerable<ActionItem> Succeeded() => _rows.Succeeded();
 
     private long Freed() => Succeeded().Sum(i => _session.Results[i.Id].BytesFreed);
-
-    private bool CanRun()
-    {
-        if (_session.Busy) return false;
-        return _session.State switch
-        {
-            SessionState.Ready => SelectedCount > 0,
-            // A run is over: a fresh look, unless this page's run went through ("✓ Tamam").
-            SessionState.Done => !ButtonOk,
-            SessionState.Failed => true,
-            _ => false,
-        };
-    }
-
-    /// No confirmation before deleting: the page runs at once.
-    private void OnRun()
-    {
-        if (!CanRun()) return;
-        _ = _session.State == SessionState.Ready ? _session.RunAsync(ActionGroupKind.Space) : _session.RescanAsync();
-    }
 
     // ---- words
 
@@ -516,14 +423,9 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
         var state = _session.State;
         if (state != _lastState)
         {
-            // A new look restarts the scan on a page that was entered; a run ends it.
-            if (state == SessionState.Looking && _entered) StartScan();
-            else if (state == SessionState.Running)
-            {
-                EndScan();
-                // Hepsini yap frees MIN, whatever the page shows.
-                _ranLevel = _session.RunGroup is null ? SpaceLevel.Min : _session.Level;
-            }
+            _scan.OnState(state);
+            // Hepsini yap frees MIN, whatever the page shows.
+            if (state == SessionState.Running) _ranLevel = _session.RunGroup is null ? SpaceLevel.Min : _session.Level;
             else if (state == SessionState.Ready) ReadFree();
             _lastState = state;
         }
@@ -534,7 +436,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
             _shownLevel = _session.Level;
         }
         FillMine(force: false);
-        Settle();
+        _scan.Settle();
         RaiseState();
     }
 
@@ -569,28 +471,9 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
         foreach (var f in files) Mine.Add(new MineRow(f.Name, f.Path, Sizes.Format(f.Bytes, _loc.Culture)));
     }
 
-    /// Same ids in the same order: refresh in place. Otherwise rebuild, keeping
-    /// the instances (and their expanded state) of rows that stayed.
     private void Sync()
     {
-        var items = Items().ToList();
-        if (items.Select(i => i.Id).SequenceEqual(Rows.Select(r => r.Id)))
-        {
-            for (var i = 0; i < items.Count; i++)
-                if (!ReferenceEquals(Rows[i].Item, items[i])) Rows[i].Replace(items[i]);
-                else Rows[i].Refresh();
-        }
-        else
-        {
-            var old = Rows.ToDictionary(r => r.Id);
-            Rows.Clear();
-            foreach (var item in items)
-            {
-                if (old.TryGetValue(item.Id, out var row)) row.Replace(item);
-                else row = new RowViewModel(item, _session, _loc, _deferredApps);
-                Rows.Add(row);
-            }
-        }
+        _rows.Sync();
         foreach (var group in Groups)
         {
             var rows = Rows.Where(r => SpaceLevels.Of(r.Item) == group.Level).ToList();
@@ -598,6 +481,6 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
             group.Rows.Clear();
             foreach (var row in rows) group.Rows.Add(row);
         }
-        ApplyReveal();
+        _scan.Apply();
     }
 }
