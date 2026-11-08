@@ -86,11 +86,11 @@ Sana ait büyük dosyalar *Senin dosyaların · brisk dokunmaz* başlığı alt�
 ### Gizlilik
 
 - **Ayarlar.** Kullanım bilgilerini Microsoft'a göndermesi, arka planda bilgi toplaması, hata raporları, reklam kimliği ve sana göre öneriler, etkinlik geçmişi, Başlat menüsündeki reklamlar, Başlat'ta arama yapınca internete gitmesi, sesini ve yazdıklarını göndermesi, "Windows'u nasıl buldun?" soruları, Recall, Copilot, güncellemeleri internetteki yabancılara dağıtması (kendi ağındaki paylaşım kalır) ve programların sormadan yönetici olması. Konum *İstersen ekle* altında listede, çünkü Cihazımı bul ona muhtaç.
-- **Terminalde.** `brisk live` bir kez yazar: en çok işlemci ve bellek kullanan uygulamaları, hangi uygulamanın şu an hangi şirkete bağlı olduğunu (Microsoft'un telemetri sunucuları etiketlenir) ve Windows'un uygulama başına tuttuğu 30 günlük gönderilen ve alınan veri kaydını. Bağlantı, veri gönderildiği anlamına gelmez; miktarlar sadece miktardır, asla içerik yok.
+- **Terminalde.** `brisk live` bir kez yazar: en çok işlemci ve bellek kullanan uygulamaları, hangi uygulamanın şu an hangi şirkete bağlı olduğunu (yönetici olarak çalışırsa Microsoft'un telemetri sunucuları etiketlenir; sunucu adlarını okumak bunu ister) ve Windows'un uygulama başına tuttuğu 30 günlük gönderilen ve alınan veri kaydını. Bağlantı, veri gönderildiği anlamına gelmez; miktarlar sadece miktardır, asla içerik yok.
 
 ### Silmeden önce soru sormaz
 
-Pencere çıkmaz. Hepsini yap MIN çalıştırır ve MIN'de geri gelmeyecek hiçbir şey yok. Geri gelmeyecek bir satır bunu satırın üstünde, turuncuyla söyler ("Geri alınamaz." ya da tam olarak neyin kaybolduğu); bu satırlar MID ve MAX'ta durur ve ancak Yer aç sayfasında o seviyeyi seçersen çalışır. MAX ekranda uyarılır, sorulmaz. Her satır sen bir şeye basmadan önce ekranda ve dokunursan atlanır.
+Pencere çıkmaz. Hepsini yap MIN çalıştırır ve MIN'de hiçbir satır turuncuyla geri gelmez diye işaretli değil: MIN, kendini yeniden kuran önbellekler ile bir daha gerekmeyecek eski kurulum kayıtları, çökme raporları ve sürücü kurulum dosyalarıdır. Geri gelmeyecek bir satır bunu satırın üstünde, turuncuyla söyler ("Geri alınamaz." ya da tam olarak neyin kaybolduğu); bu satırlar MID ve MAX'ta durur ve ancak Yer aç sayfasında o seviyeyi seçersen çalışır. MAX ekranda uyarılır, sorulmaz. Her satır sen bir şeye basmadan önce ekranda ve dokunursan atlanır.
 
 ---
 
@@ -201,7 +201,7 @@ Geliştiricinin sahip oldukları: ürün kararları, güvenlik kuralları, mimar
 
 Bunu dürüst tutan şeyler:
 
-- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.777 testte sahte ölçümlere karşı çalışıyor.
+- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.782 testte sahte ölçümlere karşı çalışıyor.
 - Her sürümü yönlendiren spesifikasyonlar ve uygulama planları [`docs/superpowers`](docs/superpowers) altında açık.
 - Her değişiklik birleştirilmeden önce incelendi; commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
 - Her sürüm, yayımlanmadan önce geliştiricinin kendi makinelerinde çalıştı.
@@ -215,7 +215,7 @@ Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projeni
 .NET 8 SDK gerekir. Sadece Windows: brisk kayıt defterini, WMI'ı, Windows olay günlüğünü ve donanım sensörlerini okuyor; başka bir yerde dürüstçe çalışabilecek bir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1.777 test
+dotnet test brisk.sln -c Release      # 1.782 test
 dotnet run --project src/Brisk.Cli -- run
 pwsh -File scripts/publish.ps1        # iki tek dosyalık exe artifacts/ içine
 ```

@@ -86,11 +86,11 @@ Large files that are yours are listed under *Your files · brisk won't touch the
 ### Privacy
 
 - **Switches.** Usage data sent to Microsoft, background data-collection tasks, error reports, the advertising ID and tailored suggestions, activity history, Start menu ads, web results in Start search, online speech and typing, "How do you like Windows?" prompts, Recall, Copilot, sharing updates with strangers over the internet (sharing on your own network stays), and programs becoming administrator without asking. Location is listed under *Add if you like*, because Find my device needs it.
-- **In a terminal.** `brisk live` prints, once, the apps using the most CPU and memory, which app is connected to which company right now (Microsoft's telemetry hosts tagged), and Windows' own 30-day per-app record of bytes sent and received. A connection does not mean data was sent, and the amounts are amounts only, never contents.
+- **In a terminal.** `brisk live` prints, once, the apps using the most CPU and memory, which app is connected to which company right now (Microsoft's telemetry hosts tagged when it runs as administrator, which reading host names needs), and Windows' own 30-day per-app record of bytes sent and received. A connection does not mean data was sent, and the amounts are amounts only, never contents.
 
 ### Nothing asks before deleting
 
-There is no dialog. Do it all runs MIN, and MIN holds nothing that cannot come back. A row that cannot come back says so on the row, in amber ("Can't be undone.", or exactly what is lost), and those rows sit at MID and MAX, which run only when you pick that level on the Free up space page. MAX is warned on screen, not asked. Every row is on screen before you press anything, and a tap skips it.
+There is no dialog. Do it all runs MIN, and no MIN row is marked in amber as one that cannot come back: MIN is caches that rebuild themselves, plus old setup logs, crash reports and driver installers that are never needed again. A row that cannot come back says so on the row, in amber ("Can't be undone.", or exactly what is lost), and those rows sit at MID and MAX, which run only when you pick that level on the Free up space page. MAX is warned on screen, not asked. Every row is on screen before you press anything, and a tap skips it.
 
 ---
 
@@ -201,7 +201,7 @@ What the maintainer owns: the product decisions, the safety rules, the architect
 
 What keeps that honest:
 
-- Every rule, switch and receipt runs against fake probes in 1,777 tests that pin what each one does and refuses to do.
+- Every rule, switch and receipt runs against fake probes in 1,782 tests that pin what each one does and refuses to do.
 - The specs and implementation plans that drove each release are public under [`docs/superpowers`](docs/superpowers).
 - Every change was reviewed before merge, and the commit history records its own corrections instead of rewriting them.
 - Every release ran on real machines the maintainer owns before it shipped.
@@ -215,7 +215,7 @@ If you find a place where the code claims more than it proves, that is the bug r
 Requires the .NET 8 SDK. Windows only: brisk reads the registry, WMI, the Windows event log and hardware sensors, so there is nothing here that could honestly run anywhere else.
 
 ```
-dotnet test brisk.sln -c Release      # 1,777 tests
+dotnet test brisk.sln -c Release      # 1,782 tests
 dotnet run --project src/Brisk.Cli -- run
 pwsh -File scripts/publish.ps1        # both single-file executables into artifacts/
 ```
