@@ -303,7 +303,7 @@
                                Foreground="{StaticResource Ui.TextSoft}" VerticalAlignment="Bottom" Margin="8,0,0,14"
                                Visibility="{Binding Gauge.Unit, Converter={StaticResource Present}}" />
                 </StackPanel>
-                <TextBlock Style="{StaticResource Ui.MutedText}" FontSize="12" TextWrapping="Wrap" MaxWidth="230"
+                <TextBlock x:Name="Caption" Style="{StaticResource Ui.MutedText}" FontSize="12" TextWrapping="Wrap" MaxWidth="190"
                            TextAlignment="Center" HorizontalAlignment="Center" Text="{Binding Gauge.Caption}"
                            Visibility="{Binding Gauge.Caption, Converter={StaticResource Present}}" />
                 <c:SegmentBar Fraction="{Binding Gauge.Fraction}" Green="{Binding Gauge.Green}"

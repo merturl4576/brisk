@@ -178,6 +178,26 @@ public sealed class NewGuiSnapshotTests
     [Fact]
     public void Page_Privacy() => ShootPage(() => Page(Catalog(), ActionGroupKind.Privacy), "new-page-privacy");
 
+    /// The hero caption wraps inside the gauge's dark disc (210 wide) instead of
+    /// running out over the rings: Gizlilik's TR caption is the longest, Yer aç
+    /// shares the hero.
+    [Fact]
+    public void HeroCaptions_StayInsideTheDisc()
+    {
+        double Width(Func<FrameworkElement> page, string name)
+        {
+            double width = 0;
+            SnapshotRenderer.Capture(() => new Grid { Width = Canvas.Width, Height = Canvas.Height, Children = { page() } },
+                Canvas, name, inspect: root =>
+                    width = ((FrameworkElement)((FrameworkElement)((Grid)root).Children[0]).FindName("Caption")!).ActualWidth);
+            return width;
+        }
+
+        Assert.InRange(Width(() => new GroupPage { DataContext = Page(Catalog(), ActionGroupKind.Privacy) },
+            "new-page-privacy-caption"), 1, 210);
+        Assert.InRange(Width(() => new SpacePage { DataContext = SpacePageOf(Catalog()) }, "new-page-space-caption"), 1, 210);
+    }
+
     internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr", Brisk.Ui.AmbientClock? clock = null)
     {
         var loc = new Loc();
