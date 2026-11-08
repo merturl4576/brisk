@@ -65,7 +65,7 @@ public sealed class LevelTileViewModel : ViewModelBase
     public string Tagline => _page.L[$"gui.level.{SpaceLevels.Key(Level)}.tagline"];
     public string Color => SpaceLevels.Color(Level);
     public bool IsMax => Level == SpaceLevel.Max;
-    public bool IsSelected => _page.Level == Level;
+    public bool IsSelected => _page.ShownLevel == Level;
     public string Number => _page.TileSize(Level).Number;
     public string Unit => _page.TileSize(Level).Unit;
     public RelayCommand Select { get; }
@@ -154,6 +154,9 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
         _shownLevel = session.Level;
         Sync();
         FillMine(force: false);
+        // The drive as it is before any run, so a page first opened after
+        // Home's Hepsini yap still has its "before" (review I1).
+        if (session.State is not (SessionState.Running or SessionState.Done)) ReadFree();
         session.Changed += OnChanged;
         loc.PropertyChanged += OnLanguage;
     }
@@ -185,7 +188,13 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
     public double RingAngle { get => _ringAngle; private set => Set(ref _ringAngle, value); }
 
     public SpaceLevel Level => _session.Level;
-    public string LevelColor => SpaceLevels.Color(Level);
+
+    /// The level the tiles, the colour and "Sonra boş" show: the picked one,
+    /// or during and after a run the one it ran at — Hepsini yap frees MIN
+    /// whatever the page had picked (ruling R48).
+    internal SpaceLevel ShownLevel => Phase is PagePhase.Running or PagePhase.Done ? _ranLevel : Level;
+
+    public string LevelColor => SpaceLevels.Color(ShownLevel);
 
     public PagePhase Phase
     {
@@ -277,7 +286,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
         {
             if (_freeBefore is not { } before) return "—";
             if (Phase == PagePhase.Done) return Sizes.Format(before + Freed(), _loc.Culture);
-            return RowsIn ? Sizes.Format(before + _session.LevelBytes(Level), _loc.Culture) : "—";
+            return RowsIn ? Sizes.Format(before + _session.LevelBytes(ShownLevel), _loc.Culture) : "—";
         }
     }
 
@@ -515,7 +524,7 @@ public sealed class SpacePageViewModel : ViewModelBase, IStagePage
                 // Hepsini yap frees MIN, whatever the page shows.
                 _ranLevel = _session.RunGroup is null ? SpaceLevel.Min : _session.Level;
             }
-            else if (state == SessionState.Ready && _entered) ReadFree();
+            else if (state == SessionState.Ready) ReadFree();
             _lastState = state;
         }
         Sync();

@@ -247,6 +247,60 @@ public sealed class SpacePageViewModelTests
         Assert.Equal("Önbellekler zamanla geri gelir", page.Gauge.Caption);
     }
 
+    /// Home → Hepsini yap → Yer aç (review I1): the page is first entered after
+    /// the run, and the C: block still holds the drive as it read before it.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Free_space_reads_when_the_page_opens_after_a_home_run(bool builtBeforeTheLook)
+    {
+        var k = New();
+        SpacePageViewModel Build() => new(k.Session, k.Loc, () => new[] { "chrome" }, k.Backend.SystemDriveFreeBytes,
+            a => a(), a => { lock (Gate) a(); });
+        var page = builtBeforeTheLook ? Build() : null;
+        await k.Session.LookAsync();
+        page ??= Build();
+        await k.Session.RunAllAsync();
+        page.Enter();
+
+        Assert.Equal(PagePhase.Done, page.Phase);
+        Assert.Equal(Sizes.Format(100_000_000_000, k.Loc.Culture), page.FreeNow);
+        Assert.Equal("Şimdi boş", page.FreeAfterLabel);
+        Assert.Equal(Sizes.Format(106_000_000_000, k.Loc.Culture), page.FreeAfter);
+    }
+
+    /// R48: Hepsini yap runs Yer aç at MIN. While it runs and once it is done
+    /// the page shows MIN — the tile, the colour, "Sonra boş" — not the level
+    /// the page had picked.
+    [Fact]
+    public async Task Run_all_shows_min_while_running_and_done()
+    {
+        var k = await Make();
+        var page = k.Page();
+        page.Levels[2].Select.Execute(null);
+        k.Backend.HoldRun = new ManualResetEventSlim(false);
+        var run = k.Session.RunAllAsync();
+        Assert.True(SpinWait.SpinUntil(() => k.Session.State == SessionState.Running, 2000));
+        lock (Gate)
+        {
+            Assert.Equal(PagePhase.Running, page.Phase);
+            ShowsMin(page);
+            Assert.Equal(Sizes.Format(106_000_000_000, k.Loc.Culture), page.FreeAfter);
+        }
+        k.Backend.HoldRun.Set();
+        await run;
+
+        Assert.Equal(PagePhase.Done, page.Phase);
+        ShowsMin(page);
+        Assert.Equal(Sizes.Format(106_000_000_000, k.Loc.Culture), page.FreeAfter);
+    }
+
+    private static void ShowsMin(SpacePageViewModel page)
+    {
+        Assert.Equal(new[] { true, false, false }, page.Levels.Select(t => t.IsSelected));
+        Assert.Equal("#5FD4E8", page.LevelColor);
+    }
+
     /// The scan reveals rows by id (carry from Task 11): rows the scan has
     /// shown stay shown when the list is rebuilt in another order.
     [Fact]
