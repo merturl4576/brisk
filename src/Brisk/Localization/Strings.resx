@@ -482,6 +482,7 @@
   <data name="gui.row.windows-name" xml:space="preserve"><value>In Windows: {0}</value></data>
   <data name="gui.files.all" xml:space="preserve"><value>Select all</value></data>
   <data name="gui.files.none" xml:space="preserve"><value>None</value></data>
+  <data name="gui.files.list" xml:space="preserve"><value>File list</value></data>
   <data name="gui.row.verb.stop" xml:space="preserve"><value>stop</value></data>
   <data name="gui.row.verb.on" xml:space="preserve"><value>turn on</value></data>
   <data name="gui.row.verb.off" xml:space="preserve"><value>turn off</value></data>

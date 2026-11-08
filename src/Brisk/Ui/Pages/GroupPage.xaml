@@ -13,22 +13,6 @@
         <ui:PresentToVisibility x:Key="Present" />
         <ui:EqualsToVisibility x:Key="Equals" />
 
-        <!-- One file of the Downloads row: tick, name, size (the column is 210 wide). -->
-        <DataTemplate x:Key="FileTemplate">
-            <Grid Margin="0,2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <CheckBox Style="{StaticResource Ui.Check}" IsChecked="{Binding IsTicked}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Style="{StaticResource Ui.RowCost}" Foreground="{StaticResource Ui.TextSoft}"
-                           Text="{Binding Name}" ToolTip="{Binding Path}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Style="{StaticResource Ui.RowCost}" Text="{Binding Size}"
-                           VerticalAlignment="Center" />
-            </Grid>
-        </DataTemplate>
-
         <!-- A Main / Also row: tap to skip it or take it back. -->
         <DataTemplate x:Key="ListRow">
             <StackPanel x:Name="Root">
@@ -57,19 +41,6 @@
                                    Margin="10,0,0,0" VerticalAlignment="Top" />
                     </Grid>
                 </Border>
-                <!-- Outside the tap area: the Downloads row's files. -->
-                <Button Style="{StaticResource Ui.Link}" Content="▾" Command="{Binding ToggleExpand}"
-                        HorizontalAlignment="Left" Margin="0,0,0,4"
-                        Visibility="{Binding HasFiles, Converter={StaticResource Present}}" />
-                <StackPanel Margin="0,0,0,8" Visibility="{Binding IsExpanded, Converter={StaticResource Present}}">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <Button Style="{StaticResource Ui.Link}" Command="{Binding SelectAllFiles}"
-                                Content="{Binding DataContext.L[gui.files.all], RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                        <Button Style="{StaticResource Ui.Link}" Command="{Binding SelectNoFiles}" Margin="16,0,0,0"
-                                Content="{Binding DataContext.L[gui.files.none], RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                    </StackPanel>
-                    <ItemsControl ItemsSource="{Binding Files}" ItemTemplate="{StaticResource FileTemplate}" />
-                </StackPanel>
             </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Revealed}" Value="False">
@@ -178,6 +149,9 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="#7FE0F0" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Pill" Property="Background" Value="#7FE0F0" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">

@@ -76,6 +76,7 @@
                      run goes, and gone on a locked row (R57). -->
                 <Button x:Name="Expand" Style="{StaticResource Ui.Link}" Content="▾" Command="{Binding ToggleExpand}"
                         HorizontalAlignment="Left" Margin="0,0,0,4"
+                        AutomationProperties.Name="{Binding DataContext.L[gui.files.list], RelativeSource={RelativeSource AncestorType=UserControl}}"
                         Visibility="{Binding HasFiles, Converter={StaticResource Present}}" />
                 <StackPanel x:Name="FilePanel" Margin="0,0,0,8" IsEnabled="{Binding FilesLive}"
                             Visibility="{Binding IsExpanded, Converter={StaticResource Present}}">
@@ -305,6 +306,9 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Shine" Property="Opacity" Value="0.18" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Shine" Property="Opacity" Value="0.18" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">

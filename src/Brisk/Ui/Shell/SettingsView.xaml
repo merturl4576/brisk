@@ -77,13 +77,15 @@
         </Border>
         <Border Style="{StaticResource Row}">
             <DockPanel>
-                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Ui.Switch}" IsChecked="{Binding StartWithWindows}" />
+                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Ui.Switch}" IsChecked="{Binding StartWithWindows}"
+                          AutomationProperties.Name="{Binding L[gui.settings.autostart]}" />
                 <TextBlock Style="{StaticResource RowName}" Text="{Binding L[gui.settings.autostart]}" />
             </DockPanel>
         </Border>
         <Border Style="{StaticResource Row}">
             <DockPanel>
-                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Ui.Switch}" IsChecked="{Binding Motion}" />
+                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Ui.Switch}" IsChecked="{Binding Motion}"
+                          AutomationProperties.Name="{Binding L[gui.settings.motion]}" />
                 <TextBlock Style="{StaticResource RowName}" Text="{Binding L[gui.settings.motion]}" />
             </DockPanel>
         </Border>

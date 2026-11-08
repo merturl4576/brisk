@@ -207,28 +207,32 @@
         <Grid x:Name="RightColumn" Canvas.Left="866" Canvas.Top="88" Width="210" Height="350" ClipToBounds="True">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
-                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowDiskSpec}" ToolTip="{Binding L[gui.home.part.disk]}">
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowDiskSpec}" ToolTip="{Binding L[gui.home.part.disk]}"
+                            AutomationProperties.Name="{Binding L[gui.home.part.disk]}">
                         <Grid>
                             <Border Style="{StaticResource IconLit}"
                                     Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Disk}" />
                             <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Disk}" /></Viewbox>
                         </Grid>
                     </Button>
-                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowCpuSpec}" ToolTip="{Binding L[gui.home.part.cpu]}">
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowCpuSpec}" ToolTip="{Binding L[gui.home.part.cpu]}"
+                            AutomationProperties.Name="{Binding L[gui.home.part.cpu]}">
                         <Grid>
                             <Border Style="{StaticResource IconLit}"
                                     Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Cpu}" />
                             <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Cpu}" /></Viewbox>
                         </Grid>
                     </Button>
-                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowGpuSpec}" ToolTip="{Binding L[gui.home.part.gpu]}">
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowGpuSpec}" ToolTip="{Binding L[gui.home.part.gpu]}"
+                            AutomationProperties.Name="{Binding L[gui.home.part.gpu]}">
                         <Grid>
                             <Border Style="{StaticResource IconLit}"
                                     Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Gpu}" />
                             <Viewbox Width="18" Height="18"><Path Style="{StaticResource IconPath}" Data="{StaticResource Icon.Gpu}" /></Viewbox>
                         </Grid>
                     </Button>
-                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowRamSpec}" ToolTip="{Binding L[gui.home.part.ram]}">
+                    <Button Style="{StaticResource SpecIcon}" Command="{Binding ShowRamSpec}" ToolTip="{Binding L[gui.home.part.ram]}"
+                            AutomationProperties.Name="{Binding L[gui.home.part.ram]}">
                         <Grid>
                             <Border Style="{StaticResource IconLit}"
                                     Visibility="{Binding HighlightedSpec, Converter={StaticResource Equals}, ConverterParameter=Ram}" />
@@ -367,17 +371,17 @@
         <c:FloorCarousel x:Name="Floor" Canvas.Left="0" Canvas.Top="444" Width="1100" Height="236"
                          Angle="{Binding FloorAngle}" AnchorInset="11">
             <Button x:Name="CpuSatellite" Style="{StaticResource Satellite}" c:FloorCarousel.BaseAngle="0"
-                    Command="{Binding SelectCpu}">
+                    Command="{Binding SelectCpu}" AutomationProperties.Name="{Binding L[gui.home.part.cpu]}">
                 <c:SatelliteRing Value="{Binding Live.CpuLoad}" Caption="{Binding L[gui.home.part.cpu]}"
                                  RingWidth="84" RingHeight="22" />
             </Button>
             <Button x:Name="GpuSatellite" Style="{StaticResource Satellite}" c:FloorCarousel.BaseAngle="120"
-                    Command="{Binding SelectGpu}">
+                    Command="{Binding SelectGpu}" AutomationProperties.Name="{Binding L[gui.home.part.gpu]}">
                 <c:SatelliteRing Value="{Binding Live.GpuLoad}" Caption="{Binding L[gui.home.part.gpu]}"
                                  RingWidth="84" RingHeight="22" />
             </Button>
             <Button x:Name="RamSatellite" Style="{StaticResource Satellite}" c:FloorCarousel.BaseAngle="240"
-                    Command="{Binding SelectRam}">
+                    Command="{Binding SelectRam}" AutomationProperties.Name="{Binding L[gui.home.part.ram]}">
                 <c:SatelliteRing Value="{Binding Live.RamLoad}" Caption="{Binding L[gui.home.part.ram]}"
                                  RingWidth="84" RingHeight="22" />
             </Button>

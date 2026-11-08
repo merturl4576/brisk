@@ -53,35 +53,35 @@
                 <StackPanel Margin="24,84,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
                     <Grid Margin="0,0,0,9">
                         <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsHome}"
-                                     Tag="{Binding L[gui.nav.home]}">
+                                     Tag="{Binding L[gui.nav.home]}" AutomationProperties.Name="{Binding L[gui.nav.home]}">
                             <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Home}" />
                         </RadioButton>
                         <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding HomeBadge}" />
                     </Grid>
                     <Grid Margin="0,0,0,9">
                         <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSpace}"
-                                     Tag="{Binding L[gui.nav.space]}">
+                                     Tag="{Binding L[gui.nav.space]}" AutomationProperties.Name="{Binding L[gui.nav.space]}">
                             <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Space}" />
                         </RadioButton>
                         <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding SpaceBadge}" />
                     </Grid>
                     <Grid Margin="0,0,0,9">
                         <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSpeed}"
-                                     Tag="{Binding L[gui.nav.speed]}">
+                                     Tag="{Binding L[gui.nav.speed]}" AutomationProperties.Name="{Binding L[gui.nav.speed]}">
                             <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Speed}" />
                         </RadioButton>
                         <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding SpeedBadge}" />
                     </Grid>
                     <Grid>
                         <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsPrivacy}"
-                                     Tag="{Binding L[gui.nav.privacy]}">
+                                     Tag="{Binding L[gui.nav.privacy]}" AutomationProperties.Name="{Binding L[gui.nav.privacy]}">
                             <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Privacy}" />
                         </RadioButton>
                         <ContentControl Style="{StaticResource Ui.NavBadge}" Content="{Binding PrivacyBadge}" />
                     </Grid>
                 </StackPanel>
                 <RadioButton Style="{StaticResource Ui.Tile}" GroupName="nav" IsChecked="{Binding IsSettings}"
-                             Tag="{Binding L[gui.nav.settings]}" Margin="24,0,0,40"
+                             Tag="{Binding L[gui.nav.settings]}" AutomationProperties.Name="{Binding L[gui.nav.settings]}" Margin="24,0,0,40"
                              HorizontalAlignment="Left" VerticalAlignment="Bottom">
                     <Path Style="{StaticResource Ui.Icon}" Data="{StaticResource Ui.Icon.Settings}" />
                 </RadioButton>
