@@ -27,7 +27,10 @@ public static class ProtectedPaths
         return roots.Where(r => !string.IsNullOrEmpty(r)).Select(r => r!).ToList();
     }
 
-    public static bool IsProtected(string realPath)
+    /// exceptUserFolders: Desktop and Documents stop counting — for a dynamic
+    /// target only, whose rule SafetyValidator re-checks on the real path.
+    /// Every other root, and the profile root itself, still protect.
+    public static bool IsProtected(string realPath, bool exceptUserFolders = false)
     {
         // The user profile root itself (e.g. C:\Users\alice) is protected by equality only —
         // a prefix check here would block every legitimate cleanup target, since almost
@@ -35,7 +38,8 @@ public static class ProtectedPaths
         var profileRoot = RealPath.Resolve(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         if (string.Equals(realPath, profileRoot, StringComparison.OrdinalIgnoreCase)) return true;
 
-        foreach (var root in Roots())
+        var open = exceptUserFolders ? UserFolders() : Array.Empty<string>();
+        foreach (var root in Roots().Except(open, StringComparer.OrdinalIgnoreCase))
         {
             var rootReal = RealPath.Resolve(root);
             if (string.Equals(realPath, rootReal, StringComparison.OrdinalIgnoreCase)) return true;
@@ -44,4 +48,10 @@ public static class ProtectedPaths
         }
         return false;
     }
+
+    private static string[] UserFolders() => new[]
+    {
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+    };
 }

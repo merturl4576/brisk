@@ -50,6 +50,14 @@ public static class OffscreenLayout
             hero.BeginAnimation(Ui.Controls.HeroNumeral.ShownBytesProperty, null);
             hero.ShownBytes = bytes;
         }
+        if (root is Ui.Controls.HeroNumeral load && load.Percent is { } percent)
+        {
+            load.BeginAnimation(Ui.Controls.HeroNumeral.ShownPercentProperty, null);
+            load.ShownPercent = percent;
+        }
+        // Home's turn: the floor and the rings where a satellite pick lands.
+        if (root is Ui.Controls.FloorCarousel floor) floor.Settle();
+        if (root is Ui.Controls.Turntable rings) rings.Settle();
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
             Settle(VisualTreeHelper.GetChild(root, i));
     }

@@ -111,14 +111,17 @@ public sealed class ActionPlanBuilderTests
         Assert.Equal("Games may stutter on first launch.", row.Cost);
     }
 
+    /// MID since the monitor GUI wave, so unticked everywhere; a laptop
+    /// still gets the battery warning as its cost.
     [Fact]
-    public void Build_Hibernation_TickedOnADesktop_UntickedOnALaptop()
+    public void Build_Hibernation_IsMid_AndALaptopGetsTheBatteryCost()
     {
         var desktop = Make();
         ((FakePowercfg)desktop.Ctx.Powercfg).Battery = false;
         var row = Row(desktop.Builder.Build(Scan(T("hibernation-file", 13_000)), Now), "space.hibernation")!;
-        Assert.True(row.DefaultOn);
-        Assert.Equal("Fast startup turns off.", row.Cost);
+        Assert.False(row.DefaultOn);
+        Assert.Equal(SpaceLevel.Mid, row.Level);
+        Assert.Equal("Fast startup off · can re-enable", row.Cost);
 
         var laptop = Make();
         ((FakePowercfg)laptop.Ctx.Powercfg).Battery = true;
@@ -135,14 +138,35 @@ public sealed class ActionPlanBuilderTests
         var scan = Scan(new TargetScanResult(target, new[]
         {
             new ResolvedItem("old-installers", @"C:\Users\x\Downloads\a.exe", 100, Now.AddDays(-60)),
-            new ResolvedItem("old-installers", @"C:\Users\x\Downloads\b.iso", 900, Now.AddDays(-90)),
+            new ResolvedItem("old-installers", @"C:\Users\x\Downloads\b.msi", 900, Now.AddDays(-90)),
         }, null));
 
         var row = Row(kit.Builder.Build(scan, Now), "space.downloads")!;
 
         Assert.Equal(1000, row.Bytes);
-        Assert.Equal(@"C:\Users\x\Downloads\b.iso", row.Files[0].Path);
+        Assert.Equal(@"C:\Users\x\Downloads\b.msi", row.Files[0].Path);
         Assert.Equal(2, row.Files.Count);
+    }
+
+    /// R58: the MAX archives row names each archive it deletes, the way the
+    /// Downloads row names its installers; its size is the files' sum.
+    [Fact]
+    public void Build_ArchivesRowListsEachArchive()
+    {
+        var kit = Make();
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "archive-beside-extracted");
+        var scan = Scan(new TargetScanResult(target, new[]
+        {
+            new ResolvedItem("archive-beside-extracted", @"C:\Users\x\Desktop\Thesis.zip", 1_200, Now.AddDays(-5)),
+            new ResolvedItem("archive-beside-extracted", @"C:\Users\x\Downloads\Kali.7z", 4_000, Now.AddDays(-50)),
+        }, null));
+
+        var row = Row(kit.Builder.Build(scan, Now), "space.archives")!;
+
+        Assert.Equal(5_200, row.Bytes);
+        Assert.Equal(new[] { @"C:\Users\x\Downloads\Kali.7z", @"C:\Users\x\Desktop\Thesis.zip" },
+            row.Files.Select(f => f.Path));
+        Assert.Equal(new long[] { 4_000, 1_200 }, row.Files.Select(f => f.Bytes));
     }
 
     [Fact]
@@ -195,5 +219,221 @@ public sealed class ActionPlanBuilderTests
         kit.Ui.Minimize = false;
         kit.Ui.ClientArea = false;
         Assert.Null(Row(kit.Builder.Build(Scan(), Now), "speed.animations"));
+    }
+
+    // ---- Space levels (monitor GUI wave): MIN regenerates, MID costs a
+    // little, MAX includes what cannot come back. Each level includes the
+    // ones below it, and only MIN is ticked by default.
+
+    [Fact]
+    public void Every_space_row_has_a_level_and_no_other_row_does()
+    {
+        Assert.All(ActionCatalog.Rows.Where(r => r.Group == ActionGroupKind.Space),
+            r => Assert.True(r.Level is not null, $"{r.Id} has no level"));
+        Assert.All(ActionCatalog.Rows.Where(r => r.Group != ActionGroupKind.Space), r =>
+        {
+            Assert.True(r.Level is null, $"{r.Id} is not a Space row but has a level");
+            Assert.False(r.Lost, $"{r.Id} is not a Space row but is marked lost");
+        });
+    }
+
+    [Theory]
+    [InlineData("space.caches", SpaceLevel.Min, false)]
+    [InlineData("space.developer", SpaceLevel.Min, false)]
+    [InlineData("space.hibernation", SpaceLevel.Mid, false)]
+    [InlineData("space.shaders", SpaceLevel.Mid, false)]
+    [InlineData("space.downloads", SpaceLevel.Mid, true)]
+    [InlineData("space.recycle-bin", SpaceLevel.Mid, true)]
+    [InlineData("space.windows-old", SpaceLevel.Max, true)]
+    [InlineData("space.docker", SpaceLevel.Max, true)]
+    [InlineData("space.crash-dumps", SpaceLevel.Min, false)]
+    [InlineData("space.setup-logs", SpaceLevel.Min, false)]
+    [InlineData("space.driver-leftovers", SpaceLevel.Min, false)]
+    [InlineData("space.profile-git", SpaceLevel.Max, true)]
+    [InlineData("space.project-deps", SpaceLevel.Mid, false)]
+    [InlineData("space.archives", SpaceLevel.Max, true)]
+    [InlineData("space.restore-points", SpaceLevel.Max, true)]
+    public void Space_rows_carry_the_spec_level_and_only_min_is_on(string id, SpaceLevel level, bool lost)
+    {
+        var row = ActionCatalog.Find(id);
+        Assert.Equal(level, row.Level);
+        Assert.Equal(lost, row.Lost);
+        Assert.Equal(level == SpaceLevel.Min, row.DefaultOn);
+    }
+
+    /// Spec, undo model: hibernation can be switched back on in Settings,
+    /// but brisk does not offer it as undo.
+    [Fact]
+    public void Hibernation_is_not_offered_as_undo() =>
+        Assert.False(ActionCatalog.Find("space.hibernation").Reversible);
+
+    [Fact]
+    public void Build_SpaceItemsCarryTheirRowsLevelAndLostFlag()
+    {
+        var kit = Make();
+        kit.Space.Bin = 700;
+        var plan = kit.Builder.Build(Scan(T("user-temp", 100), T("nvidia-shader-cache", 200)), Now);
+
+        Assert.Equal(SpaceLevel.Min, Row(plan, "space.caches")!.Level);
+        Assert.Equal(SpaceLevel.Mid, Row(plan, "space.shaders")!.Level);
+        Assert.False(Row(plan, "space.shaders")!.Lost);
+        Assert.True(Row(plan, "space.recycle-bin")!.Lost);
+        Assert.Null(Row(plan, "speed.animations")!.Level);
+    }
+
+    [Fact]
+    public void Build_NewSpaceRowsCountTheirTargets()
+    {
+        var plan = Make().Builder.Build(Scan(T("live-kernel-reports", 10_300), T("panther-logs", 600),
+            T("driver-installer-leftovers", 700), T("profile-git", 6_540)), Now);
+
+        Assert.Equal(10_300, Row(plan, "space.crash-dumps")!.Bytes);
+        Assert.Equal(600, Row(plan, "space.setup-logs")!.Bytes);
+        Assert.Equal(700, Row(plan, "space.driver-leftovers")!.Bytes);
+        var git = Row(plan, "space.profile-git")!;
+        Assert.Equal(6_540, git.Bytes);
+        Assert.False(git.DefaultOn);
+        Assert.Equal("Can't be undone.", git.Cost);
+    }
+
+    [Fact]
+    public void Build_DynamicSpaceRowsCountTheirTargets()
+    {
+        var plan = Make().Builder.Build(Scan(T("stale-project-deps", 10_700),
+            T("archive-beside-extracted", 3_740)), Now);
+
+        var deps = Row(plan, "space.project-deps")!;
+        Assert.Equal(10_700, deps.Bytes);
+        Assert.False(deps.DefaultOn);
+        Assert.Equal("npm install brings them back.", deps.Cost);
+        var archives = Row(plan, "space.archives")!;
+        Assert.Equal(3_740, archives.Bytes);
+        Assert.False(archives.DefaultOn);
+        Assert.True(archives.Lost);
+    }
+
+    // ---- Restore points (MAX): every one but the newest. Windows cannot say
+    // what deleting them frees until it has, so the row carries no size.
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void No_row_with_zero_or_one_restore_point(int count)
+    {
+        var kit = Make();
+        kit.Space.RestorePoints = () => count;
+        Assert.Null(Row(kit.Builder.Build(Scan(), Now), "space.restore-points"));
+    }
+
+    [Fact]
+    public void Row_has_unknown_size()
+    {
+        var kit = Make();
+        kit.Space.RestorePoints = () => 3;
+        var row = Row(kit.Builder.Build(Scan(), Now), "space.restore-points")!;
+        Assert.Null(row.Bytes);   // "—" on screen: never a guess, never counted
+        Assert.Equal(SpaceLevel.Max, row.Level);
+        Assert.True(row.Lost);
+        Assert.False(row.DefaultOn);
+        Assert.True(row.NeedsAdmin);
+        Assert.Equal(new[] { "restore-points" }, row.LinkIds);
+    }
+
+    /// System Restore unreadable (not an administrator, service off) reads as
+    /// null in the real probe; a probe that throws is the same. Neither is
+    /// "0 points".
+    [Fact]
+    public void Probe_failure_means_no_row()
+    {
+        var unknown = Make();
+        unknown.Space.RestorePoints = () => null;
+        Assert.Null(Row(unknown.Builder.Build(Scan(), Now), "space.restore-points"));
+
+        var throwing = Make();
+        throwing.Space.RestorePoints = () => throw new InvalidOperationException("WMI");
+        var plan = throwing.Builder.Build(Scan(T("user-temp", 100)), Now);
+        Assert.Null(Row(plan, "space.restore-points"));
+        Assert.NotNull(Row(plan, "space.caches"));   // the other rows still come
+    }
+
+    private static ActionPlan PlanOf(params ActionItem[] items) => new(Now,
+        items.GroupBy(i => i.Group).Select(g => new ActionGroup(g.Key, g.ToList())).ToList(), Scan());
+
+    private static ActionItem Item(string id, long? bytes = null) =>
+        ActionPlanBuilder.ItemFrom(ActionCatalog.Find(id), bytes);
+
+    private static readonly IReadOnlySet<string> NoSkips = new HashSet<string>();
+
+    [Fact]
+    public void Default_selection_ticks_only_min_space_rows()
+    {
+        // Downloads (MID) and Windows.old (MAX) were ticked before levels came.
+        var plan = PlanOf(Item("space.caches", 100), Item("space.downloads", 200), Item("space.windows-old", 300));
+        Assert.Equal(new[] { "space.caches" }, ActionSelection.Default(plan).RowIds);
+    }
+
+    [Fact]
+    public void ForLevel_is_cumulative_and_honours_skips()
+    {
+        var plan = PlanOf(Item("space.caches", 100), Item("space.developer", 100),
+            Item("space.shaders", 200), Item("space.downloads", 200),
+            Item("space.windows-old", 300), Item("space.docker", 300),
+            Item("speed.animations"), Item("speed.vm-platform"), Item("privacy.ads"));
+
+        var mid = ActionSelection.ForLevel(plan, SpaceLevel.Mid,
+            new HashSet<string> { "space.developer" }).RowIds;
+        Assert.Contains("space.caches", mid);
+        Assert.DoesNotContain("space.developer", mid);   // skipped
+        Assert.Contains("space.shaders", mid);
+        Assert.Contains("space.downloads", mid);
+        Assert.DoesNotContain("space.windows-old", mid); // MAX
+        Assert.DoesNotContain("space.docker", mid);
+
+        var max = ActionSelection.ForLevel(plan, SpaceLevel.Max, NoSkips).RowIds;
+        Assert.Contains("space.docker", max);
+        Assert.Contains("space.windows-old", max);
+        Assert.Contains("space.caches", max);
+
+        // Speed and Privacy ride along with their own defaults at every level.
+        foreach (var level in new[] { SpaceLevel.Min, SpaceLevel.Mid, SpaceLevel.Max })
+        {
+            var ids = ActionSelection.ForLevel(plan, level, NoSkips).RowIds;
+            Assert.Contains("speed.animations", ids);
+            Assert.Contains("privacy.ads", ids);
+            Assert.DoesNotContain("speed.vm-platform", ids);
+        }
+        Assert.Equal(ActionSelection.Default(plan).RowIds.OrderBy(i => i),
+            ActionSelection.ForLevel(plan, SpaceLevel.Min, NoSkips).RowIds.OrderBy(i => i));
+    }
+
+    /// Ruling R2: a skip is a skip on every page, not only on Yer aç.
+    [Fact]
+    public void ForLevel_skips_apply_to_speed_and_privacy_rows_too()
+    {
+        var plan = PlanOf(Item("space.caches", 100), Item("speed.animations"), Item("privacy.ads"),
+            Item("privacy.copilot"));
+        var ids = ActionSelection.ForLevel(plan, SpaceLevel.Max,
+            new HashSet<string> { "speed.animations", "privacy.ads" }).RowIds;
+        Assert.Equal(new[] { "privacy.copilot", "space.caches" }, ids.OrderBy(i => i));
+    }
+
+    /// Row ids compare without case everywhere else; a caller's plain
+    /// HashSet must not make a skip miss.
+    [Fact]
+    public void ForLevel_skips_ignore_case()
+    {
+        var plan = PlanOf(Item("space.caches", 100), Item("privacy.ads"), Item("privacy.copilot"));
+        var ids = ActionSelection.ForLevel(plan, SpaceLevel.Min,
+            new HashSet<string> { "SPACE.CACHES", "Privacy.Ads" }).RowIds;
+        Assert.Equal(new[] { "privacy.copilot" }, ids);
+    }
+
+    [Fact]
+    public void ForLevel_keeps_every_listed_file_like_the_default()
+    {
+        var file = new ActionFile(@"C:\Users\x\Downloads\setup.exe", 10, null);
+        var plan = PlanOf(ActionPlanBuilder.ItemFrom(ActionCatalog.Find("space.downloads"), 10,
+            files: new[] { file }));
+        Assert.Contains(file.Path, ActionSelection.ForLevel(plan, SpaceLevel.Mid, NoSkips).Files);
     }
 }

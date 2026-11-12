@@ -27,7 +27,6 @@ public sealed class ActionEngine
     public LoadSampler Load { get; private init; } = null!;
     public ConnectionReader Connections { get; private init; } = null!;
     public NetworkUsageReader Usage { get; private init; } = null!;
-    public IProcessCloser Closer { get; private init; } = null!;
 
     private ActionEngine() { }
 
@@ -67,7 +66,6 @@ public sealed class ActionEngine
             Load = new LoadSampler(processes, namer),
             Connections = connections,
             Usage = new NetworkUsageReader(new RealNetworkUsageProbe(runner), namer),
-            Closer = new RealProcessCloser(),
         };
     }
 

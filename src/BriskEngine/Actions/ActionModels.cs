@@ -10,11 +10,17 @@ public enum ActionGroupKind { Space, Speed, Privacy }
 
 public enum ActionLinkKind { Rules, Cleanup }
 
+/// How far Free up space goes; each level includes the ones below it.
+/// MIN regenerates or is never needed again, MID has a small cost, MAX
+/// includes what cannot be brought back.
+public enum SpaceLevel { Min, Mid, Max }
+
 public sealed record ActionFile(string Path, long Bytes, DateTime? LastWriteUtc);
 
 /// One row a user sees. Title/Cost/WindowsName are English; the keys find the
 /// translation (a startup entry has no TitleKey: its title is the app name).
-/// Bytes is set on space rows. Files is set on the Downloads row.
+/// Bytes is set on space rows. Files is set on the Downloads row. Level is
+/// set on space rows only; Lost = a space row that cannot be brought back.
 public sealed record ActionItem(
     string Id, ActionGroupKind Group,
     string? TitleKey, string Title,
@@ -22,7 +28,7 @@ public sealed record ActionItem(
     string? WindowsNameKey, string? WindowsName,
     long? Bytes, bool DefaultOn, bool NeedsRestart, bool NeedsAdmin, bool Reversible,
     ActionLinkKind LinkKind, IReadOnlyList<string> LinkIds,
-    IReadOnlyList<ActionFile> Files);
+    IReadOnlyList<ActionFile> Files, SpaceLevel? Level = null, bool Lost = false);
 
 public sealed record ActionGroup(ActionGroupKind Kind, IReadOnlyList<ActionItem> Items);
 
@@ -36,7 +42,25 @@ public sealed record ActionSelection(IReadOnlySet<string> RowIds, IReadOnlySet<s
 {
     public static ActionSelection Default(ActionPlan plan) => new(
         plan.Items.Where(i => i.DefaultOn).Select(i => i.Id).ToHashSet(StringComparer.OrdinalIgnoreCase),
-        plan.Items.SelectMany(i => i.Files).Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase));
+        EveryFile(plan));
+
+    /// A run at one Yer aç level: every Space row up to that level, plus the
+    /// Speed and Privacy rows that are on by default, minus whatever the
+    /// user skipped on any page. A Space row without a level is never taken.
+    /// Skips match row ids without case, whatever the caller's set compares.
+    public static ActionSelection ForLevel(ActionPlan plan, SpaceLevel level, IReadOnlySet<string> skipped)
+    {
+        var skip = new HashSet<string>(skipped, StringComparer.OrdinalIgnoreCase);
+        return new(
+            plan.Items
+                .Where(i => i.Group == ActionGroupKind.Space ? i.Level is { } l && l <= level : i.DefaultOn)
+                .Where(i => !skip.Contains(i.Id))
+                .Select(i => i.Id).ToHashSet(StringComparer.OrdinalIgnoreCase),
+            EveryFile(plan));
+    }
+
+    private static HashSet<string> EveryFile(ActionPlan plan) =>
+        plan.Items.SelectMany(i => i.Files).Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     public ActionSelection Only(ActionGroupKind group, ActionPlan plan) => this with
     {

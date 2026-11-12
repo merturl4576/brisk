@@ -13,20 +13,35 @@ public sealed class Scanner
 {
     public const int OldInstallerMinAgeDays = 30;
 
+    private const string PantherLogsId = "panther-logs";
+    private const string ProfileGitId = "profile-git";
+
     private readonly IReadOnlyList<CleanupTarget> _targets;
     private readonly IProcessLister _processes;
     private readonly ILockProbe? _lockProbe;
+    private readonly Func<bool> _upgradeInProgress;
+    private readonly IReadOnlyList<string>? _dynamicRoots;
 
     /// lockProbe (additive, round 11): when present, every emitted item is
     /// probed for delete-locks so ReclaimableBytes can promise honestly.
     /// Without one (unit tests, fakes) nothing is marked locked.
+    /// upgradeInProgress: whether a Windows feature upgrade is under way;
+    /// by default, whether %SystemDrive%\$WINDOWS.~BT exists.
+    /// dynamicRoots: the folders a dynamic target walks; by default the
+    /// user's project folders that exist when the scan runs.
     public Scanner(IReadOnlyList<CleanupTarget> targets, IProcessLister processes,
-        ILockProbe? lockProbe = null)
+        ILockProbe? lockProbe = null, Func<bool>? upgradeInProgress = null,
+        IReadOnlyList<string>? dynamicRoots = null)
     {
         _targets = targets;
         _processes = processes;
         _lockProbe = lockProbe;
+        _upgradeInProgress = upgradeInProgress ?? UpgradeFolderExists;
+        _dynamicRoots = dynamicRoots;
     }
+
+    private static bool UpgradeFolderExists() =>
+        PathExpander.Expand(@"%SystemDrive%\$WINDOWS.~BT") is { } bt && Directory.Exists(bt);
 
     public ScanResult Scan(CancellationToken ct = default,
         IProgress<ScanProgress>? progress = null)
@@ -53,14 +68,18 @@ public sealed class Scanner
         // now say what closing the app would free.
         var appRunning = target.AppProcessCandidates.Any(_processes.IsRunning);
 
+        // An upgrade still writes its Panther logs: nothing to offer, and no
+        // skip reason either (that would read as "close an app").
+        if (target.Id == PantherLogsId && _upgradeInProgress())
+            return new TargetScanResult(target, new List<ResolvedItem>(), null);
+
         // ONE probe budget for the whole target (review round 1): every
         // item draws from it, so a many-child temp dir is bounded at the
         // target, not per item.
         var budget = _lockProbe is null ? null : new LockProbeBudget();
 
         var items = new List<ResolvedItem>();
-        foreach (var template in target.PathTemplates)
-        foreach (var path in TemplateResolver.Resolve(template))
+        foreach (var path in Candidates(target, ct))
         {
             try
             {
@@ -75,13 +94,14 @@ public sealed class Scanner
                     continue;
                 }
 
+                // ~\.git counts only as a real folder: a .git FILE is a
+                // worktree's pointer, and removing a junction frees nothing.
+                if (target.Id == ProfileGitId && !IsRealFolder(path)) continue;
+
                 DateTime? lastWrite = null;
                 try { lastWrite = File.GetLastWriteTimeUtc(path); } catch { }
 
-                if (target.Id == "old-installers" &&
-                    (lastWrite is null ||
-                     lastWrite > DateTime.UtcNow.AddDays(-OldInstallerMinAgeDays)))
-                    continue;
+                if (TooYoung(target, lastWrite)) continue;
 
                 items.Add(new ResolvedItem(target.Id, path, SizeCalculator.SizeOf(path, ct),
                     lastWrite, Locked: false));   // probed below, largest first
@@ -94,6 +114,13 @@ public sealed class Scanner
             ? $"{target.AppDisplayName} is running — close it to include this target"
             : null);
     }
+
+    /// Where a target's paths come from: a dynamic target's rule walks the
+    /// user's project folders; every other target expands its templates.
+    private IEnumerable<string> Candidates(CleanupTarget target, CancellationToken ct) =>
+        target.Dynamic
+            ? DynamicTargets.Find(target.Id, _dynamicRoots ?? DynamicTargets.DefaultRoots(), DateTime.UtcNow, ct)
+            : target.PathTemplates.SelectMany(TemplateResolver.Resolve);
 
     /// ROUND 15 review (I1): the allowance is finite, so WHAT it is spent on
     /// decides the promise's error bound. Spent in walk order it leaves an
@@ -146,11 +173,26 @@ public sealed class Scanner
                 DateTime? lastWrite = null;
                 try { lastWrite = File.GetLastWriteTimeUtc(child); } catch { }
 
+                if (TooYoung(target, lastWrite)) continue;
+
                 items.Add(new ResolvedItem(target.Id, child, SizeCalculator.SizeOf(child, ct),
                     lastWrite, Locked: false));   // probed by the caller, largest first
             }
             catch (OperationCanceledException) { throw; }
             catch { }  // Skip this child on any other exception
         }
+    }
+
+    /// The target's age rule: an item written within MinAgeDays — or whose
+    /// age cannot be read — is not offered.
+    private static bool TooYoung(CleanupTarget target, DateTime? lastWriteUtc) =>
+        target.MinAgeDays is { } days &&
+        (lastWriteUtc is null || lastWriteUtc > DateTime.UtcNow.AddDays(-days));
+
+    private static bool IsRealFolder(string path)
+    {
+        var attributes = File.GetAttributes(path);
+        return (attributes & FileAttributes.Directory) != 0
+            && (attributes & FileAttributes.ReparsePoint) == 0;
     }
 }

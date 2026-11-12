@@ -6,7 +6,9 @@ using System.Windows.Shapes;
 
 namespace Brisk.Ui.Controls;
 
-public enum AmbientMotion { None, Spin, SpinReverse, Flow, Pulse }
+/// Busy: a small spinner's quick turn (a nav badge waiting for the look);
+/// with motion off it stands still as an open arc.
+public enum AmbientMotion { None, Spin, SpinReverse, Flow, Pulse, Busy }
 
 /// Decorative motion as an attached property: `Ambient.Motion="Spin"` on an
 /// element registers it with the ambient clock while it is loaded. A frame
@@ -40,14 +42,26 @@ public static class Ambient
         return t;
     }
 
+    /// Whether a data-driven change may animate (a number counting, a gauge
+    /// turning): the ambient clock runs (window visible, the "Hareketli arka
+    /// plan" setting on, a GPU-composed window), the same switch as the rain.
+    /// Otherwise the change lands at once — reduced motion is static frames
+    /// and instant numbers. Windows' "show animations" is not asked (ruling
+    /// R30): brisk's own speed.animations row turns it off, and the stage
+    /// must not freeze after Hepsini yap.
+    public static bool Moving => AmbientClock.Instance.IsActive;
+
     private static void Start(FrameworkElement element)
     {
         switch (GetMotion(element))
         {
             case AmbientMotion.Spin:
             case AmbientMotion.SpinReverse:
+            case AmbientMotion.Busy:
             {
-                var reverse = GetMotion(element) == AmbientMotion.SpinReverse;
+                var motion = GetMotion(element);
+                var reverse = motion == AmbientMotion.SpinReverse;
+                var turn = motion == AmbientMotion.Busy ? 1.2 : reverse ? 17 : 11;
                 if (element.RenderTransform is not RotateTransform rotate)
                 {
                     rotate = new RotateTransform();
@@ -56,7 +70,7 @@ public static class Ambient
                 }
                 element.CacheMode ??= new BitmapCache();
                 rotate.BeginAnimation(RotateTransform.AngleProperty, (AnimationTimeline)Paced(new DoubleAnimation(
-                    reverse ? 360 : 0, reverse ? 0 : 360, TimeSpan.FromSeconds(reverse ? 17 : 11))
+                    reverse ? 360 : 0, reverse ? 0 : 360, TimeSpan.FromSeconds(turn))
                     { RepeatBehavior = RepeatBehavior.Forever }));
                 break;
             }
@@ -89,6 +103,7 @@ public static class Ambient
         {
             case AmbientMotion.Spin:
             case AmbientMotion.SpinReverse:
+            case AmbientMotion.Busy:
                 (element.RenderTransform as RotateTransform)?.BeginAnimation(RotateTransform.AngleProperty, null);
                 break;
             case AmbientMotion.Flow when element is Shape shape:

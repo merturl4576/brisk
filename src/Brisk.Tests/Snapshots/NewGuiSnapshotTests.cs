@@ -23,18 +23,18 @@ public sealed class NewGuiSnapshotTests
     internal static FakeBackend Rich()
     {
         var b = FakeBackend.Typical();
-        b.Load.AddRange(new[]
-        {
-            new AppLoad("chrome", "Google Chrome", 34, 2L << 30, false, null, null, new[] { 1 }, true),
-            new AppLoad("claude", "Claude", 2, 1_500L << 20, false, null, null, new[] { 2 }, true),
-            new AppLoad("discord", "Discord", 1, 900L << 20, false, null, null, new[] { 3 }, true),
-        });
-        b.Connections = new ConnectionSnapshot(new[]
-        {
-            new ConnectionRow("Google Chrome", "Google", "www.google.com", 6, false, false),
-            new ConnectionRow("Discord", "Cloudflare", null, 2, false, false),
-            new ConnectionRow("Windows", "Microsoft", "v10.events.data.microsoft.com", 1, true, false),
-        }, true);
+        // The maintainer's laptop as Home reads it (specs verified live
+        // 2026-11-07; the load numbers are the mockup's): the tallest columns
+        // Home draws — a battery with health and cycles, two GPUs, a CPU
+        // name that wraps.
+        b.SpecsToReturn = new SpecsInfo("Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz", 2592, 6, 12,
+            new[] { "Intel(R) UHD Graphics", "NVIDIA GeForce GTX 1650 Ti" }, 32L << 30, 34_118_000_000,
+            "KINGSTON SKC3000S1024G", 1_024_209_543_168);
+        b.MonitorToReturn = new MonitorSample(20, 12, 58, 19_756_000_000, 66, 52, 10_375, 14_000,
+            new BatteryInfo(100, true, 29, 312),
+            new[] { new ProcLoad("Claude Code", 9), new ProcLoad("Google Chrome", 6), new ProcLoad("Visual Studio Code", 4) },
+            new[] { new ProcLoad("Google Chrome", 8), new ProcLoad("LivelyWallpaper", 6), new ProcLoad("Desktop Window Manager", 4) },
+            new[] { new ProcLoad("Visual Studio Code", 6_013_000_000), new ProcLoad("Claude Code", 3_113_000_000), new ProcLoad("Wispr Flow", 634L << 20) });
         return b;
     }
 
@@ -76,9 +76,9 @@ public sealed class NewGuiSnapshotTests
     internal static GroupPageViewModel Page(FakeBackend b, ActionGroupKind group, bool run = false, string language = "tr")
     {
         var (home, session) = Home(b, language);
-        if (run) session.RunAsync(null, skipUnrecoverable: true).GetAwaiter().GetResult();
+        if (run) session.RunAllAsync().GetAwaiter().GetResult();
         var loc = home.L;
-        var page = new GroupPageViewModel(session, group, loc, (_, _) => { }, () => new[] { "chrome" });
+        var page = new GroupPageViewModel(session, group, loc, () => new[] { "chrome" });
         Sessions.Add(page, session);
         return page;
     }
@@ -98,51 +98,130 @@ public sealed class NewGuiSnapshotTests
         Assert.Empty(errors);
     }
 
-    [Fact]
-    public void Page_Space_WithDownloadsOpen() => ShootPage(() =>
+    /// Yer aç as the shell builds it, entered, at `level`; `run` presses the button and waits for the end.
+    internal static SpacePageViewModel SpacePageOf(FakeBackend b, SpaceLevel level = SpaceLevel.Mid, bool run = false,
+        string language = "tr")
     {
-        var p = Page(Catalog(), ActionGroupKind.Space);
+        var (home, session) = Home(b, language);
+        var page = new SpacePageViewModel(session, home.L, () => new[] { "chrome" }, b.SystemDriveFreeBytes,
+            a => a(), a => a());
+        page.Enter();
+        session.SetLevel(level);
+        if (run) session.RunAsync(ActionGroupKind.Space).GetAwaiter().GetResult();
+        return page;
+    }
+
+    private static Grid SpaceFrame(SpacePageViewModel vm) => new()
+    {
+        Width = Canvas.Width,
+        Height = Canvas.Height,
+        Children =
+        {
+            new Atmosphere(new Brisk.Ui.AmbientClock(() => false)) { Decorated = false },
+            new SpacePage { DataContext = vm },
+        },
+    };
+
+    private static void ShootSpace(Func<SpacePageViewModel> vm, string name, Action<FrameworkElement>? inspect = null)
+    {
+        var errors = BindingErrors.Capture(() =>
+            SnapshotRenderer.Capture(() => SpaceFrame(vm()), Canvas, name, inspect));
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Page_Space_WithDownloadsOpen() => ShootSpace(() =>
+    {
+        var p = SpacePageOf(Catalog());
         p.Expand("space.downloads");
         return p;
     }, "new-page-space");
 
     [Fact]
-    public void Page_Speed_WithWhatIsSlowingYou() => ShootPage(() =>
-    {
-        var b = Catalog();
-        b.Load.Add(new AppLoad("MsMpEng", "MsMpEng", 22, 300L << 20, true, "action.load.note.defender",
-            "Defender is scanning", new[] { 9 }, false));
-        b.Startup.Add(new BriskEngine.Diagnostics.StartupEntry("HKCU", "Discord", true, false, @"C:\D\Discord.exe"));
-        var page = Page(b, ActionGroupKind.Speed);
-        var loc = page.L;
-        var gate = new object();
-        var load = new Brisk.Ui.Live.LoadPanelViewModel(a => { lock (gate) a(); }, a => a(), b,
-            SessionOf(page), new ManualTimers(), loc);
-        load.Activate();
-        page.Above = new object[] { load };
-        return page;
-    }, "new-page-speed");
+    public void Page_Space_Done() => ShootSpace(() => SpacePageOf(Catalog(), run: true), "new-page-space-done");
+
+    /// The level colour is one brush the code-behind repaints: it must not be
+    /// frozen once the page is on screen, or the cross-fade (moving
+    /// background on) and the instant repaint (off) throw.
+    [Fact]
+    public void Page_Space_Max_LevelColourRepaintsOnScreen() => ShootSpace(() => SpacePageOf(Catalog()),
+        "new-page-space-max", element =>
+        {
+            var page = (SpacePage)((Grid)element).Children[1];
+            var vm = (SpacePageViewModel)page.DataContext;
+            var brush = (System.Windows.Media.SolidColorBrush)page.Resources["LevelBrush"];
+
+            Assert.False(brush.IsFrozen);
+            var moving = Brisk.Ui.AmbientClock.ForStage(() => true, renderTier: () => 2);
+            Brisk.Ui.AmbientClock.Install(moving);
+            try
+            {
+                moving.SetVisible(true);
+                vm.Levels[2].Select.Execute(null);
+                Assert.True(brush.HasAnimatedProperties);
+            }
+            finally
+            {
+                Brisk.Ui.AmbientClock.Install(new Brisk.Ui.AmbientClock(() => true));
+            }
+            vm.Levels[0].Select.Execute(null);
+            vm.Levels[2].Select.Execute(null);
+            Assert.False(brush.HasAnimatedProperties);
+            Assert.Equal(System.Windows.Media.ColorConverter.ConvertFromString(vm.LevelColor), brush.Color);
+            element.UpdateLayout();
+        });
+
+    /// The 0.11.0 live panels are not on the pages (ruling R36).
+    [Fact]
+    public void Page_Speed() => ShootPage(() => Page(Catalog(), ActionGroupKind.Speed), "new-page-speed");
 
     [Fact]
-    public void Page_Privacy_WithConnectionsAndUsage() => ShootPage(() =>
+    public void Page_Privacy() => ShootPage(() => Page(Catalog(), ActionGroupKind.Privacy), "new-page-privacy");
+
+    /// The hero caption wraps inside the gauge's dark disc (210 wide) instead of
+    /// running out over the rings: Gizlilik's TR caption is the longest, Yer aç
+    /// shares the hero.
+    [Fact]
+    public void HeroCaptions_StayInsideTheDisc()
     {
-        var b = Catalog();
-        b.Usage = new[]
+        double Width(Func<FrameworkElement> page, string name)
         {
-            new UsageRow("Google Chrome", 3L << 30, 41L << 30), new UsageRow("Windows (system)", 900L << 20, 12L << 30),
-            new UsageRow("Discord", 400L << 20, 6L << 30),
-        };
-        var page = Page(b, ActionGroupKind.Privacy);
-        var loc = page.L;
-        var gate = new object();
-        Action<Action> post = a => { lock (gate) a(); };
-        var conn = new Brisk.Ui.Live.ConnectionsViewModel(post, a => a(), b, new ManualTimers(), loc);
-        var usage = new Brisk.Ui.Live.UsageViewModel(post, a => a(), b, loc);
-        conn.Activate();
-        usage.Activate();
-        page.Below = new object[] { conn, usage };
-        return page;
-    }, "new-page-privacy");
+            double width = 0;
+            SnapshotRenderer.Capture(() => new Grid { Width = Canvas.Width, Height = Canvas.Height, Children = { page() } },
+                Canvas, name, inspect: root =>
+                    width = ((FrameworkElement)((FrameworkElement)((Grid)root).Children[0]).FindName("Caption")!).ActualWidth);
+            return width;
+        }
+
+        Assert.InRange(Width(() => new GroupPage { DataContext = Page(Catalog(), ActionGroupKind.Privacy) },
+            "new-page-privacy-caption"), 1, 210);
+        Assert.InRange(Width(() => new SpacePage { DataContext = SpacePageOf(Catalog()) }, "new-page-space-caption"), 1, 210);
+    }
+
+    /// The MAX tile's words sit on the fire, and the scrim fades out toward
+    /// the bottom, so a wrapped tagline line (EN at 720) lands on bare
+    /// flames. Like the mockup's text-shadow (space-levels.html:158), the
+    /// MAX name, size and tagline carry a dark shadow; MIN and MID do not.
+    [Fact]
+    public void MaxTile_Words_CarryADarkShadowOverTheFire()
+    {
+        SnapshotRenderer.Capture(() => new Grid { Width = Canvas.Width, Height = Canvas.Height,
+                Children = { new SpacePage { DataContext = SpacePageOf(Catalog()) } } },
+            Canvas, "new-page-space-maxtile", inspect: root =>
+            {
+                var page = (FrameworkElement)((Grid)root).Children[0];
+                var tiles = ((System.Windows.Controls.Panel)page.FindName("Tiles")!).Children.Cast<System.Windows.Controls.Button>().ToArray();
+                Assert.Equal(3, tiles.Length);
+                foreach (var part in new[] { "LevelName", "Size", "Tagline" })
+                {
+                    var max = (FrameworkElement)tiles[2].Template.FindName(part, tiles[2])!;
+                    var shadow = Assert.IsType<System.Windows.Media.Effects.DropShadowEffect>(max.Effect);
+                    Assert.Equal(System.Windows.Media.Colors.Black, shadow.Color);
+                    foreach (var calm in tiles[..2])
+                        Assert.Null(((FrameworkElement)calm.Template.FindName(part, calm)!).Effect);
+                }
+            });
+    }
 
     internal static Brisk.Ui.Shell.ShellViewModel Shell(FakeBackend b, string language = "tr", Brisk.Ui.AmbientClock? clock = null)
     {
@@ -168,12 +247,7 @@ public sealed class NewGuiSnapshotTests
     }
 
     [Fact]
-    public void Shell_HomeWithTheSheet() => ShootShell(() =>
-    {
-        var s = Shell(Catalog());
-        s.Home.Primary.Execute(null);
-        return s;
-    }, "new-shell-sheet");
+    public void Shell_Home() => ShootShell(() => Shell(Catalog()), "new-shell-home");
 
     [Fact]
     public void Shell_Settings() => ShootShell(() =>
@@ -211,7 +285,7 @@ public sealed class NewGuiSnapshotTests
         var gate = new object();
         Action<Action> post = a => { lock (gate) a(); };
         var session = new ActionSession(b, post);
-        var vm = new HomeViewModel(post, a => a(), session, b, new ManualTimers(), loc, (_, _) => { }, _ => { });
+        var vm = new HomeViewModel(post, a => a(), session, b, new ManualTimers(), loc, _ => { });
         session.LookAsync().GetAwaiter().GetResult();
         vm.Activate();
         return (vm, session);
@@ -220,7 +294,7 @@ public sealed class NewGuiSnapshotTests
     internal static HomeViewModel AfterRun(FakeBackend b)
     {
         var (vm, session) = Home(b);
-        session.RunAsync(null).GetAwaiter().GetResult();
+        session.RunAllAsync().GetAwaiter().GetResult();
         return vm;
     }
 
@@ -265,6 +339,16 @@ public sealed class NewGuiSnapshotTests
     [Fact]
     public void Home_Ready_English() => Shoot(() => Home(Rich(), "en").Vm, "new-home-ready-en");
 
+    /// A satellite brought to the front: the floor and the rings have turned,
+    /// and the gauge, the lit spec block and the top three are the card's.
+    [Fact]
+    public void Home_GraphicsInFront() => Shoot(() =>
+    {
+        var (vm, _) = Home(Rich());
+        vm.SelectPart(Part.Gpu);
+        return vm;
+    }, "new-home-gpu");
+
     [Fact]
     public void Home_Running()
     {
@@ -275,7 +359,7 @@ public sealed class NewGuiSnapshotTests
             Shoot(() =>
             {
                 var (vm, session) = Home(b);
-                _ = session.RunAsync(null, skipUnrecoverable: true);
+                _ = session.RunAllAsync();
                 SpinWait.SpinUntil(() => session.State == SessionState.Running, 2000);
                 return vm;
             }, "new-home-running");
@@ -283,32 +367,109 @@ public sealed class NewGuiSnapshotTests
         finally { b.HoldRun.Set(); }
     }
 
-    /// The GIF moment's longest line (freed, startup, privacy, deferred,
-    /// failed, restart) must not grow into the Speed satellite above it.
-    [Fact]
-    public void Home_Done_TheLongestStateline_StaysClearOfTheSpeedSatellite()
+    private static readonly string[] Satellites = { "CpuSatellite", "GpuSatellite", "RamSatellite" };
+
+    private static Rect BoundsIn(FrameworkElement view, System.Windows.Media.Visual ancestor, string name)
     {
-        var b = Rich();
+        var element = (FrameworkElement)view.FindName(name)!;
+        return element.TransformToAncestor(ancestor).TransformBounds(new Rect(element.RenderSize));
+    }
+
+    /// The GIF moment's longest strip (freed, apps, settings, failed, the
+    /// restart, the caches left for their apps, Geri al, Tekrar tara) stays
+    /// on one line, right of the nav and clear of the floor satellites.
+    [Fact]
+    public void Home_Done_TheLongestStrip_StaysClearOfTheSatellites()
+    {
+        var b = Catalog();
         b.Outcome = i => i.Id switch
         {
             "speed.animations" => new RowResult(i.Id, RowOutcome.PendingRestart, null, null, 0, 0),
-            "privacy.location" => new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0),
+            "privacy.location" or "privacy.ads" => new RowResult(i.Id, RowOutcome.Failed, "x", null, 0, 0),
             _ => new RowResult(i.Id, RowOutcome.Done, null, null, i.Bytes ?? 0, 0),
         };
         b.ReceiptToReturn = TestReceipts.Freed("run-1", 28_346_784_153, startupAfter: 3, privacyOff: 8)
             with { DeferredBytes = 2_300_000_000 };
         b.DeferredAppNames.AddRange(new[] { "chrome", "discord", "spotify" });
-        Rect stateline = default, satellite = default;
+        var overlaps = new List<string>();
+        Rect strip = default;
         SnapshotRenderer.Capture(() => Frame(AfterRun(b)), Canvas, "new-home-done-long", inspect: root =>
         {
             var view = (HomeView)((Grid)root).Children[1];
-            Rect Bounds(string name) => ((FrameworkElement)view.FindName(name)!)
-                .TransformToAncestor(view).TransformBounds(new Rect(((FrameworkElement)view.FindName(name)!).RenderSize));
-            stateline = Bounds("StatelinePanel");
-            satellite = Bounds("SpeedSatellite");
+            strip = BoundsIn(view, view, "StripPanel");
+            foreach (var s in Satellites)
+                if (BoundsIn(view, view, s) is var r && r.IntersectsWith(strip)) overlaps.Add($"{s} {r}");
         });
-        Assert.True(stateline.Height > 40, $"the line did not wrap as long lines do: {stateline}");
-        Assert.False(stateline.IntersectsWith(satellite), $"stateline {stateline} overlaps satellite {satellite}");
+        Assert.True(strip.Height < 60, $"the strip wrapped: {strip}");
+        Assert.True(strip.Left >= 110, $"the strip runs under the nav: {strip}");
+        Assert.Empty(overlaps);
+    }
+
+    /// Spec: the satellites never overlap the side columns at any supported
+    /// window size (the mockup's right list hit the "Ekran kartı" label at
+    /// 1400×900). The window at 1400×900, at the size it opens with on a
+    /// 1080p laptop at 150 % (FirstWindowSize), and at its minimum; each part
+    /// brought to the front, and the floor caught every 10° of a turn.
+    [Theory]
+    [InlineData(1400, 900, "1400x900")]
+    [InlineData(0, 0, "first-size-1080p-150")]
+    [InlineData(720, 460, "minimum")]
+    public void Home_Satellites_StayClearOfTheSideColumns(double width, double height, string label)
+    {
+        if (width == 0)
+        {
+            var first = Brisk.Ui.Shell.FirstWindowSize.For(Canvas, new Thickness(8, 31, 8, 8), new Rect(0, 0, 1280, 672));
+            (width, height) = (first.Width, first.Height);
+        }
+        var overlaps = new List<string>();
+        var checks = 0;
+        var errors = BindingErrors.Capture(() => SnapshotRenderer.Capture(() =>
+        {
+            var shell = Shell(Catalog());
+            return new Brisk.Ui.Shell.ShellWindow(shell) { Width = width, Height = height };
+        }, new Size(width, height), "new-home-layout-" + label, inspect: root =>
+        {
+            var window = (Brisk.Ui.Shell.ShellWindow)root;
+            var stage = (FrameworkElement)window.FindName("Root")!;
+            var view = Find<HomeView>(window)!;
+            var floor = (FloorCarousel)view.FindName("Floor")!;
+            void Check(string when)
+            {
+                stage.UpdateLayout();
+                var columns = new[] { "LeftColumn", "RightColumn" }.Select(c => (c, BoundsIn(view, stage, c))).ToList();
+                foreach (var s in Satellites)
+                {
+                    var r = BoundsIn(view, stage, s);
+                    foreach (var (c, cr) in columns)
+                        if (r.IntersectsWith(cr)) overlaps.Add($"{when}: {s} {r} overlaps {c} {cr}");
+                }
+                checks++;
+            }
+            foreach (var part in new[] { Part.Gpu, Part.Ram, Part.Cpu })
+            {
+                window.ViewModel.Home.SelectPart(part);
+                Brisk.Views.OffscreenLayout.Settle(window);
+                Check(part.ToString());
+            }
+            for (var angle = 0; angle < 360; angle += 10)
+            {
+                floor.BeginAnimation(FloorCarousel.ShownAngleProperty, null);
+                floor.ShownAngle = angle;
+                Check($"{angle}°");
+            }
+            Assert.True(stage.ActualWidth > 0 && stage.ActualHeight > 0, $"the stage did not lay out at {label}");
+        }));
+        Assert.Empty(errors);
+        Assert.Equal(39, checks);
+        Assert.Empty(overlaps);
+    }
+
+    private static T? Find<T>(DependencyObject root) where T : DependencyObject
+    {
+        if (root is T hit) return hit;
+        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+            if (Find<T>(System.Windows.Media.VisualTreeHelper.GetChild(root, i)) is { } found) return found;
+        return null;
     }
 
     [Fact]

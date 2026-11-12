@@ -298,24 +298,34 @@
   <data name="readback.on.held.today" xml:space="preserve"><value>Bugün açtın, hâlâ açık</value></data>
   <data name="readback.on.held.yesterday" xml:space="preserve"><value>Dün açtın, hâlâ açık</value></data>
   <data name="readback.on.reverted" xml:space="preserve"><value>Bunu {0} tarihinde açmıştın; şu an yeniden kapalı.</value></data>
-  <data name="action.space.caches.title" xml:space="preserve"><value>Önbellekler ve geçici dosyalar</value></data>
+  <data name="action.space.caches.title" xml:space="preserve"><value>Önbellekler</value></data>
   <data name="action.space.developer.title" xml:space="preserve"><value>Geliştirici önbellekleri</value></data>
   <data name="action.space.developer.cost" xml:space="preserve"><value>Sonra yeniden iner.</value></data>
-  <data name="action.space.shaders.title" xml:space="preserve"><value>Oyun shader önbellekleri</value></data>
-  <data name="action.space.shaders.cost" xml:space="preserve"><value>Oyunlar ilk açılışta takılabilir.</value></data>
+  <data name="action.space.shaders.title" xml:space="preserve"><value>Oyun gölgelendirici önbelleği</value></data>
+  <data name="action.space.shaders.cost" xml:space="preserve"><value>Oyunların ilk açılışı biraz yavaşlar</value></data>
   <data name="action.space.hibernation.title" xml:space="preserve"><value>Hazırda bekletme dosyası</value></data>
-  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Hızlı açılış kapanır.</value></data>
+  <data name="action.space.hibernation.cost" xml:space="preserve"><value>Hızlı başlatma kapanır · geri açılabilir</value></data>
   <data name="action.space.hibernation.name" xml:space="preserve"><value>hiberfil.sys</value></data>
   <data name="action.space.hibernation.cost-laptop" xml:space="preserve"><value>Pil biterse açık işler kaybolur.</value></data>
   <data name="action.space.windows-old.title" xml:space="preserve"><value>Eski Windows kopyası</value></data>
   <data name="action.space.windows-old.cost" xml:space="preserve"><value>Eski Windows'a dönülemez.</value></data>
   <data name="action.space.windows-old.name" xml:space="preserve"><value>Windows.old</value></data>
-  <data name="action.space.downloads.title" xml:space="preserve"><value>İndirilenler'deki kurulum dosyaları</value></data>
+  <data name="action.space.downloads.title" xml:space="preserve"><value>İndirilenler: kurulum dosyaları</value></data>
   <data name="action.space.downloads.cost" xml:space="preserve"><value>Geri alınamaz.</value></data>
   <data name="action.space.docker.title" xml:space="preserve"><value>Docker'ın kullanılmayan verisi</value></data>
   <data name="action.space.docker.cost" xml:space="preserve"><value>Durmuş container'lar silinir.</value></data>
   <data name="action.space.docker.name" xml:space="preserve"><value>docker system prune</value></data>
-  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Geri Dönüşüm Kutusu</value></data>
+  <data name="action.space.recycle-bin.title" xml:space="preserve"><value>Geri dönüşüm kutusu</value></data>
+  <data name="action.space.crash-dumps.title" xml:space="preserve"><value>Eski çökme raporu</value></data>
+  <data name="action.space.setup-logs.title" xml:space="preserve"><value>Windows kurulum kayıtları</value></data>
+  <data name="action.space.driver-leftovers.title" xml:space="preserve"><value>Eski sürücü kurulumu</value></data>
+  <data name="action.space.profile-git.title" xml:space="preserve"><value>Ev klasöründeki git deposu</value></data>
+  <data name="action.space.profile-git.cost" xml:space="preserve"><value>Geri alınamaz.</value></data>
+  <data name="action.space.project-deps.title" xml:space="preserve"><value>Eski projelerin indirme klasörleri</value></data>
+  <data name="action.space.project-deps.cost" xml:space="preserve"><value>Gerekince npm install ile gelir.</value></data>
+  <data name="action.space.archives.title" xml:space="preserve"><value>Arşiv (açılmış hali yanında)</value></data>
+  <data name="action.space.restore-points.title" xml:space="preserve"><value>Eski geri yükleme noktaları</value></data>
+  <data name="action.space.restore-points.cost" xml:space="preserve"><value>En yenisi kalır, gerisi silinir.</value></data>
   <data name="action.speed.power-mode.title" xml:space="preserve"><value>Şarjdayken tam güç</value></data>
   <data name="action.speed.power-mode.cost" xml:space="preserve"><value>Fan daha çok dönebilir.</value></data>
   <data name="action.speed.power-mode.name" xml:space="preserve"><value>Güç modu: En iyi performans</value></data>
@@ -420,82 +430,135 @@
   <data name="action.receipt.telemetry" xml:space="preserve"><value>Telemetri bağlantıları {0} → {1}</value></data>
   <data name="action.restart" xml:space="preserve"><value>Tam etki için yeniden başlat</value></data>
   <data name="action.undo" xml:space="preserve"><value>Geri al</value></data>
-  <data name="gui.home.label.looking" xml:space="preserve"><value>Bakılıyor</value></data>
-  <data name="gui.home.label.ready" xml:space="preserve"><value>Açılabilir yer</value></data>
-  <data name="gui.home.label.freed" xml:space="preserve"><value>Açıldı</value></data>
-  <data name="gui.home.label.failed" xml:space="preserve"><value>Bakamadım</value></data>
-  <data name="gui.home.this-pc" xml:space="preserve"><value>Bu bilgisayar</value></data>
-  <data name="gui.home.found" xml:space="preserve"><value>Bulunan yer</value></data>
-  <data name="gui.home.startup" xml:space="preserve"><value>Açılışta başlayan</value></data>
-  <data name="gui.home.online" xml:space="preserve"><value>İnternete bağlı</value></data>
-  <data name="gui.home.load" xml:space="preserve"><value>Şu an kasanlar</value></data>
-  <data name="gui.home.load.none" xml:space="preserve"><value>Yok ✓</value></data>
-  <data name="gui.home.cpu" xml:space="preserve"><value>%{0} CPU</value></data>
-  <data name="gui.sat.speed" xml:space="preserve"><value>Hızlandır · açılışta</value></data>
-  <data name="gui.sat.space" xml:space="preserve"><value>Yer aç</value></data>
-  <data name="gui.sat.privacy" xml:space="preserve"><value>Gizlilik</value></data>
-  <data name="gui.sat.speed.value" xml:space="preserve"><value>{0} → {1}</value></data>
-  <data name="gui.sat.speed.done" xml:space="preserve"><value>✓ {0} kaldı</value></data>
-  <data name="gui.sat.space.done" xml:space="preserve"><value>✓ {0}</value></data>
-  <data name="gui.sat.privacy.value" xml:space="preserve"><value>{0} ayar</value></data>
-  <data name="gui.sat.privacy.done" xml:space="preserve"><value>✓ {0} kapandı</value></data>
-  <data name="gui.sat.pending" xml:space="preserve"><value>…</value></data>
-  <data name="gui.state.looking" xml:space="preserve"><value>Bakılıyor: {0} · {1}/{2}</value></data>
+  <data name="gui.home.part.cpu" xml:space="preserve"><value>İşlemci</value></data>
+  <data name="gui.home.part.gpu" xml:space="preserve"><value>Ekran kartı</value></data>
+  <data name="gui.home.part.ram" xml:space="preserve"><value>Bellek</value></data>
+  <data name="gui.home.part.disk" xml:space="preserve"><value>Disk</value></data>
+  <data name="gui.home.percent" xml:space="preserve"><value>{0} %</value></data>
+  <data name="gui.home.net" xml:space="preserve"><value>Ağ hızı</value></data>
+  <data name="gui.home.net.up" xml:space="preserve"><value>Yükleme</value></data>
+  <data name="gui.home.net.down" xml:space="preserve"><value>İndirme</value></data>
+  <data name="gui.home.battery" xml:space="preserve"><value>Pil</value></data>
+  <data name="gui.home.battery.charge" xml:space="preserve"><value>Kalan şarj</value></data>
+  <data name="gui.home.battery.state" xml:space="preserve"><value>Durum</value></data>
+  <data name="gui.home.battery.plugged" xml:space="preserve"><value>Prizde</value></data>
+  <data name="gui.home.battery.unplugged" xml:space="preserve"><value>Pilde</value></data>
+  <data name="gui.home.battery.health" xml:space="preserve"><value>Pil sağlığı</value></data>
+  <data name="gui.home.battery.cycles" xml:space="preserve"><value>Şarj döngüsü</value></data>
+  <data name="gui.home.heat" xml:space="preserve"><value>Isı</value></data>
+  <data name="gui.home.spec.cores-threads" xml:space="preserve"><value>{0} çekirdek, {1} iş parçacığı</value></data>
+  <data name="gui.home.spec.cores" xml:space="preserve"><value>{0} çekirdek</value></data>
+  <data name="gui.home.spec.threads" xml:space="preserve"><value>{0} iş parçacığı</value></data>
+  <data name="gui.home.spec.ram" xml:space="preserve"><value>{0} ({1} kullanılabilir)</value></data>
+  <data name="gui.home.spec.ram.usable" xml:space="preserve"><value>{0} kullanılabilir</value></data>
+  <data name="gui.home.ram.used-of" xml:space="preserve"><value>{0} / {1} kullanılıyor</value></data>
+  <data name="gui.home.ram.used" xml:space="preserve"><value>{0} kullanılıyor</value></data>
+  <data name="gui.home.top" xml:space="preserve"><value>Şu an en çok kullanan</value></data>
+  <data name="gui.home.strip.ready" xml:space="preserve"><value>brisk hazır:</value></data>
+  <data name="gui.home.strip.last" xml:space="preserve"><value>Son işlem:</value></data>
+  <data name="gui.home.strip.apps" xml:space="preserve"><value>{0} uygulama</value></data>
+  <data name="gui.home.strip.settings" xml:space="preserve"><value>{0} ayar</value></data>
   <data name="gui.state.looking.start" xml:space="preserve"><value>Bakılıyor…</value></data>
-  <data name="gui.state.ready" xml:space="preserve"><value>Hazır · {0} iş seçili</value></data>
   <data name="gui.state.nothing" xml:space="preserve"><value>Yapacak bir şey yok ✓</value></data>
   <data name="gui.state.running" xml:space="preserve"><value>Yapılıyor: {0}</value></data>
   <data name="gui.state.running.slow" xml:space="preserve"><value>{0} · birkaç dakika sürebilir</value></data>
-  <data name="gui.state.done.freed" xml:space="preserve"><value>{0} açıldı</value></data>
-  <data name="gui.state.done.startup" xml:space="preserve"><value>{0} program açılıştan çıktı</value></data>
-  <data name="gui.state.done.privacy" xml:space="preserve"><value>{0} ayar kapandı</value></data>
   <data name="gui.state.done.deferred" xml:space="preserve"><value>{0} daha, {1} kapanınca</value></data>
   <data name="gui.state.done.failed" xml:space="preserve"><value>{0} iş olmadı</value></data>
   <data name="gui.state.done.restart" xml:space="preserve"><value>tam etki için yeniden başlat</value></data>
   <data name="gui.state.undone" xml:space="preserve"><value>{0} ayar geri alındı · silinen dosyalar geri gelmez</value></data>
   <data name="gui.state.failed" xml:space="preserve"><value>Bakamadım: {0}</value></data>
-  <data name="gui.state.previous" xml:space="preserve"><value>Son sefer: {0}</value></data>
-  <data name="gui.state.previous.boot" xml:space="preserve"><value>açılış {0} sn → {1} sn</value></data>
-  <data name="gui.state.previous.ram" xml:space="preserve"><value>{0} RAM boşaldı</value></data>
   <data name="gui.button.run-all" xml:space="preserve"><value>Hepsini yap</value></data>
-  <data name="gui.button.looking" xml:space="preserve"><value>Bakılıyor…</value></data>
   <data name="gui.button.running" xml:space="preserve"><value>Yapılıyor…</value></data>
   <data name="gui.button.undo" xml:space="preserve"><value>Geri al</value></data>
+  <data name="gui.button.undo.both" xml:space="preserve"><value>Geri al (Hızlandır + Gizlilik)</value></data>
   <data name="gui.button.rescan" xml:space="preserve"><value>Tekrar tara</value></data>
   <data name="gui.button.retry" xml:space="preserve"><value>Tekrar dene</value></data>
-  <data name="gui.load.measuring" xml:space="preserve"><value>Ölçülüyor…</value></data>
   <data name="gui.page.space.title" xml:space="preserve"><value>Yer aç</value></data>
-  <data name="gui.page.space.header" xml:space="preserve"><value>İşaretliler silinir</value></data>
   <data name="gui.page.speed.title" xml:space="preserve"><value>Hızlandır</value></data>
-  <data name="gui.page.speed.header" xml:space="preserve"><value>İşaretliler durur</value></data>
   <data name="gui.page.privacy.title" xml:space="preserve"><value>Gizlilik</value></data>
-  <data name="gui.page.privacy.header" xml:space="preserve"><value>İşaretliler durdurulur</value></data>
   <data name="gui.row.restart" xml:space="preserve"><value>Yeniden başlatınca</value></data>
   <data name="gui.row.windows-name" xml:space="preserve"><value>Windows'ta: {0}</value></data>
   <data name="gui.files.all" xml:space="preserve"><value>Hepsini seç</value></data>
   <data name="gui.files.none" xml:space="preserve"><value>Hiçbiri</value></data>
-  <data name="gui.footer.count" xml:space="preserve"><value>{0} seçili</value></data>
-  <data name="gui.footer.count-bytes" xml:space="preserve"><value>{0} seçili · {1}</value></data>
-  <data name="gui.footer.run" xml:space="preserve"><value>Bunları yap</value></data>
-  <data name="gui.load.title" xml:space="preserve"><value>Şu an kasanlar</value></data>
-  <data name="gui.load.none" xml:space="preserve"><value>Şu an seni yavaşlatan yok ✓</value></data>
-  <data name="gui.conn.title" xml:space="preserve"><value>Şu an konuştukları</value></data>
-  <data name="gui.conn.nodns" xml:space="preserve"><value>Telemetri burada ayırt edilemiyor</value></data>
-  <data name="gui.usage.title" xml:space="preserve"><value>30 günde gönderilenler</value></data>
-  <data name="gui.usage.sent" xml:space="preserve"><value>gönderilen {0}</value></data>
-  <data name="gui.usage.received" xml:space="preserve"><value>alınan {0}</value></data>
+  <data name="gui.files.list" xml:space="preserve"><value>Dosya listesi</value></data>
+  <data name="gui.row.verb.stop" xml:space="preserve"><value>durdur</value></data>
+  <data name="gui.row.verb.on" xml:space="preserve"><value>aç</value></data>
+  <data name="gui.row.verb.off" xml:space="preserve"><value>kapat</value></data>
+  <data name="gui.row.verb.delete" xml:space="preserve"><value>sil</value></data>
+  <data name="gui.row.done.stop" xml:space="preserve"><value>✓ durdu</value></data>
+  <data name="gui.row.done.on" xml:space="preserve"><value>✓ açıldı</value></data>
+  <data name="gui.row.done.off" xml:space="preserve"><value>✓ kapandı</value></data>
+  <data name="gui.row.done.delete" xml:space="preserve"><value>✓ silindi</value></data>
+  <data name="gui.page.button.none" xml:space="preserve"><value>Hiçbir şey seçili değil</value></data>
+  <data name="gui.page.button.ok" xml:space="preserve"><value>✓ Tamam</value></data>
+  <data name="gui.page.button.space" xml:space="preserve"><value>{0} boşalt</value></data>
+  <data name="gui.page.button.apps" xml:space="preserve"><value>{0} uygulamayı durdur</value></data>
+  <data name="gui.page.button.apps.one" xml:space="preserve"><value>{0} uygulamayı durdur</value></data>
+  <data name="gui.page.button.settings" xml:space="preserve"><value>{0} ayarı değiştir</value></data>
+  <data name="gui.page.button.settings.one" xml:space="preserve"><value>{0} ayarı değiştir</value></data>
+  <data name="gui.page.button.mixed" xml:space="preserve"><value>{0} değişikliği yap</value></data>
+  <data name="gui.page.button.mixed.one" xml:space="preserve"><value>{0} değişikliği yap</value></data>
+  <data name="gui.page.button.privacy" xml:space="preserve"><value>{0} ayarı kapat</value></data>
+  <data name="gui.page.button.privacy.one" xml:space="preserve"><value>{0} ayarı kapat</value></data>
+  <data name="gui.home.strip.apps.one" xml:space="preserve"><value>{0} uygulama</value></data>
+  <data name="gui.home.strip.settings.one" xml:space="preserve"><value>{0} ayar</value></data>
+  <data name="gui.page.speed.list" xml:space="preserve"><value>Durduracaklarım</value></data>
+  <data name="gui.page.privacy.list" xml:space="preserve"><value>Kapatacaklarım</value></data>
+  <data name="gui.page.space.list" xml:space="preserve"><value>Sileceklerim</value></data>
+  <data name="gui.page.speed.also" xml:space="preserve"><value>Ayrıca</value></data>
+  <data name="gui.page.speed.keep" xml:space="preserve"><value>Bırakıyorum</value></data>
+  <data name="gui.page.extra" xml:space="preserve"><value>İstersen ekle</value></data>
+  <data name="gui.page.hint" xml:space="preserve"><value>dokunursan atlarım</value></data>
+  <data name="gui.page.keep.value" xml:space="preserve"><value>kalsın</value></data>
+  <data name="gui.page.extra.add" xml:space="preserve"><value>+ ekle</value></data>
+  <data name="gui.page.extra.added" xml:space="preserve"><value>✓ eklendi</value></data>
+  <data name="gui.page.speed.scan" xml:space="preserve"><value>Açılış taranıyor…</value></data>
+  <data name="gui.page.privacy.scan" xml:space="preserve"><value>Ayarlar okunuyor…</value></data>
+  <data name="gui.page.scan" xml:space="preserve"><value>Taranıyor…</value></data>
+  <data name="gui.page.speed.label.apps" xml:space="preserve"><value>Açılışta durdurulacak</value></data>
+  <data name="gui.page.speed.label.mixed" xml:space="preserve"><value>Değiştirilecek</value></data>
+  <data name="gui.page.privacy.label" xml:space="preserve"><value>Kapatılacak</value></data>
+  <data name="gui.page.space.label" xml:space="preserve"><value>Boşaltılabilir</value></data>
+  <data name="gui.page.unit.apps" xml:space="preserve"><value>uygulama</value></data>
+  <data name="gui.page.unit.apps.one" xml:space="preserve"><value>uygulama</value></data>
+  <data name="gui.page.unit.settings" xml:space="preserve"><value>ayar</value></data>
+  <data name="gui.page.unit.settings.one" xml:space="preserve"><value>ayar</value></data>
+  <data name="gui.page.unit.changes" xml:space="preserve"><value>değişiklik</value></data>
+  <data name="gui.page.unit.changes.one" xml:space="preserve"><value>değişiklik</value></data>
+  <data name="gui.page.speed.caption.apps" xml:space="preserve"><value>Windows ile açılan {0} uygulamadan</value></data>
+  <data name="gui.page.privacy.caption" xml:space="preserve"><value>Bilgisayarından dışarı veri gönderen ayarlar</value></data>
+  <data name="gui.page.space.caption" xml:space="preserve"><value>{0} gereksiz dosya bulundu</value></data>
+  <data name="gui.page.speed.busy.apps" xml:space="preserve"><value>Durduruluyor…</value></data>
+  <data name="gui.page.speed.busy.mixed" xml:space="preserve"><value>Yapılıyor…</value></data>
+  <data name="gui.page.privacy.busy" xml:space="preserve"><value>Kapatılıyor…</value></data>
+  <data name="gui.page.space.busy" xml:space="preserve"><value>Boşaltılıyor…</value></data>
+  <data name="gui.page.speed.done.apps" xml:space="preserve"><value>Durduruldu</value></data>
+  <data name="gui.page.speed.done.mixed" xml:space="preserve"><value>Değiştirildi</value></data>
+  <data name="gui.page.privacy.done" xml:space="preserve"><value>Kapatıldı</value></data>
+  <data name="gui.page.space.done" xml:space="preserve"><value>Boşaldı</value></data>
+  <data name="gui.page.speed.done.caption" xml:space="preserve"><value>Farkı bir sonraki açılışta görürsün</value></data>
+  <data name="gui.page.privacy.done.caption" xml:space="preserve"><value>Windows aynen çalışır, dışarı giden veri azalır</value></data>
+  <data name="gui.level.min" xml:space="preserve"><value>MIN</value></data>
+  <data name="gui.level.mid" xml:space="preserve"><value>MID</value></data>
+  <data name="gui.level.max" xml:space="preserve"><value>MAX</value></data>
+  <data name="gui.level.min.tagline" xml:space="preserve"><value>Kendiliğinden geri gelir</value></data>
+  <data name="gui.level.mid.tagline" xml:space="preserve"><value>Küçük bir bedeli var</value></data>
+  <data name="gui.level.max.tagline" xml:space="preserve"><value>Geri alınamayanlar dahil</value></data>
+  <data name="gui.page.space.done.caption.min" xml:space="preserve"><value>Önbellekler zamanla geri gelir</value></data>
+  <data name="gui.page.space.done.caption.mid" xml:space="preserve"><value>Kurulum dosyaları geri gelmez</value></data>
+  <data name="gui.page.space.done.caption.max" xml:space="preserve"><value>Silinenlerin bir kısmı geri gelmez</value></data>
+  <data name="gui.page.space.disk" xml:space="preserve"><value>{0} diski</value></data>
+  <data name="gui.page.space.free.now" xml:space="preserve"><value>Şu an boş</value></data>
+  <data name="gui.page.space.free.after" xml:space="preserve"><value>Sonra boş</value></data>
+  <data name="gui.page.space.free.done" xml:space="preserve"><value>Şimdi boş</value></data>
+  <data name="gui.page.space.levels" xml:space="preserve"><value>Seviye</value></data>
+  <data name="gui.page.space.mine" xml:space="preserve"><value>Senin dosyaların · brisk dokunmaz</value></data>
+  <data name="gui.row.lost" xml:space="preserve"><value>Geri alınamaz.</value></data>
   <data name="gui.nav.home" xml:space="preserve"><value>Genel</value></data>
   <data name="gui.nav.space" xml:space="preserve"><value>Yer aç</value></data>
   <data name="gui.nav.speed" xml:space="preserve"><value>Hızlandır</value></data>
   <data name="gui.nav.privacy" xml:space="preserve"><value>Gizlilik</value></data>
   <data name="gui.nav.settings" xml:space="preserve"><value>Ayarlar</value></data>
-  <data name="gui.sheet.title" xml:space="preserve"><value>Bunlar kalıcı silinecek</value></data>
-  <data name="gui.sheet.downloads" xml:space="preserve"><value>İndirilenler'deki {0} kurulum dosyası · {1}</value></data>
-  <data name="gui.sheet.recycle-bin" xml:space="preserve"><value>Geri Dönüşüm Kutusu · {0}</value></data>
-  <data name="gui.sheet.windows-old" xml:space="preserve"><value>Eski Windows kopyası · {0}</value></data>
-  <data name="gui.sheet.go" xml:space="preserve"><value>Devam</value></data>
-  <data name="gui.sheet.skip" xml:space="preserve"><value>Bunları atla</value></data>
-  <data name="gui.sheet.list" xml:space="preserve"><value>Listeyi gör</value></data>
   <data name="gui.settings.title" xml:space="preserve"><value>Ayarlar</value></data>
   <data name="gui.settings.language" xml:space="preserve"><value>Dil</value></data>
   <data name="gui.settings.language.system" xml:space="preserve"><value>Sistem</value></data>

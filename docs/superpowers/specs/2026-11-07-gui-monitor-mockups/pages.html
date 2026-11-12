@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>brisk — Yer aç, Hızlandır, Gizlilik sayfaları</title>
+<style>
+:root{--ac:#5fd4e8;--tx:#dfeef4;--mu:#7f9aa8;--gr:#3ecf8e;--am:#f0b45a;--ln:rgba(127,154,168,.22)}
+*{box-sizing:border-box}
+body{margin:0;background:#04070b;color:var(--tx);font-family:'Segoe UI Variable','Segoe UI',system-ui,sans-serif}
+.page{max-width:1120px;margin:0 auto;padding:20px 16px 50px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}
+.lead{color:var(--mu);font-size:14px;line-height:1.55;margin:0 0 14px;max-width:960px}
+.lead b{color:var(--tx);font-weight:600}
+
+.panel{position:relative;height:660px;border-radius:14px;overflow:hidden;border:1px solid #12303d;background:radial-gradient(ellipse at 50% 34%,#0f3549 0%,#08222f 44%,#050d14 100%);isolation:isolate;user-select:none}
+.rain{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.rain span{position:absolute;top:-60%;font:12px/14px Consolas,monospace;color:rgba(95,212,232,.09);white-space:pre;animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(170%)}}
+.floor{position:absolute;left:-20%;right:-20%;bottom:-6%;height:44%;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(95,212,232,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(95,212,232,.12) 1px,transparent 1px);background-size:46px 46px;transform:perspective(320px) rotateX(62deg);transform-origin:bottom;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent 95%);mask-image:linear-gradient(to top,#000 30%,transparent 95%);animation:floor 3.5s linear infinite}
+@keyframes floor{to{background-position:0 46px}}
+
+.brand{position:absolute;left:26px;top:18px;display:flex;align-items:center;gap:10px;z-index:4}
+.brand svg{width:28px;height:28px}
+.brand b{font-size:25px;font-weight:500;letter-spacing:.01em}
+.win{position:absolute;right:20px;top:20px;display:flex;gap:18px;z-index:4;color:#cfe8f2}
+.win svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+.nav{position:absolute;left:24px;top:84px;display:grid;gap:26px;z-index:4}
+.tile{width:62px;height:62px;border:1.5px solid rgba(95,212,232,.42);border-radius:6px;display:grid;place-items:center;color:#bfe9f3;position:relative;cursor:pointer;transition:border-color .25s,background .25s,box-shadow .25s}
+.tile:hover{border-color:var(--ac)}
+.tile svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+.tile.on{background:rgba(95,212,232,.15);border-color:var(--ac);box-shadow:0 0 16px rgba(95,212,232,.32)}
+.tile small{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;color:var(--mu)}
+.tile i{position:absolute;top:-8px;right:-12px;font-style:normal;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:999px;background:#0b2a36;border:1px solid rgba(95,212,232,.5);color:#cfeff7;font-variant-numeric:tabular-nums;transition:all .3s}
+.tile i.done{background:#0e3326;border-color:var(--gr);color:var(--gr)}
+
+.col{position:absolute;top:100px;width:210px;z-index:3;font-size:13.5px;transition:opacity .28s}
+.col.l{left:116px}.col.r{right:24px}
+.col h4{margin:0 0 4px;font-size:13px;font-weight:600;color:#cfe8f2}
+.blk{margin-bottom:16px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--ln)}
+.row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.up{color:var(--ac);font-size:10px;margin-left:4px}
+.ok{color:var(--gr)}
+.fade{opacity:0}
+
+.icons{display:flex;gap:6px;justify-content:flex-end;margin-bottom:10px}
+.ic{width:36px;height:30px;border:1px solid rgba(95,212,232,.35);border-radius:3px;display:grid;place-items:center;color:#9fd8e6;cursor:pointer;transition:all .25s}
+.ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5}
+.ic.on{background:rgba(95,212,232,.2);border-color:var(--ac);color:#e8fbff;box-shadow:0 0 10px rgba(95,212,232,.35)}
+.spec{padding:6px 0 7px 10px;border-top:1px solid var(--ln);border-left:2px solid transparent;transition:border-color .35s,background .35s}
+.spec b{display:block;font-weight:600;font-size:13px;color:#cfe8f2}
+.spec span{display:block;color:var(--mu);font-size:12.5px;line-height:1.45}
+.spec.on{border-left-color:var(--ac);background:linear-gradient(90deg,rgba(95,212,232,.10),transparent)}
+.spec.on span{color:#d4eef6}
+.top{margin-top:12px;transition:opacity .25s}
+
+/* page rows */
+.hint{font-size:11px;color:var(--mu);font-weight:400;margin-left:6px}
+.prow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:6px 0;border-top:1px solid var(--ln);cursor:pointer;transition:opacity .3s}
+.prow:hover .nm{color:#fff}
+.prow .nm{transition:color .2s}
+.prow small{display:block;color:var(--mu);font-size:11.5px;margin-top:1px}
+.prow small.w{color:var(--am)}
+.prow .v{font-variant-numeric:tabular-nums;white-space:nowrap;color:#d4eef6;transition:color .3s}
+.prow.off{opacity:.38}.prow.off .nm{text-decoration:line-through}
+.prow.done .v{color:var(--gr)}
+.prow.keep{cursor:default}
+.prow.hid{display:none}
+.prow.new{animation:rin .32s ease}
+@keyframes rin{from{opacity:0;transform:translateX(-10px)}}
+.add{font-size:11px;border:1px solid rgba(95,212,232,.5);border-radius:999px;padding:1px 9px;color:#cfeff7}
+.prow.added .add{background:var(--ac);border-color:var(--ac);color:#03222b;font-weight:600}
+.prow.done .add{background:transparent;border-color:var(--gr);color:var(--gr)}
+.gap{margin-top:16px}
+
+.hero{position:absolute;left:50%;top:34px;width:420px;height:420px;transform:translateX(-50%);z-index:2}
+.hero svg{width:100%;height:100%;overflow:visible}
+.rings{transform-origin:210px 210px;transform-box:view-box;transition:transform 1s cubic-bezier(.65,0,.35,1)}
+.drift{transform-origin:210px 210px;transform-box:view-box;animation:spin 26s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sweep{opacity:0;transform-origin:210px 210px;transform-box:view-box;transition:opacity .3s}
+#g.scanning .sweep{opacity:1;animation:spin .9s linear infinite}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-56%);text-align:center;pointer-events:none;z-index:3;transition:opacity .25s,transform .25s;width:250px}
+.center.out{opacity:0;transform:translate(-50%,-56%) scale(.9)}
+.center .k{font-size:15px;color:#cfe8f2;transition:color .4s}
+.center .n{font-size:84px;font-weight:300;line-height:1.02;letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .4s}
+.center .n u{text-decoration:none;font-size:26px;margin-left:6px}
+.center .t{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.heat{width:96px;height:9px;background:repeating-linear-gradient(105deg,transparent 0 3px,#04121a 3px 5px),linear-gradient(90deg,#3d6fb3,#7b5fb8,#c2577f,#d64c5a);border-radius:2px;opacity:.9}
+.heat.cool{background:repeating-linear-gradient(105deg,transparent 0 3px,#04121a 3px 5px),linear-gradient(90deg,#2f8fb0,#3fb6c9,#5fd4e8)}
+.center .s{font-size:12px;color:var(--mu);margin-top:6px;line-height:1.4}
+.center.ok .n,.center.ok .k{color:var(--gr)}
+
+.plat{position:absolute;left:0;right:0;bottom:0;height:236px;z-index:2}
+.plat svg{width:100%;height:100%}
+.flow{stroke-dasharray:5 9;animation:flow 1.8s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-28}}
+.sat{cursor:pointer}
+.sat:hover .disc{stroke:#e8fbff}
+#p.pg .sat,#p.pg .flow{opacity:0!important;pointer-events:none;transition:opacity .35s}
+
+.act{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);z-index:5;font:inherit;font-size:15px;font-weight:600;color:#03222b;background:var(--ac);border:0;border-radius:999px;padding:12px 30px;cursor:pointer;box-shadow:0 0 26px rgba(95,212,232,.45);transition:opacity .3s,background .3s,box-shadow .3s;white-space:nowrap}
+.act:hover{box-shadow:0 0 34px rgba(95,212,232,.7)}
+.act.hide{opacity:0;pointer-events:none}
+.act.busy{background:#a9e3ef;cursor:default}
+.act.ok{background:var(--gr);box-shadow:0 0 26px rgba(62,207,142,.45);cursor:default}
+.undo{position:absolute;left:50%;bottom:48px;transform:translateX(-50%);z-index:5;font-size:12.5px;color:#cfe8f2;text-decoration:underline;cursor:pointer;transition:opacity .3s}
+.undo.hide{opacity:0;pointer-events:none}
+
+.cta{position:absolute;right:22px;bottom:22px;z-index:4;display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mu);background:rgba(4,16,22,.72);border:1px solid rgba(95,212,232,.25);border-radius:999px;padding:6px 6px 6px 16px;transition:opacity .3s}
+.cta b{color:var(--tx);font-weight:600}
+.cta button{font:inherit;font-weight:600;color:#03222b;background:var(--ac);border:0;border-radius:999px;padding:7px 14px;cursor:pointer}
+.cta.hide{opacity:0;pointer-events:none}
+.foot{color:var(--mu);font-size:12.5px;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Soldaki düğmeler artık açılıyor</h1>
+<p class="lead"><b>Yer aç, Hızlandır, Gizlilik</b>: girince büyük gösterge döner ve <b>tarar</b>. Bulduklarını tek tek yazar, sayı yükselir, sonra <b>tek bir buton</b> çıkar. Tik kutusu yok. İstemediğin satıra dokunursan üstü çizilir ve atlanır. Butona bas: satırlar tek tek yeşile döner. <b>Genel</b> seni ana sayfaya geri götürür.</p>
+
+<div class="panel" id="panel">
+  <div class="rain" id="rain"></div>
+  <div class="floor"></div>
+
+  <div class="brand">
+    <svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="11" stroke="#5fd4e8" stroke-width="2" fill="none"/><path d="M9 15l4-6v5h4l-4 6v-5z" fill="#5fd4e8"/></svg>
+    <b>brisk</b>
+  </div>
+  <div class="win">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </div>
+
+  <div class="nav">
+    <div class="tile on" data-p="home" data-choice="nav-genel"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M6 11h3l2-4 2 7 2-3h3M9 20h6"/></svg><small>Genel</small></div>
+    <div class="tile" data-p="space" data-choice="nav-yer"><i id="b-space">39 GB</i><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg><small>Yer aç</small></div>
+    <div class="tile" data-p="speed" data-choice="nav-hiz"><i id="b-speed">9</i><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4.5-5"/></svg><small>Hızlandır</small></div>
+    <div class="tile" data-p="privacy" data-choice="nav-gizlilik"><i id="b-privacy">7</i><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/></svg><small>Gizlilik</small></div>
+  </div>
+
+  <div class="col l" id="colL">
+    <div id="homeL">
+      <div class="blk">
+        <h4>Ağ hızı</h4>
+        <div class="row"><span>Yükleme</span><span><b id="upv">83</b> Kbps<span class="up">▲</span></span></div>
+        <div class="row"><span>İndirme</span><span><b id="dnv">112</b> Kbps<span class="up">▼</span></span></div>
+      </div>
+      <div class="blk">
+        <h4>Pil</h4>
+        <div class="row"><span>Kalan şarj</span><span>100 %</span></div>
+        <div class="row"><span>Durum</span><span class="ok">Prizde</span></div>
+      </div>
+      <div class="blk">
+        <h4>Isı</h4>
+        <div class="row"><span>İşlemci</span><span><b id="tc">66</b> °C</span></div>
+        <div class="row"><span>Ekran kartı</span><span><b id="tg">52</b> °C</span></div>
+      </div>
+    </div>
+    <div id="pageL" hidden></div>
+  </div>
+
+  <div class="col r" id="colR">
+    <div id="homeR">
+      <div class="icons">
+        <div class="ic" data-k="disk" data-choice="ikon-disk" title="Disk"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="1.5"/><circle cx="17" cy="12" r="1.2"/><path d="M6 12h6"/></svg></div>
+        <div class="ic" data-k="cpu" data-choice="ikon-islemci" title="İşlemci"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/></svg></div>
+        <div class="ic" data-k="gpu" data-choice="ikon-ekran" title="Ekran kartı"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="11" rx="1"/><circle cx="15.5" cy="11.5" r="3"/><path d="M6 9.5h4M6 13.5h4M5 17v2M9 17v2"/></svg></div>
+        <div class="ic" data-k="ram" data-choice="ikon-bellek" title="Bellek"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="9" rx="1"/><path d="M6 10v3M9.5 10v3M13 10v3M16.5 10v3M5 16v2M19 16v2"/></svg></div>
+      </div>
+      <div class="spec" data-k="cpu"><b>İşlemci</b><span>Intel Core i7-10750H · 2,60 GHz<br>6 çekirdek, 12 iş parçacığı</span></div>
+      <div class="spec" data-k="gpu"><b>Ekran kartı</b><span>NVIDIA GeForce GTX 1650 Ti<br>Intel UHD Graphics</span></div>
+      <div class="spec" data-k="ram"><b>Bellek</b><span>32 GB (31,8 GB kullanılabilir)</span></div>
+      <div class="spec" data-k="disk"><b>Disk</b><span>Kingston KC3000 · 1 TB SSD</span></div>
+      <div class="top" id="top"></div>
+    </div>
+    <div id="pageR" hidden></div>
+  </div>
+
+  <div class="hero">
+    <svg viewBox="0 0 420 420" id="g"></svg>
+    <div class="center" id="center">
+      <div class="k" id="ck">İşlemci</div>
+      <div class="n"><span id="cn">20</span><u id="cu">%</u></div>
+      <div class="t" id="ct"><span class="heat" id="heat"></span><span id="ctv">66 °C</span></div>
+      <div class="s" id="cs">Intel Core i7-10750H</div>
+    </div>
+  </div>
+
+  <div class="plat"><svg viewBox="0 0 1000 236" preserveAspectRatio="xMidYMax meet" id="p"></svg></div>
+
+  <button class="act hide" id="act"></button>
+  <a class="undo hide" id="undo" data-choice="geri-al">Geri al</a>
+  <div class="cta" id="cta"><span id="ctaT">brisk hazır: <b>39 GB</b> · <b>9 uygulama</b> · <b>7 ayar</b></span><button id="ctaB" data-choice="hepsini-yap">Hepsini yap</button></div>
+</div>
+<p class="foot">Satır adları ve boyutlar bugün brisk'in senin bilgisayarında bulduklarından alındı. Silme veya kapatma gerçekten olmuyor, sadece animasyon.</p>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+function pt(r,d){const a=(d-90)*Math.PI/180;return[210+r*Math.cos(a),210+r*Math.sin(a)]}
+function arc(r,a0,a1){const[x0,y0]=pt(r,a0),[x1,y1]=pt(r,a1);const sw=((a1-a0)%360+360)%360;return`M${x0} ${y0}A${r} ${r} 0 ${sw>180?1:0} 1 ${x1} ${y1}`}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+/* rain */
+(()=>{const r=$('#rain'),k='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワ0123456789';
+for(let i=0;i<26;i++){const s=document.createElement('span');let t='';for(let j=0;j<40;j++)t+=k[Math.random()*k.length|0]+'\n';
+s.textContent=t;s.style.left=(i*3.9+Math.random()*2)+'%';s.style.animationDuration=(9+Math.random()*12)+'s';s.style.animationDelay=(-Math.random()*20)+'s';r.appendChild(s)}})();
+
+/* ---------- home data ---------- */
+const M={
+ cpu:{name:'İşlemci',v:20,t:66,sub:'Intel Core i7-10750H',top:[['Claude Code','9 %'],['Google Chrome','6 %'],['Visual Studio Code','4 %']]},
+ ram:{name:'Bellek',v:58,sub:'18,4 / 31,8 GB kullanılıyor',top:[['Visual Studio Code','5,6 GB'],['Claude Code','2,9 GB'],['Wispr Flow','634 MB']]},
+ gpu:{name:'Ekran kartı',v:20,t:52,sub:'NVIDIA GeForce GTX 1650 Ti',top:[['Google Chrome','8 %'],['LivelyWallpaper','6 %'],['Masaüstü (dwm)','4 %']]}
+};
+const ORDER=['cpu','gpu','ram'];
+let page='home',sel='cpu',rot=0,busy=false,ringR=0,shownN=0;
+
+/* ---------- gauge ---------- */
+const g=$('#g');
+const rings=el('g',{class:'rings'},g);
+const drift=el('g',{class:'drift'},rings);
+el('path',{d:arc(200,18,300),stroke:'#5fd4e8','stroke-width':1.6,fill:'none',opacity:.45},drift);
+el('path',{d:arc(200,322,8),stroke:'#e8fbff','stroke-width':3.2,fill:'none','stroke-linecap':'round'},drift);
+el('path',{d:arc(208,120,160),stroke:'#5fd4e8','stroke-width':1,fill:'none',opacity:.35},drift);
+for(let i=0;i<72;i++){const d=i*5,L=i%6===0?16:7,[x0,y0]=pt(182-L,d),[x1,y1]=pt(182,d);el('line',{x1:x0,y1:y0,x2:x1,y2:y1,stroke:'#9fd8e6','stroke-width':i%6===0?1.6:1,opacity:i%6===0?.7:.35},rings)}
+[45,135,225,315].forEach(d=>{const[x0,y0]=pt(116,d),[x1,y1]=pt(160,d);el('line',{x1:x0,y1:y0,x2:x1,y2:y1,stroke:'#9fd8e6','stroke-width':1,opacity:.45},rings)});
+[0,90,180,270].forEach(d=>{const[x0,y0]=pt(150,d),[x1,y1]=pt(162,d);el('line',{x1:x0,y1:y0,x2:x1,y2:y1,stroke:'#9fd8e6','stroke-width':1,opacity:.35},rings)});
+el('circle',{cx:210,cy:210,r:112,stroke:'#9fd8e6','stroke-width':1,fill:'none',opacity:.35},rings);
+el('circle',{cx:210,cy:210,r:120,stroke:'#9fd8e6','stroke-width':.8,fill:'none',opacity:.2,'stroke-dasharray':'2 6'},rings);
+const sweep=el('g',{class:'sweep'},g);
+el('path',{d:arc(192,-40,0),stroke:'#5fd4e8','stroke-width':3,fill:'none',opacity:.35},sweep);
+el('path',{d:arc(192,0,26),stroke:'#e8fbff','stroke-width':3,fill:'none','stroke-linecap':'round'},sweep);
+el('circle',{cx:210,cy:210,r:105,fill:'rgba(5,20,28,.55)',stroke:'none'},g);
+const SEG=30,segs=[];
+for(let i=0;i<SEG;i++){const d=182+i*(176/(SEG-1)),[x0,y0]=pt(130,d),[x1,y1]=pt(148,d);segs.push(el('line',{x1:x0,y1:y0,x2:x1,y2:y1,'stroke-width':5},g))}
+function paintSegs(n,col){segs.forEach((s,i)=>s.setAttribute('stroke',i<n?(col||(i>=SEG*.8&&page==='home'?'#f0b45a':'#f2fbff')):'rgba(95,212,232,.13)'))}
+function spinRings(dir){ringR+=dir*120;rings.style.transform=`rotate(${ringR}deg)`}
+
+function setCenter(o){$('#ck').textContent=o.k;$('#cn').textContent=o.n;$('#cu').textContent=o.u;$('#cs').textContent=o.s||'';
+ const t=$('#ct');t.style.display=o.t?'flex':'none';if(o.t){$('#ctv').textContent=o.t+' °C';$('#heat').className='heat'+(o.t<58?' cool':'')}
+ $('#center').classList.toggle('ok',!!o.ok)}
+function centerHome(k,v){const m=M[k];setCenter({k:m.name,n:Math.round(v),u:'%',s:m.sub,t:m.t})}
+function side(k){$$('.spec').forEach(s=>s.classList.toggle('on',s.dataset.k===k));$$('.ic').forEach(s=>s.classList.toggle('on',s.dataset.k===k));
+ const top=$('#top');top.classList.add('fade');
+ setTimeout(()=>{top.innerHTML='<h4>Şu an en çok kullanan</h4>'+M[k].top.map(([a,b])=>`<div class="row"><span>${a}</span><span>${b}</span></div>`).join('');top.classList.remove('fade')},220)}
+function specOnly(k){$$('.spec').forEach(s=>s.classList.toggle('on',s.dataset.k===k));$$('.ic').forEach(s=>s.classList.toggle('on',s.dataset.k===k))}
+$$('.ic').forEach(i=>i.addEventListener('click',()=>specOnly(i.dataset.k)));
+
+/* ---------- floor (home only) ---------- */
+const p=$('#p'),CX=500,CY=96,RX=330,RY=58;
+el('ellipse',{cx:CX,cy:CY,rx:RX,ry:RY,fill:'none',stroke:'#5fd4e8','stroke-width':1.2,opacity:.45},p);
+el('ellipse',{cx:CX,cy:CY,rx:RX+14,ry:RY+5,fill:'none',stroke:'#5fd4e8','stroke-width':.8,opacity:.18},p);
+[150,112,74].forEach((r,i)=>el('ellipse',{cx:CX,cy:CY,rx:r,ry:r*.2,fill:i===2?'rgba(95,212,232,.10)':'none',stroke:'#5fd4e8','stroke-width':i===0?1.6:1,opacity:.6-i*.12},p));
+const beam=el('path',{fill:'url(#bm)',opacity:.5},p);
+const defs=el('defs',{},p),lg=el('linearGradient',{id:'bm',x1:0,y1:0,x2:0,y2:1},defs);
+el('stop',{offset:0,'stop-color':'#5fd4e8','stop-opacity':0},lg);el('stop',{offset:1,'stop-color':'#5fd4e8','stop-opacity':.28},lg);
+const links={},sats={};
+ORDER.forEach(k=>{links[k]=el('path',{fill:'none',stroke:'#5fd4e8','stroke-width':1.2,opacity:.55,class:'flow'},p)});
+ORDER.forEach(k=>{const s=el('g',{class:'sat','data-choice':'uydu-'+k},p);
+ el('ellipse',{rx:58,ry:15,fill:'rgba(95,212,232,.12)'},s);
+ el('ellipse',{class:'disc',rx:42,ry:11,fill:'rgba(6,24,32,.9)',stroke:'#9fe6f4','stroke-width':1.6},s);
+ el('ellipse',{rx:26,ry:6.5,fill:'none',stroke:'#5fd4e8','stroke-width':1.2,opacity:.8},s);
+ el('ellipse',{rx:10,ry:2.6,fill:'#5fd4e8',opacity:.55},s);
+ const tg=el('g',{},s);
+ el('rect',{x:-62,y:-46,width:124,height:24,rx:2,fill:'rgba(4,16,22,.75)',stroke:'#5fd4e8','stroke-width':1,opacity:.9},tg);
+ el('path',{class:'ar',d:'M-5 -22L0 -16L5 -22',fill:'rgba(4,16,22,.75)',stroke:'#5fd4e8','stroke-width':1},tg);
+ const tx=el('text',{y:-29,'text-anchor':'middle','font-size':14,fill:'#dfeef4','font-family':'Segoe UI, system-ui'},tg);
+ sats[k]={g:s,t:tx,tag:tg};s.addEventListener('click',()=>pick(k))});
+const base={cpu:0,gpu:120,ram:240};
+function placeFloor(){ORDER.forEach(k=>{const th=(base[k]+rot)*Math.PI/180,x=CX+RX*Math.sin(th),y=CY+RY*Math.cos(th),d=(Math.cos(th)+1)/2,sc=.72+.38*d;
+ const s=sats[k];s.g.setAttribute('transform',`translate(${x} ${y}) scale(${sc})`);s.g.style.opacity=.55+.45*d;
+ links[k].setAttribute('d',`M${CX} ${CY}Q${(CX+x)/2} ${Math.max(CY,y)+18} ${x} ${y}`);
+ const front=d>.97;s.tag.setAttribute('transform',front?'translate(0 76)':'');s.tag.querySelector('.ar').style.display=front?'none':'';s.t.setAttribute('font-weight',front?600:400)});
+ ORDER.map(k=>sats[k].g).sort((a,b)=>parseFloat(a.style.opacity)-parseFloat(b.style.opacity)).forEach(n=>p.appendChild(n));
+ beam.setAttribute('d',`M${CX-58} ${CY-6}L${CX+58} ${CY-6}L${CX+30} ${CY+RY}L${CX-30} ${CY+RY}Z`)}
+function tags(){ORDER.forEach(k=>sats[k].t.textContent=`${Math.round(M[k].v)} %  ${M[k].name}`)}
+
+function pick(k){if(page!=='home'||busy||k===sel)return;busy=true;
+ let delta=((-base[k])-rot)%360;delta=((delta%360)+540)%360-180;
+ const r0=rot,r1=rot+delta,t0=performance.now(),from=Math.round(M[sel].v/100*SEG),to=Math.round(M[k].v/100*SEG);
+ $('#center').classList.add('out');spinRings(delta>0?-1:1);
+ setTimeout(()=>{sel=k;centerHome(k,0);$('#center').classList.remove('out')},300);
+ side(k);
+ (function step(now){const t=Math.min(1,(now-t0)/1000),e=ease(t);rot=r0+(r1-r0)*e;placeFloor();
+  paintSegs(t<.45?Math.round(from*(1-t/.45)):Math.round(to*Math.min(1,(t-.45)/.55)));
+  if(t>.3)$('#cn').textContent=Math.round(M[k].v*Math.min(1,(t-.3)/.7));
+  if(t<1)requestAnimationFrame(step);else{rot=((r1%360)+360)%360;busy=false;placeFloor()}})(t0)}
+
+/* ---------- pages (names and sizes = what brisk found on his PC today) ---------- */
+const P={
+ space:{kind:'gb',max:60.3,k:'Boşaltılabilir',u:'GB',s:'60 GB gereksiz dosya bulundu',scanK:'Taranıyor…',busyK:'Boşaltılıyor…',doneK:'Boşaldı',
+  doneS:'Önbellekler gerektikçe kendiliğinden yeniden oluşur',dw:'silindi',undo:false,btn:t=>`${num(t,'gb')} GB boşalt`,lh:'Sileceklerim',
+  rows:[{n:'Önbellekler',s:'Windows ve uygulamaların geçici dosyaları',v:22.4},{n:'Geliştirici önbellekleri',s:'npm, pip, NuGet',v:11.2},{n:'İndirilenler: kurulum dosyaları',s:'54 dosya · geri alınamaz',w:1,v:5.1},{n:'Geri dönüşüm kutusu',v:.355}],
+  extra:[{n:'Hazırda bekleme dosyası',s:'Hızlı başlatma kapanır',v:13},{n:'Oyun gölgelendirici önbelleği',s:'Oyunların ilk açılışı biraz yavaşlar',v:8.3}],xCount:true},
+ speed:{kind:'n',max:13,k:'Açılışta durdurulacak',u:'uygulama',s:'Windows ile açılan 13 uygulamadan',scanK:'Açılış taranıyor…',busyK:'Durduruluyor…',doneK:'Durduruldu',
+  doneS:'Farkı bir sonraki açılışta görürsün',dw:'durdu',undo:true,btn:t=>`${t} uygulamayı durdur`,lh:'Durduracaklarım',vt:'durdur',
+  rows:['Riot Client','Microsoft Edge','Delayed launcher','Eraser','Wispr Flow','LivelyWallpaper','StartExperiencesApp','CrossDevice','Codex'].map(n=>({n,v:1})),
+  also:[{n:'Pencereli oyunları hızlandır',t:'aç'},{n:'Pencere açılış animasyonları',t:'kapat'}],
+  keep:[['OneDrive','Dosyaların eşitlenmeye devam eder'],['Windows Güvenliği','Virüs koruması'],['Realtek HD Audio','Ses tuşların çalışır'],['Intel Graphics','Ekran ayarların']],
+  extra:[{n:'Ekstra çekirdek koruması',s:'Oyunlarda biraz hız · güvenlik azalır',v:0},{n:'Sanal makine desteği',s:'Kapanırsa Docker ve WSL çalışmaz',v:0}],xCount:false},
+ privacy:{kind:'n',max:8,k:'Kapatılacak',u:'ayar',s:'Bilgisayarından dışarı veri gönderen ayarlar',scanK:'Ayarlar okunuyor…',busyK:'Kapatılıyor…',doneK:'Kapatıldı',
+  doneS:'Windows aynen çalışır, dışarı giden veri azalır',dw:'kapandı',undo:true,btn:t=>`${t} ayarı kapat`,lh:'Kapatacaklarım',vt:'kapat',
+  rows:[{n:'Kullanım verileri',s:'Microsoft\'a gönderilen',v:1},{n:'Arka planda veri toplama',v:1},{n:'Hata raporları',v:1},{n:'Geri bildirim soruları',v:1},{n:'Copilot',v:1},{n:'Güncelleme paylaşımı',s:'Başka bilgisayarlara yükleme yapıyor',v:1},{n:'Sormadan yönetici olma',s:'Programlar izin almadan yetki alıyor',w:1,v:1}],
+  extra:[{n:'Konum',s:'Kapanırsa hava durumu ve harita yerini bilmez',v:1}],xCount:true}
+};
+const S={};for(const k in P)S[k]={on:P[k].rows.map(()=>true),ex:P[k].extra.map(()=>false),al:(P[k].also||[]).map(()=>true),done:false,freed:0};
+const num=(v,kind)=>kind==='gb'?(v<10?v.toFixed(1).replace('.',','):String(Math.round(v))):String(Math.round(v));
+const gbTxt=v=>v<1?Math.round(v*1000)+' MB':(v<10?v.toFixed(1).replace('.',','):Math.round(v))+' GB';
+function tot(k){const d=P[k],s=S[k];let t=0;d.rows.forEach((r,i)=>{if(s.on[i])t+=r.v});if(d.xCount)d.extra.forEach((r,i)=>{if(s.ex[i])t+=d.kind==='gb'?r.v:1});return t}
+function badge(k){const b=$('#b-'+k);if(S[k].done){b.textContent='✓';b.classList.add('done')}else{b.classList.remove('done');b.textContent=P[k].kind==='gb'?num(tot(k),'gb')+' GB':num(tot(k))}}
+function tweenN(to,ms,kind,max,col){const from=shownN,t0=performance.now();return new Promise(res=>{(function f(now){const t=Math.min(1,(now-t0)/ms),v=from+(to-from)*ease(t);shownN=v;
+ $('#cn').textContent=num(v,kind);paintSegs(Math.round(SEG*v/max),col);if(t<1)requestAnimationFrame(f);else res()})(t0)})}
+
+function rowV(k,r,i,grp){const d=P[k],s=S[k];
+ if(grp==='x'){const on=s.ex[i];return `<span class="add">${s.done&&on?'✓ '+d.dw:on?'✓ eklendi':'+ ekle'}</span>`}
+ if(grp==='a')return s.done&&s.al[i]?'✓':d.also[i].t;
+ if(s.done&&s.on[i])return '✓ '+d.dw;
+ return d.kind==='gb'?gbTxt(r.v):d.vt}
+function build(k){const d=P[k],s=S[k];
+ const R=(r,i,grp,cls)=>`<div class="prow ${cls}" data-g="${grp}" data-i="${i}"><span class="nm">${r.n}${r.s?`<small class="${r.w?'w':''}">${r.s}</small>`:''}</span><span class="v">${rowV(k,r,i,grp)}</span></div>`;
+ let L=`<h4>${d.lh}<span class="hint">dokunursan atlarım</span></h4><div id="lrows">`+d.rows.map((r,i)=>R(r,i,'r',(s.on[i]?'':'off')+(s.done&&s.on[i]?' done':''))).join('')+'</div>';
+ if(d.also)L+=`<h4 class="gap">Ayrıca</h4>`+d.also.map((r,i)=>R(r,i,'a',(s.al[i]?'':'off')+(s.done&&s.al[i]?' done':''))).join('');
+ let Rh='';
+ if(k==='space')Rh+=`<div class="blk"><h4>C: diski</h4><div class="row"><span>Şu an boş</span><span>466 GB</span></div><div class="row"><span>${s.done?'Şimdi boş':'Sonra boş'}</span><span class="ok" id="after">${Math.round(466+(s.done?s.freed:tot(k)))} GB</span></div></div>`;
+ if(d.keep)Rh+=`<div class="blk"><h4>Bırakıyorum</h4>`+d.keep.map(([a,b])=>`<div class="prow keep"><span class="nm">${a}<small>${b}</small></span><span class="v" style="color:var(--mu)">kalsın</span></div>`).join('')+'</div>';
+ Rh+=`<h4>İstersen ekle</h4>`+d.extra.map((r,i)=>R(r,i,'x',(s.ex[i]?'added':'')+(s.done&&s.ex[i]?' done':''))).join('');
+ $('#pageL').innerHTML=L;$('#pageR').innerHTML=Rh}
+
+function ready(k,fast){const d=P[k],t=tot(k);
+ setCenter({k:d.k,n:num(fast?t:shownN,d.kind),u:d.u,s:d.s});
+ tweenN(t,fast?1:300,d.kind,d.max);
+ const a=$('#act');a.className='act';a.textContent=t>0?d.btn(num(t,d.kind)):'Hiçbir şey seçili değil';a.dataset.choice='yap-'+k;
+ $('#undo').classList.add('hide');badge(k);const af=$('#after');if(af)af.textContent=Math.round(466+t)+' GB'}
+function showDone(k){const d=P[k],s=S[k];
+ setCenter({k:d.doneK,n:num(s.freed,d.kind),u:d.u,s:d.doneS,ok:true});shownN=s.freed;paintSegs(SEG,'#3ecf8e');
+ const a=$('#act');a.className='act ok';a.textContent='✓ Tamam';$('#undo').classList.toggle('hide',!d.undo);badge(k)}
+
+/* row taps: skip / add */
+$('#panel').addEventListener('click',e=>{const r=e.target.closest('.prow[data-g]');if(!r||busy||page==='home'||S[page].done)return;
+ const s=S[page],i=+r.dataset.i,g2=r.dataset.g;
+ if(g2==='r')s.on[i]=!s.on[i];else if(g2==='a')s.al[i]=!s.al[i];else s.ex[i]=!s.ex[i];
+ build(page);ready(page,false)});
+
+async function enter(k){if(busy||k===page)return;busy=true;page=k;
+ $$('.tile').forEach(t=>t.classList.toggle('on',t.dataset.p===k));
+ $('#p').classList.toggle('pg',k!=='home');$('#cta').classList.toggle('hide',k!=='home');
+ $('#act').classList.add('hide');$('#undo').classList.add('hide');
+ spinRings(1);$('#center').classList.add('out');$('#colL').classList.add('fade');$('#colR').classList.add('fade');
+ await sleep(300);
+ const home=k==='home';$('#homeL').hidden=!home;$('#homeR').hidden=!home;$('#pageL').hidden=home;$('#pageR').hidden=home;
+ if(home){centerHome(sel,M[sel].v);$('#colL').classList.remove('fade');$('#colR').classList.remove('fade');$('#center').classList.remove('out');
+  shownN=0;await tweenN(Math.round(M[sel].v),600,'n',100);busy=false;return}
+ const d=P[k],s=S[k];build(k);$('#colL').classList.remove('fade');
+ if(s.done){$('#colR').classList.remove('fade');$('#center').classList.remove('out');showDone(k);busy=false;return}
+ /* the scan: sweep turns, rows arrive one by one, the number climbs */
+ g.classList.add('scanning');shownN=0;paintSegs(0);
+ setCenter({k:d.scanK,n:'0',u:d.u,s:''});$('#center').classList.remove('out');
+ const rows=$$('#pageL .prow');rows.forEach(r=>r.classList.add('hid'));
+ let run=0;
+ for(const r of rows){await sleep(300);r.classList.remove('hid');r.classList.add('new');
+  if(r.dataset.g==='r'){const i=+r.dataset.i;if(s.on[i]){run+=d.rows[i].v;tweenN(run,260,d.kind,d.max)}}}
+ await sleep(380);g.classList.remove('scanning');$('#colR').classList.remove('fade');
+ ready(k,false);busy=false}
+$$('.tile').forEach(t=>t.addEventListener('click',()=>enter(t.dataset.p)));
+
+async function apply(){const k=page,d=P[k],s=S[k];if(k==='home'||busy||s.done||tot(k)===0)return;busy=true;
+ const a=$('#act');a.className='act busy';a.textContent=d.busyK;$('#ck').textContent=d.busyK;
+ const freed=tot(k);let left=freed;
+ for(const r of $$('#pageL .prow, #pageR .prow[data-g="x"]')){const i=+r.dataset.i,g2=r.dataset.g;
+  const on=g2==='r'?s.on[i]:g2==='a'?s.al[i]:s.ex[i];if(!on)continue;
+  await sleep(320);r.classList.add('done');
+  if(g2==='x')r.querySelector('.add').textContent='✓ '+d.dw;else r.querySelector('.v').textContent=g2==='a'?'✓':'✓ '+d.dw;
+  if(g2==='r'||(g2==='x'&&d.xCount)){left-=g2==='x'&&d.kind!=='gb'?1:(g2==='x'?d.extra[i].v:d.rows[i].v);tweenN(Math.max(0,left),260,d.kind,d.max)}}
+ await sleep(450);s.done=true;s.freed=freed;showDone(k);
+ const af=$('#after');if(af){af.previousElementSibling.textContent='Şimdi boş';af.textContent=Math.round(466+freed)+' GB'}
+ busy=false;ctaRefresh()}
+$('#act').addEventListener('click',apply);
+$('#undo').addEventListener('click',()=>{const k=page;if(busy||!S[k].done)return;S[k].done=false;S[k].freed=0;build(k);shownN=0;paintSegs(0);ready(k,false);ctaRefresh()});
+
+/* home strip: do everything */
+function ctaRefresh(){const all=['space','speed','privacy'].every(k=>S[k].done);
+ $('#ctaT').innerHTML=all?'<b class="ok">Hepsi yapıldı</b>':`brisk hazır: <b>${num(tot('space'),'gb')} GB</b> · <b>${tot('speed')} uygulama</b> · <b>${tot('privacy')} ayar</b>`;
+ $('#ctaB').style.display=all?'none':'';$('#ctaB').textContent='Hepsini yap'}
+$('#ctaB').addEventListener('click',async()=>{if(busy)return;busy=true;$('#ctaB').textContent='Yapılıyor…';
+ for(const k of ['space','speed','privacy']){if(S[k].done)continue;await sleep(500);S[k].freed=tot(k);S[k].done=true;badge(k)}
+ busy=false;ctaRefresh()});
+
+/* live jitter (home) */
+const J=(v,a,lo,hi)=>Math.max(lo,Math.min(hi,v+(Math.random()*2-1)*a));
+let up=83,dn=112;
+setInterval(()=>{M.cpu.v=J(M.cpu.v,4,9,38);M.gpu.v=J(M.gpu.v,3,12,30);M.ram.v=J(M.ram.v,.6,56,61);M.cpu.t=Math.round(J(M.cpu.t,1.5,58,72));M.gpu.t=Math.round(J(M.gpu.t,1,49,56));
+ up=Math.round(J(up,25,20,240));dn=Math.round(J(dn,60,40,900));$('#upv').textContent=up;$('#dnv').textContent=dn;$('#tc').textContent=M.cpu.t;$('#tg').textContent=M.gpu.t;
+ tags();if(page==='home'&&!busy){centerHome(sel,M[sel].v);shownN=M[sel].v;paintSegs(Math.round(M[sel].v/100*SEG))}},1000);
+
+centerHome('cpu',M.cpu.v);side('cpu');tags();placeFloor();paintSegs(Math.round(M.cpu.v/100*SEG));
+</script>
+</body>
+</html>

@@ -185,13 +185,117 @@ public sealed class ScannerTests : IDisposable
         File.WriteAllBytes(old, new byte[10]);
         File.WriteAllBytes(fresh, new byte[10]);
         File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddDays(-45));
-        var target = new CleanupTarget("old-installers", "Old installers", CleanupLevel.Deep,
-            new List<string> { Path.Combine(downloads, "*.exe") }, "Downloads",
-            RequiresIndividualSelection: true);
+        var target = Registered("old-installers") with
+            { PathTemplates = new[] { Path.Combine(downloads, "*.exe") } };
         var result = new Scanner(new[] { target }, _processes).Scan();
         var item = result.Targets.Single().Items.Single();
         Assert.EndsWith("old-setup.exe", item.Path);
     }
+
+    /// Monitor GUI wave: the age rule belongs to the target, not to
+    /// old-installers alone — kernel dumps and setup logs carry 7 days.
+    [Fact]
+    public void Min_age_skips_young_files()
+    {
+        var dir = Path.Combine(_root, "dumps");
+        Directory.CreateDirectory(dir);
+        var young = Path.Combine(dir, "young.dmp");
+        var old = Path.Combine(dir, "old.dmp");
+        File.WriteAllBytes(young, new byte[10]);
+        File.WriteAllBytes(old, new byte[20]);
+        File.SetLastWriteTimeUtc(young, DateTime.UtcNow.AddDays(-1));
+        File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddDays(-10));
+        var target = new CleanupTarget("dumps", "Dumps", CleanupLevel.Deep,
+            new List<string> { Path.Combine(dir, "*.dmp") }, "System", MinAgeDays: 7);
+
+        var item = new Scanner(new[] { target }, _processes).Scan().Targets.Single().Items.Single();
+
+        Assert.Equal(old, item.Path);
+        Assert.Equal(20, item.Bytes);
+
+        // the rule holds for a contents-only target's children too
+        var contents = ContentsOnlyTarget("dump-dir", dir) with { MinAgeDays = 7 };
+        var child = new Scanner(new[] { contents }, _processes).Scan().Targets.Single().Items.Single();
+        Assert.Equal(old, child.Path);
+    }
+
+    /// While $WINDOWS.~BT exists a feature upgrade is under way and its
+    /// Panther logs are still being written: the target yields nothing, and
+    /// says nothing (a skip reason would read as "close an app").
+    [Fact]
+    public void Panther_target_is_empty_during_an_upgrade()
+    {
+        var panther = Path.Combine(_root, "Panther");
+        Directory.CreateDirectory(panther);
+        var log = Path.Combine(panther, "setupact.log");
+        File.WriteAllBytes(log, new byte[50]);
+        File.SetLastWriteTimeUtc(log, DateTime.UtcNow.AddDays(-30));
+        var target = Registered("panther-logs") with
+            { PathTemplates = new[] { Path.Combine(panther, "*.log") } };
+
+        var upgrading = new Scanner(new[] { target }, _processes, upgradeInProgress: () => true)
+            .Scan().Targets.Single();
+        Assert.Empty(upgrading.Items);
+        Assert.Null(upgrading.SkippedReason);
+
+        var finished = new Scanner(new[] { target }, _processes, upgradeInProgress: () => false)
+            .Scan().Targets.Single();
+        Assert.Equal(log, finished.Items.Single().Path);
+    }
+
+    /// ~\.git goes as one folder. A .git FILE (a worktree's pointer) is not
+    /// a repository, and a junction named .git frees nothing when removed.
+    [Fact]
+    public void Profile_git_is_offered_only_as_a_real_folder()
+    {
+        var home = Path.Combine(_root, "home");
+        var git = Path.Combine(home, ".git");
+        Directory.CreateDirectory(Path.Combine(git, "objects"));
+        File.WriteAllBytes(Path.Combine(git, "objects", "pack"), new byte[70]);
+        var item = new Scanner(new[] { ProfileGitAt(git) }, _processes).Scan().Targets.Single().Items.Single();
+        Assert.Equal(git, item.Path);   // the folder itself, not its contents
+        Assert.Equal(70, item.Bytes);
+
+        var worktree = Path.Combine(_root, "home-file", ".git");
+        Directory.CreateDirectory(Path.GetDirectoryName(worktree)!);
+        File.WriteAllText(worktree, "gitdir: D:/elsewhere/.git/worktrees/x");
+        Assert.Empty(new Scanner(new[] { ProfileGitAt(worktree) }, _processes).Scan().Targets.Single().Items);
+
+        var linked = Path.Combine(_root, "home-link", ".git");
+        Directory.CreateDirectory(Path.GetDirectoryName(linked)!);
+        var p = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{linked}\" \"{git}\"")
+        { CreateNoWindow = true, UseShellExecute = false })!;
+        p.WaitForExit();
+        Assert.Equal(0, p.ExitCode);
+        Assert.Empty(new Scanner(new[] { ProfileGitAt(linked) }, _processes).Scan().Targets.Single().Items);
+    }
+
+    /// A dynamic target has no templates: its items come from its rule's
+    /// walk over the roots the scanner was given (the real ones are the
+    /// user's Desktop, Documents and project folders).
+    [Fact]
+    public void Dynamic_target_items_come_from_the_walk()
+    {
+        var projects = Path.Combine(_root, "projects");
+        var modules = Directory.CreateDirectory(Path.Combine(projects, "app", "node_modules")).FullName;
+        File.WriteAllBytes(Path.Combine(modules, "index.js"), new byte[30]);
+        var manifest = Path.Combine(projects, "app", "package.json");
+        File.WriteAllText(manifest, "{}");
+        File.SetLastWriteTimeUtc(manifest, DateTime.UtcNow.AddDays(-200));
+
+        var item = new Scanner(new[] { Registered("stale-project-deps") }, _processes,
+            dynamicRoots: new[] { projects }).Scan().Targets.Single().Items.Single();
+
+        Assert.Equal(modules, item.Path);
+        Assert.Equal(30, item.Bytes);
+    }
+
+    private static CleanupTarget Registered(string id) => CleanupTargetRegistry.All.Single(t => t.Id == id);
+
+    /// The registered rule with "~" moved to a temp home: the real ~\.git is
+    /// a live repository and no test may touch it.
+    private static CleanupTarget ProfileGitAt(string git) =>
+        Registered("profile-git") with { PathTemplates = new[] { git } };
 
     [Fact]
     public void VanishedFile_DoesNotKillScan()

@@ -35,7 +35,14 @@ public sealed class ActionPlanBuilder
         new(row.Id, row.Group, row.TitleKey, row.Title, costKey ?? row.CostKey, cost ?? row.Cost,
             row.NameKey, row.WindowsName, bytes, defaultOn ?? row.DefaultOn, row.NeedsRestart,
             row.NeedsAdmin, row.Reversible, row.LinkKind, row.LinkIds,
-            files ?? Array.Empty<ActionFile>());
+            files ?? Array.Empty<ActionFile>(), row.Level, row.Lost);
+
+    /// The targets whose items a row lists one by one, by name and size, each
+    /// ticked until the user unticks it: Downloads' installers, and the MAX
+    /// row's archives (R58), so a row that cannot be undone names what it
+    /// deletes. ActionRunner deletes only a listed file left ticked.
+    internal static readonly IReadOnlySet<string> FileListedTargets =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "old-installers", "archive-beside-extracted" };
 
     /// The rows that need no cleanup scan; the window shows them first.
     public IReadOnlyList<ActionGroup> BuildFast() => new[]
@@ -125,15 +132,17 @@ public sealed class ActionPlanBuilder
                 {
                     var bytes = Target("hibernation-file")?.TotalBytes ?? 0;
                     if (bytes == 0) break;
+                    // MID: not in the default (MIN) selection; a laptop is told what it risks.
                     yield return _ctx.Powercfg.HasBattery()
-                        ? ItemFrom(row, bytes, defaultOn: false,
+                        ? ItemFrom(row, bytes,
                             cost: ActionCatalog.HibernationLaptopCost, costKey: ActionCatalog.HibernationLaptopCostKey)
                         : ItemFrom(row, bytes);
                     break;
                 }
                 case "space.downloads":
+                case "space.archives":
                 {
-                    var t = Target("old-installers");
+                    var t = Target(row.LinkIds.Single());
                     if (t is null || t.Items.Count == 0) break;
                     var files = t.Items.OrderByDescending(i => i.Bytes)
                         .Select(i => new ActionFile(i.Path, i.Bytes, i.LastWriteUtc)).ToList();
@@ -152,6 +161,18 @@ public sealed class ActionPlanBuilder
                     var bytes = Safe(() => _space.RecycleBinBytes()) ?? 0;
                     if (bytes == 0) break;
                     yield return ItemFrom(row, bytes);
+                    break;
+                }
+                case "space.restore-points":
+                {
+                    // Something to remove only when there is more than the
+                    // newest. Windows cannot say what removing them frees
+                    // until it has, so the row has no size ("—"), and no
+                    // total counts it. Unknown count (System Restore
+                    // unreadable) = no row.
+                    var count = Safe(() => _space.RestorePointCount());
+                    if (count is null or < 2) break;
+                    yield return ItemFrom(row, bytes: null);
                     break;
                 }
                 default:

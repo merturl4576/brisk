@@ -91,4 +91,29 @@ public class CliParserTests
     [Fact]
     public void Report_IsAKnownVerb() =>
         Assert.Equal("report", CliParser.Parse(new[] { "report" }).Verb);
+
+    /// `run --level` is the Yer aç level (min|mid|max); `clean --level` is
+    /// the old cleanup level (safe|developer|deep). Neither takes the other's.
+    [Fact]
+    public void Run_level_parses_min_mid_max()
+    {
+        foreach (var level in new[] { "min", "mid", "max" })
+        {
+            var cmd = CliParser.Parse(new[] { "run", "--level", level });
+            Assert.Equal("run", cmd.Verb);
+            Assert.Equal(level, cmd.SpaceLevel);
+            Assert.Null(cmd.Level);
+            Assert.Equal("error", CliParser.Parse(new[] { "clean", "--level", level }).Verb);
+        }
+        foreach (var level in new[] { "safe", "developer", "deep" })
+        {
+            Assert.Equal("error", CliParser.Parse(new[] { "run", "--level", level }).Verb);
+            var cmd = CliParser.Parse(new[] { "clean", "--level", level });
+            Assert.Equal("clean", cmd.Verb);
+            Assert.Equal(level, cmd.Level);
+            Assert.Null(cmd.SpaceLevel);
+        }
+        Assert.Equal("error", CliParser.Parse(new[] { "run", "--level" }).Verb);
+        Assert.Null(CliParser.Parse(new[] { "run" }).SpaceLevel);
+    }
 }

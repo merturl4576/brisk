@@ -9,6 +9,9 @@ public static class TemplateResolver
     /// Expands env vars, then any '*' wildcards against the real filesystem.
     /// Returns only paths that exist right now. Used by BOTH the scanner and
     /// the validator so the two can never disagree about what a template means.
+    /// A folder this process may not list (%SystemRoot%\LiveKernelReports
+    /// without elevation) contributes nothing: the scan goes on, and the
+    /// validator allows nothing inside it.
     public static IReadOnlyList<string> Resolve(string template)
     {
         var expanded = PathExpander.Expand(template);
@@ -34,8 +37,15 @@ public static class TemplateResolver
         var rest = sepAfter < 0 ? null : path[(sepAfter + 1)..];
         if (!Directory.Exists(parent)) return Array.Empty<string>();
 
+        List<string> entries;
+        try { entries = Directory.EnumerateFileSystemEntries(parent, pattern).ToList(); }
+        catch (Exception e) when (e is UnauthorizedAccessException or IOException)
+        {
+            return Array.Empty<string>();
+        }
+
         var results = new List<string>();
-        foreach (var entry in Directory.EnumerateFileSystemEntries(parent, pattern))
+        foreach (var entry in entries)
         {
             if (rest is null) results.Add(entry);
             else results.AddRange(Glob(entry + '\\' + rest));

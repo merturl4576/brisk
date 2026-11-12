@@ -37,12 +37,15 @@ public sealed class ActionRunnerTests : IDisposable
 
     public void Dispose() { try { Directory.Delete(_root, true); } catch (IOException) { } }
 
-    private ActionRunner Runner()
+    /// The cleaner always gets a fake System Restore: no test may reach the
+    /// real one (ruling R6).
+    private ActionRunner Runner(FakeRestorePoints? restorePoints = null, SafetyValidator? validator = null)
     {
         var rules = new ActionRules(new ActionProbes(new FakeRunner(), _ui, new FakeOverlay(), new FakeFeatures(),
             new FakeTasks(), new StartupManager(_reg, null), () => false));
-        var cleaner = new CleanRunner(new SafetyValidator(), _recycler, new ActionLog(Path.Combine(_root, "log.jsonl")),
-            new FakeRunner(), () => _elevated, null, () => 0, new WindowsDeleter());
+        var cleaner = new CleanRunner(validator ?? new SafetyValidator(), _recycler, new ActionLog(Path.Combine(_root, "log.jsonl")),
+            new FakeRunner(), () => _elevated, null, () => 0, new WindowsDeleter(),
+            restorePoints ?? new FakeRestorePoints());
         return new ActionRunner(_ctx, rules, _journal, cleaner, _deferred, _runs, () => _elevated, s => _stat(s));
     }
 
@@ -186,6 +189,47 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.Equal(0, row.BytesFreed);
     }
 
+    /// R58: the archives row deletes the archives it listed and left ticked,
+    /// and nothing else: an unticked one stays on disk, and so does one the
+    /// scan found but the row never listed. The extracted copies are never touched.
+    [SparseFact]
+    public void Run_ArchivesRow_DeletesOnlyTheTickedListedArchives()
+    {
+        var projects = Directory.CreateDirectory(Path.Combine(_root, "projects")).FullName;
+        string Archive(string name)
+        {
+            var archive = SparseFile.Create(Path.Combine(projects, name), DynamicTargets.MinArchiveBytes + 1);
+            Directory.CreateDirectory(Path.Combine(projects, Path.GetFileNameWithoutExtension(name)));
+            SparseFile.Create(Path.Combine(projects, Path.GetFileNameWithoutExtension(name), "data.bin"),
+                2 * DynamicTargets.MinArchiveBytes);
+            return archive;
+        }
+        var kali = Archive("Kali.7z");
+        var thesis = Archive("Thesis.zip");
+        var unlisted = Archive("Other.rar");
+        ResolvedItem Item(string path) => new("archive-beside-extracted", path, new FileInfo(path).Length,
+            File.GetLastWriteTimeUtc(path));
+        ActionFile Listed(string path) => new(path, new FileInfo(path).Length, File.GetLastWriteTimeUtc(path));
+
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "archive-beside-extracted");
+        var scan = new ScanResult(new[] { new TargetScanResult(target,
+            new[] { Item(kali), Item(thesis), Item(unlisted) }, null) });
+        var plan = Plan(scan, Row("space.archives", 2 * (DynamicTargets.MinArchiveBytes + 1),
+            new[] { Listed(kali), Listed(thesis) }));
+        var selection = new ActionSelection(new HashSet<string> { "space.archives" },
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { kali });   // Thesis.zip unticked
+        var validator = new SafetyValidator(() => new[] { projects }, () => DateTime.UtcNow);
+
+        var row = Assert.Single(Runner(validator: validator).Run(plan, selection).Rows);
+
+        Assert.Equal(RowOutcome.Done, row.Outcome);
+        Assert.False(File.Exists(kali));
+        Assert.True(File.Exists(thesis));
+        Assert.True(File.Exists(unlisted));
+        Assert.True(Directory.Exists(Path.Combine(projects, "Kali")));
+        Assert.Equal(DynamicTargets.MinArchiveBytes + 1, row.BytesFreed);
+    }
+
     [Fact]
     public void Run_IsSaved_AndUndoReversesItInReverse()
     {
@@ -223,6 +267,40 @@ public sealed class ActionRunnerTests : IDisposable
         Assert.Null(_runs.Load(run.RunId)!.UndoneUtc);
         runner.Undo(run.RunId);
         Assert.NotNull(_runs.Load(run.RunId)!.UndoneUtc);
+    }
+
+    /// Ruling R21: the window's Geri al reverses the Speed and Privacy rules
+    /// alone. A run that also turned hibernation off (0.11.0 recorded it as
+    /// undoable) keeps it off, and the run counts as undone.
+    [Fact]
+    public void Undo_OnlyTheListedRules_LeavesTheRestAsTheRunLeftThem()
+    {
+        var runner = Runner();
+        var hibernation = Row("space.hibernation", 10) with { Reversible = true };
+        var run = runner.Run(Plan(NoScan, hibernation, Row("speed.animations")),
+            Select("space.hibernation", "speed.animations"));
+        Assert.Equal(new[] { "hibernation", "window-animations" }, run.UndoableRuleIds.OrderBy(i => i));
+
+        var undone = runner.Undo(run.RunId, new HashSet<string> { "window-animations" });
+
+        Assert.Equal("window-animations", Assert.Single(undone).RowId);
+        Assert.Equal(RowOutcome.Done, undone[0].Outcome);
+        Assert.True(_ui.Minimize);                                         // animations back
+        Assert.Null(_journal.LastUndoablePriorState("window-animations"));
+        Assert.NotNull(_journal.LastUndoablePriorState("hibernation"));    // never switched back on
+        Assert.NotNull(_runs.Load(run.RunId)!.UndoneUtc);
+    }
+
+    [Fact]
+    public void Undo_NamingNoRuleOfTheRun_DoesNothing()
+    {
+        var runner = Runner();
+        var run = runner.Run(Plan(NoScan, Row("speed.animations")), Select("speed.animations"));
+
+        Assert.Empty(runner.Undo(run.RunId, new HashSet<string> { "hibernation" }));
+
+        Assert.False(_ui.Minimize);
+        Assert.Null(_runs.Load(run.RunId)!.UndoneUtc);
     }
 
     [Fact]
@@ -263,5 +341,21 @@ public sealed class ActionRunnerTests : IDisposable
         Runner().Run(plan, Select("space.caches", "space.recycle-bin"), r => order.Add(r.RowId));
 
         Assert.Equal(new[] { "space.recycle-bin", "space.caches" }, order);
+    }
+
+    /// The restore-points target has no paths, so its scan has no items; the
+    /// row must still reach the cleaner, which counts and removes the rest.
+    [Fact]
+    public void Run_TheRestorePointsRowReachesTheCleanerWithNoItems()
+    {
+        var target = CleanupTargetRegistry.All.Single(t => t.Id == "restore-points");
+        var scan = new ScanResult(new[] { new TargetScanResult(target, Array.Empty<ResolvedItem>(), null) });
+        var sr = new FakeRestorePoints(4, 5, 6);
+
+        var row = Assert.Single(Runner(sr).Run(Plan(scan, Row("space.restore-points")),
+            Select("space.restore-points")).Rows);
+
+        Assert.Equal(RowOutcome.Done, row.Outcome);
+        Assert.Equal(new uint[] { 4, 5 }, sr.Removed);
     }
 }

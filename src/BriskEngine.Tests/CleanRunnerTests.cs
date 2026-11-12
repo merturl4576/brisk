@@ -67,6 +67,35 @@ sealed class ScriptedRunner : IProcessRunner
     { Commands.Add($"{exe} {args}"); return _script(exe, args); }
 }
 
+/// System Restore as the tests need it: Remove takes exactly the named point
+/// away and answers 0; a point that is not there answers 13
+/// (ERROR_INVALID_DATA), as does FailOn. AfterRemove lets a test play
+/// Windows purging a point on its own in the middle of a run.
+sealed class FakeRestorePoints : IRestorePoints
+{
+    public List<uint> Points;
+    public bool Unreadable;
+    public uint? FailOn;
+    public Action<List<uint>>? AfterRemove;
+    public List<uint> Removed { get; } = new();
+    public int Reads { get; private set; }
+    public FakeRestorePoints(params uint[] points) => Points = points.ToList();
+
+    public IReadOnlyList<uint>? SequenceNumbers()
+    {
+        Reads++;
+        return Unreadable ? null : Points.ToList();
+    }
+
+    public uint Remove(uint sequenceNumber)
+    {
+        Removed.Add(sequenceNumber);
+        if (sequenceNumber == FailOn || !Points.Remove(sequenceNumber)) return 13;
+        AfterRemove?.Invoke(Points);
+        return 0;
+    }
+}
+
 public sealed class CleanRunnerTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("brisk-clean-").FullName;
@@ -82,7 +111,8 @@ public sealed class CleanRunnerTests : IDisposable
     }
 
     private CleanRunner Runner(bool elevated = false, ILockProbe? lockProbe = null) =>
-        new(new SafetyValidator(), _recycler, _log, _runner, () => elevated, lockProbe);
+        new(new SafetyValidator(), _recycler, _log, _runner, () => elevated, lockProbe,
+            restorePoints: new FakeRestorePoints());
 
     private (CleanupTarget, TargetScanResult) ScanOver(string dir, params string[] files)
     {
@@ -491,7 +521,8 @@ public sealed class CleanRunnerTests : IDisposable
 
     private CleanRunner Runner(IProcessRunner processRunner, bool elevated,
         Func<long>? free = null) =>
-        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated, null, free);
+        new(new SafetyValidator(), _recycler, _log, processRunner, () => elevated, null, free,
+            restorePoints: new FakeRestorePoints());
 
     private TargetScanResult HeavyScan(string id, string path, long bytes)
     {
@@ -667,6 +698,115 @@ public sealed class CleanRunnerTests : IDisposable
         var entry = report.Entries.Single(e => e.Path == "(component store)");
         Assert.Equal("external", entry.Action);
         Assert.Equal(0, entry.Bytes);
+    }
+
+    // ---- Restore points: System Restore removes them one by one, each by
+    // its own sequence number. The highest number (the newest) is never sent.
+
+    private CleanRunner RestoreRunner(FakeRestorePoints restorePoints, bool elevated, Func<long>? free = null) =>
+        new(new SafetyValidator(), _recycler, _log, _runner, () => elevated, null, free,
+            restorePoints: restorePoints);
+
+    private static TargetScanResult RestorePointsScan() => new(
+        CleanupTargetRegistry.All.Single(t => t.Id == "restore-points"), Array.Empty<ResolvedItem>(), null);
+
+    [Theory]
+    [InlineData(new uint[] { 7, 12 })]
+    [InlineData(new uint[] { 9, 3, 14, 5, 11 })]   // not in order: the highest number is the newest
+    public void Deletes_count_minus_one_oldest(uint[] points)
+    {
+        var newest = points.Max();
+        var sr = new FakeRestorePoints(points);
+        var free = new Queue<long>(new[] { 100L << 30, 104L << 30 });   // 100 GB before, 104 GB after
+
+        var report = RestoreRunner(sr, elevated: true, free: () => free.Dequeue())
+            .Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Equal(1, sr.Reads);                                     // read again at delete time
+        Assert.Equal(points.Where(p => p != newest).OrderBy(p => p), sr.Removed);
+        Assert.DoesNotContain(newest, sr.Removed);                     // never even asked for
+        Assert.Equal(new[] { newest }, sr.Points);
+        Assert.Empty(_runner.Commands);                                // no vssadmin, no process
+        var entry = Assert.Single(report.Entries);
+        Assert.Equal("(restore points)", entry.Path);
+        Assert.Equal("removed", entry.Action);
+        Assert.Equal(4L << 30, entry.Bytes);
+        Assert.Contains("observed", entry.Reason);
+    }
+
+    /// Windows purges a point by itself while brisk is removing the older
+    /// ones. Each removal names its own number, so the next call fails on the
+    /// vanished point, the run stops, and the newest is never reached.
+    [Fact]
+    public void A_point_purged_mid_run_stops_the_run_before_the_newest()
+    {
+        var sr = new FakeRestorePoints(1, 2, 3, 4);
+        sr.AfterRemove = left => left.Remove(2);
+
+        var report = RestoreRunner(sr, elevated: true, free: () => 100L << 30)
+            .Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Equal(new uint[] { 1, 2 }, sr.Removed);
+        Assert.Equal(new uint[] { 3, 4 }, sr.Points);
+        Assert.Equal(new[] { "external", "error" }, report.Entries.Select(e => e.Action));
+    }
+
+    /// The scan saw several, but by the time the row runs at most one is
+    /// left. The list is read again, so nothing is removed.
+    [Theory]
+    [InlineData(new uint[0])]
+    [InlineData(new uint[] { 12 })]
+    public void Restore_points_delete_nothing_when_at_most_one_is_left(uint[] points)
+    {
+        var sr = new FakeRestorePoints(points);
+
+        var report = RestoreRunner(sr, elevated: true).Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Empty(sr.Removed);
+        Assert.Equal("refused", Assert.Single(report.Entries).Action);
+    }
+
+    [Fact]
+    public void Restore_points_delete_nothing_when_system_restore_cannot_be_read()
+    {
+        var sr = new FakeRestorePoints(1, 2, 3) { Unreadable = true };
+
+        var report = RestoreRunner(sr, elevated: true).Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Empty(sr.Removed);
+        Assert.Equal("error", Assert.Single(report.Entries).Action);
+    }
+
+    [Fact]
+    public void Restore_points_stop_at_the_first_failed_delete()
+    {
+        var sr = new FakeRestorePoints(1, 2, 3, 4) { FailOn = 2 };
+
+        var report = RestoreRunner(sr, elevated: true, free: () => 100L << 30)
+            .Clean(RestorePointsScan(), dryRun: false);
+
+        Assert.Equal(new uint[] { 1, 2 }, sr.Removed);   // the second failed; no third try
+        Assert.Equal(new uint[] { 2, 3, 4 }, sr.Points);
+        Assert.Equal(new[] { "external", "error" }, report.Entries.Select(e => e.Action));
+        Assert.Equal(0, report.Entries[0].Bytes);   // the drive showed no rise: nothing claimed
+        Assert.Contains("error 13", report.Entries[1].Reason);
+    }
+
+    [Fact]
+    public void Restore_points_unelevated_refused_and_dry_run_runs_nothing()
+    {
+        var sr = new FakeRestorePoints(1, 2, 3);
+
+        var refused = RestoreRunner(sr, elevated: false).Clean(RestorePointsScan(), dryRun: false);
+        Assert.Equal("refused", Assert.Single(refused.Entries).Action);
+
+        var dry = RestoreRunner(sr, elevated: true).Clean(RestorePointsScan(), dryRun: true);
+        var entry = Assert.Single(dry.Entries);
+        Assert.Equal("dry-run", entry.Action);
+        Assert.Equal(0, entry.Bytes);
+        Assert.Equal(CleanRunner.SizeUnknownReason, entry.Reason);   // the CLI prints "—"
+        Assert.Equal(0, sr.Reads);
+        Assert.Empty(sr.Removed);
     }
 
     /// BACKSTOP PIN (2026-08-30 review): BypassesRecycleBin used to be a flag

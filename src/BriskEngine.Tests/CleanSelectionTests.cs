@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Brisk.Cli;
+using BriskEngine.Cleaning;
 using BriskEngine.Models;
 using Xunit;
 
@@ -53,5 +54,18 @@ public class CleanSelectionTests
         var (selected, error) = Program.SelectTargets(Result(), "nope", CleanupLevel.Safe);
         Assert.Empty(selected);
         Assert.Contains("unknown target", error);
+    }
+
+    /// `clean --target restore-points` without --yes: what removing them
+    /// frees is unknown until it is done, so the plan says "—", not "0 B".
+    [Fact]
+    public void Plan_line_prints_a_dash_for_a_size_brisk_cannot_know()
+    {
+        Assert.Equal("  (restore points)  (—)", Program.PlanLine(new CleanEntry(
+            "restore-points", "(restore points)", 0, "dry-run", CleanRunner.SizeUnknownReason)));
+        Assert.Equal("  (component store)  (0 B)", Program.PlanLine(new CleanEntry(
+            "component-store", "(component store)", 0, "dry-run")));
+        Assert.Equal(@"  C:\x\a.tmp  (2 KB)", Program.PlanLine(new CleanEntry(
+            "user-temp", @"C:\x\a.tmp", 2048, "dry-run")));
     }
 }

@@ -20,7 +20,11 @@ Kurulum yok. Hesap yok. Telemetri yok; brisk'in kendisi hiçbir ağ bağlantıs�
 
 [English README](README.md)
 
-<!-- TODO-RUN: docs/media/demo.gif, geliştiricinin kayıtlı denemesinden: aç, Hepsini yap, yeniden başlat, tekrar aç. -->
+<p align="center">
+  <img src="docs/media/demo.gif" width="880" alt="brisk turu: canlı işlemci, ekran kartı ve bellek göstergeli Genel ekranı, ardından taranan ve MIN'den MID'e, MAX'e geçen Yer aç, sonra neyi değiştireceklerini sayan Hızlandır ve Gizlilik">
+</p>
+
+<!-- TODO-RUN: geliştiricinin kayıtlı denemesinden ikinci bir klip: aç, Hepsini yap, yeniden başlat, tekrar aç. -->
 
 <!-- TODO-RUN: **Geliştiricinin dizüstünde tek tık:** n GB açıldı (Gezgin'in gösterdiği boş alan farkı) · açılışta başlayan program 14 → n · n telemetri ayarı kapandı · açılış n sn → n sn, Windows'un kendi açılış ölçümüyle. -->
 
@@ -34,9 +38,9 @@ Tek satır, güveniyorsan. Güvenmek zorunda kalma diye betik [63 okunur satır]
 irm https://raw.githubusercontent.com/merturl4576/brisk/main/get.ps1 | iex
 ```
 
-Ya da elle: [Releases](https://github.com/merturl4576/brisk/releases) sayfasından **`brisk-app.exe`** dosyasını indir ve çalıştır. Tek dosya. Hiçbir şey kurulmuyor ve sen **Hepsini yap**'a basana kadar bilgisayarında hiçbir şey değişmiyor.
+Ya da elle: [Releases](https://github.com/merturl4576/brisk/releases) sayfasından **`brisk-app.exe`** dosyasını indir ve çalıştır. Tek dosya. Hiçbir şey kurulmuyor ve sen **Hepsini yap**'a ya da bir sayfanın kendi düğmesine basana kadar bilgisayarında hiçbir şey değişmiyor.
 
-Terminali seviyorsan **`brisk.exe`** indir. `brisk run` aynı planı yazar ve hiçbir şeyi değiştirmez; `brisk run --yes` uygular.
+Terminali seviyorsan **`brisk.exe`** indir. `brisk run` aynı planı yazar ve hiçbir şeyi değiştirmez; `brisk run --yes` uygular. `--level mid` ya da `--level max`, Yer aç'ı aşağıda anlatıldığı gibi daha ileri götürür.
 
 İki dosya da .NET kurulumu istemiyor ve hiçbiri diğerine muhtaç değil. İndirdiğini aynı sürümdeki `SHA256SUMS.txt` ile doğrulayabilirsin.
 
@@ -48,48 +52,67 @@ Terminali seviyorsan **`brisk.exe`** indir. `brisk run` aynı planı yazar ve hi
 
 ## Tek tık ne yapıyor
 
-Pencere açıldığı anda bakmaya başlar. Birkaç saniye içinde Genel ekranı ne kadar yer bulduğunu, Windows ile kaç programın başladığını, şu an kaç uygulamanın internete bağlı olduğunu ve bilgisayarı şu an neyin kastığını gösterir. **Hepsini yap** işaretli her satırı çalıştırır. **Yer aç**, **Hızlandır** ve **Gizlilik** sayfaları aynı satırları listeler; istemediğinin işaretini önceden kaldırabilirsin.
+Genel ekranı makinenin canlı görüntüsüdür: işlemci, ekran kartı ve bellek göstergeleri, sıcaklık, ağ, pil (dizüstünde), makinenin özellikleri ve şu an en çok kullanan uygulamalar. Alttaki şerit brisk'in ne bulduğunu söyler, örneğin *brisk hazır: 12 GB · 9 uygulama · 14 ayar*, yanında da **Hepsini yap** durur. Hepsini yap MIN seviyesinde yer açar, listelenen programları açılıştan çıkarır ve listelenen ayarları kapatır. **Yer aç**, **Hızlandır** ve **Gizlilik** sayfaları aynı satırları listeler ve her biri yalnızca kendi grubunu çalıştırır. Bir satıra dokunursan atlanır.
+
+Ekran görüntüleri İngilizce arayüzden; uygulama Türkçe de çalışır.
+
+| Genel | Yer aç, MAX seçili |
+|---|---|
+| <img src="docs/media/home.png" alt="Genel: canlı işlemci göstergesi, ekran kartı ve bellek uyduları, pil, sıcaklık, özellikler ve en çok kullanan uygulamalar; şeritte brisk is ready: 54 GB · 9 apps · 9 settings ve Do it all"> | <img src="docs/media/free-up-space.png" alt="Yer aç: MAX'te açılabilecek 117 GB, silinecek satırlar ve seviyeleri, bedeliyle birlikte MIN, MID ve MAX kutuları"> |
+| **Hızlandır** | **Gizlilik** |
+| <img src="docs/media/speed-up.png" alt="Hızlandır: 11 değişiklik, durdurulacak açılış programları, nedeniyle birlikte dokunulmayanlar ve eklenebilecek ayarlar"> | <img src="docs/media/privacy.png" alt="Gizlilik: kapatılacak 7 ayar, örneğin Microsoft'a giden kullanım verisi ve Copilot; konum ise İstersen ekle altında"> |
 
 ### Yer aç
 
-| Satır | İşaretli | Neden |
-|---|---|---|
-| Önbellekler ve geçici dosyalar: tüm tarayıcı profilleri, uygulama önbellekleri, küçük resimler, çökme dökümleri, Windows Update ve Teslim İyileştirme indirmeleri, güncelleme artıkları | evet | kendiliğinden yeniden oluşurlar |
-| Geliştirici önbellekleri: npm, pnpm, pip, NuGet, Yarn, Cargo, Gradle | evet | gerektiğinde yeniden iner |
-| İndirilenler'deki kurulum dosyaları (`.exe` `.msi` `.iso`), her dosya kendi kutusuyla listelenir | evet | önce sorulur, aşağıya bak |
-| Geri Dönüşüm Kutusu | evet | önce sorulur |
-| Eski Windows kopyası | evet | önce sorulur; eski Windows'a dönülemez |
-| Hazırda bekletme dosyası | yalnızca masaüstünde | dizüstü pil biterken hazırda bekletmeye geçer; dosya yoksa açık işler kaybolur |
-| Oyun shader önbellekleri | hayır | oyunlar onları yeniden kurarken takılır |
-| Docker'ın kullanılmayan verisi | hayır | durmuş container'lar silinir |
+Üç seviye var; her biri öncekileri de kapsar. **Hepsini yap** her zaman MIN çalıştırır. Yer aç sayfasında seviyeyi sen seçersin, sayfanın düğmesi o seviyeyi çalıştırır.
 
-Önbellekler Geri Dönüşüm Kutusu'na taşınmaz, gerçekten silinir; böylece boş alan gerçekten değişir. Uygulaması açık olan bir önbellek, örneğin Chrome ya da Discord, görev çubuğunda bekler ve o uygulama kapanınca temizlenir. Masaüstü, Belgeler ve büyük dosyalarına hiç dokunulmaz: brisk en büyüklerini adıyla gösterir ve olduğu gibi bırakır.
+| Seviye | Satır | Ne gider, bedeli ne |
+|---|---|---|
+| MIN | Önbellekler | tüm tarayıcı profillerinin önbellekleri, uygulama önbellekleri, küçük resimler, uygulama çökme dökümleri ve hata raporları, Windows'un geçici dosyaları, Windows Update ve Teslim İyileştirme indirmeleri, güncelleme artıkları. Kendiliğinden yeniden oluşurlar. |
+| MIN | Geliştirici önbellekleri | npm, pnpm, pip, NuGet, Yarn, Cargo, Gradle. Gerektiğinde yeniden iner. |
+| MIN | Eski çökme raporu | Windows'un 7 günden eski çekirdek dökümleri (LiveKernelReports, Minidump, MEMORY.DMP) |
+| MIN | Windows kurulum kayıtları | Windows kurulum klasöründeki (Panther) 7 günden eski `.log` ve `.etl` dosyaları; yükseltme sürerken hiçbiri |
+| MIN | Eski sürücü kurulumu | geride kalan, açılmış, 7 günden eski NVIDIA ve AMD kurulum dosyaları |
+| MID | Hazırda bekletme dosyası | masaüstünde Hızlı başlatma kapanır, geri açılabilir; dizüstünde pil biterse açık işler kaybolur |
+| MID | Oyun gölgelendirici önbelleği | oyunların ilk açılışı biraz yavaşlar |
+| MID | İndirilenler: kurulum dosyaları | en az 30 gün önce yazılmış `.exe` ve `.msi` dosyaları, her dosya kendi kutusuyla. Geri alınamaz. |
+| MID | Geri dönüşüm kutusu | geri alınamaz |
+| MID | Eski projelerin indirme klasörleri | bir `package.json` yanındaki `node_modules` ya da `.next`, veya bir Python venv; projenin diğer üst düzey dosya ve klasörlerinin hepsi 90 gün ya da daha eskiyse. Gerekince `npm install` ile gelir. |
+| MAX | Eski Windows kopyası | eski Windows'a dönülemez |
+| MAX | Docker'ın kullanılmayan verisi | `docker system prune`: durmuş container'lar silinir |
+| MAX | Ev klasöründeki git deposu | doğrudan kullanıcı klasöründeki `.git` klasörü, o deponun geçmişiyle birlikte. Geri alınamaz. |
+| MAX | Arşiv (açılmış hali yanında) | 1 GiB ya da daha büyük bir `.7z`, `.zip` veya `.rar`; yanında aynı adı taşıyan ve en az onun kadar bayt tutan bir klasör varsa. Yalnızca arşiv gider. |
+| MAX | Eski geri yükleme noktaları | en yenisi dışındaki tüm geri yükleme noktaları. Windows boyutlarını bildirmez, bu yüzden satırda "—" yazar. |
+
+Önbellekler Geri Dönüşüm Kutusu'na taşınmaz, gerçekten silinir; böylece boş alan gerçekten değişir. Uygulaması açık olan bir önbellek, örneğin Chrome ya da Discord, görev çubuğunda bekler ve o uygulama kapanınca temizlenir.
+
+İki satır senin klasörlerinin içine bakar: eski projelerin indirme klasörleri ve açılmış arşivler. Masaüstü, Belgeler, İndirilenler ve alışılmış proje klasörlerinde (`source\repos`, `Projects`, `dev`, `code`, `repos`) dört seviye derine iner ve bir bağlantı noktasının (junction) içine asla girmez. Her yol, silineceği anda diskte kendi kuralına göre yeniden denetlenir.
+
+Sana ait büyük dosyalar *Senin dosyaların · brisk dokunmaz* başlığı altında listelenir: sanal makine diskleri (`.vdi`, `.vhdx`, `.vmdk`; WSL ve Docker'ın kendi depoları hariç), `.iso` kalıpları, Android emülatörleri ve BlueStacks, her biri 1 GiB ya da daha büyük. Hiçbir sayıya katılmazlar ve asla silinmezler.
 
 ### Hızlandır
 
-- **Şu an kasanlar.** En çok işlemci ya da bellek kullanan uygulamalar; on saniye boyunca ölçülür ve uygulamaya göre gruplanır, yani Chrome'un otuz işlemi tek satırdır. **Kapat** uygulamadan kapanmasını ister, böylece sana kaydetmeyi sorabilir. **Zorla kapat** ancak beş saniye sonra hâlâ çalışıyorsa çıkar. Windows'un kendi işlemlerinde düğme yerine tek satırlık açıklama vardır ("Windows güncelleme kuruyor").
-- **Açılış programları.** Görev Yöneticisi'nin listelediği her şey, Görev Yöneticisi'nin kullandığı yolla kapatılır; istediğini oradan geri açabilirsin. Özleyeceklerin dışında hepsi işaretli: antivirüs, ses, touchpad ve ekran kartı yardımcıları, OneDrive ve diğer eşitleme programları, şifre yöneticileri, VPN'ler ve klavye araçları. Bunlar işaretsiz kalır, her birinin yanında nedeni yazar.
-- **Ayarlar.** Şarjdayken tam güç, oyunda arka planda video kaydı kapalı, oyunlarda gecikmeyi azaltma, pencere modundaki oyunları hızlandırma, pencere açılış animasyonları kapalı. Ekstra çekirdek koruması ve Sanal makine desteği, Microsoft'un kendi oyun rehberi bunları andığı için listede; ama işaretsiz kalır: ilki güvenliği bir kademe düşürür, ikincisi WSL ve Docker'ı bozar.
+- **Açılış programları.** Görev Yöneticisi'nin listelediği her şey, Görev Yöneticisi'nin kullandığı yolla kapatılır; istediğini oradan geri açabilirsin. Özleyeceklerin dışında hepsi gider: antivirüs, ses, touchpad ve ekran kartı yardımcıları, OneDrive ve diğer eşitleme programları, şifre yöneticileri, VPN'ler ve klavye araçları. Bunlar *Bırakıyorum* altında listelenir, her birinin yanında nedeni yazar.
+- **Ayarlar.** Şarjdayken tam güç, oyunda arka planda video kaydı kapalı, oyunlarda gecikmeyi azaltma, pencere modundaki oyunları hızlandırma, pencere açılış animasyonları kapalı. Ekstra çekirdek koruması ve Sanal makine desteği, Microsoft'un kendi oyun rehberi bunları andığı için *İstersen ekle* altında listede; ama ancak sen eklersen çalışırlar: ilki güvenliği bir kademe düşürür, ikincisi WSL ve Docker'ı bozar.
 
 ### Gizlilik
 
-- **Ayarlar.** Kullanım bilgilerini Microsoft'a göndermesi, arka planda bilgi toplaması, hata raporları, reklam kimliği ve sana göre öneriler, etkinlik geçmişi, Başlat menüsündeki reklamlar, Başlat'ta arama yapınca internete gitmesi, sesini ve yazdıklarını göndermesi, "Windows'u nasıl buldun?" soruları, Recall, Copilot, güncellemeleri internetteki yabancılara dağıtması (kendi ağındaki paylaşım kalır) ve programların sormadan yönetici olması. Konum listede ama işaretsiz, çünkü Cihazımı bul ona muhtaç.
-- **Şu an konuştukları.** Hangi uygulama şu an hangi şirkete bağlı; iki saniyede bir yenilenir, Microsoft'un telemetri sunucuları etiketlenir. Bağlantı, veri gönderildiği anlamına gelmez; sayfa da bunu söyler.
-- **30 günde gönderilenler.** Windows'un uygulama başına tuttuğu gönderilen ve alınan veri kaydı. Sadece miktarlar, asla içerik yok.
+- **Ayarlar.** Kullanım bilgilerini Microsoft'a göndermesi, arka planda bilgi toplaması, hata raporları, reklam kimliği ve sana göre öneriler, etkinlik geçmişi, Başlat menüsündeki reklamlar, Başlat'ta arama yapınca internete gitmesi, sesini ve yazdıklarını göndermesi, "Windows'u nasıl buldun?" soruları, Recall, Copilot, güncellemeleri internetteki yabancılara dağıtması (kendi ağındaki paylaşım kalır) ve programların sormadan yönetici olması. Konum *İstersen ekle* altında listede, çünkü Cihazımı bul ona muhtaç.
+- **Terminalde.** `brisk live` bir kez yazar: en çok işlemci ve bellek kullanan uygulamaları, hangi uygulamanın şu an hangi şirkete bağlı olduğunu (yönetici olarak çalışırsa Microsoft'un telemetri sunucuları etiketlenir; sunucu adlarını okumak bunu ister) ve Windows'un uygulama başına tuttuğu 30 günlük gönderilen ve alınan veri kaydını. Bağlantı, veri gönderildiği anlamına gelmez; miktarlar sadece miktardır, asla içerik yok.
 
-### Sorduğu tek soru
+### Silmeden önce soru sormaz
 
-Hepsini yap hiçbir şey sormaz; geri gelmeyecek dosyalar silinecekse sorar: İndirilenler'deki kurulum dosyaları, Geri Dönüşüm Kutusu, eski Windows kopyası. O zaman bir pencere bunları boyutlarıyla listeler, her seferinde: **Devam**, **Bunları atla** ya da **Listeyi gör**. Kimse görmediği bir dosyayı kaybetmez.
+Pencere çıkmaz. Hepsini yap MIN çalıştırır ve MIN'de hiçbir satır turuncuyla geri gelmez diye işaretli değil: MIN, kendini yeniden kuran önbellekler ve geçici dosyalar, Windows Update indirmeleri ve güncelleme artıkları ile bir daha gerekmeyecek eski kurulum kayıtları, çökme raporları ve sürücü kurulum dosyalarıdır. Geri gelmeyecek bir satır bunu satırın üstünde, turuncuyla söyler ("Geri alınamaz." ya da tam olarak neyin kaybolduğu); bu satırlar MID ve MAX'ta durur ve ancak Yer aç sayfasında o seviyeyi seçersen çalışır. MAX ekranda uyarılır, sorulmaz. Her satır sen bir şeye basmadan önce ekranda ve dokunursan atlanır.
 
 ---
 
 ## Kanıt
 
-Bu türdeki her araç "tamam" der. brisk uydurmadığı sayıları gösterir:
+Bu türdeki her araç "tamam" der. brisk uydurmadığı sayıları gösterir. Çalıştırmanın hemen ardından Genel'deki şerit özetler (*Son işlem: …*); `brisk receipt` bu sayıları ne zaman istersen yazar:
 
 - **Yer:** çalıştırmadan önce ve sonra sistem diskindeki boş alan. Gezgin'in gösterdiği sayı, "seçilen öğe" değil.
 - **Açılış programları:** önce ve sonra açılışta başlayan program sayısı.
-- **Açılış süresi:** Windows'un olay günlüğüne kendi yazdığı açılış ölçümü; son açılışlar ile çalıştırmadan sonraki ilk açılış karşılaştırılır. Yeniden başlattıktan sonra brisk'i açınca Genel ekranı bununla başlar.<!-- TODO-RUN: *Son sefer: n GB açıldı · açılış n sn → n sn · n GB RAM boşaldı*, geliştiricinin dizüstünden. -->
+- **Açılış süresi:** Windows'un olay günlüğüne kendi yazdığı açılış ölçümü; son açılışlar ile çalıştırmadan sonraki ilk açılış karşılaştırılır. Yeniden başlattıktan sonra `brisk receipt` bunu yazar.<!-- TODO-RUN: *Son sefer: n GB açıldı · açılış n sn → n sn · n GB RAM boşaldı*, geliştiricinin dizüstünden. -->
 - **RAM:** açılıştan çıkarılan programların kullandığı bellek. Ancak sonraki açılış hiçbirinin başlamadığını doğruladıktan sonra sayılır; yine de başlayan olursa adı yazılır ve sayıya katılmaz.
 - **Gizlilik:** her ayar çalıştırmadan sonra yeniden okunur ve **Kapandı ✓**, **Windows yok saydı** (bazı sürümler bir ilkeyi yazıp sonra yok sayar) ya da **Geri açıldı** der.
 
@@ -97,7 +120,7 @@ Ters yöne giden bir sayı da gösterilir. Sana sadece iyi sayıyı gösteren ar
 
 ### Geri al
 
-**Geri al**, o çalıştırmadaki her ayar ve açılış değişikliğini en yeniden başlayarak geri çevirir ve silinen dosyaların geri gelmediğini açıkça söyler. Her ayar değiştirilmeden önce bir deftere yazılır; yarıda kalan bir satır bile geri alınabilir. Geri alma başarısız olursa brisk bunu söyler ve çalıştırma geri alınabilir durumda kalır.
+**Geri al**, bir çalıştırmadan sonra Genel'de ve Hızlandır ile Gizlilik sayfalarında, o çalıştırmadaki her ayar ve açılış değişikliğini en yeniden başlayarak geri çevirir ve silinen dosyaların geri gelmediğini açıkça söyler. Yer aç'ın geri alması yok: silinen dosyalar gitmiştir ve Geri al hazırda bekletmeyi geri açmaz. Her ayar değiştirilmeden önce bir deftere yazılır; yarıda kalan bir satır bile geri alınabilir. Geri alma başarısız olursa brisk bunu söyler ve çalıştırma geri alınabilir durumda kalır.
 
 ---
 
@@ -105,7 +128,7 @@ Ters yöne giden bir sayı da gösterilir. Sana sadece iyi sayıyı gösteren ar
 
 - **Kayıt defteri temizliği yok.** Windows'u hızlandırdığı hiç gösterilmedi ve kurulu programları bozabiliyor.
 - **Windows'un kendi uygulamalarını kaldırmak yok.** Debloat betikleri geri getirmesi zor şeyleri bozar; brisk uygulamaları yerinde bırakır.
-- **Önce listelemeden dosya silmek yok.** Önbellekler kendiliğinden yeniden oluşur; senin yaptığın ya da indirdiğin dosyalar gitmeden önce adıyla gösterilir.
+- **Geri gelmeyecek bir şeyi önce göstermeden silmek yok.** Önbellekler kendiliğinden yeniden oluşur. Geri gelmeyecek bir satır, bir şey çalışmadan önce ekranda ve turuncuyla işaretli; Hepsini yap hiçbirini içermez.
 - **Kaynağını gösteremediği hız iddiası yok.** Açılış süresi Windows'un kendi kaydı. brisk'in ölçümü olmayan yerde sayı da yoktur.
 - **Telemetri yok, hesap yok, bulut yok, ürünün içinde yapay zekâ yok.** brisk hiçbir ağ bağlantısı açmaz. Bir şey gönderebileceği bir sunucu yok.
 - **Sahte aciliyet yok.** Kırmızı "1.247 sorun bulundu!" yok, geri sayım yok, Pro sürüm yok. Satılacak bir şey yok.
@@ -133,6 +156,7 @@ Commands:
     --target <id>            clean a single target by id (see 'brisk targets')
     --yes                    actually delete (otherwise print plan)
   run                        one click: free space, speed up, privacy
+    --level <min|mid|max>    how far Free up space goes (default min)
     --group <space|speed|privacy>  only that group
     --yes                    apply (without it: show the plan, change nothing)
   undo                       undo the latest run
@@ -145,6 +169,10 @@ Commands:
 ```
 
 `--yes` olmadan `run`, `fix` ve `clean` ne yapacaklarını yazar ve hiçbir şeyi değiştirmez.
+
+`brisk run`, Hepsini yap gibi MIN seviyesinde yer açar. `brisk clean --level deep` adıyla istenmesi gereken hedefleri dışarıda bırakır: eski Windows kopyası, hazırda bekletme dosyası, bileşen deposu, gölgelendirici önbellekleri, Docker'ın kullanılmayan verisi, ev klasöründeki git deposu, eski projelerin indirme klasörleri, açılmış arşivler ve geri yükleme noktaları. Birini `--target <id>` ile adlandır; kimlikleri `brisk targets` listeler.
+
+`brisk run`, yalnızca bu hedeflerin üstüne kurulu satırları (gölgelendirici önbellekleri, Docker, ev klasöründeki git deposu, indirme klasörleri, açılmış arşivler, eski Windows kopyası, geri yükleme noktaları) hiçbir `--level`'da işaretlemez: planı her birini işaretsiz gösterir, yanında onu bilerek alan `brisk clean --target <id>` yazar.
 
 ---
 
@@ -159,13 +187,13 @@ Bilgisayar "hızlandırıcıları" internetin en az güvenilen yazılımları ar
 Bozar. brisk'te yok ve hiç olmayacak.
 
 **"Temizleyici değer verdiğim dosyaları yer."**
-Bir desenden değil, önbelleklerden oluşan bir izin listesinden çalışır. Her yol, bağlantı noktaları çözülerek kayıtlı bir şablona karşı denetlenir; korunan klasörler (Belgeler, Masaüstü, Resimler, OneDrive, sistem kökleri) her şablonu yener. İndirilenler'deki bir dosya ancak sana gösterilen dosyanın ta kendisiyse silinir: o zamandan beri boyutu ya da tarihi değiştiyse atlanır.
+Bir desenden değil, bir izin listesinden çalışır. Her yol, bağlantı noktaları çözülerek kayıtlı bir şablona karşı denetlenir; korunan klasörler (Belgeler, Masaüstü, Resimler, OneDrive, sistem kökleri) her şablonu yener. Masaüstü ve Belgeler'in içine bakan iki satırın, eski projelerin indirme klasörleri ile açılmış arşivlerin, şablonu yok: her yol taradıkları bir klasörün içinde olmalı ve silineceği anda diskten yeniden okunarak hâlâ kuralına uymalı. Sanal makine disklerin, `.iso` kalıpların ve emülatörlerin listelenir ama asla silinmez. İndirilenler'deki bir dosya ancak sana gösterilen dosyanın ta kendisiyse silinir: o zamandan beri boyutu ya da tarihi değiştiyse atlanır.
 
 **"Kapalı kaynak, kendisi de eve telefon eden bir exe."**
-GPL-3.0 ve ağ kodu yok. Bağlantı listesi ve 30 günlük kullanım senin makinende Windows'tan okunur; hiçbir şey dışarı çıkmaz.
+GPL-3.0 ve ağ kodu yok. `brisk live`'ın yazdığı bağlantı listesi ve 30 günlük kullanım senin makinende Windows'tan okunur; hiçbir şey dışarı çıkmaz.
 
 **"Arkamdan ayarlarımı değiştirir."**
-Tek tık ayar değiştirir; amacı da bu. Her satır, işaretli ya da değil, sen bir şeye basmadan önce ekranda; sen basmadan hiçbir şey çalışmaz; her değişiklik deftere yazılır ve aynı düğmeden geri alınabilir.
+Tek tık ayar değiştirir; amacı da bu. Her satır, çalışmayacak olanlar dahil, sen bir şeye basmadan önce ekranda; sen basmadan hiçbir şey çalışmaz; her ayar değişikliği deftere yazılır ve Geri al ile geri alınabilir.
 
 **"İmzasız exe. Asla."**
 Haklısın. Sürüm SHA-256 özetleriyle geliyor, kurulum betiği tutmayan indirmeyi reddediyor ve kod imzası için başvuru yapılıyor. O zamana kadar SmartScreen'in uyarısı dürüst, bu paragraf da.
@@ -185,7 +213,7 @@ Geliştiricinin sahip oldukları: ürün kararları, güvenlik kuralları, mimar
 
 Bunu dürüst tutan şeyler:
 
-- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.604 testte sahte ölçümlere karşı çalışıyor.
+- Her kural, ayar ve kanıt, her birinin ne yaptığını ve neyi reddettiğini sabitleyen 1.788 testte sahte ölçümlere karşı çalışıyor.
 - Her sürümü yönlendiren spesifikasyonlar ve uygulama planları [`docs/superpowers`](docs/superpowers) altında açık.
 - Her değişiklik birleştirilmeden önce incelendi; commit geçmişi kendi düzeltmelerini yeniden yazmak yerine kaydediyor.
 - Her sürüm, yayımlanmadan önce geliştiricinin kendi makinelerinde çalıştı.
@@ -199,7 +227,7 @@ Kodun kanıtladığından fazlasını iddia ettiği bir yer bulursan, bu projeni
 .NET 8 SDK gerekir. Sadece Windows: brisk kayıt defterini, WMI'ı, Windows olay günlüğünü ve donanım sensörlerini okuyor; başka bir yerde dürüstçe çalışabilecek bir şey yok.
 
 ```
-dotnet test brisk.sln -c Release      # 1.604 test
+dotnet test brisk.sln -c Release      # 1.788 test
 dotnet run --project src/Brisk.Cli -- run
 pwsh -File scripts/publish.ps1        # iki tek dosyalık exe artifacts/ içine
 ```

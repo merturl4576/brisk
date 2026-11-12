@@ -23,6 +23,18 @@ public sealed class AmbientClock
 
     public static void Install(AmbientClock clock) => Instance = clock;
 
+    /// The window's clock (ruling R30): one switch for the whole stage — the
+    /// rain, the rings, the glow, Home's turn and counting numbers — the
+    /// "Hareketli arka plan" setting, plus a GPU-composed window (tier 2;
+    /// software rendering would spend the CPU the product frees). Windows'
+    /// "show animations" is deliberately not an input. renderTier defaults to
+    /// RenderCapability's; a test passes its own.
+    public static AmbientClock ForStage(Func<bool> movingBackground, Func<int>? renderTier = null)
+    {
+        var tier = renderTier ?? (() => System.Windows.Media.RenderCapability.Tier >> 16);
+        return new AmbientClock(() => movingBackground() && tier() >= 2);
+    }
+
     private readonly Func<bool> _allowed;
     private readonly Dictionary<object, Entry> _entries = new();
     private bool _visible;

@@ -11,6 +11,9 @@ public interface ISpaceProbe
     /// null: Docker is not installed, or its engine is not running.
     long? DockerReclaimableBytes();
     long RecycleBinBytes();
+    /// System Restore's restore points; null when they cannot be read (not
+    /// administrator, service off).
+    int? RestorePointCount();
 }
 
 public sealed class RealSpaceProbe : ISpaceProbe
@@ -23,8 +26,13 @@ public sealed class RealSpaceProbe : ISpaceProbe
 
     private static readonly Regex Size = new(@"^\s*([\d.]+)\s*([kKMGT]?B)", RegexOptions.Multiline);
     private readonly IProcessRunner _runner;
+    private readonly IRestorePoints _restorePoints;
 
-    public RealSpaceProbe(IProcessRunner runner) { _runner = runner; }
+    public RealSpaceProbe(IProcessRunner runner, IRestorePoints? restorePoints = null)
+    {
+        _runner = runner;
+        _restorePoints = restorePoints ?? new RealRestorePoints();
+    }
 
     public long? DockerReclaimableBytes()
     {
@@ -56,4 +64,6 @@ public sealed class RealSpaceProbe : ISpaceProbe
         var info = new ShQueryRbInfo { cbSize = Marshal.SizeOf<ShQueryRbInfo>() };
         return SHQueryRecycleBinW(null, ref info) == 0 ? info.i64Size : 0;
     }
+
+    public int? RestorePointCount() => _restorePoints.SequenceNumbers()?.Distinct().Count();
 }

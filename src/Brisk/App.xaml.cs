@@ -58,7 +58,7 @@ public partial class App : Application
             // Decorative motion needs a GPU-composed window; on software
             // rendering it would cost the CPU the product is meant to free.
             var settings = _settings;
-            AmbientClock.Install(new AmbientClock(() => settings.Motion && (RenderCapability.Tier >> 16) >= 2));
+            AmbientClock.Install(AmbientClock.ForStage(() => settings.Motion));
 
             Action<Action> post = a => Dispatcher.BeginInvoke(a);
             Action<Action> background = a => Task.Run(a);
