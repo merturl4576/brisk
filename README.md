@@ -20,7 +20,11 @@ No installer. No account. No telemetry, and brisk itself makes no network connec
 
 [Türkçe README](README.tr.md)
 
-<!-- TODO-RUN: docs/media/demo.gif from the maintainer's recorded run: open, Do it all, restart, open again. -->
+<p align="center">
+  <img src="docs/media/demo.gif" width="880" alt="brisk tour: Home with live CPU, graphics and memory gauges, then Free up space scanning and moving from MIN to MID to MAX, then Speed up and Privacy counting what they will change">
+</p>
+
+<!-- TODO-RUN: a second clip from the maintainer's recorded run: open, Do it all, restart, open again. -->
 
 <!-- TODO-RUN: **On the maintainer's laptop, one click:** n GB freed (the change in free space Explorer shows) · startup programs 14 → n · n telemetry settings off · boot n s → n s, by Windows' own boot timer. -->
 
@@ -49,6 +53,12 @@ Neither file needs .NET installed, and neither needs the other. Verify your down
 ## What one click does
 
 Home is a live view of the machine: CPU, graphics and memory gauges, temperature, network, battery (on a laptop), the machine's specs and the apps using the most right now. A strip at the bottom says what brisk found, for example *brisk is ready: 12 GB · 9 apps · 14 settings*, next to **Do it all**. Do it all frees space at the MIN level, takes the listed programs off startup and turns off the listed settings. The three pages, **Free up space**, **Speed up** and **Privacy**, list the same rows, and each one runs only its own group. Tap a row to skip it.
+
+| Home | Free up space, MAX picked |
+|---|---|
+| <img src="docs/media/home.png" alt="Home: live CPU gauge with graphics and memory satellites, battery, temperature, specs and the apps using the most; the strip reads brisk is ready: 54 GB · 9 apps · 9 settings, next to Do it all"> | <img src="docs/media/free-up-space.png" alt="Free up space: 117 GB can be freed at MAX, the rows it will delete with their level, and the MIN, MID and MAX tiles with what each one costs"> |
+| **Speed up** | **Privacy** |
+| <img src="docs/media/speed-up.png" alt="Speed up: 11 changes, the startup programs it will stop, the ones it leaves alone with the reason, and switches you can add"> | <img src="docs/media/privacy.png" alt="Privacy: 7 settings it will turn off, such as usage data sent to Microsoft and Copilot, and location under Add if you like"> |
 
 ### Free up space
 

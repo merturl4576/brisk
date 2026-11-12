@@ -20,7 +20,11 @@ Kurulum yok. Hesap yok. Telemetri yok; brisk'in kendisi hiçbir ağ bağlantıs�
 
 [English README](README.md)
 
-<!-- TODO-RUN: docs/media/demo.gif, geliştiricinin kayıtlı denemesinden: aç, Hepsini yap, yeniden başlat, tekrar aç. -->
+<p align="center">
+  <img src="docs/media/demo.gif" width="880" alt="brisk turu: canlı işlemci, ekran kartı ve bellek göstergeli Genel ekranı, ardından taranan ve MIN'den MID'e, MAX'e geçen Yer aç, sonra neyi değiştireceklerini sayan Hızlandır ve Gizlilik">
+</p>
+
+<!-- TODO-RUN: geliştiricinin kayıtlı denemesinden ikinci bir klip: aç, Hepsini yap, yeniden başlat, tekrar aç. -->
 
 <!-- TODO-RUN: **Geliştiricinin dizüstünde tek tık:** n GB açıldı (Gezgin'in gösterdiği boş alan farkı) · açılışta başlayan program 14 → n · n telemetri ayarı kapandı · açılış n sn → n sn, Windows'un kendi açılış ölçümüyle. -->
 
@@ -49,6 +53,14 @@ Terminali seviyorsan **`brisk.exe`** indir. `brisk run` aynı planı yazar ve hi
 ## Tek tık ne yapıyor
 
 Genel ekranı makinenin canlı görüntüsüdür: işlemci, ekran kartı ve bellek göstergeleri, sıcaklık, ağ, pil (dizüstünde), makinenin özellikleri ve şu an en çok kullanan uygulamalar. Alttaki şerit brisk'in ne bulduğunu söyler, örneğin *brisk hazır: 12 GB · 9 uygulama · 14 ayar*, yanında da **Hepsini yap** durur. Hepsini yap MIN seviyesinde yer açar, listelenen programları açılıştan çıkarır ve listelenen ayarları kapatır. **Yer aç**, **Hızlandır** ve **Gizlilik** sayfaları aynı satırları listeler ve her biri yalnızca kendi grubunu çalıştırır. Bir satıra dokunursan atlanır.
+
+Ekran görüntüleri İngilizce arayüzden; uygulama Türkçe de çalışır.
+
+| Genel | Yer aç, MAX seçili |
+|---|---|
+| <img src="docs/media/home.png" alt="Genel: canlı işlemci göstergesi, ekran kartı ve bellek uyduları, pil, sıcaklık, özellikler ve en çok kullanan uygulamalar; şeritte brisk is ready: 54 GB · 9 apps · 9 settings ve Do it all"> | <img src="docs/media/free-up-space.png" alt="Yer aç: MAX'te açılabilecek 117 GB, silinecek satırlar ve seviyeleri, bedeliyle birlikte MIN, MID ve MAX kutuları"> |
+| **Hızlandır** | **Gizlilik** |
+| <img src="docs/media/speed-up.png" alt="Hızlandır: 11 değişiklik, durdurulacak açılış programları, nedeniyle birlikte dokunulmayanlar ve eklenebilecek ayarlar"> | <img src="docs/media/privacy.png" alt="Gizlilik: kapatılacak 7 ayar, örneğin Microsoft'a giden kullanım verisi ve Copilot; konum ise İstersen ekle altında"> |
 
 ### Yer aç
 
